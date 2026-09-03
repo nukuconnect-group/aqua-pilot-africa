@@ -176,6 +176,12 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
 
   // Validation de la saisie d'un nouveau lot
   const validateNewBatch = (): string | null => {
+    if (selectedInfraIds.length === 0) {
+      return 'Sélectionnez au moins une infrastructure avant de prélever.';
+    }
+    const sourceId = newBatch.sourceId || selectedInfraIds[0];
+    const source = selectedInfraList.find((i) => i.id === sourceId);
+    if (!source) return 'Sélectionnez l’infrastructure d’origine du prélèvement.';
     if (!newBatch.subjectCount.trim() && !newBatch.totalWeight.trim()) {
       return 'Renseignez le nombre de sujets et le poids total du lot.';
     }
@@ -190,6 +196,10 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
       return 'Le poids TOTAL du lot (en grammes) est obligatoire.';
     }
     if (totalWeight <= 0) return 'Le poids total doit être supérieur à 0 g (valeur négative ou nulle refusée).';
+    const alreadyFromSource = subjectsBySource[sourceId] || 0;
+    if (source.available > 0 && alreadyFromSource + subjectCount > source.available) {
+      return `${source.name} : ${alreadyFromSource + subjectCount} sujets prélevés pour seulement ${source.available} disponibles.`;
+    }
     if (availableSubjects > 0 && batchCalculations.totalSubjects + subjectCount > availableSubjects) {
       return `Le total prélevé (${batchCalculations.totalSubjects + subjectCount}) dépasse les ${availableSubjects} sujets disponibles.`;
     }
@@ -206,17 +216,21 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
     setBatchError(null);
     const subjectCount = parseInt(newBatch.subjectCount, 10);
     const totalWeight = parseFloat(newBatch.totalWeight);
+    const sourceId = newBatch.sourceId || selectedInfraIds[0];
+    const source = selectedInfraList.find((i) => i.id === sourceId);
 
     const newSampleBatch: SampleBatch = {
       id: Date.now().toString(),
-      species: (newBatch.species || attachedBatch?.species || 'Non précisée').trim(),
+      species: (newBatch.species || source?.batch?.species || attachedBatch?.species || 'Non précisée').trim(),
       subjectCount,
       totalWeight,
-      individualWeight: totalWeight / subjectCount
+      individualWeight: totalWeight / subjectCount,
+      sourceId,
+      sourceName: source?.name || ''
     };
     
     setSampleBatches([...sampleBatches, newSampleBatch]);
-    setNewBatch({ species: newBatch.species, subjectCount: '', totalWeight: '' });
+    setNewBatch({ species: newBatch.species, subjectCount: '', totalWeight: '', sourceId });
   };
 
   // Modifier un lot existant : le PMI est toujours recalculé
