@@ -13,6 +13,7 @@ import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { exportControlFishingPDF } from '@/lib/controlFishingPdf';
 import { useToast } from '@/hooks/use-toast';
