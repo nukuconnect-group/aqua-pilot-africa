@@ -13,6 +13,7 @@ import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { exportControlFishingPDF } from '@/lib/controlFishingPdf';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,8 @@ interface SampleBatch {
   subjectCount: number;
   totalWeight: number; // grammes (poids moyen général saisi pour le lot)
   individualWeight: number; // grammes, calculé automatiquement (totalWeight / subjectCount)
+  sourceId: string; // infrastructure d'origine du prélèvement
+  sourceName: string;
 }
 
 const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps) => {
@@ -49,32 +52,71 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
     notes: ''
   });
 
+  // Sélection multiple d'infrastructures pour la pêche de contrôle
+  const [selectedInfraIds, setSelectedInfraIds] = useState<string[]>([]);
+
   // Système de prélèvement par lots
   const [sampleBatches, setSampleBatches] = useState<SampleBatch[]>([]);
   const [newBatch, setNewBatch] = useState({
     species: '',
     subjectCount: '',
-    totalWeight: ''
+    totalWeight: '',
+    sourceId: ''
   });
   const [batchError, setBatchError] = useState<string | null>(null);
 
   const activeCycles = cycles.filter(c => c.status === 'active');
   const selectedCycle = cycles.find(c => c.id === selectedCycleId);
-  const selectedInfrastructure = infrastructures.find(i => i.id === formData.infrastructureId);
-  
-  // Trouver le lot de poissons attaché à l'infrastructure
-  const attachedBatch = useMemo(() => {
-    if (!selectedInfrastructure?.livestock_batch_id) return null;
-    return livestockBatches.find(b => b.id === selectedInfrastructure.livestock_batch_id);
-  }, [selectedInfrastructure, livestockBatches]);
 
-  // Calculer le nombre de sujets disponibles (depuis le lot attaché ou l'infrastructure)
-  const availableSubjects = useMemo(() => {
-    if (attachedBatch) {
-      return attachedBatch.quantity;
-    }
-    return selectedInfrastructure?.current_quantity || 0;
-  }, [attachedBatch, selectedInfrastructure]);
+  // Disponibilité par infrastructure du cycle — affichée AVANT toute saisie
+  const infraAvailability = useMemo(() => {
+    return infrastructures
+      .filter((infra) => Boolean(infra.id))
+      .map((infra) => {
+        const batch = livestockBatches.find((b) => b.id === infra.livestock_batch_id) || null;
+        return {
+          id: infra.id,
+          name: infra.infrastructure_name,
+          type: infra.infrastructure_type,
+          batch,
+          available: batch?.quantity ?? infra.current_quantity ?? 0,
+        };
+      });
+  }, [infrastructures, livestockBatches]);
+
+  const selectedInfraList = useMemo(
+    () => infraAvailability.filter((i) => selectedInfraIds.includes(i.id)),
+    [infraAvailability, selectedInfraIds]
+  );
+
+  const selectedInfrastructure = infrastructures.find((i) => i.id === formData.infrastructureId);
+  const attachedBatch = selectedInfraList[0]?.batch || null;
+
+  // Sujets disponibles = somme des infrastructures sélectionnées
+  const availableSubjects = useMemo(
+    () => selectedInfraList.reduce((sum, i) => sum + (i.available || 0), 0),
+    [selectedInfraList]
+  );
+
+  // Sujets déjà prélevés par infrastructure (calcul intelligent multi-sources)
+  const subjectsBySource = useMemo(() => {
+    const map: Record<string, number> = {};
+    sampleBatches.forEach((b) => {
+      map[b.sourceId] = (map[b.sourceId] || 0) + b.subjectCount;
+    });
+    return map;
+  }, [sampleBatches]);
+
+  const toggleInfrastructure = (id: string) => {
+    const next = selectedInfraIds.includes(id)
+      ? selectedInfraIds.filter((x) => x !== id)
+      : [...selectedInfraIds, id];
+    setSelectedInfraIds(next);
+    setFormData((f) => ({ ...f, infrastructureId: next[0] || '' }));
+    setSampleBatches((prev) => prev.filter((b) => next.includes(b.sourceId)));
+    setNewBatch((prev) => ({ ...prev, sourceId: next.includes(prev.sourceId) ? prev.sourceId : (next[0] || '') }));
+    setBatchError(null);
+  };
   
   // Filtrer les pêches de contrôle passées pour l'infrastructure sélectionnée
   const pastControlRecords = allHealthRecords.filter(r => r.basin_id === formData.infrastructureId);
@@ -135,6 +177,12 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
 
   // Validation de la saisie d'un nouveau lot
   const validateNewBatch = (): string | null => {
+    if (selectedInfraIds.length === 0) {
+      return 'Sélectionnez au moins une infrastructure avant de prélever.';
+    }
+    const sourceId = newBatch.sourceId || selectedInfraIds[0];
+    const source = selectedInfraList.find((i) => i.id === sourceId);
+    if (!source) return 'Sélectionnez l’infrastructure d’origine du prélèvement.';
     if (!newBatch.subjectCount.trim() && !newBatch.totalWeight.trim()) {
       return 'Renseignez le nombre de sujets et le poids total du lot.';
     }
@@ -149,6 +197,10 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
       return 'Le poids TOTAL du lot (en grammes) est obligatoire.';
     }
     if (totalWeight <= 0) return 'Le poids total doit être supérieur à 0 g (valeur négative ou nulle refusée).';
+    const alreadyFromSource = subjectsBySource[sourceId] || 0;
+    if (source.available > 0 && alreadyFromSource + subjectCount > source.available) {
+      return `${source.name} : ${alreadyFromSource + subjectCount} sujets prélevés pour seulement ${source.available} disponibles.`;
+    }
     if (availableSubjects > 0 && batchCalculations.totalSubjects + subjectCount > availableSubjects) {
       return `Le total prélevé (${batchCalculations.totalSubjects + subjectCount}) dépasse les ${availableSubjects} sujets disponibles.`;
     }
@@ -165,17 +217,21 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
     setBatchError(null);
     const subjectCount = parseInt(newBatch.subjectCount, 10);
     const totalWeight = parseFloat(newBatch.totalWeight);
+    const sourceId = newBatch.sourceId || selectedInfraIds[0];
+    const source = selectedInfraList.find((i) => i.id === sourceId);
 
     const newSampleBatch: SampleBatch = {
       id: Date.now().toString(),
-      species: (newBatch.species || attachedBatch?.species || 'Non précisée').trim(),
+      species: (newBatch.species || source?.batch?.species || attachedBatch?.species || 'Non précisée').trim(),
       subjectCount,
       totalWeight,
-      individualWeight: totalWeight / subjectCount
+      individualWeight: totalWeight / subjectCount,
+      sourceId,
+      sourceName: source?.name || ''
     };
     
     setSampleBatches([...sampleBatches, newSampleBatch]);
-    setNewBatch({ species: newBatch.species, subjectCount: '', totalWeight: '' });
+    setNewBatch({ species: newBatch.species, subjectCount: '', totalWeight: '', sourceId });
   };
 
   // Modifier un lot existant : le PMI est toujours recalculé
@@ -445,86 +501,96 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
               </div>
 
               {selectedCycleId && (
-                <div>
-                  <Label htmlFor="infrastructure">Infrastructure</Label>
-                  {infrastructures.length === 0 ? (
+                <div className="space-y-2">
+                  <Label>Infrastructures à échantillonner (sélection multiple)</Label>
+                  {infraAvailability.length === 0 ? (
                     <Alert>
                       <AlertDescription>
                         Aucune infrastructure rattachée à ce cycle.
                       </AlertDescription>
                     </Alert>
                   ) : (
-                    <Select 
-                      value={formData.infrastructureId || undefined}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, infrastructureId: value });
-                        setSampleBatches([]);
-                      }}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner une infrastructure" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {infrastructures
-                          .filter((infra) => Boolean(infra.id))
-                          .map((infra) => {
-                            const batch = livestockBatches.find((b) => b.id === infra.livestock_batch_id);
-                            const subjectCount = batch?.quantity || infra.current_quantity || 0;
-                            return (
-                              <SelectItem key={infra.id} value={infra.id}>
-                                {infra.infrastructure_name} ({infra.infrastructure_type}) - {subjectCount} sujets
-                              </SelectItem>
-                            );
-                          })}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      {infraAvailability.map((infra) => {
+                        const checked = selectedInfraIds.includes(infra.id);
+                        const taken = subjectsBySource[infra.id] || 0;
+                        return (
+                          <div
+                            key={infra.id}
+                            className={`flex items-start gap-3 p-3 border rounded-lg ${checked ? 'border-primary bg-primary/5' : ''}`}
+                          >
+                            <Checkbox
+                              id={`cf-infra-${infra.id}`}
+                              checked={checked}
+                              onCheckedChange={() => toggleInfrastructure(infra.id)}
+                            />
+                            <Label htmlFor={`cf-infra-${infra.id}`} className="flex-1 cursor-pointer font-normal">
+                              <span className="font-medium block">{infra.name}</span>
+                              <span className="text-xs text-muted-foreground block">
+                                {infra.type}{infra.batch?.species ? ` · ${infra.batch.species}` : ''}
+                                {infra.batch?.average_weight ? ` · PM actuel ${infra.batch.average_weight} g` : ''}
+                              </span>
+                            </Label>
+                            <div className="text-right shrink-0">
+                              <span className="text-[11px] text-muted-foreground block">Sujets disponibles</span>
+                              <span className="font-bold text-primary">{infra.available.toLocaleString()}</span>
+                              {taken > 0 && (
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {taken} prélevé(s) · reste {Math.max(0, infra.available - taken).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               )}
               
-              {/* Informations détaillées sur l'infrastructure sélectionnée */}
-              {selectedInfrastructure && (
+              {/* Synthèse de disponibilité (multi-infrastructures) */}
+              {selectedInfraList.length > 0 && (
                 <div className="mt-4 p-4 bg-muted rounded-lg space-y-3">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Détails de l'infrastructure
+                    Disponibilité consolidée ({selectedInfraList.length} infrastructure(s))
                   </h4>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                     <div>
-                      <span className="text-muted-foreground block text-xs">Sujets disponibles</span>
+                      <span className="text-muted-foreground block text-xs">Sujets disponibles (total)</span>
                       <p className="font-bold text-lg text-primary">{availableSubjects.toLocaleString()}</p>
                     </div>
-                    
-                    {attachedBatch && (
-                      <>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Espèce</span>
-                          <p className="font-medium">{attachedBatch.species}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Poids moyen actuel</span>
-                          <p className="font-medium">{attachedBatch.average_weight}g</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Biomasse totale</span>
-                          <p className="font-medium">{attachedBatch.total_weight?.toFixed(2)}kg</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Statut du lot</span>
-                          <Badge variant={attachedBatch.status === 'healthy' ? 'default' : 'destructive'}>
-                            {attachedBatch.status === 'healthy' ? 'Sain' : attachedBatch.status}
-                          </Badge>
-                        </div>
-                      </>
-                    )}
-                    
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Déjà prélevés (saisie)</span>
+                      <p className="font-bold text-lg">{batchCalculations.totalSubjects.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Reste échantillonnable</span>
+                      <p className="font-bold text-lg">
+                        {Math.max(0, availableSubjects - batchCalculations.totalSubjects).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Biomasse estimée</span>
+                      <p className="font-medium">
+                        {selectedInfraList
+                          .reduce((s, i) => s + (i.batch?.total_weight || 0), 0)
+                          .toFixed(2)} kg
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Espèces concernées</span>
+                      <p className="font-medium truncate">
+                        {Array.from(new Set(selectedInfraList.map((i) => i.batch?.species).filter(Boolean))).join(', ') || '—'}
+                      </p>
+                    </div>
                     <div>
                       <span className="text-muted-foreground block text-xs">Pêches précédentes</span>
                       <p className="font-medium">{pastControlRecords.length} enregistrement(s)</p>
                     </div>
                   </div>
+
                   
                   {/* Dernières pêches de contrôle */}
                   {pastControlRecords.length > 0 && (
