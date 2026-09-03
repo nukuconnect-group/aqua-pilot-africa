@@ -28,6 +28,8 @@ interface SampleBatch {
   subjectCount: number;
   totalWeight: number; // grammes (poids moyen général saisi pour le lot)
   individualWeight: number; // grammes, calculé automatiquement (totalWeight / subjectCount)
+  sourceId: string; // infrastructure d'origine du prélèvement
+  sourceName: string;
 }
 
 const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps) => {
@@ -49,32 +51,71 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
     notes: ''
   });
 
+  // Sélection multiple d'infrastructures pour la pêche de contrôle
+  const [selectedInfraIds, setSelectedInfraIds] = useState<string[]>([]);
+
   // Système de prélèvement par lots
   const [sampleBatches, setSampleBatches] = useState<SampleBatch[]>([]);
   const [newBatch, setNewBatch] = useState({
     species: '',
     subjectCount: '',
-    totalWeight: ''
+    totalWeight: '',
+    sourceId: ''
   });
   const [batchError, setBatchError] = useState<string | null>(null);
 
   const activeCycles = cycles.filter(c => c.status === 'active');
   const selectedCycle = cycles.find(c => c.id === selectedCycleId);
-  const selectedInfrastructure = infrastructures.find(i => i.id === formData.infrastructureId);
-  
-  // Trouver le lot de poissons attaché à l'infrastructure
-  const attachedBatch = useMemo(() => {
-    if (!selectedInfrastructure?.livestock_batch_id) return null;
-    return livestockBatches.find(b => b.id === selectedInfrastructure.livestock_batch_id);
-  }, [selectedInfrastructure, livestockBatches]);
 
-  // Calculer le nombre de sujets disponibles (depuis le lot attaché ou l'infrastructure)
-  const availableSubjects = useMemo(() => {
-    if (attachedBatch) {
-      return attachedBatch.quantity;
-    }
-    return selectedInfrastructure?.current_quantity || 0;
-  }, [attachedBatch, selectedInfrastructure]);
+  // Disponibilité par infrastructure du cycle — affichée AVANT toute saisie
+  const infraAvailability = useMemo(() => {
+    return infrastructures
+      .filter((infra) => Boolean(infra.id))
+      .map((infra) => {
+        const batch = livestockBatches.find((b) => b.id === infra.livestock_batch_id) || null;
+        return {
+          id: infra.id,
+          name: infra.infrastructure_name,
+          type: infra.infrastructure_type,
+          batch,
+          available: batch?.quantity ?? infra.current_quantity ?? 0,
+        };
+      });
+  }, [infrastructures, livestockBatches]);
+
+  const selectedInfraList = useMemo(
+    () => infraAvailability.filter((i) => selectedInfraIds.includes(i.id)),
+    [infraAvailability, selectedInfraIds]
+  );
+
+  const selectedInfrastructure = infrastructures.find((i) => i.id === formData.infrastructureId);
+  const attachedBatch = selectedInfraList[0]?.batch || null;
+
+  // Sujets disponibles = somme des infrastructures sélectionnées
+  const availableSubjects = useMemo(
+    () => selectedInfraList.reduce((sum, i) => sum + (i.available || 0), 0),
+    [selectedInfraList]
+  );
+
+  // Sujets déjà prélevés par infrastructure (calcul intelligent multi-sources)
+  const subjectsBySource = useMemo(() => {
+    const map: Record<string, number> = {};
+    sampleBatches.forEach((b) => {
+      map[b.sourceId] = (map[b.sourceId] || 0) + b.subjectCount;
+    });
+    return map;
+  }, [sampleBatches]);
+
+  const toggleInfrastructure = (id: string) => {
+    const next = selectedInfraIds.includes(id)
+      ? selectedInfraIds.filter((x) => x !== id)
+      : [...selectedInfraIds, id];
+    setSelectedInfraIds(next);
+    setFormData((f) => ({ ...f, infrastructureId: next[0] || '' }));
+    setSampleBatches((prev) => prev.filter((b) => next.includes(b.sourceId)));
+    setNewBatch((prev) => ({ ...prev, sourceId: next.includes(prev.sourceId) ? prev.sourceId : (next[0] || '') }));
+    setBatchError(null);
+  };
   
   // Filtrer les pêches de contrôle passées pour l'infrastructure sélectionnée
   const pastControlRecords = allHealthRecords.filter(r => r.basin_id === formData.infrastructureId);
