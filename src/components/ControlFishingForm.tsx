@@ -500,86 +500,96 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
               </div>
 
               {selectedCycleId && (
-                <div>
-                  <Label htmlFor="infrastructure">Infrastructure</Label>
-                  {infrastructures.length === 0 ? (
+                <div className="space-y-2">
+                  <Label>Infrastructures à échantillonner (sélection multiple)</Label>
+                  {infraAvailability.length === 0 ? (
                     <Alert>
                       <AlertDescription>
                         Aucune infrastructure rattachée à ce cycle.
                       </AlertDescription>
                     </Alert>
                   ) : (
-                    <Select 
-                      value={formData.infrastructureId || undefined}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, infrastructureId: value });
-                        setSampleBatches([]);
-                      }}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner une infrastructure" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {infrastructures
-                          .filter((infra) => Boolean(infra.id))
-                          .map((infra) => {
-                            const batch = livestockBatches.find((b) => b.id === infra.livestock_batch_id);
-                            const subjectCount = batch?.quantity || infra.current_quantity || 0;
-                            return (
-                              <SelectItem key={infra.id} value={infra.id}>
-                                {infra.infrastructure_name} ({infra.infrastructure_type}) - {subjectCount} sujets
-                              </SelectItem>
-                            );
-                          })}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      {infraAvailability.map((infra) => {
+                        const checked = selectedInfraIds.includes(infra.id);
+                        const taken = subjectsBySource[infra.id] || 0;
+                        return (
+                          <div
+                            key={infra.id}
+                            className={`flex items-start gap-3 p-3 border rounded-lg ${checked ? 'border-primary bg-primary/5' : ''}`}
+                          >
+                            <Checkbox
+                              id={`cf-infra-${infra.id}`}
+                              checked={checked}
+                              onCheckedChange={() => toggleInfrastructure(infra.id)}
+                            />
+                            <Label htmlFor={`cf-infra-${infra.id}`} className="flex-1 cursor-pointer font-normal">
+                              <span className="font-medium block">{infra.name}</span>
+                              <span className="text-xs text-muted-foreground block">
+                                {infra.type}{infra.batch?.species ? ` · ${infra.batch.species}` : ''}
+                                {infra.batch?.average_weight ? ` · PM actuel ${infra.batch.average_weight} g` : ''}
+                              </span>
+                            </Label>
+                            <div className="text-right shrink-0">
+                              <span className="text-[11px] text-muted-foreground block">Sujets disponibles</span>
+                              <span className="font-bold text-primary">{infra.available.toLocaleString()}</span>
+                              {taken > 0 && (
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {taken} prélevé(s) · reste {Math.max(0, infra.available - taken).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               )}
               
-              {/* Informations détaillées sur l'infrastructure sélectionnée */}
-              {selectedInfrastructure && (
+              {/* Synthèse de disponibilité (multi-infrastructures) */}
+              {selectedInfraList.length > 0 && (
                 <div className="mt-4 p-4 bg-muted rounded-lg space-y-3">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Détails de l'infrastructure
+                    Disponibilité consolidée ({selectedInfraList.length} infrastructure(s))
                   </h4>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                     <div>
-                      <span className="text-muted-foreground block text-xs">Sujets disponibles</span>
+                      <span className="text-muted-foreground block text-xs">Sujets disponibles (total)</span>
                       <p className="font-bold text-lg text-primary">{availableSubjects.toLocaleString()}</p>
                     </div>
-                    
-                    {attachedBatch && (
-                      <>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Espèce</span>
-                          <p className="font-medium">{attachedBatch.species}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Poids moyen actuel</span>
-                          <p className="font-medium">{attachedBatch.average_weight}g</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Biomasse totale</span>
-                          <p className="font-medium">{attachedBatch.total_weight?.toFixed(2)}kg</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground block text-xs">Statut du lot</span>
-                          <Badge variant={attachedBatch.status === 'healthy' ? 'default' : 'destructive'}>
-                            {attachedBatch.status === 'healthy' ? 'Sain' : attachedBatch.status}
-                          </Badge>
-                        </div>
-                      </>
-                    )}
-                    
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Déjà prélevés (saisie)</span>
+                      <p className="font-bold text-lg">{batchCalculations.totalSubjects.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Reste échantillonnable</span>
+                      <p className="font-bold text-lg">
+                        {Math.max(0, availableSubjects - batchCalculations.totalSubjects).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Biomasse estimée</span>
+                      <p className="font-medium">
+                        {selectedInfraList
+                          .reduce((s, i) => s + (i.batch?.total_weight || 0), 0)
+                          .toFixed(2)} kg
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Espèces concernées</span>
+                      <p className="font-medium truncate">
+                        {Array.from(new Set(selectedInfraList.map((i) => i.batch?.species).filter(Boolean))).join(', ') || '—'}
+                      </p>
+                    </div>
                     <div>
                       <span className="text-muted-foreground block text-xs">Pêches précédentes</span>
                       <p className="font-medium">{pastControlRecords.length} enregistrement(s)</p>
                     </div>
                   </div>
+
                   
                   {/* Dernières pêches de contrôle */}
                   {pastControlRecords.length > 0 && (
