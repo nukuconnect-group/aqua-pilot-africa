@@ -637,6 +637,24 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                   {/* Formulaire d'ajout de lot */}
                   <div className="grid grid-cols-12 gap-2 items-end">
                     <div className="col-span-12 sm:col-span-3">
+                      <Label className="text-xs">Infrastructure d'origine</Label>
+                      <Select
+                        value={newBatch.sourceId || selectedInfraIds[0] || ''}
+                        onValueChange={(value) => { setBatchError(null); setNewBatch({ ...newBatch, sourceId: value }); }}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Choisir" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedInfraList.map((infra) => (
+                            <SelectItem key={infra.id} value={infra.id}>
+                              {infra.name} ({Math.max(0, infra.available - (subjectsBySource[infra.id] || 0)).toLocaleString()} dispo)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-12 sm:col-span-2">
                       <Label className="text-xs">Espèce</Label>
                       <Input
                         value={newBatch.species}
@@ -644,6 +662,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                         placeholder={attachedBatch?.species || 'Tilapia'}
                       />
                     </div>
+
                     <div className="col-span-4 sm:col-span-3">
                       <Label className="text-xs">Nb sujets</Label>
                       <Input
