@@ -184,8 +184,11 @@ export const useNotifications = () => {
     requestNotificationPermission();
 
     // Subscribe to real-time changes
+    // A unique channel name is required in React StrictMode: the cleanup of the
+    // previous effect can overlap the next mount, and Supabase may otherwise
+    // return the already-subscribed channel before removeChannel completes.
     const channel = supabase
-      .channel('notifications-changes')
+      .channel(`notifications-changes-${user.id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
