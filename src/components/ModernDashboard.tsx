@@ -315,7 +315,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
       {/* Bandeau de pilotage */}
       <div className="relative overflow-hidden rounded-2xl bg-slate-900 dark:bg-slate-950 text-slate-100 px-4 py-4 sm:px-6 sm:py-5 shadow-lg">
         <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sky-500/20 blur-3xl" aria-hidden />
-        <div className="absolute -left-10 bottom--10 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" aria-hidden />
+        <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" aria-hidden />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
