@@ -20,6 +20,7 @@ import FeedingManagement from '@/components/FeedingManagement';
 import AquaFeedAI from '@/components/aquafeed/AquaFeedAI';
 import PremiumLibrary from '@/components/library/PremiumLibrary';
 import ProphylaxieManagement from '@/components/ProphylaxieManagement';
+import AquaHealthAI from '@/components/prophylaxie/AquaHealthAI';
 import TransformationManagement from '@/components/TransformationManagement';
 import ProductionManagement from '@/components/ProductionManagement';
 import AccountingManagement from '@/components/AccountingManagement';
@@ -264,6 +265,8 @@ const Dashboard: React.FC = () => {
         return <PremiumLibrary />;
       case 'health':
         return <ProphylaxieManagement />;
+      case 'aquahealth':
+        return <AquaHealthAI />;
       case 'transformation':
         return <TransformationManagement />;
       case 'production':
