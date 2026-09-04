@@ -232,9 +232,14 @@ const FeedCalculatorSuite: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg"><Sparkles className="w-6 h-6 text-primary" /></div>
+            {onBack && (
+              <Button variant="ghost" size="sm" onClick={onBack}>
+                <ArrowRight className="w-4 h-4 mr-1.5 rotate-180" />AquaFeed AI
+              </Button>
+            )}
+            <div className="p-2 bg-primary/10 rounded-lg"><Calculator className="w-6 h-6 text-primary" /></div>
             <div>
-              <CardTitle className="text-xl sm:text-2xl">AquaFeed AI</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl">Calculateur AquaFeed</CardTitle>
               <CardDescription>Calcul intelligent de la ration — mode basique et mode avancé (IC, densité, coûts, prévisions).</CardDescription>
             </div>
           </div>
