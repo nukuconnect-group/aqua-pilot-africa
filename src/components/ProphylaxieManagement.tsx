@@ -361,7 +361,7 @@ const ProphylaxieManagement = () => {
 
       <Tabs defaultValue="calendar" className="space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className="grid grid-cols-7 w-full min-w-[700px] sm:min-w-0">
+          <TabsList className="grid grid-cols-6 w-full min-w-[600px] sm:min-w-0">
             <TabsTrigger value="cheptel" className="text-xs sm:text-sm px-1 sm:px-3">
               Cheptel
             </TabsTrigger>
@@ -384,9 +384,6 @@ const ProphylaxieManagement = () => {
             </TabsTrigger>
             <TabsTrigger value="planning" className="text-xs sm:text-sm px-1 sm:px-3">
               Planning
-            </TabsTrigger>
-            <TabsTrigger value="aquahealth" className="text-xs sm:text-sm px-1 sm:px-3">
-              AquaHealth AI
             </TabsTrigger>
           </TabsList>
         </div>
@@ -601,10 +598,13 @@ const ProphylaxieManagement = () => {
         <TabsContent value="diseases">
           <DiseaseManager />
         </TabsContent>
-        <TabsContent value="aquahealth">
-          <AquaHealthAI />
-        </TabsContent>
       </Tabs>
+
+      {/* Sous-module détaché : AquaHealth AI */}
+      <div className="pt-2">
+        <div className="border-t border-border mb-4" />
+        <AquaHealthAI />
+      </div>
 
       {/* Génération de rapports */}
       <ReportGenerator />

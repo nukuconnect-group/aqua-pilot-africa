@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import UnitReportGenerator from './reports/UnitReportGenerator';
+import FarmJournal from './reports/FarmJournal';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -734,9 +735,9 @@ const ReportsManagement = () => {
           <div>
             <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
               <FileText className="w-7 h-7" />
-              Rapports & Analyses
+              Journal de ferme
             </h2>
-            <p className="text-indigo-100">Génération et export de rapports détaillés professionnels</p>
+            <p className="text-indigo-100">Journal quotidien par unité et rapports détaillés (jour, semaine, mois, trimestre)</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -815,13 +816,18 @@ const ReportsManagement = () => {
       </div>
 
       {/* Contenu principal */}
-      <Tabs defaultValue="generate" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 h-12">
+      <Tabs defaultValue="journal" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 h-12">
+          <TabsTrigger value="journal" className="text-sm">📔 Journal</TabsTrigger>
           <TabsTrigger value="generate" className="text-sm">📄 Générer</TabsTrigger>
           <TabsTrigger value="units" className="text-sm">🏢 Par Unité</TabsTrigger>
           <TabsTrigger value="history" className="text-sm">📚 Historique</TabsTrigger>
           <TabsTrigger value="scheduled" className="text-sm">⏰ Programmés</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="journal" className="space-y-4">
+          <FarmJournal />
+        </TabsContent>
 
         <TabsContent value="generate" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

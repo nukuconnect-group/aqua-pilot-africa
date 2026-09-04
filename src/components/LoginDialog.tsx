@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import fishColumnsMobile from '@/assets/fish-columns-mobile.jpg';
 import aquaPilotLogo from '@/assets/aquapilote-logo.png';
-import loginBgAsset from '@/assets/aquapilote-login-bg.png.asset.json';
+import loginBgAsset from '@/assets/aquapilote-login-bg-v2.png.asset.json';
 
 interface LoginDialogProps {
   isOpen: boolean;
