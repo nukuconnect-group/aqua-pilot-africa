@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { useSettings } from '@/contexts/SettingsContext';
 import aquapiloteLogo from '@/assets/aquapilote-logo.png';
-import registerBgAsset from '@/assets/aquapilote-register-bg.png.asset.json';
+import registerBgAsset from '@/assets/aquapilote-register-bg-v2.png.asset.json';
 import loginBgAsset from '@/assets/aquapilote-login-bg.png.asset.json';
 import fishColumnsMobile from '@/assets/fish-columns-mobile.jpg';
 import { ALL_COUNTRIES } from '@/lib/allCountries';
