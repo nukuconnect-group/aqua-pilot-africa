@@ -340,6 +340,9 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
         notes: ''
       });
       setSampleBatches([]);
+      setSelectedInfraIds([]);
+      setNewBatch({ species: '', subjectCount: '', totalWeight: '', sourceId: '' });
+      setBatchError(null);
       setSelectedCycleId('');
     } catch (error) {
       console.error('Error creating control fishing record:', error);
@@ -663,7 +666,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                       />
                     </div>
 
-                    <div className="col-span-4 sm:col-span-3">
+                    <div className="col-span-4 sm:col-span-2">
                       <Label className="text-xs">Nb sujets</Label>
                       <Input
                         type="number"
@@ -673,7 +676,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                         placeholder="200"
                       />
                     </div>
-                    <div className="col-span-8 sm:col-span-4">
+                    <div className="col-span-8 sm:col-span-3">
                       <Label className="text-xs">Poids TOTAL du lot (g)</Label>
                       <Input
                         type="number"
@@ -716,6 +719,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                         <TableHeader>
                           <TableRow>
                             <TableHead className="text-xs">Lot</TableHead>
+                            <TableHead className="text-xs">Origine</TableHead>
                             <TableHead className="text-xs">Espèce</TableHead>
                             <TableHead className="text-xs text-right">Sujets</TableHead>
                             <TableHead className="text-xs text-right">Poids total (g)</TableHead>
@@ -727,6 +731,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                           {sampleBatches.map((batch, idx) => (
                             <TableRow key={batch.id}>
                               <TableCell className="font-medium">Lot {idx + 1}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{batch.sourceName || '—'}</TableCell>
                               <TableCell>
                                 <Input
                                   className="h-8 text-xs"
