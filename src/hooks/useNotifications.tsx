@@ -183,76 +183,12 @@ export const useNotifications = () => {
     // Request notification permission
     requestNotificationPermission();
 
-    // Subscribe to real-time changes
-    // A unique channel name is required in React StrictMode: the cleanup of the
-    // previous effect can overlap the next mount, and Supabase may otherwise
-    // return the already-subscribed channel before removeChannel completes.
-    const channel = supabase
-      .channel(`notifications-changes-${user.id}-${crypto.randomUUID()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          
-          // Add to state
-          setNotifications(prev => [newNotification, ...prev]);
-          
-          // Play sound for critical or warning notifications
-          if (newNotification.is_critical || newNotification.type === 'warning' || newNotification.type === 'error') {
-            playNotificationSound();
-          }
-          
-          // Show browser notification for critical alerts
-          if (newNotification.is_critical) {
-            showBrowserNotification(newNotification);
-          }
-          
-          // Show toast
-          toast({
-            title: newNotification.title,
-            description: newNotification.message,
-            variant: newNotification.type === 'error' ? 'destructive' : 'default',
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const updated = payload.new as Notification;
-          setNotifications(prev => 
-            prev.map(n => n.id === updated.id ? updated : n)
-          );
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const deleted = payload.old as { id: string };
-          setNotifications(prev => prev.filter(n => n.id !== deleted.id));
-        }
-      )
-      .subscribe();
+    // Polling avoids channel reuse races during React StrictMode remounts while
+    // keeping the dashboard notifications automatically synchronized.
+    const refreshInterval = window.setInterval(fetchNotifications, 15_000);
 
     return () => {
-      supabase.removeChannel(channel);
+      window.clearInterval(refreshInterval);
     };
   }, [user?.id, fetchNotifications, requestNotificationPermission, playNotificationSound, showBrowserNotification, toast]);
 
