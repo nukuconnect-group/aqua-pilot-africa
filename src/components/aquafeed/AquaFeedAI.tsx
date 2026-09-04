@@ -399,4 +399,61 @@ const Stat: React.FC<{ label: string; value: string; highlight?: boolean }> = ({
   </div>
 );
 
+type FeedView = 'home' | 'calculator' | 'feedmill';
+
+const AquaFeedAI: React.FC = () => {
+  const [view, setView] = useState<FeedView>('home');
+
+  if (view === 'calculator') return <FeedCalculatorSuite onBack={() => setView('home')} />;
+  if (view === 'feedmill') return <FeedMillWorkspace onBack={() => setView('home')} />;
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg"><Sparkles className="w-6 h-6 text-primary" /></div>
+            <div>
+              <CardTitle className="text-xl sm:text-2xl">🐟 AquaFeed AI</CardTitle>
+              <CardDescription>Calcul des besoins alimentaires et fabrication de vos propres aliments aquacoles.</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button type="button" onClick={() => setView('calculator')} className="text-left">
+          <Card className="h-full hover:border-primary hover:shadow-md transition-all">
+            <CardHeader>
+              <div className="p-2.5 bg-primary/10 rounded-lg w-fit mb-2"><Calculator className="w-6 h-6 text-primary" /></div>
+              <CardTitle className="text-lg">🧮 Calculateur AquaFeed</CardTitle>
+              <CardDescription>
+                Calculez les besoins alimentaires et planifiez l'alimentation de vos poissons (rations, IC, densité, coûts, prévisions).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-sm text-primary font-medium inline-flex items-center">Ouvrir <ArrowRight className="w-4 h-4 ml-1.5" /></span>
+            </CardContent>
+          </Card>
+        </button>
+
+        <button type="button" onClick={() => setView('feedmill')} className="text-left">
+          <Card className="h-full hover:border-primary hover:shadow-md transition-all">
+            <CardHeader>
+              <div className="p-2.5 bg-primary/10 rounded-lg w-fit mb-2"><FlaskConical className="w-6 h-6 text-primary" /></div>
+              <CardTitle className="text-lg">🧪 Fabrication & Formulation d'aliments</CardTitle>
+              <CardDescription>
+                Créez, optimisez et gérez vos propres formulations : ingrédients, nutrition, coûts, lots de fabrication et transfert au stock.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-sm text-primary font-medium inline-flex items-center">Ouvrir l'atelier <ArrowRight className="w-4 h-4 ml-1.5" /></span>
+            </CardContent>
+          </Card>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default AquaFeedAI;
