@@ -313,71 +313,55 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Bandeau de pilotage */}
-      <div className="relative overflow-hidden rounded-2xl bg-slate-900 dark:bg-slate-950 text-slate-100 px-4 py-4 sm:px-6 sm:py-5 shadow-lg">
-        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sky-500/20 blur-3xl" aria-hidden />
-        <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" aria-hidden />
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="relative overflow-hidden rounded-xl bg-slate-900 dark:bg-slate-950 text-slate-100 px-3 py-2.5 sm:px-5 sm:py-3 shadow-lg">
+        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl" aria-hidden />
+        <div className="relative flex flex-row items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-400/30">
-                <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
-                {isConnected ? 'En direct' : 'Hors ligne'}
-              </span>
-              <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-200">
-                {unitLabel}
-              </span>
-            </div>
-            <h1 className="mt-2 text-xl sm:text-3xl font-bold tracking-tight text-white">Centre de pilotage</h1>
-            <p className="mt-1 text-xs sm:text-sm text-slate-300">
-              Vue consolidée de vos opérations aquacoles · Dernier relevé : {freshnessLabel}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-400/30">
+              <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
+              {isConnected ? 'En direct' : 'Hors ligne'}
+            </span>
+            <h1 className="mt-1 text-base sm:text-2xl font-bold tracking-tight text-white leading-tight">Centre de pilotage</h1>
+            <p className="text-[10px] sm:text-xs text-slate-300 truncate">
+              {unitLabel} · Dernier relevé : {freshnessLabel}
             </p>
           </div>
 
-          <div className="hidden sm:flex flex-wrap items-center gap-2 lg:justify-end">
-            <Select value={selectedFarmFilter} onValueChange={(value) => {
-              setSelectedFarmFilter(value);
-              if (value === 'all') {
-                setActiveUnit(null);
-                return;
-              }
-              const unit = units.find((u) => u.id === value);
-              if (unit) setActiveUnit(unit);
-            }}>
-              <SelectTrigger className="h-9 min-w-[140px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
-                <SelectValue placeholder="Ferme" />
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Sélecteur de période façon segment Jour / Mois / Année */}
+            <div className="flex items-center rounded-lg bg-white/10 p-0.5">
+              {([['7', 'Jour'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSelectedPeriodFilter(value as any)}
+                  className={`px-2 sm:px-3 py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-colors ${
+                    selectedPeriodFilter === value ? 'bg-white text-slate-900' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Petite icône pour choisir l'unité de production */}
+            <Select
+              value={activeUnit?.id || 'all'}
+              onValueChange={(v) => {
+                if (v === 'all') { setActiveUnit(null); setSelectedFarmFilter('all'); return; }
+                const u = units.find((x) => x.id === v);
+                if (u) { setActiveUnit(u); setSelectedFarmFilter(v); }
+              }}
+            >
+              <SelectTrigger
+                aria-label="Choisir l'unité de production"
+                className="h-8 w-8 p-0 justify-center rounded-lg bg-white/10 border-white/15 text-slate-100 [&>svg:last-child]:hidden"
+              >
+                <Building2 className="w-4 h-4" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes fermes</SelectItem>
+              <SelectContent align="end">
+                <SelectItem value="all">Toutes les unités</SelectItem>
                 {units.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={selectedBasinFilter} onValueChange={setSelectedBasinFilter}>
-              <SelectTrigger className="h-9 min-w-[140px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
-                <SelectValue placeholder="Bassin" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous bassins</SelectItem>
-                {basinOptions.map((infra: any) => <SelectItem key={infra.id} value={infra.id}>{infra.infrastructure_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={selectedPeriodFilter} onValueChange={(value: '7' | '14' | '30') => setSelectedPeriodFilter(value)}>
-              <SelectTrigger className="h-9 min-w-[120px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
-                <SelectValue placeholder="Période" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 jours</SelectItem>
-                <SelectItem value="14">14 jours</SelectItem>
-                <SelectItem value="30">30 jours</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={activeUnit?.id || ''} onValueChange={(v) => { const u = units.find((x) => x.id === v); if (u) setActiveUnit(u); }}>
-              <SelectTrigger className="h-9 min-w-[190px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
-                <SelectValue placeholder="Sélectionner une unité" />
-              </SelectTrigger>
-              <SelectContent>
-                {units.map((u) => (
-                  <SelectItem key={u.id} value={u.id} className="text-xs sm:text-sm">{u.name}</SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>
