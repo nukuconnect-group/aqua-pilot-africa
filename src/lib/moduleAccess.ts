@@ -15,7 +15,7 @@ export const APP_MODULE_PERMISSIONS: AppModulePermission[] = [
   { id: 'livestock', label: 'Cheptel / lots', description: 'Lots, biomasse et pêche', tabIds: ['livestock'] },
   { id: 'feeding', label: 'Alimentation', description: 'Nourrissage, fiches, stock et alertes aliment', tabIds: ['feeding'] },
   { id: 'aquafeed', label: 'AquaFeed AI', description: 'Calcul intelligent de la ration alimentaire', tabIds: ['aquafeed'] },
-  { id: 'health', label: 'Santé', description: 'Prophylaxie et interventions sanitaires', tabIds: ['health', 'prophylaxis'] },
+  { id: 'health', label: 'Santé', description: 'Prophylaxie et interventions sanitaires', tabIds: ['health', 'prophylaxis', 'aquahealth'] },
   { id: 'production', label: 'Production', description: 'Cycles, transformation et objectifs', tabIds: ['production', 'transformation'] },
   { id: 'accounting', label: 'Comptabilité', description: 'Transactions et suivi comptable', tabIds: ['accounting'] },
   { id: 'purchases', label: 'Achats', description: 'Achats et dépenses fournisseurs', tabIds: ['purchases'] },

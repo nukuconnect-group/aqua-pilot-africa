@@ -28,7 +28,8 @@ import {
   BarChart3,
   Bell,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Stethoscope,
 } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -73,6 +74,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
         { id: 'feeding', label: t('feeding'), icon: Utensils },
         { id: 'aquafeed', label: 'AquaFeed AI', icon: Sparkles },
         { id: 'health', label: t('health'), icon: Heart },
+        { id: 'aquahealth', label: 'AquaHealth AI', icon: Stethoscope },
         { id: 'production', label: t('production_cycles'), icon: Package },
       ]
     },

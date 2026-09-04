@@ -16,6 +16,7 @@ import InfrastructureManagement from './InfrastructureManagement';
 import LivestockManagement from './LivestockManagement';
 import FeedingManagement from './FeedingManagement';
 import ProphylaxieManagement from './ProphylaxieManagement';
+import AquaHealthAI from './prophylaxie/AquaHealthAI';
 import TransformationManagement from './TransformationManagement';
 import ProductionManagement from './ProductionManagement';
 import AccountingManagement from './AccountingManagement';
@@ -35,11 +36,14 @@ import AnalyticsDashboard from './analytics/AnalyticsDashboard';
 import PerformanceAlertsConfig from './alerts/PerformanceAlertsConfig';
 import PerformanceAlertsPanel from './alerts/PerformanceAlertsPanel';
 import { hasAssignedModule } from '@/lib/moduleAccess';
+import FarmJournalAlert from './reports/FarmJournalAlert';
+import { useDailyFarmJournal } from '@/hooks/useDailyFarmJournal';
 
 const MainLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { isTeamMember, hasAccessToModule, isLoading: accessLoading } = useTeamMemberAccess();
+  useDailyFarmJournal();
 
   const handleTabChange = (tab: string) => {
     if (tab === 'settings') {
@@ -90,6 +94,8 @@ const MainLayout = () => {
         return <FeedingManagement />;
       case 'health':
         return <ProphylaxieManagement />;
+      case 'aquahealth':
+        return <AquaHealthAI />;
       case 'transformation':
         return <TransformationManagement />;
       case 'production':
@@ -162,6 +168,9 @@ const MainLayout = () => {
           {/* Main Content avec padding-top pour compenser le header fixe */}
           <main className="flex-1 overflow-y-auto overscroll-contain p-0 sm:p-4 lg:p-6 pt-[3rem] md:pt-14 lg:pt-16 pb-[calc(env(safe-area-inset-bottom)+9rem)] md:pb-8">
             <div className="w-full max-w-none pb-4 md:pb-0">
+              <div className="px-2 sm:px-0 pt-2 sm:pt-0">
+                <FarmJournalAlert onOpenJournal={() => setActiveTab('reports')} />
+              </div>
               {renderContent()}
             </div>
           </main>
