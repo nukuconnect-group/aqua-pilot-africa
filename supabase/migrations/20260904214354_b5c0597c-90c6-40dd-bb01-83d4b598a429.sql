@@ -1,0 +1,12 @@
+CREATE POLICY "symptoms_read_public" ON public.disease_symptoms FOR SELECT TO anon USING (true);
+CREATE POLICY "diseases_read_public" ON public.aqua_diseases FOR SELECT TO anon USING (true);
+CREATE POLICY "dsm_read_public" ON public.disease_symptom_map FOR SELECT TO anon USING (true);
+CREATE POLICY "treat_read_public" ON public.disease_treatments FOR SELECT TO anon USING (true);
+GRANT SELECT ON public.disease_symptoms TO anon;
+GRANT SELECT ON public.aqua_diseases TO anon;
+GRANT SELECT ON public.disease_symptom_map TO anon;
+GRANT SELECT ON public.disease_treatments TO anon;
+GRANT SELECT ON public.disease_symptoms TO authenticated;
+GRANT SELECT ON public.aqua_diseases TO authenticated;
+GRANT SELECT ON public.disease_symptom_map TO authenticated;
+GRANT SELECT ON public.disease_treatments TO authenticated;
