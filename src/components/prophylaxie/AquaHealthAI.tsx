@@ -22,22 +22,31 @@ const RISK_LABEL: Record<string, string> = { low: 'Faible', medium: 'Modéré', 
 
 const AquaHealthAI: React.FC = () => {
   const { user } = useAuth();
-  const { activeUnit } = useProductionUnits();
+  const { activeUnit, units } = useProductionUnits();
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [otherSymptoms, setOtherSymptoms] = useState('');
   const [results, setResults] = useState<DiagnosisResult[]>([]);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [historyUnit, setHistoryUnit] = useState<string>('all');
 
   useEffect(() => { loadSymptoms().then(setSymptoms); }, []);
   useEffect(() => { loadHistory(); }, [user?.id]);
+
+  const unitName = (id: string | null) =>
+    id ? (units.find(u => u.id === id)?.name ?? 'Unité supprimée') : 'Sans unité';
+
+  const filteredHistory = history.filter(h =>
+    historyUnit === 'all' ? true : (h.unit_id ?? 'none') === historyUnit
+  );
 
   const loadHistory = async () => {
     if (!user?.id) return;
     const { data } = await supabase.from('aqua_diagnoses').select('*').order('created_at', { ascending: false }).limit(20);
     setHistory(data ?? []);
   };
+
 
   const toggle = (id: string) => {
     const next = new Set(selected);
