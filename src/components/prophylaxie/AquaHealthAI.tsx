@@ -65,17 +65,22 @@ const AquaHealthAI: React.FC = () => {
     const res = await runDiagnosis(Array.from(selected));
     setResults(res);
     setRunning(false);
-    if (user?.id && res.length > 0) {
-      await supabase.from('aqua_diagnoses').insert({
-        user_id: user.id,
-        unit_id: activeUnit?.id ?? null,
-        selected_symptoms: Array.from(selected),
-        other_symptoms: otherSymptoms || null,
-        results: res.map(r => ({ disease_id: r.disease.id, name: r.disease.name, score: r.score, risk: r.riskLevel })) as any,
-        top_disease_id: res[0].disease.id,
-        risk_level: res[0].riskLevel,
-      });
-      loadHistory();
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session && user?.id && res.length > 0) {
+        await supabase.from('aqua_diagnoses').insert({
+          user_id: sessionData.session.user.id,
+          unit_id: activeUnit?.id ?? null,
+          selected_symptoms: Array.from(selected),
+          other_symptoms: otherSymptoms || null,
+          results: res.map(r => ({ disease_id: r.disease.id, name: r.disease.name, score: r.score, risk: r.riskLevel })) as any,
+          top_disease_id: res[0].disease.id,
+          risk_level: res[0].riskLevel,
+        });
+        loadHistory();
+      }
+    } catch {
+      /* l'historique est optionnel : le diagnostic reste affiché */
     }
   };
 
