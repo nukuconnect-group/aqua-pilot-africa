@@ -330,7 +330,16 @@ serve(async (req) => {
       ? `\n\nIMPORTANT: Réponds TOUJOURS en ${language}. L'utilisateur parle ${language}, adapte ton langage à cette langue.`
       : '';
 
-    const fullSystemPrompt = systemPrompt + languageInstruction;
+    let farmContext = '';
+    try {
+      farmContext = await buildFarmContext(supabase);
+    } catch (e) {
+      console.warn(`[${requestId}] Contexte ferme indisponible`, e);
+    }
+
+    const fullSystemPrompt =
+      systemPrompt + languageInstruction + (farmContext ? `\n\n${farmContext}` : '');
+
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
