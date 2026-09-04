@@ -24,6 +24,7 @@ import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import ControlFishingForm from './ControlFishingForm';
+import InfrastructureMortalityForm from './health/InfrastructureMortalityForm';
 import ReproductionManagement from './reproduction/ReproductionManagement';
 import { generateControlFishingPdf } from '@/lib/controlFishingPdf';
 import { exportControlFishingToPDF, exportControlFishingToWord, exportControlFishingToExcel, exportControlFishingToCSV, printControlFishing } from '@/lib/controlFishingExport';
@@ -1891,10 +1892,16 @@ const LivestockManagement = () => {
                     </div>
                   )}
               </div>
-              <ControlFishingForm 
-                unitId={selectedUnit === 'all' ? (units[0]?.id || '') : selectedUnit}
-                onRecordCreated={refetchHealthRecords}
-              />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <ControlFishingForm 
+                  unitId={selectedUnit === 'all' ? (units[0]?.id || '') : selectedUnit}
+                  onRecordCreated={refetchHealthRecords}
+                />
+                <InfrastructureMortalityForm
+                  unitId={selectedUnit === 'all' ? (units[0]?.id || '') : selectedUnit}
+                  onRecorded={refetchHealthRecords}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {filteredHealthRecords.length > 0 ? (

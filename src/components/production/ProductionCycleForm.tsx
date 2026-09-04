@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductionCycleFormProps {
   unitId: string;
@@ -24,6 +25,9 @@ interface ProductionCycleFormProps {
 
 const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionCycleFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { toast } = useToast();
   const { createCycle } = useProductionCycles();
   const { createInfrastructures, isInfrastructureInActiveCycle, allCycleInfrastructures } = useCycleInfrastructures(undefined, true);
   const { getUnitInfrastructures } = useProductionUnits();
@@ -123,7 +127,41 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (isSubmitting) return;
+
+    // Validation : aucune valeur numérique ne doit être vide / NaN / négative
+    const toNumber = (value: string) => {
+      const n = Number(String(value ?? '').replace(',', '.'));
+      return Number.isFinite(n) ? n : NaN;
+    };
+    const initialQuantity = toNumber(formData.initialQuantity);
+    const targetQuantity = toNumber(formData.targetQuantity);
+    const durationMonths = toNumber(formData.expectedDuration);
+
+    if (!formData.name.trim()) {
+      setSubmitError('Le nom du cycle est obligatoire.');
+      return;
+    }
+    if (!formData.startDate) {
+      setSubmitError('La date de début est obligatoire.');
+      return;
+    }
+    if (!Number.isFinite(initialQuantity) || initialQuantity <= 0) {
+      setSubmitError('La quantité initiale doit être un nombre supérieur à 0.');
+      return;
+    }
+    if (!Number.isFinite(targetQuantity) || targetQuantity <= 0) {
+      setSubmitError("L'objectif de quantité doit être un nombre supérieur à 0.");
+      return;
+    }
+    if (!Number.isFinite(durationMonths) || durationMonths <= 0) {
+      setSubmitError('La durée prévue est invalide.');
+      return;
+    }
+
+    setSubmitError(null);
+    setIsSubmitting(true);
+
     try {
       // Déterminer l'espèce finale (personnalisée ou prédéfinie)
       const finalSpecies = formData.species === 'custom' 
@@ -138,14 +176,14 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
         status: 'active',
         start_date: formData.startDate,
         end_date: calculatedEndDate,
-        current_quantity: parseInt(formData.initialQuantity),
-        target_quantity: parseInt(formData.targetQuantity),
-        initial_quantity: parseInt(formData.initialQuantity),
-        fingerlings_count: parseInt(formData.initialQuantity),
+        current_quantity: Math.round(initialQuantity),
+        target_quantity: Math.round(targetQuantity),
+        initial_quantity: Math.round(initialQuantity),
+        fingerlings_count: Math.round(initialQuantity),
         stocking_date: formData.startDate,
         notes: formData.notes,
         species: finalSpecies,
-        duration_months: parseInt(formData.expectedDuration),
+        duration_months: Math.round(durationMonths),
       };
 
       const savedCycle = await createCycle(cycleData);
@@ -202,8 +240,17 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
         infrastructures: [],
         infrastructureBatches: {}
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating cycle:', error);
+      const message = error?.message || error?.details || 'Erreur inconnue lors de la création du cycle.';
+      setSubmitError(message);
+      toast({
+        title: 'Cycle non finalisé',
+        description: message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -595,15 +642,23 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
             />
           </div>
 
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="w-4 h-4" />
+              <AlertDescription className="text-xs">{submitError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
               <Save className="w-4 h-4 mr-2" />
-              Créer le cycle
+              {isSubmitting ? 'Création en cours…' : 'Créer le cycle'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
               Annuler
             </Button>
           </div>
+
         </form>
       </DialogContent>
     </Dialog>
