@@ -124,20 +124,21 @@ html, body {
 
     --radius: 0.5rem;
 
+    /* Barre latérale aux couleurs du logo AquaPilote (marine + turquoise) */
     --sidebar-background: 219 94% 20%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 219 94% 50%;
+    --sidebar-primary: 187 85% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 219 80% 30%;
+    --sidebar-accent: 214 80% 32%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 219 70% 28%;
-    --sidebar-ring: 219 94% 50%;
+    --sidebar-border: 216 70% 30%;
+    --sidebar-ring: 187 85% 43%;
 
-    /* Aquaculture specific colors */
-    --aqua-primary: 180 83% 52%;
-    --aqua-secondary: 180 65% 85%;
-    --ocean-primary: 210 80% 45%;
-    --ocean-secondary: 210 60% 75%;
+    /* Couleurs du logo AquaPilote : bleu marine profond + turquoise */
+    --aqua-primary: 187 85% 43%;
+    --aqua-secondary: 187 60% 75%;
+    --ocean-primary: 219 80% 32%;
+    --ocean-secondary: 210 60% 55%;
   }
 
   .dark {
@@ -357,11 +358,16 @@ html, body {
   }
   
   .bg-gradient-aqua {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--aqua-secondary)) 50%, hsl(var(--primary)) 100%);
+    background: linear-gradient(135deg, hsl(var(--ocean-primary)) 0%, hsl(var(--aqua-primary)) 100%);
   }
-  
+
   .bg-gradient-ocean {
     background: linear-gradient(135deg, hsl(var(--ocean-primary)) 0%, hsl(var(--primary)) 50%, hsl(var(--ocean-secondary)) 100%);
+  }
+
+  /* Dégradé officiel du logo : marine profond -> turquoise (texte blanc lisible) */
+  .bg-gradient-brand {
+    background: linear-gradient(115deg, hsl(219 94% 20%) 0%, hsl(214 80% 32%) 45%, hsl(187 85% 38%) 100%);
   }
 
   /* Utilitaires responsifs professionnels - Tailles optimisées mobile */
