@@ -108,7 +108,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   const periodParam = searchParams.get('period');
   const selectedPeriodFilter: '7' | '14' | '30' | '365' =
     periodParam === '14' || periodParam === '30' || periodParam === '365' ? periodParam : '7';
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
 
   const updateFilterParam = (key: 'farm' | 'basin' | 'period', value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -121,7 +121,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   };
   const setSelectedFarmFilter = (v: string) => updateFilterParam('farm', v);
   const setSelectedBasinFilter = (v: string) => updateFilterParam('basin', v);
-  const setSelectedPeriodFilter = (v: '7' | '14' | '30') => updateFilterParam('period', v);
+  const setSelectedPeriodFilter = (v: '7' | '14' | '30' | '365') => updateFilterParam('period', v);
 
   // Restaure l'unité active depuis l'URL (persiste les filtres entre modules)
   useEffect(() => {
