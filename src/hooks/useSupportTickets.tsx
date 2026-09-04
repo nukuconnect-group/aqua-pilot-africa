@@ -239,7 +239,7 @@ export const useSupportTickets = () => {
     if (!user?.id || !currentTicketIdForRealtime) return;
 
     const messagesChannel = supabase
-      .channel(`support_messages_${currentTicketIdForRealtime}`)
+      .channel(`support_messages_${currentTicketIdForRealtime}_${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { 
