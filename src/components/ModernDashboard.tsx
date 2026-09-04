@@ -313,30 +313,31 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Bandeau de pilotage */}
-      <div className="relative overflow-hidden rounded-xl bg-slate-900 dark:bg-slate-950 text-slate-100 px-3 py-2.5 sm:px-5 sm:py-3 shadow-lg">
-        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl" aria-hidden />
+      <div className="relative overflow-hidden rounded-none bg-[linear-gradient(120deg,hsl(var(--ocean-primary))_0%,hsl(var(--primary))_55%,hsl(var(--aqua-secondary))_100%)] text-white px-3 py-2.5 sm:px-5 sm:py-3 shadow-lg">
+        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/20 blur-3xl" aria-hidden />
+
         <div className="relative flex flex-row items-center justify-between gap-3">
           <div className="min-w-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-400/30">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white ring-1 ring-white/30">
               <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
               {isConnected ? 'En direct' : 'Hors ligne'}
             </span>
             <h1 className="mt-1 text-base sm:text-2xl font-bold tracking-tight text-white leading-tight">Centre de pilotage</h1>
-            <p className="text-[10px] sm:text-xs text-slate-300 truncate">
+            <p className="text-[10px] sm:text-xs text-white/80 truncate">
               {unitLabel} · Dernier relevé : {freshnessLabel}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             {/* Sélecteur de période façon segment Jour / Mois / Année */}
-            <div className="flex items-center rounded-lg bg-white/10 p-0.5">
+            <div className="flex items-center rounded-none bg-white/15 p-0.5">
               {([['7', 'Jour'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setSelectedPeriodFilter(value as any)}
-                  className={`px-2 sm:px-3 py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-colors ${
-                    selectedPeriodFilter === value ? 'bg-white text-slate-900' : 'text-slate-300 hover:text-white'
+                  className={`px-2 sm:px-3 py-1 rounded-none text-[10px] sm:text-xs font-semibold transition-colors ${
+                    selectedPeriodFilter === value ? 'bg-white text-slate-900' : 'text-white/80 hover:text-white'
                   }`}
                 >
                   {label}
@@ -355,7 +356,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
             >
               <SelectTrigger
                 aria-label="Choisir l'unité de production"
-                className="h-8 w-8 p-0 justify-center rounded-lg bg-white/10 border-white/15 text-slate-100 [&>svg:last-child]:hidden"
+                className="h-8 w-8 p-0 justify-center rounded-none bg-white/15 border-white/25 text-white [&>svg:last-child]:hidden"
               >
                 <Building2 className="w-4 h-4" />
               </SelectTrigger>

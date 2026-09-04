@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useLogs } from '@/contexts/LogsContext';
-import CameraAnalysis from './prophylaxie/CameraAnalysis';
 import IoTModeAnalysis from './prophylaxie/IoTModeAnalysis';
 import ReportGenerator from './prophylaxie/ReportGenerator';
 import DiseaseManager from './prophylaxie/DiseaseManager';
@@ -222,7 +221,6 @@ const ProphylaxieManagement = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <CameraAnalysis />
             <Button 
               variant="outline" 
               className="bg-white/20 border-white/30 text-white hover:bg-white/30 text-xs sm:text-sm"
