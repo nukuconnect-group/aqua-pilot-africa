@@ -642,15 +642,23 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
             />
           </div>
 
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="w-4 h-4" />
+              <AlertDescription className="text-xs">{submitError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
               <Save className="w-4 h-4 mr-2" />
-              Créer le cycle
+              {isSubmitting ? 'Création en cours…' : 'Créer le cycle'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
               Annuler
             </Button>
           </div>
+
         </form>
       </DialogContent>
     </Dialog>
