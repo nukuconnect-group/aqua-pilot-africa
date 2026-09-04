@@ -15,8 +15,10 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { loadSpecies, loadRulesForSpecies, computeFeeding, computeAdvancedFeeding, FishSpecies, FeedingRule, FeedingResult, AdvancedFeedingResult, DENSITY_LIMITS } from '@/lib/feedingEngine';
 import ExportDropdown from '@/components/ExportDropdown';
 import AdvancedAquaFeedCalculator from './AdvancedAquaFeedCalculator';
+import FeedMillWorkspace from './feedmill/FeedMillWorkspace';
+import { FlaskConical, ArrowRight } from 'lucide-react';
 
-const AquaFeedAI: React.FC = () => {
+const FeedCalculatorSuite: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useAuth();
   const { activeUnit, infrastructures, formatCurrency } = useProductionUnits();
   const [species, setSpecies] = useState<FishSpecies[]>([]);
