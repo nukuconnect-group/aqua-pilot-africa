@@ -104,20 +104,25 @@ export const useProductionCycles = (unitId?: string) => {
         description: 'Cycle de production créé avec succès',
       });
 
-      // Create notification for cycle creation
-      await notificationHelpers.cycleCreated(user.id, cycle.name, cycle.unit_name);
+      // Les notifications ne doivent JAMAIS faire échouer la création du cycle
+      try {
+        await notificationHelpers.cycleCreated(user.id, cycle.name, cycle.unit_name);
+      } catch (notifyError) {
+        console.warn('Notification cycle non envoyée (non bloquant):', notifyError);
+      }
 
       await fetchCycles();
       return data as unknown as ProductionCycle;
     } catch (error: any) {
       console.error('Error creating cycle:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de créer le cycle de production',
+        title: 'Impossible de créer le cycle',
+        description: error?.message || error?.details || 'Erreur inconnue côté base de données',
         variant: 'destructive',
       });
       throw error;
     }
+
   };
 
   const updateCycle = async (id: string, updates: Partial<ProductionCycle>) => {
