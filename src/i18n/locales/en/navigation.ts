@@ -20,7 +20,7 @@ export const navigation = {
   planning: 'Planning',
   weather: 'Weather',
   team: 'Team',
-  reports: 'Reports',
+  reports: 'Farm Journal',
   library: 'Premium Library',
   settings: 'Settings',
   admin: 'Administration',

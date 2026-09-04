@@ -18,7 +18,7 @@ export const navigation = {
   planning: 'Lɩmaɣzɛ',
   weather: 'Wɩsɩ',
   team: 'Ɛgbɛyɛ',
-  reports: 'Takayɩsɩ',
+  reports: 'Ɖɩɣa Takayaɣ',
   settings: 'Ɖʊtʊ',
   admin: 'Ñʊʊdʊ',
   analytics: 'Tazɩyɛ',
