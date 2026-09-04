@@ -361,7 +361,7 @@ const Dashboard: React.FC = () => {
                       ModuleErrorBoundary isole les crashs d'un module : les autres
                       restent accessibles depuis le menu. */}
                   <ModuleErrorBoundary
-                    resetKey={`${activeTab}-${moduleResetKey}`}
+                    resetKey={`realtime-recovery-v2-${activeTab}-${moduleResetKey}`}
                     moduleLabel={activeTab}
                     onRecover={() => {
                       cleanupBlockingOverlays(`manual-recover:${activeTab}`);
@@ -369,7 +369,7 @@ const Dashboard: React.FC = () => {
                       setModuleResetKey((key) => key + 1);
                     }}
                   >
-                    <div key={`${activeTab}-${moduleResetKey}`} className="w-full" data-module-content={activeTab}>
+                    <div key={`realtime-recovery-v2-${activeTab}-${moduleResetKey}`} className="w-full" data-module-content={activeTab}>
                       {renderContent()}
                     </div>
                   </ModuleErrorBoundary>
