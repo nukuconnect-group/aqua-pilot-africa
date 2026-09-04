@@ -95,7 +95,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
   }, []);
 
   return <>
-    <header className="bg-sidebar md:bg-emerald-800 h-12 lg:h-14 w-full max-w-none shadow-md m-0 p-0 border-0">
+    <header className="bg-gradient-brand h-12 lg:h-14 w-full max-w-none shadow-md m-0 p-0 border-0">
       <div className="flex justify-between items-center h-full w-full pl-0 pr-0 sm:px-4 lg:px-6 m-0">
         {/* Logo et titre à gauche */}
         <div className="flex items-center space-x-1 sm:space-x-3 min-w-0 pl-0">
@@ -259,7 +259,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
         </div>
       </div>
       {mobileSearchOpen && (
-        <div className="sm:hidden px-2 pb-2 -mt-1 bg-sidebar md:bg-emerald-800">
+        <div className="sm:hidden px-2 pb-2 -mt-1 bg-gradient-brand">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/70" />
             <Input
