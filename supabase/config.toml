@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.client-error-log]
 verify_jwt = false
+
+[functions.aqua-health-vision]
+verify_jwt = true
