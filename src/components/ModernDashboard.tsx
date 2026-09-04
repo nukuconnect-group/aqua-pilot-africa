@@ -312,61 +312,78 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Centre de pilotage</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Vue consolidée de vos opérations aquacoles</p>
-        </div>
-        <div className="hidden sm:flex flex-col gap-2 sm:flex-row sm:items-center sm:min-w-[320px]">
-          <Select value={selectedFarmFilter} onValueChange={(value) => {
-            setSelectedFarmFilter(value);
-            if (value === 'all') {
-              setActiveUnit(null);
-              return;
-            }
-            const unit = units.find((u) => u.id === value);
-            if (unit) setActiveUnit(unit);
-          }}>
-            <SelectTrigger className="h-9 min-w-[140px] text-xs sm:text-sm">
-              <SelectValue placeholder="Ferme" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes fermes</SelectItem>
-              {units.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={selectedBasinFilter} onValueChange={setSelectedBasinFilter}>
-            <SelectTrigger className="h-9 min-w-[140px] text-xs sm:text-sm">
-              <SelectValue placeholder="Bassin" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous bassins</SelectItem>
-              {basinOptions.map((infra: any) => <SelectItem key={infra.id} value={infra.id}>{infra.infrastructure_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={selectedPeriodFilter} onValueChange={(value: '7' | '14' | '30') => setSelectedPeriodFilter(value)}>
-            <SelectTrigger className="h-9 min-w-[120px] text-xs sm:text-sm">
-              <SelectValue placeholder="Période" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">7 jours</SelectItem>
-              <SelectItem value="14">14 jours</SelectItem>
-              <SelectItem value="30">30 jours</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={activeUnit?.id || ''} onValueChange={(v) => { const u = units.find((x) => x.id === v); if (u) setActiveUnit(u); }}>
-            <SelectTrigger className="h-9 min-w-[210px] text-xs sm:text-sm">
-              <SelectValue placeholder="Sélectionner une unité" />
-            </SelectTrigger>
-            <SelectContent>
-              {units.map((u) => (
-                <SelectItem key={u.id} value={u.id} className="text-xs sm:text-sm">{u.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Bandeau de pilotage */}
+      <div className="relative overflow-hidden rounded-2xl bg-slate-900 dark:bg-slate-950 text-slate-100 px-4 py-4 sm:px-6 sm:py-5 shadow-lg">
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sky-500/20 blur-3xl" aria-hidden />
+        <div className="absolute -left-10 bottom--10 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-400/30">
+                <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
+                {isConnected ? 'En direct' : 'Hors ligne'}
+              </span>
+              <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-200">
+                {unitLabel}
+              </span>
+            </div>
+            <h1 className="mt-2 text-xl sm:text-3xl font-bold tracking-tight text-white">Centre de pilotage</h1>
+            <p className="mt-1 text-xs sm:text-sm text-slate-300">
+              Vue consolidée de vos opérations aquacoles · Dernier relevé : {freshnessLabel}
+            </p>
+          </div>
+
+          <div className="hidden sm:flex flex-wrap items-center gap-2 lg:justify-end">
+            <Select value={selectedFarmFilter} onValueChange={(value) => {
+              setSelectedFarmFilter(value);
+              if (value === 'all') {
+                setActiveUnit(null);
+                return;
+              }
+              const unit = units.find((u) => u.id === value);
+              if (unit) setActiveUnit(unit);
+            }}>
+              <SelectTrigger className="h-9 min-w-[140px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
+                <SelectValue placeholder="Ferme" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes fermes</SelectItem>
+                {units.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={selectedBasinFilter} onValueChange={setSelectedBasinFilter}>
+              <SelectTrigger className="h-9 min-w-[140px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
+                <SelectValue placeholder="Bassin" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous bassins</SelectItem>
+                {basinOptions.map((infra: any) => <SelectItem key={infra.id} value={infra.id}>{infra.infrastructure_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={selectedPeriodFilter} onValueChange={(value: '7' | '14' | '30') => setSelectedPeriodFilter(value)}>
+              <SelectTrigger className="h-9 min-w-[120px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
+                <SelectValue placeholder="Période" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 jours</SelectItem>
+                <SelectItem value="14">14 jours</SelectItem>
+                <SelectItem value="30">30 jours</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={activeUnit?.id || ''} onValueChange={(v) => { const u = units.find((x) => x.id === v); if (u) setActiveUnit(u); }}>
+              <SelectTrigger className="h-9 min-w-[190px] text-xs sm:text-sm bg-white/10 border-white/15 text-slate-100">
+                <SelectValue placeholder="Sélectionner une unité" />
+              </SelectTrigger>
+              <SelectContent>
+                {units.map((u) => (
+                  <SelectItem key={u.id} value={u.id} className="text-xs sm:text-sm">{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
+
 
       {/* KPIs — 4 cartes principales */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
