@@ -110,7 +110,79 @@ EXEMPLES DE COMPRÉHENSION :
 
 OBJECTIF FINAL :
 Aider le pisciculteur à gérer son élevage sans lire ni écrire, juste en parlant,
-en donnant des réponses vocales simples, adaptées, et utiles.`;
+en donnant des réponses vocales simples, adaptées, et utiles.
+
+DONNÉES DE LA FERME :
+- Tu reçois un bloc "DONNÉES RÉELLES DE LA FERME" avec les chiffres exacts de l'exploitation.
+- Utilise TOUJOURS ces chiffres pour répondre (effectifs, mortalités, aliment, ventes, stocks).
+- Ne jamais inventer un chiffre. Si l'information n'est pas dans le bloc, dis simplement :
+  "Je n'ai pas encore cette information enregistrée."
+- Cite le nom de l'unité ou du bassin concerné quand c'est utile.`;
+
+const num = (v: unknown) => Number(v) || 0;
+const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Construit un résumé factuel des données réelles de l'utilisateur (RLS appliquée). */
+const buildFarmContext = async (supabase: any): Promise<string> => {
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const from = isoDay(since);
+  const today = isoDay(new Date());
+
+  const [units, infra, batches, cycles, stocks, health, feeding, sales] = await Promise.all([
+    supabase.from('production_units').select('id,name,type,capacity,current_stock,is_active'),
+    supabase.from('unit_infrastructures').select('id,name,type,status,capacity,unit_id'),
+    supabase.from('livestock_batches').select('species,quantity,average_weight,total_weight,status,unit_name'),
+    supabase.from('production_cycles').select('name,species,status,current_quantity,unit_name,start_date'),
+    supabase.from('feed_stocks').select('feed_type,quantity,unit,min_threshold'),
+    supabase.from('health_records').select('date,mortality,temperature,ph,oxygen,average_weight').gte('date', from).order('date', { ascending: false }).limit(200),
+    supabase.from('feeding_records').select('date,quantity,feed_type,mortality').gte('date', from).order('date', { ascending: false }).limit(200),
+    supabase.from('sales').select('date,total_amount,client_name,status').gte('date', from).order('date', { ascending: false }).limit(100),
+  ]);
+
+  const U = units.data ?? [];
+  const I = infra.data ?? [];
+  const B = batches.data ?? [];
+  const C = (cycles.data ?? []).filter((c: any) => c.status === 'active');
+  const S = stocks.data ?? [];
+  const H = health.data ?? [];
+  const F = feeding.data ?? [];
+  const V = sales.data ?? [];
+
+  if (!U.length && !B.length && !C.length) {
+    return "DONNÉES RÉELLES DE LA FERME :\nAucune donnée enregistrée pour l'instant. Invite l'utilisateur à créer une unité de production et un lot avant de demander des chiffres.";
+  }
+
+  const totalFish = B.reduce((s: number, b: any) => s + num(b.quantity), 0);
+  const biomass = B.reduce((s: number, b: any) => s + num(b.total_weight), 0);
+  const mortality30 =
+    H.reduce((s: number, h: any) => s + num(h.mortality), 0) +
+    F.reduce((s: number, f: any) => s + num(f.mortality), 0);
+  const feed30 = F.reduce((s: number, f: any) => s + num(f.quantity), 0);
+  const revenue30 = V.reduce((s: number, v: any) => s + num(v.total_amount), 0);
+  const last = H[0];
+  const lowStock = S.filter((s: any) => num(s.quantity) <= num(s.min_threshold));
+
+  const lines = [
+    `DONNÉES RÉELLES DE LA FERME (au ${today}, 30 derniers jours) :`,
+    `- Unités de production (${U.length}) : ${U.map((u: any) => `${u.name} [${u.type ?? '-'}, stock ${num(u.current_stock)}]`).join(' ; ') || 'aucune'}`,
+    `- Infrastructures (${I.length}) : ${I.slice(0, 25).map((i: any) => `${i.name} (${i.type ?? '-'}, ${i.status ?? '-'})`).join(' ; ') || 'aucune'}`,
+    `- Lots vivants : ${B.length} lot(s), ${totalFish} poissons, biomasse ${biomass.toFixed(1)} kg`,
+    ...B.slice(0, 15).map((b: any) => `   • ${b.species} — ${num(b.quantity)} sujets, poids moyen ${num(b.average_weight)} g, unité ${b.unit_name ?? '-'}, statut ${b.status ?? '-'}`),
+    `- Cycles actifs (${C.length}) : ${C.map((c: any) => `${c.name} [${c.species ?? '-'}, ${num(c.current_quantity)} sujets, ${c.unit_name ?? '-'}]`).join(' ; ') || 'aucun'}`,
+    `- Mortalités déclarées sur 30 jours : ${mortality30}`,
+    `- Aliment distribué sur 30 jours : ${feed30.toFixed(2)} kg`,
+    `- Ventes sur 30 jours : ${V.length} opération(s), total ${revenue30.toLocaleString('fr-FR')}`,
+    `- Stocks d'aliment : ${S.map((s: any) => `${s.feed_type} ${num(s.quantity)} ${s.unit ?? 'kg'}`).join(' ; ') || 'aucun'}`,
+    lowStock.length ? `- ALERTE stock bas : ${lowStock.map((s: any) => s.feed_type).join(', ')}` : '',
+    last
+      ? `- Dernier relevé d'eau (${last.date}) : température ${last.temperature ?? '-'} °C, pH ${last.ph ?? '-'}, oxygène ${last.oxygen ?? '-'} mg/L`
+      : "- Aucun relevé d'eau enregistré sur 30 jours",
+  ];
+
+  return lines.filter(Boolean).join('\n');
+};
+
 
 serve(async (req) => {
   const origin = req.headers.get('origin');
