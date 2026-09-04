@@ -22,22 +22,31 @@ const RISK_LABEL: Record<string, string> = { low: 'Faible', medium: 'Modéré', 
 
 const AquaHealthAI: React.FC = () => {
   const { user } = useAuth();
-  const { activeUnit } = useProductionUnits();
+  const { activeUnit, units } = useProductionUnits();
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [otherSymptoms, setOtherSymptoms] = useState('');
   const [results, setResults] = useState<DiagnosisResult[]>([]);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [historyUnit, setHistoryUnit] = useState<string>('all');
 
   useEffect(() => { loadSymptoms().then(setSymptoms); }, []);
   useEffect(() => { loadHistory(); }, [user?.id]);
+
+  const unitName = (id: string | null) =>
+    id ? (units.find(u => u.id === id)?.name ?? 'Unité supprimée') : 'Sans unité';
+
+  const filteredHistory = history.filter(h =>
+    historyUnit === 'all' ? true : (h.unit_id ?? 'none') === historyUnit
+  );
 
   const loadHistory = async () => {
     if (!user?.id) return;
     const { data } = await supabase.from('aqua_diagnoses').select('*').order('created_at', { ascending: false }).limit(20);
     setHistory(data ?? []);
   };
+
 
   const toggle = (id: string) => {
     const next = new Set(selected);
@@ -156,15 +165,35 @@ const AquaHealthAI: React.FC = () => {
 
       {history.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><History className="w-4 h-4" />Historique des diagnostics</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-base flex items-center gap-2"><History className="w-4 h-4" />Historique des diagnostics</CardTitle>
+              <div className="flex flex-wrap gap-1">
+                <Button size="sm" variant={historyUnit === 'all' ? 'default' : 'outline'} onClick={() => setHistoryUnit('all')}>
+                  Toutes les unités
+                </Button>
+                {units.map(u => (
+                  <Button key={u.id} size="sm" variant={historyUnit === u.id ? 'default' : 'outline'} onClick={() => setHistoryUnit(u.id)}>
+                    {u.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {history.map(h => (
+              {filteredHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aucun diagnostic pour cette unité.</p>
+              ) : filteredHistory.map(h => (
                 <div key={h.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString()}</span>
+                    <Badge variant="secondary">{unitName(h.unit_id)}</Badge>
                     <Badge variant="outline">{(h.selected_symptoms ?? []).length} symptômes</Badge>
                     {h.risk_level && <Badge className={RISK_COLOR[h.risk_level]}>{RISK_LABEL[h.risk_level]}</Badge>}
+                    {Array.isArray(h.results) && h.results[0]?.name && (
+                      <span className="text-xs font-medium">{h.results[0].name}</span>
+                    )}
                   </div>
                 </div>
               ))}
