@@ -216,7 +216,7 @@ export const useSuppliers = () => {
 
       const { error } = await supabase
         .from('suppliers')
-        .update(dbUpdates)
+        .update(dbUpdates as never)
         .eq('id', id);
 
       if (error) throw error;

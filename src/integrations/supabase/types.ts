@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -880,6 +880,218 @@ export type Database = {
             columns: ["species_id"]
             isOneToOne: false
             referencedRelation: "fish_species"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_formulations: {
+        Row: {
+          batch_size_kg: number
+          cost_per_kg: number
+          created_at: string
+          id: string
+          lines: Json
+          mode: string
+          name: string
+          notes: string | null
+          nutrition: Json
+          species: string
+          stage: string
+          status: string
+          targets: Json
+          total_cost: number
+          unit_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_size_kg?: number
+          cost_per_kg?: number
+          created_at?: string
+          id?: string
+          lines?: Json
+          mode?: string
+          name: string
+          notes?: string | null
+          nutrition?: Json
+          species: string
+          stage: string
+          status?: string
+          targets?: Json
+          total_cost?: number
+          unit_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_size_kg?: number
+          cost_per_kg?: number
+          created_at?: string
+          id?: string
+          lines?: Json
+          mode?: string
+          name?: string
+          notes?: string | null
+          nutrition?: Json
+          species?: string
+          stage?: string
+          status?: string
+          targets?: Json
+          total_cost?: number
+          unit_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feed_ingredients: {
+        Row: {
+          ash_pct: number
+          calcium_pct: number
+          category: string
+          created_at: string
+          energy_kcal_kg: number
+          fiber_pct: number
+          id: string
+          is_active: boolean
+          lipid_pct: number
+          max_inclusion_pct: number
+          min_inclusion_pct: number
+          moisture_pct: number
+          name: string
+          notes: string | null
+          phosphorus_pct: number
+          price_per_kg: number
+          protein_pct: number
+          stock_kg: number
+          supplier: string | null
+          unit_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ash_pct?: number
+          calcium_pct?: number
+          category?: string
+          created_at?: string
+          energy_kcal_kg?: number
+          fiber_pct?: number
+          id?: string
+          is_active?: boolean
+          lipid_pct?: number
+          max_inclusion_pct?: number
+          min_inclusion_pct?: number
+          moisture_pct?: number
+          name: string
+          notes?: string | null
+          phosphorus_pct?: number
+          price_per_kg?: number
+          protein_pct?: number
+          stock_kg?: number
+          supplier?: string | null
+          unit_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ash_pct?: number
+          calcium_pct?: number
+          category?: string
+          created_at?: string
+          energy_kcal_kg?: number
+          fiber_pct?: number
+          id?: string
+          is_active?: boolean
+          lipid_pct?: number
+          max_inclusion_pct?: number
+          min_inclusion_pct?: number
+          moisture_pct?: number
+          name?: string
+          notes?: string | null
+          phosphorus_pct?: number
+          price_per_kg?: number
+          protein_pct?: number
+          stock_kg?: number
+          supplier?: string | null
+          unit_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feed_manufacturing_batches: {
+        Row: {
+          batch_number: string
+          cost_per_kg: number
+          created_at: string
+          formulation_id: string | null
+          formulation_name: string
+          id: string
+          lines: Json
+          manufactured_at: string
+          notes: string | null
+          nutrition: Json
+          quantity_kg: number
+          raw_deducted: boolean
+          responsible: string | null
+          species: string | null
+          stage: string | null
+          status: string
+          stock_transferred: boolean
+          total_cost: number
+          unit_id: string | null
+          user_id: string
+        }
+        Insert: {
+          batch_number: string
+          cost_per_kg?: number
+          created_at?: string
+          formulation_id?: string | null
+          formulation_name: string
+          id?: string
+          lines?: Json
+          manufactured_at?: string
+          notes?: string | null
+          nutrition?: Json
+          quantity_kg?: number
+          raw_deducted?: boolean
+          responsible?: string | null
+          species?: string | null
+          stage?: string | null
+          status?: string
+          stock_transferred?: boolean
+          total_cost?: number
+          unit_id?: string | null
+          user_id: string
+        }
+        Update: {
+          batch_number?: string
+          cost_per_kg?: number
+          created_at?: string
+          formulation_id?: string | null
+          formulation_name?: string
+          id?: string
+          lines?: Json
+          manufactured_at?: string
+          notes?: string | null
+          nutrition?: Json
+          quantity_kg?: number
+          raw_deducted?: boolean
+          responsible?: string | null
+          species?: string | null
+          stage?: string | null
+          status?: string
+          stock_transferred?: boolean
+          total_cost?: number
+          unit_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_manufacturing_batches_formulation_id_fkey"
+            columns: ["formulation_id"]
+            isOneToOne: false
+            referencedRelation: "feed_formulations"
             referencedColumns: ["id"]
           },
         ]
@@ -3096,12 +3308,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3125,11 +3337,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3150,11 +3362,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3175,11 +3387,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3192,11 +3404,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
