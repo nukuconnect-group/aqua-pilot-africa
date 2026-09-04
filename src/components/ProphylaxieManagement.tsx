@@ -31,7 +31,6 @@ import CameraAnalysis from './prophylaxie/CameraAnalysis';
 import IoTModeAnalysis from './prophylaxie/IoTModeAnalysis';
 import ReportGenerator from './prophylaxie/ReportGenerator';
 import DiseaseManager from './prophylaxie/DiseaseManager';
-import AquaHealthAI from './prophylaxie/AquaHealthAI';
 import CheptelSante from './prophylaxie/CheptelSante';
 
 interface Treatment {
@@ -599,12 +598,6 @@ const ProphylaxieManagement = () => {
           <DiseaseManager />
         </TabsContent>
       </Tabs>
-
-      {/* Sous-module détaché : AquaHealth AI */}
-      <div className="pt-2">
-        <div className="border-t border-border mb-4" />
-        <AquaHealthAI />
-      </div>
 
       {/* Génération de rapports */}
       <ReportGenerator />

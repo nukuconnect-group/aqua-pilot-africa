@@ -8,65 +8,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BookOpen, CalendarDays, Download, RefreshCw, Building2, CheckCircle2 } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/clientConfig';
 import { exportToPDF, exportToExcel, type ReportData } from '@/lib/reportExportUtils';
+import {
+  AUTO_ENABLED_KEY,
+  JOURNAL_EVENT,
+  PERIOD_LABELS,
+  buildJournal,
+  computeRange,
+  frDate as fr,
+  isoDate as iso,
+  notifyJournalReady,
+  readHistory,
+  writeHistory,
+  markJournalsRead,
+  type JournalEntry,
+  type JournalPeriodType as PeriodType,
+} from '@/lib/farmJournal';
 import { toast } from 'sonner';
-
-type PeriodType = 'day' | 'week' | 'month' | 'quarter' | 'custom';
-
-const PERIOD_LABELS: Record<PeriodType, string> = {
-  day: 'Journalier',
-  week: 'Hebdomadaire',
-  month: 'Mensuel',
-  quarter: 'Trimestriel',
-  custom: 'Personnalisé',
-};
-
-const iso = (d: Date) => d.toISOString().slice(0, 10);
-const fr = (d: string) => new Date(d).toLocaleDateString('fr-FR');
-
-const computeRange = (type: PeriodType, ref: string, customStart: string, customEnd: string) => {
-  const base = new Date(`${ref}T00:00:00`);
-  switch (type) {
-    case 'day':
-      return { start: iso(base), end: iso(base) };
-    case 'week': {
-      const day = (base.getDay() + 6) % 7; // lundi = 0
-      const start = new Date(base); start.setDate(base.getDate() - day);
-      const end = new Date(start); end.setDate(start.getDate() + 6);
-      return { start: iso(start), end: iso(end) };
-    }
-    case 'month': {
-      const start = new Date(base.getFullYear(), base.getMonth(), 1);
-      const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
-      return { start: iso(start), end: iso(end) };
-    }
-    case 'quarter': {
-      const q = Math.floor(base.getMonth() / 3);
-      const start = new Date(base.getFullYear(), q * 3, 1);
-      const end = new Date(base.getFullYear(), q * 3 + 3, 0);
-      return { start: iso(start), end: iso(end) };
-    }
-    case 'custom':
-    default:
-      return { start: customStart, end: customEnd };
-  }
-};
-
-interface JournalEntry {
-  id: string;
-  unitId: string;
-  unitName: string;
-  periodType: PeriodType;
-  start: string;
-  end: string;
-  generatedAt: string;
-  auto: boolean;
-  data: ReportData;
-}
-
-const STORAGE_KEY = 'aquapilote.farm-journal.history';
-const AUTO_KEY = 'aquapilote.farm-journal.autoDone';
 
 const FarmJournal: React.FC = () => {
   const { units } = useProductionUnits();
@@ -79,10 +37,8 @@ const FarmJournal: React.FC = () => {
   const [customEnd, setCustomEnd] = useState(today);
   const [unitId, setUnitId] = useState<string>('all');
   const [loading, setLoading] = useState(false);
-  const [autoEnabled, setAutoEnabled] = useState(() => localStorage.getItem('aquapilote.farm-journal.auto') !== 'off');
-  const [history, setHistory] = useState<JournalEntry[]>(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-  });
+  const [autoEnabled, setAutoEnabled] = useState(() => localStorage.getItem(AUTO_ENABLED_KEY) !== 'off');
+  const [history, setHistory] = useState<JournalEntry[]>(() => readHistory());
   const [current, setCurrent] = useState<JournalEntry | null>(null);
 
   const range = useMemo(
@@ -92,124 +48,17 @@ const FarmJournal: React.FC = () => {
 
   const persist = (entries: JournalEntry[]) => {
     setHistory(entries);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, 40))); } catch { /* quota */ }
+    writeHistory(entries);
   };
 
-  const buildJournal = useCallback(async (
-    targetUnitId: string,
-    targetUnitName: string,
-    start: string,
-    end: string,
-    type: PeriodType
-  ): Promise<ReportData> => {
-    const scoped = <T extends { eq: (c: string, v: string) => T }>(q: T) =>
-      targetUnitId === 'all' ? q : q.eq('unit_id', targetUnitId);
-
-    const [feedingRes, healthRes, salesRes, cyclesRes, batchesRes] = await Promise.all([
-      scoped(supabase.from('feeding_records').select('*').gte('date', start).lte('date', end) as any),
-      scoped(supabase.from('health_records').select('*').gte('date', start).lte('date', end) as any),
-      scoped(supabase.from('sales').select('*').gte('date', start).lte('date', end) as any),
-      scoped(supabase.from('production_cycles').select('*') as any),
-      supabase.from('livestock_batches').select('*'),
-    ]);
-
-    const feeding = (feedingRes as any).data ?? [];
-    const health = (healthRes as any).data ?? [];
-    const sales = (salesRes as any).data ?? [];
-    const cycles = ((cyclesRes as any).data ?? []).filter((c: any) => c.status === 'active');
-    const batches = ((batchesRes as any).data ?? []).filter(
-      (b: any) => targetUnitId === 'all' || b.unit_id === targetUnitId
-    );
-
-    const totalFeed = feeding.reduce((s: number, f: any) => s + (Number(f.quantity) || 0), 0);
-    const mortality =
-      feeding.reduce((s: number, f: any) => s + (Number(f.mortality) || 0), 0) +
-      health.reduce((s: number, h: any) => s + (Number(h.mortality) || 0), 0);
-    const revenue = sales.reduce((s: number, v: any) => s + (Number(v.total_amount) || 0), 0);
-    const stock = batches.reduce((s: number, b: any) => s + (Number(b.quantity) || 0), 0);
-    const biomass = batches.reduce((s: number, b: any) => s + (Number(b.total_weight) || 0), 0);
-    const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
-
-    const sections: ReportData['sections'] = [
-      {
-        title: '📌 Résumé de la journée',
-        type: 'summary',
-        summary: [
-          { label: 'Unité', value: targetUnitName },
-          { label: 'Période', value: start === end ? fr(start) : `${fr(start)} → ${fr(end)}` },
-          { label: 'Cycles actifs', value: cycles.length },
-          { label: 'Effectif en stock', value: stock.toLocaleString('fr-FR') },
-          { label: 'Biomasse (kg)', value: biomass.toFixed(1) },
-          { label: 'Aliment distribué (kg)', value: totalFeed.toFixed(2) },
-          { label: 'Mortalités déclarées', value: mortality },
-          { label: 'Ventes (montant)', value: revenue.toLocaleString('fr-FR') },
-        ],
-      },
-      {
-        title: '🍽️ Alimentation',
-        type: 'table',
-        headers: ['Date', 'Séance', 'Aliment', 'Quantité (kg)', 'Responsable', 'Notes'],
-        rows: feeding.map((f: any) => [
-          fr(f.date), f.session_type || '-', f.feed_type || '-',
-          String(f.quantity ?? 0), f.feeder_name || '-', f.notes || '-',
-        ]),
-      },
-      {
-        title: '🩺 Suivi sanitaire & qualité de l\'eau',
-        type: 'table',
-        headers: ['Date', 'Température', 'pH', 'Oxygène', 'Mortalité', 'Poids moyen', 'Notes'],
-        rows: health.map((h: any) => [
-          fr(h.date), String(h.temperature ?? '-'), String(h.ph ?? '-'), String(h.oxygen ?? '-'),
-          String(h.mortality ?? 0), String(h.average_weight ?? '-'), h.notes || '-',
-        ]),
-      },
-      {
-        title: '💰 Ventes',
-        type: 'table',
-        headers: ['Date', 'Document', 'Client', 'Montant', 'Statut'],
-        rows: sales.map((v: any) => [
-          fr(v.date), v.document_number || v.document_type, v.client_name,
-          String(v.total_amount ?? 0), v.status,
-        ]),
-      },
-      {
-        title: '🐟 Cheptel et cycles',
-        type: 'table',
-        headers: ['Cycle / Lot', 'Espèce', 'Quantité', 'Poids moyen (g)', 'Statut'],
-        rows: [
-          ...cycles.map((c: any) => [c.name, c.species || '-', String(c.current_quantity ?? 0), '-', c.status]),
-          ...batches.map((b: any) => [
-            b.batch_number || b.species, b.species, String(b.quantity ?? 0),
-            String(b.average_weight ?? '-'), b.status,
-          ]),
-        ],
-      },
-    ];
-
-    if (health.length) {
-      sections[2].headers?.length; // conservé pour lisibilité
-    }
-
-    return {
-      title: `Journal de ferme — ${PERIOD_LABELS[type]}`,
-      period: start === end ? fr(start) : `${fr(start)} au ${fr(end)}`,
-      generatedAt: new Date().toLocaleString('fr-FR'),
-      unitName: targetUnitName,
-      sections: sections.concat(
-        health.length
-          ? [{
-              title: '📈 Moyennes de la période',
-              type: 'summary',
-              summary: [
-                { label: 'Température moyenne', value: avg(health.map((h: any) => Number(h.temperature) || 0)).toFixed(1) },
-                { label: 'pH moyen', value: avg(health.map((h: any) => Number(h.ph) || 0)).toFixed(2) },
-                { label: 'Oxygène moyen', value: avg(health.map((h: any) => Number(h.oxygen) || 0)).toFixed(2) },
-              ],
-            }]
-          : []
-      ),
-    };
+  useEffect(() => {
+    const refresh = () => setHistory(readHistory());
+    window.addEventListener(JOURNAL_EVENT, refresh);
+    return () => window.removeEventListener(JOURNAL_EVENT, refresh);
   }, []);
+
+  // Les journaux vus dans ce module ne sont plus signalés comme nouveaux
+  useEffect(() => { markJournalsRead(); }, []);
 
   const generate = useCallback(async (opts?: { auto?: boolean; silent?: boolean; overrideDate?: string }) => {
     const targetRange = opts?.overrideDate
@@ -240,14 +89,7 @@ const FarmJournal: React.FC = () => {
       persist([entry, ...history]);
 
       if (user?.id) {
-        await supabase.from('notifications').insert({
-          user_id: user.id,
-          title: opts?.auto ? 'Journal de ferme du jour prêt' : 'Journal de ferme généré',
-          message: `${unitName} — ${data.period} : votre journal est disponible dans le module Journal de ferme.`,
-          type: 'success',
-          module: 'reports',
-          is_critical: false,
-        } as any);
+        await notifyJournalReady(user.id, unitName, data.period);
       }
       if (!opts?.silent) toast.success('Journal de ferme prêt');
       else toast.info('Le journal de ferme du jour est prêt');
@@ -257,17 +99,7 @@ const FarmJournal: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [range, unitId, units, periodType, buildJournal, history, user?.id]);
-
-  // Génération automatique quotidienne (une fois par jour)
-  useEffect(() => {
-    if (!autoEnabled || !user?.id) return;
-    const done = localStorage.getItem(AUTO_KEY);
-    if (done === today) return;
-    localStorage.setItem(AUTO_KEY, today);
-    generate({ auto: true, silent: true, overrideDate: today });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoEnabled, user?.id]);
+  }, [range, unitId, units, periodType, history, user?.id]);
 
   const download = async (entry: JournalEntry, format: 'pdf' | 'excel') => {
     const filename = `journal-ferme-${entry.unitName.replace(/\s+/g, '-').toLowerCase()}-${entry.start}`;
@@ -341,7 +173,7 @@ const FarmJournal: React.FC = () => {
               onClick={() => {
                 const next = !autoEnabled;
                 setAutoEnabled(next);
-                localStorage.setItem('aquapilote.farm-journal.auto', next ? 'on' : 'off');
+                localStorage.setItem(AUTO_ENABLED_KEY, next ? 'on' : 'off');
               }}
             >
               <CheckCircle2 className={`w-4 h-4 mr-2 ${autoEnabled ? 'text-emerald-600' : 'text-muted-foreground'}`} />

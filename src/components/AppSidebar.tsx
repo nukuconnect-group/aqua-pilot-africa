@@ -155,6 +155,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
         { id: 'feeding', label: t('feeding'), icon: Utensils },
         { id: 'aquafeed', label: 'AquaFeed AI', icon: Sparkles },
         { id: 'health', label: t('health'), icon: Heart },
+        { id: 'aquahealth', label: 'AquaHealth AI', icon: Stethoscope },
         { id: 'production', label: t('production'), icon: Package },
       ]
     },
