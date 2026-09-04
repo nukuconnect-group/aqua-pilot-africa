@@ -106,8 +106,8 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   const selectedFarmFilter = searchParams.get('farm') || 'all';
   const selectedBasinFilter = searchParams.get('basin') || 'all';
   const periodParam = searchParams.get('period');
-  const selectedPeriodFilter: '7' | '14' | '30' =
-    periodParam === '14' || periodParam === '30' ? periodParam : '7';
+  const selectedPeriodFilter: '7' | '14' | '30' | '365' =
+    periodParam === '14' || periodParam === '30' || periodParam === '365' ? periodParam : '7';
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const updateFilterParam = (key: 'farm' | 'basin' | 'period', value: string) => {
@@ -457,66 +457,6 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
         </Card>}
       </div>
 
-      {/* Mobile filters — barre repliable sous les KPIs */}
-      <div className="sm:hidden -mt-1">
-        <button
-          type="button"
-          onClick={() => setShowMobileFilters((v) => !v)}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-border/60 bg-card/60 backdrop-blur text-xs font-medium hover:bg-accent/40 transition-colors"
-          aria-expanded={showMobileFilters}
-        >
-          <span className="flex items-center gap-2 truncate">
-            <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span className="truncate">
-              {selectedFarmFilter === 'all' ? 'Toutes fermes' : (units.find(u => u.id === selectedFarmFilter)?.name || 'Ferme')}
-              <span className="text-muted-foreground"> · {selectedBasinFilter === 'all' ? 'Tous bassins' : ((basinOptions as any[]).find((b) => b.id === selectedBasinFilter)?.infrastructure_name || 'Bassin')}</span>
-              <span className="text-muted-foreground"> · {selectedPeriodFilter}j</span>
-            </span>
-          </span>
-          {showMobileFilters ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
-        </button>
-        {showMobileFilters && (
-          <div className="mt-2 grid grid-cols-1 gap-2 p-2 rounded-lg border border-border/60 bg-card/40">
-            <Select value={selectedFarmFilter} onValueChange={(value) => {
-              setSelectedFarmFilter(value);
-              if (value === 'all') { setActiveUnit(null); return; }
-              const unit = units.find((u) => u.id === value);
-              if (unit) setActiveUnit(unit);
-            }}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Ferme" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes fermes</SelectItem>
-                {units.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={selectedBasinFilter} onValueChange={setSelectedBasinFilter}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Bassin" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous bassins</SelectItem>
-                {basinOptions.map((infra: any) => <SelectItem key={infra.id} value={infra.id}>{infra.infrastructure_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={selectedPeriodFilter} onValueChange={(value: '7' | '14' | '30') => setSelectedPeriodFilter(value)}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Période" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 jours</SelectItem>
-                <SelectItem value="14">14 jours</SelectItem>
-                <SelectItem value="30">30 jours</SelectItem>
-              </SelectContent>
-            </Select>
-            {units.length > 0 && (
-              <Select value={activeUnit?.id || ''} onValueChange={(v) => { const u = units.find((x) => x.id === v); if (u) setActiveUnit(u); }}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Sélectionner une unité" /></SelectTrigger>
-                <SelectContent>
-                  {units.map((u) => (
-                    <SelectItem key={u.id} value={u.id} className="text-xs">{u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* Quick access */}
       {quickActions.length > 0 && <Card>
