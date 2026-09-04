@@ -313,8 +313,9 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Bandeau de pilotage */}
-      <div className="relative overflow-hidden rounded-xl bg-slate-900 dark:bg-slate-950 text-slate-100 px-3 py-2.5 sm:px-5 sm:py-3 shadow-lg">
-        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl" aria-hidden />
+      <div className="relative overflow-hidden rounded-none bg-[linear-gradient(120deg,hsl(var(--ocean-primary))_0%,hsl(var(--primary))_55%,hsl(var(--aqua-secondary))_100%)] text-white px-3 py-2.5 sm:px-5 sm:py-3 shadow-lg">
+        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/20 blur-3xl" aria-hidden />
+
         <div className="relative flex flex-row items-center justify-between gap-3">
           <div className="min-w-0">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-400/30">
