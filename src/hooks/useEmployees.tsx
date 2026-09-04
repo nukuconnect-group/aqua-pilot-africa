@@ -106,7 +106,7 @@ export const useEmployees = () => {
   useEffect(() => {
     if (isDemoMode || !user?.id) return;
     const channel = supabase
-      .channel(`employees-realtime-${user.id}`)
+      .channel(`employees-realtime-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, () => fetchEmployees())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pay_slips' }, () => fetchEmployees())
       .subscribe();

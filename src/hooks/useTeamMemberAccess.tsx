@@ -162,17 +162,26 @@ export const useTeamMemberAccess = () => {
 
     checkTeamMemberStatus();
 
-    const channel = user?.id
-      ? supabase
-          .channel(`team-member-access-${user.id}`)
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    if (user?.id) {
+      try {
+        channel = supabase
+          .channel(`team-member-access-${user.id}-${Math.random().toString(36).slice(2)}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members', filter: `user_id=eq.${user.id}` }, checkTeamMemberStatus)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'team_member_units' }, checkTeamMemberStatus)
-          .subscribe()
-      : null;
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'team_member_units' }, checkTeamMemberStatus);
+        channel.subscribe();
+      } catch (err) {
+        console.warn('Realtime team-member-access indisponible:', err);
+        channel = null;
+      }
+    }
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch { /* ignore */ }
+      }
     };
+
   }, [user?.id]);
 
   // Vérifier si l'utilisateur a accès à une unité spécifique
