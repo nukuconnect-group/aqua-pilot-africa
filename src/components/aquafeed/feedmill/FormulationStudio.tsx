@@ -305,7 +305,7 @@ const FormulationStudio: React.FC<Props> = ({ ingredients, onSave, onManufacture
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <CardTitle className="text-base">Formulation obtenue</CardTitle>
                   <div className="flex gap-2">
-                    <ExportDropdown exportData={exportData as any} />
+                    <ExportDropdown options={exportData as any} />
                     <Button size="sm" variant="outline" onClick={save}><Save className="w-4 h-4 mr-1.5" />Enregistrer</Button>
                     <Button size="sm" disabled={!saved} onClick={() => saved && onManufacture(saved)}>
                       <Factory className="w-4 h-4 mr-1.5" />Fabriquer
