@@ -92,7 +92,7 @@ const OnlineUsersPanel: React.FC = () => {
   // Écouter les changements en temps réel
   useEffect(() => {
     const channel = supabase
-      .channel('online-users-changes')
+      .channel(`online-users-changes-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {

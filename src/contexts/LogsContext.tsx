@@ -84,7 +84,7 @@ export const LogsProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Écouter les nouveaux logs en temps réel (Supabase Realtime)
   useEffect(() => {
     const channel = supabase
-      .channel('activity-logs-changes')
+      .channel(`activity-logs-changes-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {

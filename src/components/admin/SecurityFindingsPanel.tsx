@@ -66,7 +66,7 @@ export const useSecurityFindings = () => {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('security-findings-changes')
+      .channel(`security-findings-changes-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'security_findings' }, () => load())
       .subscribe();
     return () => {

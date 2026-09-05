@@ -36,7 +36,7 @@ export const PendingActivations: React.FC = () => {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('pending-activations')
+      .channel(`pending-activations-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

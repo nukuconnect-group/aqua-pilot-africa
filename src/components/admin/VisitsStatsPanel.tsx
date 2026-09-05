@@ -432,7 +432,7 @@ const VisitsStatsPanel: React.FC = () => {
     loadAll();
 
     const sessionsChannel = supabase
-      .channel('admin-sessions-realtime')
+      .channel(`admin-sessions-realtime-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_sessions' }, () => {
         loadVisitStats();
         loadRecentVisits();
@@ -440,7 +440,7 @@ const VisitsStatsPanel: React.FC = () => {
       .subscribe();
 
     const anonChannel = supabase
-      .channel('admin-anon-visits-realtime')
+      .channel(`admin-anon-visits-realtime-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'anonymous_visits' }, () => {
         loadVisitStats();
         loadRecentVisits();
@@ -448,7 +448,7 @@ const VisitsStatsPanel: React.FC = () => {
       .subscribe();
 
     const ticketsChannel = supabase
-      .channel('admin-tickets-realtime')
+      .channel(`admin-tickets-realtime-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
         loadSupportStats();
       })

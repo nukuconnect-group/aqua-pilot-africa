@@ -266,7 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id && mounted) {
         profileChannel = supabase
-          .channel('profile-changes')
+          .channel(`profile-changes-${Math.random().toString(36).slice(2)}`)
           .on(
             'postgres_changes',
             {

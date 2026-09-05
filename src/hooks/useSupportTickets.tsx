@@ -202,7 +202,7 @@ export const useSupportTickets = () => {
 
     // Channel for tickets changes
     const ticketsChannel = supabase
-      .channel('support_tickets_realtime')
+      .channel(`support_tickets_realtime-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'support_tickets' },
