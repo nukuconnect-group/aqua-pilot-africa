@@ -1,0 +1,10 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.feed_ingredients TO authenticated;
+GRANT ALL ON public.feed_ingredients TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.feed_formulations TO authenticated;
+GRANT ALL ON public.feed_formulations TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.feed_manufacturing_batches TO authenticated;
+GRANT ALL ON public.feed_manufacturing_batches TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.feed_calculations TO authenticated;
+GRANT ALL ON public.feed_calculations TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.feeding_sheets TO authenticated;
+GRANT ALL ON public.feeding_sheets TO service_role;
