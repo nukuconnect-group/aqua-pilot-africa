@@ -388,7 +388,7 @@ const AdminDashboard = () => {
   // Écouter les changements de sessions en temps réel
   useEffect(() => {
     const channel = supabase
-      .channel('admin-sessions-changes')
+      .channel(`admin-sessions-changes-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
