@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '@/integrations/supabase/env';
 
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,7 +138,7 @@ Exemple:
 08:00 | Bassin A | Aliment croissance 3mm | 12 | lundi,mardi,mercredi | ration matin
 Utilise seulement du texte brut.`;
 
-      const response = await fetch('https://hhsvraqchtqqgaezhnzn.supabase.co/functions/v1/aqua-assistant', {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/aqua-assistant`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

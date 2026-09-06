@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '@/integrations/supabase/env';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/clientConfig';
 import { useAuthReady } from '@/hooks/useAuthReady';
@@ -26,7 +27,7 @@ export const useUserSessions = () => {
   // Detect country from IP
   const detectCountry = useCallback(async (): Promise<{ country: string; country_code: string } | null> => {
     try {
-      const response = await fetch('https://hhsvraqchtqqgaezhnzn.supabase.co/functions/v1/detect-country', {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/detect-country`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

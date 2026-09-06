@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '@/integrations/supabase/env';
 // Hook personnalisé pour gérer les requêtes Supabase avec support hors ligne
 import { useOffline } from './useOffline';
 import { supabase } from '@/integrations/supabase/clientConfig';
@@ -38,7 +39,7 @@ export const useSupabaseOffline = () => {
       await addOfflineAction(
         `insert_${table}`,
         item,
-        `https://hhsvraqchtqqgaezhnzn.supabase.co/rest/v1/${table}`,
+        `${SUPABASE_URL}/rest/v1/${table}`,
         'POST'
       );
     }
@@ -89,7 +90,7 @@ export const useSupabaseOffline = () => {
     await addOfflineAction(
       `update_${table}`,
       data,
-      `https://hhsvraqchtqqgaezhnzn.supabase.co/rest/v1/${table}?id=eq.${id}`,
+      `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,
       'PATCH'
     );
 
@@ -204,7 +205,7 @@ export const useSupabaseOffline = () => {
     await addOfflineAction(
       `delete_${table}`,
       { id },
-      `https://hhsvraqchtqqgaezhnzn.supabase.co/rest/v1/${table}?id=eq.${id}`,
+      `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,
       'DELETE'
     );
 

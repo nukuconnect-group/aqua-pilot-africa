@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '@/integrations/supabase/env';
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { detectDevice } from '@/lib/deviceDetection';
@@ -52,7 +53,7 @@ export const useAnonymousVisitTracking = () => {
       
       try {
         const response = await fetch(
-          'https://hhsvraqchtqqgaezhnzn.supabase.co/functions/v1/detect-country',
+          `${SUPABASE_URL}/functions/v1/detect-country`,
           {
             method: 'GET',
             headers: {

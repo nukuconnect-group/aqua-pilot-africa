@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '@/integrations/supabase/env';
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +26,7 @@ const PWAInstallPrompt: React.FC = () => {
       let country = 'Inconnu';
       let countryCode = 'XX';
       try {
-        const resp = await fetch('https://hhsvraqchtqqgaezhnzn.supabase.co/functions/v1/detect-country');
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/detect-country`);
         if (resp.ok) {
           const data = await resp.json();
           country = data.country || 'Inconnu';
