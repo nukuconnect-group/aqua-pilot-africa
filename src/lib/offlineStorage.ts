@@ -1,3 +1,4 @@
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 // Gestion du stockage hors ligne avec IndexedDB et synchronisation
 
 const DB_NAME = 'aqua-pilot-offline';
@@ -152,9 +153,6 @@ class OfflineStorage {
       console.warn('Cannot sync without authentication - clearing offline queue');
       return;
     }
-
-    const SUPABASE_URL = 'https://hhsvraqchtqqgaezhnzn.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhoc3ZyYXFjaHRxcWdhZXpobnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMTQ0OTUsImV4cCI6MjA3NzY5MDQ5NX0.yPX0oLUaW5L2_d43MB7X8xpwPaTGCMDNsWKx9JbGrbA';
 
     for (const action of pendingActions) {
       try {

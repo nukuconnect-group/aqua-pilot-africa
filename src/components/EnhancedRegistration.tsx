@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '@/integrations/supabase/env';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -137,7 +138,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
     const detectLocation = async () => {
       setIsDetectingLocation(true);
       try {
-        const response = await fetch('https://hhsvraqchtqqgaezhnzn.supabase.co/functions/v1/detect-country', {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/detect-country`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });

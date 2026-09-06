@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Mic, MicOff, Volume2, Loader2, Building2, Fish, Utensils, HeartPulse, TrendingUp, Settings, Sparkles, ChevronDown, Globe, Maximize2, Minimize2, Crown, Lock, Calculator, BarChart3, AlertTriangle, RefreshCw } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
@@ -404,7 +405,7 @@ const AquaAssistant = () => {
           : m.content
       }));
 
-      const response = await fetch('https://hhsvraqchtqqgaezhnzn.supabase.co/functions/v1/aqua-assistant', {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/aqua-assistant`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
