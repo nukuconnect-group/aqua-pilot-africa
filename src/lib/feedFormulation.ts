@@ -299,15 +299,24 @@ export function optimizeFormulation(params: {
 
   const lo = ingredients.map(g => clamp((g.min_inclusion_pct || 0) / 100, 0, 1));
   const hi = ingredients.map(g => clamp((g.max_inclusion_pct ?? 100) / 100, 0, 1));
-  const sumLo = lo.reduce((a, b) => a + b, 0);
-  const sumHi = hi.reduce((a, b) => a + b, 0);
+  let sumLo = lo.reduce((a, b) => a + b, 0);
+  let sumHi = hi.reduce((a, b) => a + b, 0);
 
-  if (sumLo > 1.0001) {
-    messages.push({ level: 'error', text: 'Les taux minimums cumulés dépassent 100 % : réduisez les minimums.' });
+  // Les bornes ne doivent jamais bloquer le calcul : on les assouplit
+  // automatiquement et on prévient l'utilisateur.
+  if (sumLo > 1) {
+    const f = 1 / sumLo;
+    for (let i = 0; i < lo.length; i++) lo[i] = lo[i] * f * 0.98;
+    sumLo = lo.reduce((a, b) => a + b, 0);
+    messages.push({ level: 'warn', text: 'Les taux minimums cumulés dépassaient 100 % : ils ont été réduits proportionnellement.' });
   }
-  if (sumHi < 0.9999) {
-    messages.push({ level: 'error', text: 'Les taux maximums cumulés sont inférieurs à 100 % : ajoutez des ingrédients ou augmentez les maximums.' });
+  if (sumHi < 1) {
+    for (let i = 0; i < hi.length; i++) hi[i] = clamp(Math.max(hi[i], lo[i]) * (1.05 / Math.max(sumHi, 1e-6)), lo[i], 1);
+    sumHi = hi.reduce((a, b) => a + b, 0);
+    messages.push({ level: 'warn', text: 'Les taux maximums cumulés étaient inférieurs à 100 % : ils ont été relevés pour permettre le calcul. Ajoutez des ingrédients pour un résultat plus réaliste.' });
   }
+  for (let i = 0; i < hi.length; i++) if (hi[i] < lo[i]) hi[i] = lo[i];
+
 
   // Coût normalisé pour équilibrer objectif nutritionnel / économique
   const maxPrice = Math.max(1, ...ingredients.map(g => g.price_per_kg || 0));
