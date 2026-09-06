@@ -346,7 +346,7 @@ export function optimizeFormulation(params: {
   let seed = 42;
   const rand = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
 
-  const starts = 24;
+  const starts = ingredients.length > 10 ? 8 : 24;
   for (let s = 0; s < starts; s++) {
     let x: number[];
     if (s === 0) x = ingredients.map(() => 1 / ingredients.length);
