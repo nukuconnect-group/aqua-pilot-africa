@@ -16,7 +16,7 @@ import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { generateFeedingPlanHTML, generateFeedingSheetHTML, printHTML, downloadHTML } from '@/lib/feedingPrintUtils';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 
 interface FeedingPlanSchedulerProps {
   unitId: string;

@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 
 export interface Symptom { id: string; key: string; label: string; description: string | null }
 export interface Disease {

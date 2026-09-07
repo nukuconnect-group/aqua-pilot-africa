@@ -6,7 +6,7 @@ import { Wifi, WifiOff, RefreshCw, Clock, Globe, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 
 interface OnlineUser {
   userId: string;

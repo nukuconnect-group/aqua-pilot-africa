@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Wifi, WifiOff, Database, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';

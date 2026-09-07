@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Radio, X, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 

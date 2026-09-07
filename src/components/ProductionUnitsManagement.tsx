@@ -100,7 +100,7 @@ const ProductionUnitsManagement = () => {
     setUploadingPhoto(true);
     try {
       // Import supabase client for direct upload to public avatars bucket
-      const { supabase } = await import('@/integrations/supabase/clientConfig');
+      const { supabase } = await import('@/integrations/supabase/appClient');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {

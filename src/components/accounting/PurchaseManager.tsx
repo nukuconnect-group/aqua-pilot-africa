@@ -15,7 +15,7 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/hooks/use-toast';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { createNotification } from '@/lib/notificationService';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import PurchaseInvoice from './PurchaseInvoice';
 import { useSuppliers, Supplier } from '@/hooks/useSuppliers';
 

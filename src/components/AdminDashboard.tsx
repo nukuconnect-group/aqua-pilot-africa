@@ -13,7 +13,7 @@ import { exportRowsToCsv, exportRowsToPdf, timestampSuffix, type ExportColumn } 
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useLogs } from '@/contexts/LogsContext';
 import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';

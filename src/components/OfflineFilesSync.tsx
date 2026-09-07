@@ -16,7 +16,7 @@ import {
   Download
 } from 'lucide-react';
 import { useOfflineContext } from '@/contexts/OfflineContext';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { formatFileSize } from '@/lib/imageCompression';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';

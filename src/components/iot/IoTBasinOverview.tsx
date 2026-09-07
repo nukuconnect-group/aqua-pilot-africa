@@ -23,7 +23,7 @@ import {
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useIoT } from '@/contexts/IoTContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDemoData, DemoIoTBasin } from '@/lib/demoData';
 

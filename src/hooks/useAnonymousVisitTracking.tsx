@@ -1,6 +1,6 @@
 import { SUPABASE_URL } from '@/integrations/supabase/env';
 import { useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { detectDevice } from '@/lib/deviceDetection';
 
 const SESSION_KEY = 'aqua_visit_session';

@@ -15,7 +15,7 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import ProductionUnitSelector from './ProductionUnitSelector';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useEmployees, Employee, PaySlip } from '@/hooks/useEmployees';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateProfessionalPayslipHTML } from '@/lib/payslipGenerator';
 import { printEmployeeList } from '@/lib/employeePrintUtils';

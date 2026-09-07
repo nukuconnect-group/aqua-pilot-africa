@@ -20,7 +20,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import BackupManagement from '@/components/BackupManagement';
 import MFASettings from '@/components/auth/MFASettings';
 import {

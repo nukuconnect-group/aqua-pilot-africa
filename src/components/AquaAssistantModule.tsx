@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useFeedStocks } from '@/hooks/useFeedStocks';

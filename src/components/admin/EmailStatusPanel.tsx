@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, MailCheck, MailWarning, RefreshCw, Send, CheckCircle2, XCircle, Search, ShieldCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';

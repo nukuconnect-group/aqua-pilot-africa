@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 
 /**
  * Crée un canal Realtime avec un nom TOUJOURS unique.

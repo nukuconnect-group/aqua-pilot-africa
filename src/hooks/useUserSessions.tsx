@@ -1,6 +1,6 @@
 import { SUPABASE_URL } from '@/integrations/supabase/env';
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useAuthReady } from '@/hooks/useAuthReady';
 import { detectDevice } from '@/lib/deviceDetection';
 
