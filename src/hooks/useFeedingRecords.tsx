@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthReady } from '@/hooks/useAuthReady';
 import { useAuth } from '@/contexts/AuthContext';

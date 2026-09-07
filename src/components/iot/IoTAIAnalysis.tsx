@@ -9,7 +9,7 @@ import {
   Brain, Loader2, History, Trash2, TrendingUp, Zap, RefreshCw, 
   Cpu, Radio, Clock, ChevronRight, Sparkles
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { toast } from 'sonner';
 import { useAIAnalyses } from '@/hooks/useAIAnalyses';
 import { useIoT } from '@/contexts/IoTContext';

@@ -8,7 +8,7 @@ import { Camera, Loader2, Save, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 
 interface ProfileDialogProps {
   isOpen: boolean;

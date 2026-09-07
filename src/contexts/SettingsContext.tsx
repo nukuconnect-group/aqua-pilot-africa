@@ -1,6 +1,6 @@
 // React core imports
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { translations, type SupportedLanguage } from '@/i18n';
 
 export interface CompanyInfo {

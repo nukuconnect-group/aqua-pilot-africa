@@ -13,7 +13,7 @@ import {
   X,
   Scan,
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/components/ui/use-toast';
 

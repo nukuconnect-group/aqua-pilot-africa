@@ -22,7 +22,7 @@ import BarcodeLabelGenerator from './sales/BarcodeLabelGenerator';
 import { useSales, Sale, SaleItem } from '@/hooks/useSales';
 import { useToast } from '@/hooks/use-toast';
 import { createNotification } from '@/lib/notificationService';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { getCompanyDocumentFields, isSaleSettled } from '@/lib/salesDocumentUtils';

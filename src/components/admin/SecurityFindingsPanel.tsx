@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ShieldAlert, ShieldCheck, EyeOff, Plus, RefreshCw, Loader2, FileSpreadsheet, FileText } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { exportRowsToCsv, exportRowsToPdf, timestampSuffix, type ExportColumn } from '@/lib/adminExportUtils';

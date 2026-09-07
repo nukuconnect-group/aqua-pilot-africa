@@ -93,7 +93,7 @@ const shouldPersistError = (kind: DiagnosticKind, label: string) =>
 export const persistDiagnosticToServer = async (kind: DiagnosticKind, label: string, data?: unknown) => {
   if (typeof window === 'undefined') return;
   try {
-    const { supabase } = await import('@/integrations/supabase/clientConfig');
+    const { supabase } = await import('@/integrations/supabase/appClient');
     const payload = {
       kind,
       label,

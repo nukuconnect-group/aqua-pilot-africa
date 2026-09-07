@@ -1,7 +1,7 @@
 // Hook pour gérer les données avec support offline automatique
 import { useState, useEffect, useCallback } from 'react';
 import { offlineStorage } from '@/lib/offlineStorage';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useAuthReady } from '@/hooks/useAuthReady';
 
 interface UseOfflineDataOptions<T> {

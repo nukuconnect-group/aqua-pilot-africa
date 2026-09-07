@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import type { ReportData } from '@/lib/reportExportUtils';
 
 export type JournalPeriodType = 'day' | 'week' | 'month' | 'quarter' | 'custom';

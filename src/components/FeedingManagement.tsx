@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { createNotification } from '@/lib/notificationService';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import ExportDropdown from './ExportDropdown';
 import { ExportOptions } from '@/lib/dataExportUtils';
 

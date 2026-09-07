@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calculator, Fish, Sparkles, History, Save, TrendingUp, AlertTriangle, Gauge, Wallet, Utensils, Sliders, Trash2 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { loadSpecies, loadRulesForSpecies, computeFeeding, computeAdvancedFeeding, FishSpecies, FeedingRule, FeedingResult, AdvancedFeedingResult, DENSITY_LIMITS } from '@/lib/feedingEngine';

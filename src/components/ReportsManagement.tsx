@@ -17,7 +17,7 @@ import FarmJournal from './reports/FarmJournal';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { 
   exportToCSV, 
   exportToExcel, 

@@ -12,7 +12,7 @@ import { Building2, Factory, Warehouse, FlaskConical, Package, Store, Settings, 
 import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { userCreationSchema } from '@/lib/validation';
 
 interface AddUserWithUnitsDialogProps {

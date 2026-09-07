@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Download, Smartphone, X, Monitor } from 'lucide-react';
 import aquaPilotLogo from '@/assets/aqua-pilot-logo-small.webp';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { detectDevice } from '@/lib/deviceDetection';
 import { usePWAInstallState, supportsInstallPrompt } from '@/hooks/usePWAInstallState';
 

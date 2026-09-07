@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, AlertTriangle, CheckCircle2, Activity } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 
 declare global {
   interface Window {

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import AlertHistory from '@/components/alerts/AlertHistory';
 import { notificationHelpers } from '@/lib/notificationService';

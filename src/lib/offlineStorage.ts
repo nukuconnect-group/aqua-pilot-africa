@@ -146,7 +146,7 @@ class OfflineStorage {
     if (import.meta.env.DEV) console.log(`🔄 Synchronisation de ${pendingActions.length} action(s) en attente...`);
 
     // Get authentication session for sync
-    const { supabase } = await import('@/integrations/supabase/client');
+    const { supabase } = await import('@/integrations/supabase/appClient');
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session?.access_token) {

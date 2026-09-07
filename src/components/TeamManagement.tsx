@@ -8,7 +8,7 @@ import { useTeamMembers, TeamMember, NewTeamMember } from '@/hooks/useTeamMember
 import { useTeamMemberUnits, TeamMemberUnit } from '@/hooks/useTeamMemberUnits';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { createNotification } from '@/lib/notificationService';
 import { DASHBOARD_ROLE_DEFINITIONS, TeamRole } from '@/lib/dashboardRoles';
 import { APP_MODULE_PERMISSIONS, sanitizeModulePermissions } from '@/lib/moduleAccess';

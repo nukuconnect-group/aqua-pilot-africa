@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Eye, Users, Clock, Globe, TrendingUp, Calendar, Headphones, MessageSquare, CheckCircle, Smartphone, Tablet, Monitor, HelpCircle, MapPin, RefreshCw, Wifi, LayoutDashboard, Download } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/clientConfig';
+import { supabase } from '@/integrations/supabase/appClient';
 import { format, subDays, startOfDay, endOfDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';

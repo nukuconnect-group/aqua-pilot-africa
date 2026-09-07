@@ -9,7 +9,7 @@ import { Brain, Stethoscope, AlertTriangle, ShieldAlert, Save, History, Search, 
 import { Input } from '@/components/ui/input';
 import CameraAnalysis, { analyzeWithAI, VisionResultView, type VisionResult } from './CameraAnalysis';
 import { loadSymptoms, runDiagnosis, Symptom, DiagnosisResult } from '@/lib/diseaseDiagnosis';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { toast } from '@/hooks/use-toast';
