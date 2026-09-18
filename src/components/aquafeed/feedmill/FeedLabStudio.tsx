@@ -18,8 +18,9 @@ import ExportDropdown from '@/components/ExportDropdown';
 import {
   REFERENCE_INGREDIENTS, FEED_PARAMS, PARAM_HELP_PRICE, PARAM_HELP_INCORPORATION,
   INGREDIENT_CATEGORIES_LAB, SPECIES, STAGES, STAGE_PB_SUGGESTION, QUANTITY_PRESETS,
-  LabIngredient, LabMode, LabResult, TargetMap, ParamKey,
-  optimizeLab, computeFormulation, parseRequest, round,
+  COUNTRY_MARKETS, LabIngredient, LabMode, LabResult, TargetMap, ParamKey,
+  optimizeLab, computeFormulation, parseRequest, parseCountry,
+  buildRecommendations, buildProcessSteps, round,
 } from '@/lib/feedLab';
 
 const STORE_KEY = 'aquafeed-lab-formulations-v1';
