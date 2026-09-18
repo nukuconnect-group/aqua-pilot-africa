@@ -265,7 +265,9 @@ const FeedLabStudio: React.FC = () => {
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-2">
             <Textarea value={request} onChange={e => setRequest(e.target.value)} rows={2} className="flex-1" placeholder="Votre demande en français…" />
-            <Button variant="outline" onClick={applyRequest}>Interpréter</Button>
+            <Button onClick={applyRequest} disabled={busy}>
+              <Wand2 className="w-4 h-4 mr-1.5" />{busy ? 'Calcul…' : 'Interpréter et calculer'}
+            </Button>
           </CardContent>
         </Card>
 
