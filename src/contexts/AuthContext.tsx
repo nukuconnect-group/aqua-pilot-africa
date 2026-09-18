@@ -670,8 +670,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return {
             success: false,
             error:
-              "L'email de confirmation n'a pas pu être envoyé (configuration SMTP). Contactez le support : support@aquapilote.com",
+              "Le serveur e-mail a refusé l'envoi. Le compte n'a donc pas été créé. Vérifiez la configuration SMTP de contact@aquapilote.com, puis réessayez.",
           };
+        }
+
+        if (error.message.toLowerCase().includes('password')) {
+          return { success: false, error: `Mot de passe refusé : ${error.message}` };
         }
 
         if (error.message.includes('invalid')) {

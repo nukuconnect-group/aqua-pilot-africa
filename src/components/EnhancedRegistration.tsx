@@ -111,6 +111,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
   const [locationDetected, setLocationDetected] = useState(false);
   const [showConfirmEmailDialog, setShowConfirmEmailDialog] = useState(false);
   const [confirmedEmail, setConfirmedEmail] = useState('');
+  const [formErrors, setFormErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -204,6 +205,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
   const handleInputChange = (field: keyof FormData, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setFormErrors([]);
   };
   
   const handleCountryChange = (countryCode: string) => {
@@ -237,32 +239,39 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
   };
 
 
-  const isFormValid = () => {
-    return (
-      formData.firstName.trim().length >= 2 &&
-      formData.lastName.trim().length >= 2 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) &&
-      formData.password.length >= 8 &&
-      formData.password === formData.confirmPassword &&
-      formData.phone.trim().length >= 4 &&
-      formData.countryCode &&
-      formData.companyName.trim().length >= 2 &&
-      formData.location.trim().length >= 2 &&
-      formData.productionUnits.length > 0 &&
-      formData.exploitationType !== ''
-    );
+  const getFormErrors = (): string[] => {
+    const errors: string[] = [];
+    if (formData.lastName.trim().length < 2) errors.push('Saisissez votre nom (2 caractères minimum).');
+    if (formData.firstName.trim().length < 2) errors.push('Saisissez votre prénom (2 caractères minimum).');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) errors.push('Saisissez une adresse e-mail valide.');
+    if (formData.phone.trim().length < 4) errors.push('Saisissez votre numéro de téléphone.');
+    if (!formData.countryCode) errors.push('Sélectionnez votre pays.');
+    if (formData.companyName.trim().length < 2) errors.push('Saisissez le nom de votre ferme.');
+    if (formData.location.trim().length < 2) errors.push("Saisissez l'adresse de votre ferme.");
+    if (formData.password.length < 8) errors.push('Le mot de passe doit contenir au moins 8 caractères.');
+    if (!/[A-Z]/.test(formData.password)) errors.push('Le mot de passe doit contenir une majuscule.');
+    if (!/[a-z]/.test(formData.password)) errors.push('Le mot de passe doit contenir une minuscule.');
+    if (!/[0-9]/.test(formData.password)) errors.push('Le mot de passe doit contenir un chiffre.');
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) errors.push('Le mot de passe doit contenir un caractère spécial.');
+    if (formData.password !== formData.confirmPassword) errors.push('Les deux mots de passe ne correspondent pas.');
+    if (formData.productionUnits.length === 0) errors.push("Sélectionnez au moins un type d'élevage.");
+    if (!formData.exploitationType) errors.push("Sélectionnez un type d'exploitation.");
+    return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid()) {
+    const validationErrors = getFormErrors();
+    if (validationErrors.length > 0) {
+      setFormErrors(validationErrors);
       toast({
         title: 'Champs incomplets',
-        description: 'Veuillez remplir tous les champs obligatoires (*) et sélectionner au moins un type d\'élevage.',
+        description: validationErrors[0],
         variant: 'destructive',
       });
       return;
     }
+    setFormErrors([]);
     try {
       const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
       const result = await register(
@@ -285,9 +294,11 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
         setConfirmedEmail(formData.email.trim().toLowerCase());
         setShowConfirmEmailDialog(true);
       } else {
+        setFormErrors([result.error || 'Une erreur est survenue pendant la création du compte.']);
         toast({ title: '❌ Erreur d\'inscription', description: result.error || 'Une erreur est survenue', variant: 'destructive' });
       }
     } catch (error) {
+      setFormErrors(["Une erreur technique empêche actuellement la création du compte."]);
       toast({ title: '❌ Erreur', description: 'Une erreur technique est survenue.', variant: 'destructive' });
     }
   };
@@ -367,7 +378,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                 </DialogDescription>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={handleSubmit} noValidate className="space-y-3">
                 {/* Nom + Prénom */}
                 <div className="grid grid-cols-2 gap-3">
                   <FieldWithIcon icon={<UserIcon className="w-4 h-4" />} required>
@@ -544,6 +555,14 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                 </div>
 
                 {/* Bouton Valider */}
+                {formErrors.length > 0 && (
+                  <div role="alert" aria-live="assertive" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                    <p className="font-semibold">Inscription impossible</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5">
+                      {formErrors.map((message) => <li key={message}>{message}</li>)}
+                    </ul>
+                  </div>
+                )}
                 <Button
                   type="submit"
                   disabled={isLoading}
