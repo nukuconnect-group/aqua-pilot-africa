@@ -17,7 +17,7 @@ interface Props { onBack: () => void; }
 const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
   const { formatCurrency, activeUnit } = useProductionUnits();
   const mill = useFeedMill();
-  const [tab, setTab] = useState('studio');
+  const [tab, setTab] = useState('lab');
   const [editing, setEditing] = useState<StoredFormulation | null>(null);
   const [toManufacture, setToManufacture] = useState<StoredFormulation | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -71,6 +71,10 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
           <TabsTrigger value="ingredients"><Boxes className="w-4 h-4 mr-1.5" />Ingrédients</TabsTrigger>
           <TabsTrigger value="batches"><Factory className="w-4 h-4 mr-1.5" />Fabrications</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="lab">
+          <FeedLabStudio />
+        </TabsContent>
 
         <TabsContent value="studio">
           <FormulationStudio
