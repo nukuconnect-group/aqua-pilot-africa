@@ -447,6 +447,65 @@ const FeedLabStudio: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              <div className="mt-4 border-t pt-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <Label className="flex items-center gap-1 text-sm">
+                    Intelligence de marché — ingrédients disponibles par pays
+                    <Tip text="Fourchettes de prix indicatives observées localement. Confirmez toujours avec votre prix d'achat réel." />
+                  </Label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger className="h-8 w-48"><SelectValue /></SelectTrigger>
+                    <SelectContent className="z-50">
+                      {COUNTRY_MARKETS.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(() => {
+                  const market = COUNTRY_MARKETS.find(c => c.code === country);
+                  if (!market) return null;
+                  return (
+                    <>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 mt-3">
+                        {market.suggestions.map(s => {
+                          const ing = library.find(i => i.id === s.ref_id);
+                          if (!ing) return null;
+                          const mid = Math.round((s.price_min + s.price_max) / 2);
+                          return (
+                            <div key={s.ref_id} className="border rounded-md px-3 py-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-medium">{ing.name}</span>
+                                <Badge variant="outline" className="text-[10px]">{s.price_min}–{s.price_max} {market.currency}</Badge>
+                              </div>
+                              {s.note && <p className="text-[10px] text-muted-foreground mt-1">{s.note}</p>}
+                              <div className="flex gap-1.5 mt-2">
+                                <Button size="sm" variant="outline" className="h-6 text-[10px]"
+                                  onClick={() => { patchIngredient(ing.id, { price_per_kg: mid }); toast({ title: 'Prix appliqué', description: `${ing.name} : ${mid} ${market.currency}/kg` }); }}>
+                                  Appliquer {mid}
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-6 text-[10px]"
+                                  onClick={() => setSelected(prev => (prev.includes(ing.id) ? prev : [...prev, ing.id]))}>
+                                  Utiliser
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <Button size="sm" variant="secondary" className="mt-3"
+                        onClick={() => {
+                          setLibrary(prev => prev.map(i => {
+                            const s = market.suggestions.find(x => x.ref_id === i.id);
+                            return s ? { ...i, price_per_kg: Math.round((s.price_min + s.price_max) / 2) } : i;
+                          }));
+                          setSelected(prev => Array.from(new Set([...prev, ...market.suggestions.map(s => s.ref_id)])));
+                          toast({ title: `Marché ${market.label} appliqué`, description: 'Prix indicatifs et ingrédients locaux chargés.' });
+                        }}>
+                        Appliquer tout le marché {market.label}
+                      </Button>
+                    </>
+                  );
+                })()}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -458,14 +517,80 @@ const FeedLabStudio: React.FC = () => {
         )}
 
         {result && (
-          <Tabs defaultValue="recette" className="space-y-3">
+          <Tabs value={resultTab} onValueChange={setResultTab} className="space-y-3">
             <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="recette">Recette</TabsTrigger>
+              <TabsTrigger value="fiche">Fiche de fabrication</TabsTrigger>
               <TabsTrigger value="contributions">Contributions</TabsTrigger>
               <TabsTrigger value="nutrition">Valeur nutritionnelle</TabsTrigger>
               <TabsTrigger value="verification">Vérification des objectifs</TabsTrigger>
               <TabsTrigger value="historique">Historique ({saved.length})</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="fiche">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Fiche de fabrication — {name}</CardTitle>
+                  <CardDescription>
+                    {SPECIES.find(s => s.key === species)?.label} · {STAGES.find(s => s.key === stage)?.label} · {quantity} kg à produire · coût réel {formatCurrency(result.cost_per_kg)}/kg
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold mb-2">Formule à utiliser</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="text-left text-muted-foreground border-b">
+                          <th className="py-1.5 pr-2">Ingrédient</th><th className="py-1.5 pr-2">%</th>
+                          <th className="py-1.5 pr-2">À peser (kg)</th><th className="py-1.5 pr-2">Coût</th>
+                        </tr></thead>
+                        <tbody>
+                          {result.lines.map(l => (
+                            <tr key={l.ingredient_id} className="border-b last:border-0">
+                              <td className="py-1.5 pr-2">{l.name}</td>
+                              <td className="py-1.5 pr-2">{round(l.inclusion_pct, 2)}</td>
+                              <td className="py-1.5 pr-2 font-medium">{round(l.quantity_kg, 2)}</td>
+                              <td className="py-1.5 pr-2">{formatCurrency(l.cost)}</td>
+                            </tr>
+                          ))}
+                          <tr className="font-semibold">
+                            <td className="py-1.5 pr-2">Total</td>
+                            <td className="py-1.5 pr-2">100</td>
+                            <td className="py-1.5 pr-2">{round(result.total_quantity_kg, 2)}</td>
+                            <td className="py-1.5 pr-2">{formatCurrency(result.total_cost)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold mb-2">Recommandations de formulation</p>
+                    <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
+                      {buildRecommendations(species, stage, result).map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold mb-2">Étapes à suivre jusqu'au produit fini</p>
+                    <ol className="space-y-2">
+                      {buildProcessSteps(result, quantity, stage).map((s, i) => (
+                        <li key={i} className="border rounded-md px-3 py-2">
+                          <p className="text-sm font-medium">{s.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{s.detail}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  <div className="flex gap-2 flex-wrap">
+                    <ExportDropdown options={exportOptions} label="Exporter la fiche" />
+                    <Button size="sm" onClick={saveFormulation}><Save className="w-4 h-4 mr-1.5" />Enregistrer la formulation</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
 
             <TabsContent value="recette">
               <Card>
