@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserPlus, Activity, Search, Key, Trash2, BarChart3, AlertTriangle, Clock, Database, Wifi, Building2, Eye, Ban, PlayCircle, Globe, Shield, Headphones, CreditCard, ClipboardList, FileSpreadsheet, FileText } from 'lucide-react';
+import { Users, UserPlus, Activity, Search, Key, Trash2, BarChart3, AlertTriangle, Clock, Database, Wifi, Building2, Eye, Ban, PlayCircle, Globe, Shield, Headphones, CreditCard, ClipboardList, FileSpreadsheet, FileText, Layers } from 'lucide-react';
 import { exportRowsToCsv, exportRowsToPdf, timestampSuffix, type ExportColumn } from '@/lib/adminExportUtils';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +37,7 @@ import AccessStatsPanel from './admin/AccessStatsPanel';
 import TeamMembersOverviewPanel from './admin/TeamMembersOverviewPanel';
 import FinanceOverviewPanel from './admin/FinanceOverviewPanel';
 import SecurityFindingsPanel from './admin/SecurityFindingsPanel';
+import PlansModulesPanel from './admin/PlansModulesPanel';
 
 interface UserProfile {
   id: string;
@@ -769,6 +770,10 @@ const AdminDashboard = () => {
             <span className="hidden sm:inline">Abonnements</span>
             <span className="sm:hidden">Abo</span>
           </TabsTrigger>
+          <TabsTrigger value="plans">
+            <Layers className="w-4 h-4 mr-1" />
+            Plans & Modules
+          </TabsTrigger>
           <TabsTrigger value="support">
             <Headphones className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">Support</span>
@@ -1292,6 +1297,10 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="plans" className="space-y-4">
+          <PlansModulesPanel />
         </TabsContent>
 
         <TabsContent value="support" className="space-y-4">

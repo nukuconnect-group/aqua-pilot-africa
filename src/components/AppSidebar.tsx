@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Home, Building2, Wrench, Utensils, Heart, Package, Calendar, Users, FileText, Settings, Beef, Calculator, UserCheck, ShoppingCart, Wifi, ShoppingBag, Truck, UserCog, Database, Shield, MessageCircle, Headphones, BarChart3, Bell, ArrowLeft, UserPlus, ClipboardList, CreditCard, Activity, Eye, AlertTriangle, Mail } from 'lucide-react';
-import { Sparkles, BookOpen, Stethoscope } from 'lucide-react';
+import { Sparkles, BookOpen, Stethoscope, Layers } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import { Badge } from '@/components/ui/badge';
 import { hasAssignedModule } from '@/lib/moduleAccess';
+import { useModuleAccess } from '@/contexts/ModuleAccessContext';
 import { useSecurityFindings } from '@/components/admin/SecurityFindingsPanel';
 
 interface AppSidebarProps {
@@ -30,6 +31,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   const { t, language } = useSettings();
   const { user } = useAuth();
   const { isTeamMember, teamMemberInfo, hasAccessToModule } = useTeamMemberAccess();
+  const { hasModuleAccess } = useModuleAccess();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isAdminView = activeTab === 'admin';
@@ -61,6 +63,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
         { id: 'registrations', label: 'Inscriptions', icon: ClipboardList },
         { id: 'users', label: 'Utilisateurs', icon: Users },
         { id: 'subscriptions', label: 'Abonnements', icon: CreditCard },
+        { id: 'plans', label: 'Plans & Modules', icon: Layers },
         { id: 'support', label: 'Support', icon: Headphones },
         { id: 'database', label: 'Base de données', icon: Database },
         { id: 'activity', label: 'Activités', icon: Activity },
@@ -133,6 +136,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
 
   // Verifier si un tab est accessible
   const isTabAllowed = (tabId: string): boolean => {
+    if (!hasModuleAccess(tabId)) return false; // Abonnement
     if (!isTeamMember) return true; // Non-membre = acces complet
     return hasAssignedModule(tabId, hasAccessToModule);
   };

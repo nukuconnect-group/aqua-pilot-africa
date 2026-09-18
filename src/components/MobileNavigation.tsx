@@ -4,6 +4,7 @@ import { Home, Factory, Wifi, Beef, ShoppingBag, Utensils, Heart, Package, FileT
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import { hasAssignedModule } from '@/lib/moduleAccess';
+import { useModuleAccess } from '@/contexts/ModuleAccessContext';
 
 interface MobileNavigationProps {
   activeTab: string;
@@ -13,8 +14,10 @@ interface MobileNavigationProps {
 const MobileNavigation = ({ activeTab, onTabChange }: MobileNavigationProps) => {
   const { t } = useSettings();
   const { isTeamMember, hasAccessToModule } = useTeamMemberAccess();
+  const { hasModuleAccess } = useModuleAccess();
   
   const isTabAllowed = (tabId: string): boolean => {
+    if (!hasModuleAccess(tabId)) return false;
     if (!isTeamMember) return true;
     return hasAssignedModule(tabId, hasAccessToModule);
   };

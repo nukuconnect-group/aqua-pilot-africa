@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ProductionUnitsProvider } from '@/contexts/ProductionUnitsContext';
 import { IoTProvider } from '@/contexts/IoTContext';
 import { LogsProvider } from '@/contexts/LogsContext';
+import { ModuleAccessProvider } from '@/contexts/ModuleAccessContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import AutoTranslate from '@/i18n/AutoTranslate';
 import { Toaster } from '@/components/ui/toaster';
@@ -99,6 +100,7 @@ const App: React.FC = () => {
           <SettingsProvider>
             <AutoTranslate />
             <AuthProvider>
+              <ModuleAccessProvider>
               <ProductionUnitsProvider>
                 <IoTProvider>
                   <LogsProvider>
@@ -106,6 +108,7 @@ const App: React.FC = () => {
                   </LogsProvider>
                 </IoTProvider>
               </ProductionUnitsProvider>
+              </ModuleAccessProvider>
             </AuthProvider>
           </SettingsProvider>
         </BrowserRouter>

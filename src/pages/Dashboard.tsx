@@ -45,7 +45,9 @@ import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Building2, Info, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { APP_MODULE_PERMISSIONS, hasAssignedModule, moduleParamToTabId } from '@/lib/moduleAccess';
+import { APP_MODULE_PERMISSIONS, hasAssignedModule, moduleParamToTabId, tabToModuleId } from '@/lib/moduleAccess';
+import { useModuleAccess } from '@/contexts/ModuleAccessContext';
+import ModuleNotIncluded from '@/components/subscription/ModuleNotIncluded';
 import {
   beginRouteTransition,
   cleanupBlockingOverlays,
@@ -70,6 +72,7 @@ const Dashboard: React.FC = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [moduleResetKey, setModuleResetKey] = useState(0);
   const { isTeamMember, teamMemberInfo, isLoading: isLoadingAccess, hasAccessToModule, getAllowedModulesList } = useTeamMemberAccess();
+  const { hasModuleAccess, isLoading: isLoadingPlan } = useModuleAccess();
 
   const getFirstAllowedTab = () => {
     const allowed = getAllowedModulesList();
@@ -78,6 +81,7 @@ const Dashboard: React.FC = () => {
   };
 
   const canAccessTab = (tab: string) => {
+    if (!hasModuleAccess(tab)) return false;
     if (!isTeamMember) return true;
     if (tab === 'dashboard' && getAllowedModulesList().length === 0) return true;
     return hasAssignedModule(tab, hasAccessToModule);
@@ -230,6 +234,11 @@ const Dashboard: React.FC = () => {
   }, [activeTab]);
 
   const renderContent = () => {
+    // Abonnement : module non inclus -> aucun rendu du module, aucune donnée exposée.
+    if (!isLoadingAccess && !isLoadingPlan && activeTab !== 'dashboard' && !hasModuleAccess(activeTab)) {
+      return <ModuleNotIncluded moduleId={tabToModuleId(activeTab)} onBack={() => handleTabChange('dashboard')} />;
+    }
+
     if (isTeamMember && !isLoadingAccess && !canAccessTab(activeTab)) {
       return (
         <>

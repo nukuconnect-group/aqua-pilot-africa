@@ -36,6 +36,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import { Badge } from '@/components/ui/badge';
 import { hasAssignedModule } from '@/lib/moduleAccess';
+import { useModuleAccess } from '@/contexts/ModuleAccessContext';
 
 interface MobileMenuModalProps {
   isOpen: boolean;
@@ -48,8 +49,10 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
   const { t } = useSettings();
   const { user } = useAuth();
   const { isTeamMember, teamMemberInfo, hasAccessToModule } = useTeamMemberAccess();
+  const { hasModuleAccess } = useModuleAccess();
 
   const isTabAllowed = (tabId: string): boolean => {
+    if (!hasModuleAccess(tabId)) return false;
     if (!isTeamMember) return true;
     return hasAssignedModule(tabId, hasAccessToModule);
   };

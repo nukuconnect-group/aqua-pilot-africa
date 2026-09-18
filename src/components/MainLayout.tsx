@@ -36,6 +36,8 @@ import AnalyticsDashboard from './analytics/AnalyticsDashboard';
 import PerformanceAlertsConfig from './alerts/PerformanceAlertsConfig';
 import PerformanceAlertsPanel from './alerts/PerformanceAlertsPanel';
 import { hasAssignedModule } from '@/lib/moduleAccess';
+import { useModuleAccess } from '@/contexts/ModuleAccessContext';
+import ModuleNotIncluded from '@/components/subscription/ModuleNotIncluded';
 import FarmJournalAlert from './reports/FarmJournalAlert';
 import { useDailyFarmJournal } from '@/hooks/useDailyFarmJournal';
 
@@ -43,11 +45,14 @@ const MainLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { isTeamMember, hasAccessToModule, isLoading: accessLoading } = useTeamMemberAccess();
+  const { hasModuleAccess, isLoading: planLoading } = useModuleAccess();
   useDailyFarmJournal();
 
   const handleTabChange = (tab: string) => {
     if (tab === 'settings') {
       setShowMobileMenu(true);
+    } else if (tab !== 'dashboard' && !hasModuleAccess(tab)) {
+      setActiveTab(tab); // rendu bloqué par ModuleNotIncluded
     } else if (!isTeamMember || hasAssignedModule(tab, hasAccessToModule) || tab === 'dashboard') {
       setActiveTab(tab);
     } else {
@@ -57,6 +62,10 @@ const MainLayout = () => {
   };
 
   const renderContent = () => {
+    if (!planLoading && activeTab !== 'dashboard' && !hasModuleAccess(activeTab)) {
+      return <ModuleNotIncluded moduleId={activeTab} onBack={() => setActiveTab('dashboard')} />;
+    }
+
     // Tableau de bord unifié : tous les utilisateurs (admin, membres) partagent
     // la même vue. La visibilité des modules est pilotée par le RBAC dans la sidebar.
     // Blocage strict : un membre ne peut afficher qu'un module autorisé
