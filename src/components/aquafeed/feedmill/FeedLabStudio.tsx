@@ -84,6 +84,7 @@ const FeedLabStudio: React.FC = () => {
   const [draft, setDraft] = useState<LabIngredient | null>(null);
   const [country, setCountry] = useState<string>('TG');
   const [resultTab, setResultTab] = useState('recette');
+  const [marginRate, setMarginRate] = useState<number>(25);
 
 
   useEffect(() => { writeStore(STORE_KEY, saved); }, [saved]);
@@ -174,8 +175,7 @@ const FeedLabStudio: React.FC = () => {
     setTimeout(() => {
       compute(ings, nextTargets, nextQty, nextMode);
       setBusy(false);
-      setResultTab('fiche');
-      toast({ title: 'Formulation calculée', description: `${nextQty} kg · ${pb} % de protéines · consultez la fiche de fabrication.` });
+      setResultTab('proposition');
     }, 10);
   };
 
