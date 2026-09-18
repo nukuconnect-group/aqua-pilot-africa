@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import {
   FULL_PERMISSIONS,
   MODULE_CATALOG,
@@ -12,7 +13,11 @@ import {
   type PlanConfig,
   computeModuleAccess,
   loadPlanConfigs,
+  loadUnitModuleRules,
+  loadUserModuleOverrides,
   resolvePlanKey,
+  type UnitModuleRules,
+  type UserModuleOverrides,
 } from '@/lib/planModules';
 import { tabToModuleId } from '@/lib/moduleAccess';
 
@@ -35,18 +40,27 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { user, isDemoMode } = useAuth();
   const { subscription, loading: subLoading, reload } = useCurrentSubscription();
   const { isTeamMember, hasAccessToModule, isLoading: teamLoading } = useTeamMemberAccess();
+  const { activeUnit } = useProductionUnits();
 
   const [plans, setPlans] = useState<PlanConfig[]>([]);
   const [source, setSource] = useState<'remote' | 'local'>('local');
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [userOverrides, setUserOverrides] = useState<UserModuleOverrides>({});
+  const [unitRules, setUnitRules] = useState<UnitModuleRules | undefined>();
 
   const load = useCallback(async () => {
     setLoadingPlans(true);
-    const result = await loadPlanConfigs();
+    const [result, rules, overrides] = await Promise.all([
+      loadPlanConfigs(),
+      loadUnitModuleRules(),
+      user?.id ? loadUserModuleOverrides(user.id) : Promise.resolve({}),
+    ]);
     setPlans(result.plans);
     setSource(result.source);
+    setUnitRules(rules);
+    setUserOverrides(overrides);
     setLoadingPlans(false);
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     load();
@@ -86,8 +100,12 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
       all.forEach((key) => { perms[key] = FULL_PERMISSIONS; });
       return { allowed: all, permissions: perms };
     }
-    return computeModuleAccess(currentPlan, user?.role || 'user');
-  }, [currentPlan, isUnrestricted, user?.role]);
+    return computeModuleAccess(currentPlan, user?.role || 'user', {
+      userOverrides,
+      activeUnitType: activeUnit?.type || null,
+      unitRules,
+    });
+  }, [activeUnit?.type, currentPlan, isUnrestricted, unitRules, user?.role, userOverrides]);
 
   const hasModuleAccess = useCallback(
     (moduleOrTabId: string) => {

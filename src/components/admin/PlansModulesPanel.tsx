@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Save, Layers, ShieldCheck, History, Crown, RefreshCw } from 'lucide-react';
+import { Loader2, Save, Layers, ShieldCheck, History, Crown, RefreshCw, Users, Building2, RotateCcw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useModuleAccess } from '@/contexts/ModuleAccessContext';
@@ -21,11 +22,24 @@ import {
   type AuditEntry,
   type ModuleAction,
   type PlanConfig,
+  type UnitModuleRules,
+  type UserModuleOverrides,
+  DEFAULT_UNIT_MODULE_RULES,
+  UNIT_TYPE_LABELS,
   loadAuditEntries,
+  loadUnitModuleRules,
+  loadUserModuleOverrides,
+  resetUserModuleOverrides,
   savePlanConfig,
+  saveUnitModuleRules,
+  saveUserModuleOverrides,
 } from '@/lib/planModules';
+import { supabase } from '@/integrations/supabase/appClient';
+import type { ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 
-const PlansModulesPanel: React.FC = () => {
+interface AdminModuleUser { id: string; email: string; fullName: string; role: string; }
+
+const PlansModulesPanel: React.FC<{ users: AdminModuleUser[] }> = ({ users }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { plans, source, refresh, isLoading } = useModuleAccess();
@@ -34,6 +48,14 @@ const PlansModulesPanel: React.FC = () => {
   const [draft, setDraft] = useState<PlanConfig | null>(null);
   const [saving, setSaving] = useState(false);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [userOverrides, setUserOverrides] = useState<UserModuleOverrides>({});
+  const [selectedUserPlan, setSelectedUserPlan] = useState('free');
+  const [selectedUserUnits, setSelectedUserUnits] = useState<ProductionUnitType[]>([]);
+  const [unitRules, setUnitRules] = useState<UnitModuleRules>(structuredClone(DEFAULT_UNIT_MODULE_RULES));
+  const [savingUser, setSavingUser] = useState(false);
+  const [savingRules, setSavingRules] = useState(false);
 
   useEffect(() => {
     if (!plans.length) return;
@@ -45,7 +67,23 @@ const PlansModulesPanel: React.FC = () => {
 
   useEffect(() => {
     loadAuditEntries().then(setAudit);
+    loadUnitModuleRules().then(setUnitRules);
   }, []);
+
+  useEffect(() => {
+    if (!selectedUserId) return;
+    Promise.all([
+      loadUserModuleOverrides(selectedUserId),
+      (supabase as any).from('subscriptions').select('plan').eq('user_id', selectedUserId).in('status', ['active', 'trial']).order('end_date', { ascending: false }).limit(1).maybeSingle(),
+      (supabase as any).from('production_units').select('type').eq('user_id', selectedUserId),
+    ]).then(([overrides, subscriptionResult, unitsResult]) => {
+      setUserOverrides(overrides);
+      const rawPlan = subscriptionResult.data?.plan || 'free';
+      const aliases: Record<string, string> = { trial_discovery: 'professional', annual_basic: 'standard', annual_pro: 'professional', annual_enterprise: 'enterprise', annual: 'professional', monthly: 'standard' };
+      setSelectedUserPlan(aliases[rawPlan] || rawPlan);
+      setSelectedUserUnits(Array.from(new Set(((unitsResult.data || []) as { type: ProductionUnitType }[]).map((row) => row.type))));
+    });
+  }, [selectedUserId]);
 
   const original = useMemo(() => plans.find((p) => p.key === selectedKey) || undefined, [plans, selectedKey]);
 
@@ -95,6 +133,33 @@ const PlansModulesPanel: React.FC = () => {
           ? 'Les nouvelles permissions sont appliquées immédiatement.'
           : "Enregistré localement : les tables plans/plan_modules ne sont pas encore créées dans la base.",
     });
+  };
+
+  const filteredAdminUsers = useMemo(() => {
+    const needle = userSearch.trim().toLowerCase();
+    return needle ? users.filter((item) => `${item.fullName} ${item.email}`.toLowerCase().includes(needle)) : users;
+  }, [userSearch, users]);
+  const selectedUser = users.find((item) => item.id === selectedUserId);
+  const selectedPlan = plans.find((plan) => plan.key === selectedUserPlan) || plans.find((plan) => plan.key === 'free');
+  const handleSaveUser = async () => {
+    if (!selectedUserId) return;
+    setSavingUser(true);
+    const result = await saveUserModuleOverrides(selectedUserId, userOverrides, user?.email || 'admin');
+    setSavingUser(false);
+    toast({ title: 'Accès utilisateur mis à jour', description: result === 'remote' ? 'Les restrictions sont appliquées immédiatement.' : 'Restrictions enregistrées localement en attente des tables distantes.' });
+  };
+  const handleResetUser = async () => {
+    if (!selectedUserId) return;
+    await resetUserModuleOverrides(selectedUserId);
+    setUserOverrides({});
+    toast({ title: 'Droits hérités restaurés', description: "L’utilisateur suit de nouveau son abonnement et son unité active." });
+  };
+  const toggleUnitRule = (type: ProductionUnitType, moduleKey: string, enabled: boolean) => setUnitRules((current) => ({ ...current, [type]: enabled ? Array.from(new Set([...current[type], moduleKey])) : current[type].filter((key) => key !== moduleKey) }));
+  const handleSaveRules = async () => {
+    setSavingRules(true);
+    const result = await saveUnitModuleRules(unitRules);
+    setSavingRules(false);
+    toast({ title: 'Compatibilité des unités mise à jour', description: result === 'remote' ? 'Les menus sont recalculés immédiatement.' : 'Règles enregistrées localement en attente des tables distantes.' });
   };
 
   if (isLoading && !draft) {
@@ -155,9 +220,11 @@ const PlansModulesPanel: React.FC = () => {
 
       {draft && (
         <Tabs defaultValue="modules" className="space-y-4">
-          <TabsList>
+          <TabsList className="h-auto w-full flex-wrap justify-start">
             <TabsTrigger value="modules"><Layers className="w-4 h-4 mr-1" /> Modules inclus</TabsTrigger>
             <TabsTrigger value="permissions"><ShieldCheck className="w-4 h-4 mr-1" /> Permissions par rôle</TabsTrigger>
+            <TabsTrigger value="users"><Users className="w-4 h-4 mr-1" /> Utilisateurs</TabsTrigger>
+            <TabsTrigger value="units"><Building2 className="w-4 h-4 mr-1" /> Types d’unités</TabsTrigger>
             <TabsTrigger value="audit"><History className="w-4 h-4 mr-1" /> Journal d'audit</TabsTrigger>
           </TabsList>
 
@@ -226,6 +293,17 @@ const PlansModulesPanel: React.FC = () => {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-4">
+            <Card><CardHeader className="pb-3"><CardTitle className="text-lg">Restrictions par utilisateur</CardTitle></CardHeader><CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2"><div><Label>Rechercher</Label><Input value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="Nom ou e-mail" /></div><div><Label>Utilisateur</Label><Select value={selectedUserId} onValueChange={setSelectedUserId}><SelectTrigger><SelectValue placeholder="Sélectionner un compte" /></SelectTrigger><SelectContent>{filteredAdminUsers.map((item) => <SelectItem key={item.id} value={item.id}>{item.fullName} — {item.email}</SelectItem>)}</SelectContent></Select></div></div>
+              {selectedUser && selectedPlan && <><div className="flex flex-wrap gap-2 text-sm"><Badge variant="outline">{selectedPlan.name}</Badge><Badge variant="secondary">{selectedUser.role}</Badge>{selectedUserUnits.map((type) => <Badge key={type}>{UNIT_TYPE_LABELS[type]}</Badge>)}</div><p className="text-sm text-muted-foreground">Une autorisation individuelle ne dépasse jamais les modules compris dans l’abonnement. La compatibilité de l’unité active s’applique ensuite.</p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{MODULE_CATALOG.map((module) => { const included = selectedPlan.modules.includes(module.key); const value = userOverrides[module.key] === false ? 'blocked' : userOverrides[module.key] === true ? 'allowed' : 'inherit'; return <div key={module.key} className="flex items-center justify-between gap-3 rounded-md border p-3"><div className="min-w-0"><p className="font-medium truncate">{module.name}</p><p className="text-xs text-muted-foreground">{included ? 'Inclus au plan' : 'Absent du plan'}</p></div><Select value={value} disabled={module.isCore || !included} onValueChange={(next) => setUserOverrides((current) => { const copy = { ...current }; if (next === 'inherit') delete copy[module.key]; else copy[module.key] = next === 'allowed'; return copy; })}><SelectTrigger className="w-[118px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="inherit">Hérité</SelectItem><SelectItem value="allowed">Autorisé</SelectItem><SelectItem value="blocked">Bloqué</SelectItem></SelectContent></Select></div>; })}</div><div className="flex flex-wrap gap-2"><Button onClick={handleSaveUser} disabled={savingUser}>{savingUser ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Enregistrer</Button><Button variant="outline" onClick={handleResetUser}><RotateCcw className="w-4 h-4 mr-2" />Réinitialiser</Button></div></>}
+            </CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="units" className="space-y-4">
+            <Card><CardHeader className="pb-3"><CardTitle className="text-lg">Modules compatibles par type d’unité</CardTitle></CardHeader><CardContent className="space-y-4 overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Module</TableHead>{(Object.keys(UNIT_TYPE_LABELS) as ProductionUnitType[]).map((type) => <TableHead key={type} className="min-w-[120px] text-center">{UNIT_TYPE_LABELS[type]}</TableHead>)}</TableRow></TableHeader><TableBody>{MODULE_CATALOG.map((module) => <TableRow key={module.key}><TableCell className="whitespace-nowrap font-medium">{module.name}</TableCell>{(Object.keys(UNIT_TYPE_LABELS) as ProductionUnitType[]).map((type) => <TableCell key={type} className="text-center"><Checkbox checked={module.isCore || unitRules[type].includes(module.key)} disabled={module.isCore} onCheckedChange={(checked) => toggleUnitRule(type, module.key, Boolean(checked))} /></TableCell>)}</TableRow>)}</TableBody></Table><Button onClick={handleSaveRules} disabled={savingRules}>{savingRules ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Enregistrer la matrice</Button></CardContent></Card>
           </TabsContent>
 
           <TabsContent value="permissions" className="space-y-4">

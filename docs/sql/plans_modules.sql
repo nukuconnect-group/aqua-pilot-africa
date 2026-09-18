@@ -63,6 +63,30 @@ CREATE POLICY "plan_audit_admin" ON public.plan_module_audit FOR ALL TO authenti
   USING (public.has_role(auth.uid(), 'admin'))
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+CREATE TABLE IF NOT EXISTS public.user_module_overrides (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, module_key text NOT NULL,
+  allowed boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now(), UNIQUE (user_id, module_key)
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_module_overrides TO authenticated;
+GRANT ALL ON public.user_module_overrides TO service_role;
+ALTER TABLE public.user_module_overrides ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "users_read_own_module_overrides" ON public.user_module_overrides;
+CREATE POLICY "users_read_own_module_overrides" ON public.user_module_overrides FOR SELECT TO authenticated USING (user_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));
+DROP POLICY IF EXISTS "admins_manage_module_overrides" ON public.user_module_overrides;
+CREATE POLICY "admins_manage_module_overrides" ON public.user_module_overrides FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
+CREATE TABLE IF NOT EXISTS public.unit_type_module_rules (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), unit_type text NOT NULL, module_key text NOT NULL,
+  enabled boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now(), UNIQUE (unit_type, module_key)
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.unit_type_module_rules TO authenticated;
+GRANT ALL ON public.unit_type_module_rules TO service_role;
+ALTER TABLE public.unit_type_module_rules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_read_unit_module_rules" ON public.unit_type_module_rules;
+CREATE POLICY "authenticated_read_unit_module_rules" ON public.unit_type_module_rules FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "admins_manage_unit_module_rules" ON public.unit_type_module_rules;
+CREATE POLICY "admins_manage_unit_module_rules" ON public.unit_type_module_rules FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+
 CREATE OR REPLACE FUNCTION public.has_module_access(_user_id uuid, _module_key text)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT public.has_role(_user_id, 'admin')
@@ -80,7 +104,11 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
         AND s.status IN ('active','trial')
         AND s.end_date >= CURRENT_DATE
         AND pm.module_key = _module_key
-        AND pm.enabled);
+        AND pm.enabled
+        AND COALESCE((
+          SELECT umo.allowed FROM public.user_module_overrides umo
+          WHERE umo.user_id = _user_id AND umo.module_key = _module_key
+        ), true));
 $$;
 GRANT EXECUTE ON FUNCTION public.has_module_access(uuid, text) TO authenticated, anon;
 

@@ -209,8 +209,8 @@ const AdminDashboard = () => {
       const weekAgo = subDays(new Date(), 7);
       return userDate >= weekAgo;
     }).length,
-    errors: logs.filter(l => l.severity === 'error').length,
-    warnings: logs.filter(l => l.severity === 'warning').length,
+    errors: visibleErrorLogs.filter(l => l.severity === 'error').length,
+    warnings: visibleErrorLogs.filter(l => l.severity === 'warning').length,
     activities: logs.filter(l => {
       const logDate = new Date(l.timestamp);
       const today = startOfDay(new Date());
@@ -1314,7 +1314,7 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="plans" className="space-y-4">
-          <PlansModulesPanel />
+          <PlansModulesPanel users={users.map((u) => ({ id: u.id, email: u.email, fullName: u.full_name, role: u.role }))} />
         </TabsContent>
 
         <TabsContent value="support" className="space-y-4">
