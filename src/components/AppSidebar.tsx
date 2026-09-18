@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import { Badge } from '@/components/ui/badge';
 import { hasAssignedModule } from '@/lib/moduleAccess';
+import { useModuleAccess } from '@/contexts/ModuleAccessContext';
 import { useSecurityFindings } from '@/components/admin/SecurityFindingsPanel';
 
 interface AppSidebarProps {
@@ -30,6 +31,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   const { t, language } = useSettings();
   const { user } = useAuth();
   const { isTeamMember, teamMemberInfo, hasAccessToModule } = useTeamMemberAccess();
+  const { hasModuleAccess } = useModuleAccess();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isAdminView = activeTab === 'admin';
@@ -134,6 +136,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
 
   // Verifier si un tab est accessible
   const isTabAllowed = (tabId: string): boolean => {
+    if (!hasModuleAccess(tabId)) return false; // Abonnement
     if (!isTeamMember) return true; // Non-membre = acces complet
     return hasAssignedModule(tabId, hasAccessToModule);
   };
