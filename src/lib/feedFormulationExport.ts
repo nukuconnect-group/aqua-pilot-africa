@@ -76,7 +76,7 @@ export function buildFormulationExport(input: FormulationExportInput): ExportOpt
   if (input.notes) infos.push(['Informations complémentaires', input.notes]);
 
   Object.entries(input.nutrition ?? {}).forEach(([k, v]) => {
-    if (v == null || v === '') return;
+    if (v == null || !Number.isFinite(Number(v))) return;
     infos.push([`Valeur nutritionnelle — ${k}`, n(v, 2)]);
   });
 
