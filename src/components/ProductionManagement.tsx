@@ -124,6 +124,8 @@ const ProductionManagement = () => {
     });
   }, [cycles, allCycleInfrastructures, batches, healthRecords]);
 
+  const [cycleAlertsData, setCycleAlertsData] = useState<any>(null);
+
   if (!activeUnit) {
     return (
       <div className="space-y-responsive">
@@ -152,7 +154,6 @@ const ProductionManagement = () => {
     );
   }
 
-  const [cycleAlertsData, setCycleAlertsData] = useState<any>(null);
 
   useEffect(() => {
     if (unitCycles.length > 0) {
