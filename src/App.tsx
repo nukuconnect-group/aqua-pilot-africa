@@ -96,6 +96,7 @@ const App: React.FC = () => {
       <ErrorBoundary>
         <BrowserRouter>
           <SettingsProvider>
+            <AutoTranslate />
             <AuthProvider>
               <ProductionUnitsProvider>
                 <IoTProvider>
