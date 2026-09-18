@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Home, Building2, Wrench, Utensils, Heart, Package, Calendar, Users, FileText, Settings, Beef, Calculator, UserCheck, ShoppingCart, Wifi, ShoppingBag, Truck, UserCog, Database, Shield, MessageCircle, Headphones, BarChart3, Bell, ArrowLeft, UserPlus, ClipboardList, CreditCard, Activity, Eye, AlertTriangle, Mail } from 'lucide-react';
-import { Sparkles, BookOpen, Stethoscope } from 'lucide-react';
+import { Sparkles, BookOpen, Stethoscope, Layers } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -61,6 +61,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
         { id: 'registrations', label: 'Inscriptions', icon: ClipboardList },
         { id: 'users', label: 'Utilisateurs', icon: Users },
         { id: 'subscriptions', label: 'Abonnements', icon: CreditCard },
+        { id: 'plans', label: 'Plans & Modules', icon: Layers },
         { id: 'support', label: 'Support', icon: Headphones },
         { id: 'database', label: 'Base de données', icon: Database },
         { id: 'activity', label: 'Activités', icon: Activity },
