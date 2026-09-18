@@ -10,6 +10,7 @@ import IngredientLibrary from './IngredientLibrary';
 import FormulationsList from './FormulationsList';
 import ManufacturingHistory from './ManufacturingHistory';
 import ManufactureDialog from './ManufactureDialog';
+import FeedLabStudio from './FeedLabStudio';
 
 interface Props { onBack: () => void; }
 
@@ -63,7 +64,8 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full sm:w-auto">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full sm:w-auto">
+          <TabsTrigger value="lab"><FlaskConical className="w-4 h-4 mr-1.5" />Laboratoire</TabsTrigger>
           <TabsTrigger value="studio"><FlaskConical className="w-4 h-4 mr-1.5" />Formuler</TabsTrigger>
           <TabsTrigger value="formulations"><FolderOpen className="w-4 h-4 mr-1.5" />Mes formulations</TabsTrigger>
           <TabsTrigger value="ingredients"><Boxes className="w-4 h-4 mr-1.5" />Ingrédients</TabsTrigger>
