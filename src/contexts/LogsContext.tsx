@@ -24,6 +24,13 @@ interface LogsContextType {
 
 const OBSOLETE_ERROR_PATTERNS = [
   'Cannot stop, scanner is not running or paused',
+  'postgres_changes',
+  'Stethoscope is not defined',
+  'useAuth must be used within an AuthProvider',
+  'Minified React error #310',
+  'invariant=310',
+  'dev-sw.js',
+  'ServiceWorker',
 ];
 
 const isObsoleteError = (log: { action?: string | null; details?: string | null }) => {

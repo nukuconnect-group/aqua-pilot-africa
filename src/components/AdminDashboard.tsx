@@ -148,11 +148,15 @@ const AdminDashboard = () => {
         .delete()
         .in('severity', ['error', 'warning']);
       if (error) throw error;
-      setPurgedAt(new Date().toISOString());
+      const ts = new Date().toISOString();
+      try { localStorage.setItem('aquapilote-error-log-purged-at', ts); } catch { /* ignore */ }
+      setPurgedAt(ts);
       toast({ title: 'Journal vidé', description: 'Les erreurs et avertissements ont été supprimés.' });
     } catch (e: any) {
       // Même si la suppression serveur échoue (RLS), on masque localement.
-      setPurgedAt(new Date().toISOString());
+      const ts = new Date().toISOString();
+      try { localStorage.setItem('aquapilote-error-log-purged-at', ts); } catch { /* ignore */ }
+      setPurgedAt(ts);
       toast({
         title: 'Journal masqué',
         description: e?.message || 'Suppression serveur indisponible, affichage réinitialisé.',
