@@ -7,6 +7,7 @@ import { Copy, Pencil, Trash2, Factory, Archive, ArchiveRestore, Search, Scale }
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import ExportDropdown from '@/components/ExportDropdown';
 import { getSpecies, getStage } from '@/lib/feedFormulation';
+import { buildFormulationExport } from '@/lib/feedFormulationExport';
 import { StoredFormulation } from './useFeedMill';
 
 interface Props {
