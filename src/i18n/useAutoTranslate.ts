@@ -6,16 +6,19 @@ const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAR
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
 const MARK = 'data-i18n-en';
 
-// Mots fréquents permettant de repérer un texte français encore non traduit.
-const FRENCH_HINT =
-  /(^|\s)(le|la|les|un|une|des|du|de|au|aux|et|ou|pour|avec|sans|dans|sur|par|vos|votre|nos|notre|vous|nous|est|sont|être|plus|tous|toutes|cette|ce|ces|qui|que|selon|afin|entre|chaque)(\s|$)/i;
+// Textes déjà anglais ou neutres : inutile de les envoyer à la traduction.
+const ENGLISH_ONLY =
+  /^(ok|yes|no|on|off|email|e-mail|dashboard|home|login|logout|admin|pdf|csv|excel|word|kg|g|mg|l|ml|ph|id|url|api|ia|ai|sms|http[s]?:\/\/.*)$/i;
 
 const shouldAiTranslate = (text: string) => {
   const t = text.trim();
-  if (t.length < 8 || t.length > 400) return false;
-  if (!/[a-zà-ÿ]/i.test(t)) return false;
-  if (/^[\d\s.,%€$/-]+$/.test(t)) return false;
-  return FRENCH_HINT.test(t) || /[éèêàùôçîïœ]/i.test(t);
+  if (t.length < 2 || t.length > 400) return false;
+  // Doit contenir au moins deux lettres consécutives.
+  if (!/[a-zà-ÿ]{2}/i.test(t)) return false;
+  // Nombres, dates, pourcentages, montants, codes.
+  if (/^[\d\s.,:%€$/+-]+$/.test(t)) return false;
+  if (ENGLISH_ONLY.test(t)) return false;
+  return true;
 };
 
 const translate = (value: string): string | null => {
