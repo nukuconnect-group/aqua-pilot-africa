@@ -1,9 +1,32 @@
 import { useEffect } from 'react';
 import { translateFrToEn } from './frToEn';
+import { aiTranslate, onTranslationsReady } from './aiTranslate';
 
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA']);
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
 const MARK = 'data-i18n-en';
+
+// Mots fréquents permettant de repérer un texte français encore non traduit.
+const FRENCH_HINT =
+  /(^|\s)(le|la|les|un|une|des|du|de|au|aux|et|ou|pour|avec|sans|dans|sur|par|vos|votre|nos|notre|vous|nous|est|sont|être|plus|tous|toutes|cette|ce|ces|qui|que|selon|afin|entre|chaque)(\s|$)/i;
+
+const shouldAiTranslate = (text: string) => {
+  const t = text.trim();
+  if (t.length < 8 || t.length > 400) return false;
+  if (!/[a-zà-ÿ]/i.test(t)) return false;
+  if (/^[\d\s.,%€$/-]+$/.test(t)) return false;
+  return FRENCH_HINT.test(t) || /[éèêàùôçîïœ]/i.test(t);
+};
+
+const translate = (value: string): string | null => {
+  const dict = translateFrToEn(value);
+  if (dict) return dict;
+  if (!shouldAiTranslate(value)) return null;
+  const leading = value.match(/^\s*/)?.[0] ?? '';
+  const trailing = value.match(/\s*$/)?.[0] ?? '';
+  const ai = aiTranslate(value.trim());
+  return ai ? leading + ai + trailing : null;
+};
 
 const translateNode = (node: Text) => {
   const parent = node.parentElement;
@@ -11,7 +34,7 @@ const translateNode = (node: Text) => {
   if (parent.isContentEditable) return;
   const value = node.nodeValue;
   if (!value || !value.trim()) return;
-  const translated = translateFrToEn(value);
+  const translated = translate(value);
   if (translated && translated !== value) node.nodeValue = translated;
 };
 
@@ -19,11 +42,11 @@ const translateElement = (el: Element) => {
   for (const attr of ATTRS) {
     const value = el.getAttribute(attr);
     if (!value) continue;
-    const translated = translateFrToEn(value);
+    const translated = translate(value);
     if (translated && translated !== value) el.setAttribute(attr, translated);
   }
   if (el instanceof HTMLInputElement && (el.type === 'button' || el.type === 'submit') && el.value) {
-    const translated = translateFrToEn(el.value);
+    const translated = translate(el.value);
     if (translated) el.value = translated;
   }
 };
