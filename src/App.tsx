@@ -6,6 +6,7 @@ import { ProductionUnitsProvider } from '@/contexts/ProductionUnitsContext';
 import { IoTProvider } from '@/contexts/IoTContext';
 import { LogsProvider } from '@/contexts/LogsContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
+import AutoTranslate from '@/i18n/AutoTranslate';
 import { Toaster } from '@/components/ui/toaster';
 import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { ThemeProvider } from '@/components/ThemeProvider';
