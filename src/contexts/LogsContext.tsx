@@ -17,7 +17,7 @@ interface LogEntry {
 interface LogsContextType {
   logs: LogEntry[];
   addLog: (action: string, module: string, details: string, severity?: 'info' | 'warning' | 'error' | 'success') => Promise<void>;
-  clearLogs: () => void;
+  clearLogs: () => Promise<void>;
   getLogsByModule: (module: string) => LogEntry[];
   getLogsByUser: (userId: string) => LogEntry[];
 }
@@ -36,6 +36,18 @@ const OBSOLETE_ERROR_PATTERNS = [
 const isObsoleteError = (log: { action?: string | null; details?: string | null }) => {
   const content = `${log.action || ''} ${log.details || ''}`;
   return OBSOLETE_ERROR_PATTERNS.some((pattern) => content.includes(pattern));
+};
+
+const PURGED_AT_KEY = 'aquapilote-error-log-purged-at';
+
+const isAfterLastPurge = (timestamp?: string | null) => {
+  try {
+    const purgedAt = localStorage.getItem(PURGED_AT_KEY);
+    if (!purgedAt || !timestamp) return true;
+    return new Date(timestamp).getTime() > new Date(purgedAt).getTime();
+  } catch {
+    return true;
+  }
 };
 
 const LogsContext = createContext<LogsContextType | undefined>(undefined);
@@ -68,7 +80,7 @@ export const LogsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (data && Array.isArray(data)) {
-          const formattedLogs = data.filter((log: any) => !isObsoleteError(log)).map((log: any) => ({
+          const formattedLogs = data.filter((log: any) => !isObsoleteError(log) && isAfterLastPurge(log.timestamp)).map((log: any) => ({
             id: log.id,
             timestamp: log.timestamp,
             userId: log.user_id || '',
@@ -102,7 +114,7 @@ export const LogsProvider: React.FC<{ children: React.ReactNode }> = ({ children
         (payload) => {
           console.log('New log received:', payload);
           const newLog = payload.new as any;
-          if (isObsoleteError(newLog)) return;
+          if (isObsoleteError(newLog) || !isAfterLastPurge(newLog.timestamp)) return;
           const formattedLog: LogEntry = {
             id: newLog.id,
             timestamp: newLog.timestamp,
@@ -147,7 +159,14 @@ export const LogsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const clearLogs = () => {
+  const clearLogs = async () => {
+    const ts = new Date().toISOString();
+    try {
+      await supabase.from('activity_logs').delete().in('severity', ['error', 'warning']);
+    } catch {
+      /* Le marqueur local garantit la purge visuelle si la règle serveur refuse la suppression. */
+    }
+    try { localStorage.setItem(PURGED_AT_KEY, ts); } catch { /* ignore */ }
     setLogs([]);
   };
 
