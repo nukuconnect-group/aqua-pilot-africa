@@ -54,6 +54,26 @@ export interface StoredBatch {
 
 const db = supabase as any;
 
+/* ------------------------------------------------------------------ */
+/* Sauvegarde locale de secours                                        */
+/* Les tables distantes peuvent être absentes : l'atelier reste alors   */
+/* pleinement utilisable, les données sont conservées sur l'appareil.   */
+/* ------------------------------------------------------------------ */
+const LK = {
+  ingredients: 'aquafeed-mill-ingredients-v1',
+  formulations: 'aquafeed-mill-formulations-v1',
+  batches: 'aquafeed-mill-batches-v1',
+};
+
+const readLocal = <T,>(key: string, fallback: T): T => {
+  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T) : fallback; } catch { return fallback; }
+};
+const writeLocal = (key: string, value: unknown) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota */ }
+};
+const isMissingTable = (error: any) =>
+  !!error && (error.code === 'PGRST205' || /schema cache|does not exist|not find the table/i.test(error.message ?? ''));
+
 export function useFeedMill() {
   const { user } = useAuth();
   const { activeUnit } = useProductionUnits();
@@ -61,31 +81,62 @@ export function useFeedMill() {
   const [formulations, setFormulations] = useState<StoredFormulation[]>([]);
   const [batches, setBatches] = useState<StoredBatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [localMode, setLocalMode] = useState(false);
+
+  const loadLocal = useCallback(() => {
+    const ing = readLocal<StoredIngredient[]>(LK.ingredients, []);
+    if (ing.length === 0) {
+      const seeded = DEFAULT_INGREDIENTS.map((i: any) => normalizeIngredient({ ...i, id: i.id ?? crypto.randomUUID() }));
+      writeLocal(LK.ingredients, seeded);
+      setIngredients(seeded);
+    } else {
+      setIngredients(ing.map(normalizeIngredient));
+    }
+    setFormulations(readLocal<StoredFormulation[]>(LK.formulations, []));
+    setBatches(readLocal<StoredBatch[]>(LK.batches, []));
+  }, []);
 
   const loadAll = useCallback(async () => {
-    if (!user?.id) { setLoading(false); return; }
     setLoading(true);
     const [ing, form, bat] = await Promise.all([
       db.from('feed_ingredients').select('*').order('category').order('name'),
       db.from('feed_formulations').select('*').order('created_at', { ascending: false }),
       db.from('feed_manufacturing_batches').select('*').order('manufactured_at', { ascending: false }),
     ]);
+
+    if (isMissingTable(ing.error) || isMissingTable(form.error) || isMissingTable(bat.error) || !user?.id) {
+      setLocalMode(true);
+      loadLocal();
+      setLoading(false);
+      return;
+    }
+
+    setLocalMode(false);
     setIngredients((ing.data ?? []).map(normalizeIngredient));
     setFormulations(form.data ?? []);
     setBatches(bat.data ?? []);
     setLoading(false);
 
-    // Amorçage de la bibliothèque au premier usage
     if ((ing.data ?? []).length === 0) {
       await seedLibrary(user.id, activeUnit?.id ?? null);
       const again = await db.from('feed_ingredients').select('*').order('category').order('name');
       setIngredients((again.data ?? []).map(normalizeIngredient));
     }
-  }, [user?.id, activeUnit?.id]);
+  }, [user?.id, activeUnit?.id, loadLocal]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  /* ----------------------------- Ingrédients ----------------------------- */
   const saveIngredient = async (payload: Partial<StoredIngredient> & { id?: string }) => {
+    if (localMode) {
+      const row = normalizeIngredient({ ...payload, id: payload.id ?? crypto.randomUUID() });
+      const next = payload.id
+        ? ingredients.map(i => (i.id === payload.id ? row : i))
+        : [...ingredients, row];
+      writeLocal(LK.ingredients, next);
+      setIngredients(next);
+      return row;
+    }
     if (!user?.id) return null;
     const body = { ...payload, user_id: user.id, unit_id: activeUnit?.id ?? null, updated_at: new Date().toISOString() };
     const res = payload.id
@@ -100,12 +151,37 @@ export function useFeedMill() {
   };
 
   const deleteIngredient = async (id: string) => {
+    if (localMode) {
+      const next = ingredients.filter(i => i.id !== id);
+      writeLocal(LK.ingredients, next);
+      setIngredients(next);
+      return;
+    }
     const { error } = await db.from('feed_ingredients').delete().eq('id', id);
     if (error) toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     else await loadAll();
   };
 
+  /* ---------------------------- Formulations ----------------------------- */
   const saveFormulation = async (payload: any) => {
+    if (localMode) {
+      const row: StoredFormulation = {
+        id: payload.id ?? crypto.randomUUID(),
+        name: payload.name, species: payload.species, stage: payload.stage,
+        batch_size_kg: Number(payload.batch_size_kg || 0), mode: payload.mode ?? 'balanced',
+        targets: payload.targets ?? {}, lines: payload.lines ?? [], nutrition: payload.nutrition ?? {},
+        total_cost: Number(payload.total_cost || 0), cost_per_kg: Number(payload.cost_per_kg || 0),
+        status: payload.status ?? 'active', notes: payload.notes ?? null,
+        created_at: payload.created_at ?? new Date().toISOString(),
+        unit_id: activeUnit?.id ?? null,
+      };
+      const next = payload.id
+        ? formulations.map(f => (f.id === payload.id ? row : f))
+        : [row, ...formulations];
+      writeLocal(LK.formulations, next);
+      setFormulations(next);
+      return row;
+    }
     if (!user?.id) return null;
     const body = { ...payload, user_id: user.id, unit_id: activeUnit?.id ?? null, updated_at: new Date().toISOString() };
     const res = payload.id
@@ -120,12 +196,24 @@ export function useFeedMill() {
   };
 
   const deleteFormulation = async (id: string) => {
+    if (localMode) {
+      const next = formulations.filter(f => f.id !== id);
+      writeLocal(LK.formulations, next);
+      setFormulations(next);
+      return;
+    }
     const { error } = await db.from('feed_formulations').delete().eq('id', id);
     if (error) toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     else await loadAll();
   };
 
   const setFormulationStatus = async (id: string, status: string) => {
+    if (localMode) {
+      const next = formulations.map(f => (f.id === id ? { ...f, status } : f));
+      writeLocal(LK.formulations, next);
+      setFormulations(next);
+      return;
+    }
     const { error } = await db.from('feed_formulations').update({ status }).eq('id', id);
     if (error) toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     else await loadAll();
@@ -141,7 +229,6 @@ export function useFeedMill() {
     batchNumber: string;
     notes?: string;
   }) => {
-    if (!user?.id) return null;
     const { formulation, quantityKg, responsible, deductRaw, transferStock, batchNumber, notes } = opts;
     const ratio = formulation.batch_size_kg > 0 ? quantityKg / Number(formulation.batch_size_kg) : 1;
     const lines = (formulation.lines ?? []).map((l: any) => ({
@@ -151,6 +238,36 @@ export function useFeedMill() {
     }));
     const totalCost = lines.reduce((s: number, l: any) => s + Number(l.cost || 0), 0);
 
+    if (localMode) {
+      const batch: StoredBatch = {
+        id: crypto.randomUUID(),
+        batch_number: batchNumber,
+        formulation_id: formulation.id,
+        formulation_name: formulation.name,
+        species: formulation.species, stage: formulation.stage,
+        quantity_kg: quantityKg, lines, nutrition: formulation.nutrition,
+        total_cost: Number(totalCost.toFixed(2)),
+        cost_per_kg: quantityKg > 0 ? Number((totalCost / quantityKg).toFixed(2)) : 0,
+        responsible, status: 'produced',
+        stock_transferred: false, raw_deducted: deductRaw,
+        manufactured_at: new Date().toISOString(),
+        notes: notes ?? null,
+      };
+      if (deductRaw) {
+        const nextIng = ingredients.map(i => {
+          const l = lines.find((x: any) => x.ingredient_id === i.id);
+          return l ? { ...i, stock_kg: Math.max(0, Number(i.stock_kg || 0) - Number(l.quantity_kg || 0)) } : i;
+        });
+        writeLocal(LK.ingredients, nextIng);
+        setIngredients(nextIng);
+      }
+      const nextBatches = [batch, ...batches];
+      writeLocal(LK.batches, nextBatches);
+      setBatches(nextBatches);
+      return batch;
+    }
+
+    if (!user?.id) return null;
     const { data: batch, error } = await db.from('feed_manufacturing_batches').insert({
       user_id: user.id,
       unit_id: activeUnit?.id ?? null,
@@ -230,13 +347,19 @@ export function useFeedMill() {
   };
 
   const deleteBatch = async (id: string) => {
+    if (localMode) {
+      const next = batches.filter(b => b.id !== id);
+      writeLocal(LK.batches, next);
+      setBatches(next);
+      return;
+    }
     const { error } = await db.from('feed_manufacturing_batches').delete().eq('id', id);
     if (error) toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     else await loadAll();
   };
 
   return {
-    ingredients, formulations, batches, loading,
+    ingredients, formulations, batches, loading, localMode,
     reload: loadAll,
     saveIngredient, deleteIngredient,
     saveFormulation, deleteFormulation, setFormulationStatus,
