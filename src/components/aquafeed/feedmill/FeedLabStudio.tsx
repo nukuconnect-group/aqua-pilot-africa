@@ -82,6 +82,9 @@ const FeedLabStudio: React.FC = () => {
   const [saved, setSaved] = useState<SavedLab[]>(() => readStore<SavedLab[]>(STORE_KEY, []));
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<LabIngredient | null>(null);
+  const [country, setCountry] = useState<string>('TG');
+  const [resultTab, setResultTab] = useState('recette');
+
 
   useEffect(() => { writeStore(STORE_KEY, saved); }, [saved]);
 
