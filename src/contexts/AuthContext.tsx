@@ -662,6 +662,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'Trop de tentatives. Veuillez attendre quelques instants.' };
         }
 
+        if (
+          error.message.toLowerCase().includes('confirmation email') ||
+          error.message.toLowerCase().includes('sending email') ||
+          (error as any)?.code === 'unexpected_failure'
+        ) {
+          return {
+            success: false,
+            error:
+              "L'email de confirmation n'a pas pu être envoyé (configuration SMTP). Contactez le support : support@aquapilote.com",
+          };
+        }
+
         if (error.message.includes('invalid')) {
           return { success: false, error: 'Les informations fournies sont invalides.' };
         }
