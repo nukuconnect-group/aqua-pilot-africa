@@ -592,6 +592,107 @@ const FeedLabStudio: React.FC = () => {
               <TabsTrigger value="historique">Historique ({saved.length})</TabsTrigger>
             </TabsList>
 
+            <TabsContent value="proposition">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Wand2 className="w-4 h-4 text-primary" />Proposition de formulation — {name}
+                  </CardTitle>
+                  <CardDescription>{feedTypeLabel} · {round(result.total_quantity_kg, 2)} kg à fabriquer</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <Stat label="Type d'aliment recommandé" value={`${stageLabel} · ${round(result.totals.values.pb, 1)} % PB`} />
+                    <Stat label="Quantité totale" value={`${round(result.total_quantity_kg, 2)} kg`} />
+                    <Stat label="Coût total de fabrication" value={formatCurrency(commercial.totalCost)} />
+                    <Stat label="Coût de revient / kg" value={formatCurrency(commercial.perKg)} />
+                    <Stat label="Prix de vente indicatif / kg" value={formatCurrency(commercial.selling)} />
+                    <Stat label="Marge / kg" value={formatCurrency(commercial.marginPerKg)} />
+                    <Stat label="Marge potentielle totale" value={formatCurrency(commercial.marginTotal)} />
+                    <Stat label="Chiffre d'affaires estimé" value={formatCurrency(commercial.revenue)} />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs">Marge appliquée (%)</Label>
+                    <Input className="h-8 w-24" type="number" value={marginRate}
+                      onChange={e => setMarginRate(Number(e.target.value))} />
+                    <span className="text-xs text-muted-foreground">Le prix de vente indicatif se recalcule automatiquement.</span>
+                  </div>
+
+                  {keyIngredients.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold mb-2">Besoins en matières premières clés</p>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        {keyIngredients.map(k => (
+                          <div key={k.label} className="border rounded-md px-3 py-2">
+                            <p className="text-xs text-muted-foreground">{k.label}</p>
+                            <p className="text-sm font-semibold">{round(k.line!.quantity_kg, 2)} kg</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {round(k.line!.inclusion_pct, 2)} % · {formatCurrency(k.line!.cost)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-sm font-semibold mb-2">
+                      Détail des ingrédients — modifiez les quantités, tout se recalcule automatiquement
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm min-w-[34rem]">
+                        <thead><tr className="text-left text-muted-foreground border-b">
+                          <th className="py-1.5 pr-2">Ingrédient</th>
+                          <th className="py-1.5 pr-2">%</th>
+                          <th className="py-1.5 pr-2">Quantité (kg)</th>
+                          <th className="py-1.5 pr-2">Prix/kg</th>
+                          <th className="py-1.5 pr-2">Coût</th>
+                        </tr></thead>
+                        <tbody>
+                          {result.lines.map(l => (
+                            <tr key={l.ingredient_id} className="border-b last:border-0">
+                              <td className="py-1.5 pr-2">{l.name}</td>
+                              <td className="py-1.5 pr-2">
+                                <Input className="h-7 w-20" type="number" value={manual[l.ingredient_id] ?? round(l.inclusion_pct, 2)}
+                                  onChange={e => runManual({ ...manual, [l.ingredient_id]: Number(e.target.value) })} />
+                              </td>
+                              <td className="py-1.5 pr-2">
+                                <Input className="h-7 w-24" type="number" value={round(l.quantity_kg, 2)}
+                                  onChange={e => setLineKg(l.ingredient_id, Number(e.target.value))} />
+                              </td>
+                              <td className="py-1.5 pr-2">{formatCurrency(l.price_per_kg)}</td>
+                              <td className="py-1.5 pr-2">{formatCurrency(l.cost)}</td>
+                            </tr>
+                          ))}
+                          <tr className="font-semibold">
+                            <td className="py-1.5 pr-2">TOTAL</td>
+                            <td className={`py-1.5 pr-2 ${Math.abs(totalPct - 100) > 0.5 ? 'text-destructive' : 'text-emerald-600'}`}>{totalPct} %</td>
+                            <td className="py-1.5 pr-2">{round(result.total_quantity_kg, 2)}</td>
+                            <td className="py-1.5 pr-2">—</td>
+                            <td className="py-1.5 pr-2">{formatCurrency(result.total_cost)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold mb-2">Recommandations</p>
+                    <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
+                      {buildRecommendations(species, stage, result).map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-2 flex-wrap">
+                    <ExportDropdown options={fullExportOptions} label="Exporter (PDF / Word / Excel)" />
+                    <Button size="sm" onClick={saveFormulation}><Save className="w-4 h-4 mr-1.5" />Enregistrer la formulation</Button>
+                    <Button size="sm" variant="outline" onClick={() => setResultTab('fiche')}>Voir la fiche de fabrication</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="fiche">
               <Card>
                 <CardHeader className="pb-2">
