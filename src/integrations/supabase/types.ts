@@ -1096,6 +1096,129 @@ export type Database = {
           },
         ]
       }
+      feed_production_cycles: {
+        Row: {
+          batch_number: string | null
+          consumed_materials: Json
+          cost_per_kg: number
+          created_at: string
+          end_date: string | null
+          formulation_id: string | null
+          formulation_name: string | null
+          id: string
+          loss_kg: number
+          name: string
+          notes: string | null
+          planned_quantity_kg: number
+          produced_quantity_kg: number
+          start_date: string
+          status: string
+          total_cost: number
+          unit_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_number?: string | null
+          consumed_materials?: Json
+          cost_per_kg?: number
+          created_at?: string
+          end_date?: string | null
+          formulation_id?: string | null
+          formulation_name?: string | null
+          id?: string
+          loss_kg?: number
+          name: string
+          notes?: string | null
+          planned_quantity_kg?: number
+          produced_quantity_kg?: number
+          start_date?: string
+          status?: string
+          total_cost?: number
+          unit_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_number?: string | null
+          consumed_materials?: Json
+          cost_per_kg?: number
+          created_at?: string
+          end_date?: string | null
+          formulation_id?: string | null
+          formulation_name?: string | null
+          id?: string
+          loss_kg?: number
+          name?: string
+          notes?: string | null
+          planned_quantity_kg?: number
+          produced_quantity_kg?: number
+          start_date?: string
+          status?: string
+          total_cost?: number
+          unit_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feed_quality_controls: {
+        Row: {
+          anomaly: string | null
+          batch_number: string | null
+          control_date: string
+          control_type: string
+          corrective_action: string | null
+          created_at: string
+          id: string
+          item_name: string
+          notes: string | null
+          parameters: Json
+          responsible: string | null
+          status: string
+          supplier: string | null
+          unit_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anomaly?: string | null
+          batch_number?: string | null
+          control_date?: string
+          control_type?: string
+          corrective_action?: string | null
+          created_at?: string
+          id?: string
+          item_name: string
+          notes?: string | null
+          parameters?: Json
+          responsible?: string | null
+          status?: string
+          supplier?: string | null
+          unit_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anomaly?: string | null
+          batch_number?: string | null
+          control_date?: string
+          control_type?: string
+          corrective_action?: string | null
+          created_at?: string
+          id?: string
+          item_name?: string
+          notes?: string | null
+          parameters?: Json
+          responsible?: string | null
+          status?: string
+          supplier?: string | null
+          unit_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feed_stocks: {
         Row: {
           bag_count: number | null
@@ -2983,6 +3106,66 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      traceability_records: {
+        Row: {
+          batch_number: string
+          controls: Json
+          created_at: string
+          destination: string | null
+          entry_date: string
+          id: string
+          movements: Json
+          notes: string | null
+          origin: string | null
+          product_name: string | null
+          product_type: string
+          quantity: number
+          state: string
+          unit_id: string | null
+          unit_label: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_number: string
+          controls?: Json
+          created_at?: string
+          destination?: string | null
+          entry_date?: string
+          id?: string
+          movements?: Json
+          notes?: string | null
+          origin?: string | null
+          product_name?: string | null
+          product_type?: string
+          quantity?: number
+          state?: string
+          unit_id?: string | null
+          unit_label?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_number?: string
+          controls?: Json
+          created_at?: string
+          destination?: string | null
+          entry_date?: string
+          id?: string
+          movements?: Json
+          notes?: string | null
+          origin?: string | null
+          product_name?: string | null
+          product_type?: string
+          quantity?: number
+          state?: string
+          unit_id?: string | null
+          unit_label?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
