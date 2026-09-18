@@ -15,6 +15,7 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import ExportDropdown from '@/components/ExportDropdown';
+import { buildFormulationExport } from '@/lib/feedFormulationExport';
 import {
   REFERENCE_INGREDIENTS, FEED_PARAMS, PARAM_HELP_PRICE, PARAM_HELP_INCORPORATION,
   INGREDIENT_CATEGORIES_LAB, SPECIES, STAGES, STAGE_PB_SUGGESTION, QUANTITY_PRESETS,
