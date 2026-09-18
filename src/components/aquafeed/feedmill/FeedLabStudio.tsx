@@ -251,6 +251,67 @@ const FeedLabStudio: React.FC = () => {
     [chosen, manual]
   );
 
+  /* ------------- Synthèse économique de la proposition ------------- */
+  const speciesLabel = SPECIES.find(s => s.key === species)?.label ?? species;
+  const stageLabel = STAGES.find(s => s.key === stage)?.label ?? stage;
+  const feedTypeLabel = `Aliment ${speciesLabel.toLowerCase()} ${stageLabel.toLowerCase()} — ${round(result?.totals.values.pb ?? 0, 1)} % de protéines`;
+
+  const commercial = useMemo(() => {
+    const perKg = result?.cost_per_kg ?? 0;
+    const qty = result?.total_quantity_kg ?? 0;
+    const selling = perKg * (1 + marginRate / 100);
+    return {
+      totalCost: result?.total_cost ?? 0,
+      perKg,
+      selling,
+      marginPerKg: selling - perKg,
+      marginTotal: (selling - perKg) * qty,
+      revenue: selling * qty,
+    };
+  }, [result, marginRate]);
+
+  /** Export détaillé (PDF / Word / Excel / CSV) avec coûts, prix et marge. */
+  const fullExportOptions = useMemo(() => buildFormulationExport({
+    name: name || 'Formulation',
+    speciesLabel, stageLabel, feedTypeLabel,
+    quantityKg: result?.total_quantity_kg ?? quantity,
+    lines: (result?.lines ?? []).map(l => ({
+      name: l.name,
+      inclusion_pct: round(l.inclusion_pct, 2),
+      quantity_kg: round(l.quantity_kg, 3),
+      price_per_kg: round(l.price_per_kg, 2),
+      cost: round(l.cost, 2),
+    })),
+    totalCost: commercial.totalCost,
+    costPerKg: commercial.perKg,
+    sellingPricePerKg: commercial.selling,
+    nutrition: FEED_PARAMS.reduce((a, p) => {
+      a[`${p.full} (${p.unit})`] = result ? round(result.totals.values[p.key], p.decimals) : 0;
+      return a;
+    }, {} as Record<string, number>),
+    unitName: activeUnit?.name,
+  }), [result, name, speciesLabel, stageLabel, feedTypeLabel, quantity, commercial, activeUnit?.name]);
+
+  /** Ingrédients clés mis en avant (soja, maïs, farine de poisson…). */
+  const keyIngredients = useMemo(() => {
+    const wanted = [
+      { label: 'Soja', match: /soja/i },
+      { label: 'Maïs', match: /ma[iï]s/i },
+      { label: 'Farine de poisson', match: /poisson/i },
+      { label: 'Son de blé', match: /son/i },
+    ];
+    return wanted.map(w => {
+      const l = (result?.lines ?? []).find(x => w.match.test(x.name));
+      return { label: w.label, line: l };
+    }).filter(x => !!x.line);
+  }, [result]);
+
+  /** Ajustement direct en kg : recalcule automatiquement toute la formulation. */
+  const setLineKg = (id: string, kg: number) => {
+    const qty = quantity > 0 ? quantity : 1;
+    runManual({ ...manual, [id]: round((Number(kg) / qty) * 100, 3) });
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-4">
