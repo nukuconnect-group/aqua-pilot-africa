@@ -133,6 +133,11 @@ export const useAutoTranslate = (language: string) => {
       attributeFilter: ATTRS,
     });
 
-    return () => observer.disconnect();
+    const unsubscribe = onTranslationsReady(() => schedule(document.body));
+
+    return () => {
+      observer.disconnect();
+      unsubscribe();
+    };
   }, [language]);
 };
