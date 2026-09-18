@@ -100,15 +100,15 @@ const App: React.FC = () => {
           <SettingsProvider>
             <AutoTranslate />
             <AuthProvider>
-              <ModuleAccessProvider>
               <ProductionUnitsProvider>
+              <ModuleAccessProvider>
                 <IoTProvider>
                   <LogsProvider>
                     <AppContent />
                   </LogsProvider>
                 </IoTProvider>
-              </ProductionUnitsProvider>
               </ModuleAccessProvider>
+              </ProductionUnitsProvider>
             </AuthProvider>
           </SettingsProvider>
         </BrowserRouter>

@@ -9,6 +9,7 @@
  */
 import { supabase } from '@/integrations/supabase/appClient';
 import { APP_MODULE_PERMISSIONS } from '@/lib/moduleAccess';
+import type { ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 
 export type ModuleAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
@@ -47,24 +48,36 @@ export interface AppModuleDefinition {
   isCore: boolean;
   sortOrder: number;
   tabIds: string[];
+  applicableUnitTypes?: ProductionUnitType[];
 }
 
-const MODULE_META: Record<string, { category: string; premium?: boolean; core?: boolean }> = {
+const ALL_OPERATIONAL_UNIT_TYPES: ProductionUnitType[] = ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'commercialisation'];
+export const UNIT_TYPE_LABELS: Record<ProductionUnitType, string> = {
+  ecloserie: 'Écloserie',
+  grossissement: 'Grossissement / élevage',
+  transformation: 'Transformation',
+  conservation: 'Conservation',
+  fabrication_aliment: "Fabrication d’aliments",
+  commercialisation: 'Commercialisation',
+};
+
+const MODULE_META: Record<string, { category: string; premium?: boolean; core?: boolean; unitTypes?: ProductionUnitType[] }> = {
   dashboard: { category: 'Pilotage', core: true },
   'performance-alerts': { category: 'Pilotage' },
   iot: { category: 'Technique', premium: true },
   environment: { category: 'Technique' },
   units: { category: 'Exploitation' },
-  infrastructure: { category: 'Exploitation' },
-  livestock: { category: 'Exploitation' },
-  feeding: { category: 'Exploitation' },
-  aquafeed: { category: 'Intelligence', premium: true },
-  health: { category: 'Exploitation' },
-  production: { category: 'Exploitation' },
+  infrastructure: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment'] },
+  livestock: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement'] },
+  feeding: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement'] },
+  aquafeed: { category: 'Intelligence', premium: true, unitTypes: ['fabrication_aliment'] },
+  health: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement'] },
+  aquahealth: { category: 'Intelligence', premium: true, unitTypes: ['ecloserie', 'grossissement'] },
+  production: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment'] },
   accounting: { category: 'Gestion' },
-  purchases: { category: 'Gestion' },
-  sales: { category: 'Gestion' },
-  suppliers: { category: 'Gestion' },
+  purchases: { category: 'Gestion', unitTypes: ALL_OPERATIONAL_UNIT_TYPES },
+  sales: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'commercialisation'] },
+  suppliers: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'commercialisation'] },
   hr: { category: 'Gestion', premium: true },
   planning: { category: 'Pilotage' },
   reports: { category: 'Pilotage' },
@@ -89,6 +102,7 @@ export const MODULE_CATALOG: AppModuleDefinition[] = APP_MODULE_PERMISSIONS.map(
     isCore: Boolean(meta.core),
     sortOrder: index,
     tabIds: module.tabIds,
+    applicableUnitTypes: meta.unitTypes,
   };
 });
 
@@ -231,6 +245,8 @@ export interface AuditEntry {
 
 const LOCAL_PLANS_KEY = 'aqua-plan-configs-v1';
 const LOCAL_AUDIT_KEY = 'aqua-plan-audit-v1';
+const LOCAL_USER_OVERRIDES_KEY = 'aqua-user-module-overrides-v1';
+const LOCAL_UNIT_RULES_KEY = 'aqua-unit-module-rules-v1';
 
 const missingTable = (error: { code?: string; message?: string } | null) =>
   !!error && (error.code === 'PGRST205' || error.code === '42P01' || /does not exist|Could not find the table/i.test(error.message || ''));
@@ -322,6 +338,110 @@ export const loadPlanConfigs = async (): Promise<PlansLoadResult> => {
 };
 
 export const PLAN_UPDATED_EVENT = 'aqua:plan-modules-updated';
+
+export type UserModuleOverrides = Record<string, boolean>;
+export type UnitModuleRules = Record<ProductionUnitType, string[]>;
+
+export const DEFAULT_UNIT_MODULE_RULES: UnitModuleRules = (Object.keys(UNIT_TYPE_LABELS) as ProductionUnitType[]).reduce(
+  (rules, type) => {
+    rules[type] = MODULE_CATALOG
+      .filter((module) => !module.applicableUnitTypes || module.applicableUnitTypes.includes(type))
+      .map((module) => module.key);
+    return rules;
+  },
+  {} as UnitModuleRules,
+);
+
+const localOverrides = (): Record<string, UserModuleOverrides> => {
+  try { return JSON.parse(localStorage.getItem(LOCAL_USER_OVERRIDES_KEY) || '{}'); } catch { return {}; }
+};
+
+export const loadUserModuleOverrides = async (userId: string): Promise<UserModuleOverrides> => {
+  if (!userId) return {};
+  try {
+    const { data, error } = await (supabase as any).from('user_module_overrides').select('module_key, allowed').eq('user_id', userId);
+    if (error) throw error;
+    return Object.fromEntries(((data || []) as any[]).map((row) => [row.module_key, Boolean(row.allowed)]));
+  } catch {
+    return localOverrides()[userId] || {};
+  }
+};
+
+export const saveUserModuleOverrides = async (
+  userId: string,
+  overrides: UserModuleOverrides,
+  adminEmail: string,
+): Promise<'remote' | 'local'> => {
+  const rows = Object.entries(overrides).map(([module_key, allowed]) => ({ user_id: userId, module_key, allowed }));
+  try {
+    const client = supabase as any;
+    const { error: deleteError } = await client.from('user_module_overrides').delete().eq('user_id', userId);
+    if (deleteError) throw deleteError;
+    if (rows.length) {
+      const { error } = await client.from('user_module_overrides').insert(rows);
+      if (error) throw error;
+    }
+    await client.from('plan_module_audit').insert({
+      admin_email: adminEmail,
+      plan_key: `user:${userId}`,
+      module_key: '*',
+      action: 'user_overrides',
+      before_value: null,
+      after_value: JSON.stringify(overrides),
+    });
+    notifyUpdate();
+    return 'remote';
+  } catch {
+    const all = localOverrides();
+    all[userId] = overrides;
+    try { localStorage.setItem(LOCAL_USER_OVERRIDES_KEY, JSON.stringify(all)); } catch { /* quota */ }
+    notifyUpdate();
+    return 'local';
+  }
+};
+
+export const resetUserModuleOverrides = async (userId: string): Promise<void> => {
+  try { await (supabase as any).from('user_module_overrides').delete().eq('user_id', userId); } catch { /* fallback below */ }
+  const all = localOverrides();
+  delete all[userId];
+  try { localStorage.setItem(LOCAL_USER_OVERRIDES_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+  notifyUpdate();
+};
+
+export const loadUnitModuleRules = async (): Promise<UnitModuleRules> => {
+  try {
+    const { data, error } = await (supabase as any).from('unit_type_module_rules').select('unit_type, module_key, enabled');
+    if (error || !data?.length) throw error || new Error('empty');
+    const rules = structuredClone(DEFAULT_UNIT_MODULE_RULES);
+    (data as any[]).forEach((row) => {
+      const type = row.unit_type as ProductionUnitType;
+      if (!(type in rules)) return;
+      rules[type] = row.enabled
+        ? Array.from(new Set([...rules[type], row.module_key]))
+        : rules[type].filter((key) => key !== row.module_key);
+    });
+    return rules;
+  } catch {
+    try { return { ...DEFAULT_UNIT_MODULE_RULES, ...JSON.parse(localStorage.getItem(LOCAL_UNIT_RULES_KEY) || '{}') }; }
+    catch { return structuredClone(DEFAULT_UNIT_MODULE_RULES); }
+  }
+};
+
+export const saveUnitModuleRules = async (rules: UnitModuleRules): Promise<'remote' | 'local'> => {
+  const rows = Object.entries(rules).flatMap(([unit_type, modules]) =>
+    MODULE_CATALOG.map((module) => ({ unit_type, module_key: module.key, enabled: modules.includes(module.key) })),
+  );
+  try {
+    const { error } = await (supabase as any).from('unit_type_module_rules').upsert(rows, { onConflict: 'unit_type,module_key' });
+    if (error) throw error;
+    notifyUpdate();
+    return 'remote';
+  } catch {
+    try { localStorage.setItem(LOCAL_UNIT_RULES_KEY, JSON.stringify(rules)); } catch { /* quota */ }
+    notifyUpdate();
+    return 'local';
+  }
+};
 
 const notifyUpdate = () => {
   try {
@@ -482,6 +602,11 @@ export const loadAuditEntries = async (): Promise<AuditEntry[]> => {
 export const computeModuleAccess = (
   plan: PlanConfig | null,
   role: string,
+  options: {
+    userOverrides?: UserModuleOverrides;
+    activeUnitType?: ProductionUnitType | null;
+    unitRules?: UnitModuleRules;
+  } = {},
 ): { allowed: Set<string>; permissions: Record<string, ModulePermissionSet> } => {
   const allowed = new Set<string>(CORE_MODULE_KEYS);
   const permissions: Record<string, ModulePermissionSet> = {};
@@ -492,6 +617,17 @@ export const computeModuleAccess = (
   }
 
   plan.modules.forEach((key) => allowed.add(key));
+
+  if (options.activeUnitType) {
+    const compatible = new Set((options.unitRules || DEFAULT_UNIT_MODULE_RULES)[options.activeUnitType]);
+    Array.from(allowed).forEach((key) => {
+      if (!CORE_MODULE_KEYS.includes(key) && !compatible.has(key)) allowed.delete(key);
+    });
+  }
+
+  Object.entries(options.userOverrides || {}).forEach(([key, enabled]) => {
+    if (!enabled && !CORE_MODULE_KEYS.includes(key)) allowed.delete(key);
+  });
 
   allowed.forEach((key) => {
     if (role === 'admin' || role === 'owner') {
