@@ -55,13 +55,16 @@ const flush = async () => {
     let changed = false;
     batch.forEach((source, i) => {
       const value = translations[i];
-      if (typeof value === 'string' && value.trim() && value !== source) {
+      if (typeof value === 'string' && value.trim()) {
+        // On mémorise aussi les textes déjà anglais (valeur identique)
+        // pour ne plus jamais les redemander.
         cache[source] = value;
-        changed = true;
+        if (value !== source) changed = true;
       } else {
         failed.add(source);
       }
     });
+    saveCache();
     if (changed) {
       saveCache();
       listeners.forEach((l) => l());

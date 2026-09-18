@@ -386,6 +386,13 @@ const RAW: Record<string, string> = {
   'fiches': 'Sheets',
   'équilibré': 'Balanced',
   'à peser (kg)': 'To weigh (kg)',
+  'formuler': 'Formulate',
+  'laboratoire': 'Laboratory',
+  'mes formules': 'My formulas',
+  'matières premières': 'Raw materials',
+  'matière première': 'Raw material',
+  'taux d\'incorporation': 'Inclusion rate',
+  'coût / kg': 'Cost / kg',
 
   // Eau / capteurs
   'température': 'Temperature',
