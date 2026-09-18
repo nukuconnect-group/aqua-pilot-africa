@@ -521,6 +521,7 @@ const FeedLabStudio: React.FC = () => {
         {result && (
           <Tabs value={resultTab} onValueChange={setResultTab} className="space-y-3">
             <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="proposition">Proposition</TabsTrigger>
               <TabsTrigger value="recette">Recette</TabsTrigger>
               <TabsTrigger value="fiche">Fiche de fabrication</TabsTrigger>
               <TabsTrigger value="contributions">Contributions</TabsTrigger>
