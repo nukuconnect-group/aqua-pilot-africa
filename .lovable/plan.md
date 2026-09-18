@@ -1,75 +1,64 @@
+# Corriger l’administration et rattacher les modules aux utilisateurs et aux unités
 
-# Plan des corrections et améliorations
+## Résultat attendu
 
-Voici le plan pour les 4 axes demandés. Je propose de traiter dans cet ordre car il y a des dépendances (les infos entreprise doivent être sauvegardées avant d'être utilisables dans PDF).
+L’accès final à un module suivra cette règle :
 
-## 1. Module Comptabilité — ligne de chiffres avant les graphiques
+```text
+Modules du plan
+  ∩ modules compatibles avec l’unité active
+  ∩ modules autorisés pour l’utilisateur
+  ∩ permissions éventuelles du membre d’équipe
+  = modules visibles et accessibles
+```
 
-Dans `AccountingDashboard.tsx`, ajouter une rangée de KPI cards en haut (avant les graphiques) affichant :
-- Chiffre d'affaires total
-- Total dépenses
-- Bénéfice net
-- Marge (%)
-- Trésorerie courante
+L’administrateur conservera l’accès complet.
 
-Format horizontal, responsive (grid 2 cols mobile → 5 cols desktop), avec icônes et variations vs mois précédent.
+## Modifications prévues
 
-## 2. Paramètres Entreprise — persistance complète
+### 1. Corriger les erreurs encore visibles dans l’administration
+- Vérifier le journal à sa source et ne plus compter ni afficher les anciennes erreurs déjà corrigées.
+- Harmoniser les compteurs, exports CSV/PDF et la liste affichée pour qu’ils utilisent tous les mêmes erreurs réellement actives.
+- Sécuriser la purge : suppression en base quand elle est autorisée, puis masquage persistant côté application si une ancienne ligne ne peut pas être supprimée.
+- Vérifier à nouveau Production, l’arbre d’authentification et les abonnements temps réel afin qu’une erreur corrigée ne soit pas recréée.
 
-**Problème :** les infos entreprise ne persistent pas correctement.
+### 2. Ajouter la limitation des modules par utilisateur
+Dans **Admin → Plans & Modules**, ajouter un espace **Utilisateurs** permettant de :
+- rechercher et sélectionner un compte par nom ou e-mail ;
+- voir son abonnement, ses unités et les modules disponibles ;
+- autoriser ou retirer individuellement chaque module ;
+- réinitialiser le compte sur les droits hérités de son abonnement ;
+- appliquer les changements immédiatement dans le menu et lors de l’ouverture directe d’une page ;
+- enregistrer chaque modification dans le journal d’audit.
 
-**Actions :**
-- Étendre la table `profiles` (ou créer `company_settings`) avec tous les champs manquants : `logo_url`, `stamp_url`, `signature_url`, `cif_nif`, `rccm`, `website`, `legal_representative` (les champs `company_name`, `company_address`, `phone`, `email` existent déjà sur `profiles`).
-- Créer un hook `useCompanyInfo()` qui charge/sauvegarde ces infos depuis Supabase (plus de localStorage seul).
-- Refondre l'onglet Entreprise dans `SettingsManagement.tsx` : upload logo/cachet/signature vers bucket `company-logos` + affichage aperçu.
-- Mettre à jour `companyHeaderUtils.ts` pour inclure cachet + signature dans les PDF.
-- Brancher `useCompanyInfo` sur tous les générateurs de documents : rapports (`reportExportUtils.ts`), factures/reçus (`salesDocumentUtils.ts`), payslips (`payslipGenerator.ts`), fiches de pêche (`controlFishingPdf.ts`), exports alimentation (`feedingPrintUtils.ts`), etc.
+Une restriction utilisateur ne pourra pas donner accès à un module absent de l’abonnement.
 
-## 3. Mobile — défilement complet sur toutes les pages
+### 3. Rattacher les modules au type d’unité
+Ajouter un espace **Types d’unités** dans la même page d’administration, avec une matrice claire et modifiable.
 
-**Problème :** contenu coupé en bas sur mobile (hauteurs fixes / overflow-hidden mal placés).
+Règles initiales :
+- **Fabrication d’aliments** : AquaFeed AI et fonctions nécessaires à la fabrication ; pas de modules d’élevage sans activation explicite.
+- **Commercialisation** : ventes, achats, fournisseurs, comptabilité et rapports ; pas d’alimentation, AquaFeed AI, cheptel ou prophylaxie.
+- **Écloserie / Grossissement (élevage)** : infrastructures, cheptel, alimentation, prophylaxie et production ; AquaFeed AI seulement s’il est autorisé dans la matrice ; AquaHealth AI reste indépendant et désactivable séparément.
+- **Transformation / Conservation** : modules opérationnels adaptés, sans modules d’élevage inutiles.
+- Les modules généraux comme tableau de bord, unités, paramètres et support restent accessibles selon le plan.
 
-**Actions :**
-- Auditer `MainLayout.tsx` et corriger les containers avec `h-screen` / `overflow-hidden` non compensés par `pb-safe`.
-- Ajouter un padding-bottom systémique (`pb-24 md:pb-8`) sur les conteneurs de module pour tenir compte de la barre de navigation mobile fixe.
-- Vérifier `MobileNavigation.tsx` : hauteur réservée dans le layout via `env(safe-area-inset-bottom)`.
-- Passer en revue les modules signalés : Comptabilité, RH, Alimentation, Rapports, Ventes, Achats — s'assurer que chaque page racine utilise `min-h-screen` + scroll natif et pas de `overflow-hidden` global.
+Lorsqu’un compte gère plusieurs unités, les modules seront recalculés selon **l’unité active**. Un changement d’unité mettra immédiatement à jour le menu et empêchera aussi l’accès par URL à un module incompatible.
 
-## 4. Module Alimentation — Fiches d'alimentation
+### 4. Séparer correctement Prophylaxie et AquaHealth AI
+- Donner à **AquaHealth AI** son propre identifiant de permission.
+- Garder **Prophylaxie** indépendante.
+- Permettre, par exemple, d’autoriser Prophylaxie à une unité d’élevage tout en refusant AquaHealth AI.
 
-Nouvelle sous-section "Fiches d'alimentation" dans `FeedingManagement.tsx` :
+### 5. Persistance et sécurité
+- Ajouter les structures nécessaires pour les restrictions utilisateur et les règles par type d’unité.
+- Appliquer des droits explicites et des règles de sécurité : lecture de ses propres droits pour l’utilisateur, gestion complète uniquement par l’administrateur.
+- Ne pas stocker de rôle administrateur dans le profil ni dans le navigateur.
+- Conserver un repli sûr si les nouvelles structures ne sont pas encore disponibles, sans ouvrir davantage d’accès que l’abonnement.
 
-**Modèle de données** (nouvelle table `feeding_sheets`) :
-- `unit_id`, `infrastructure_id`, `title`, `period` (matin/midi/soir), `time`, `feed_type`, `quantity`, `unit`, `responsible_name`, `notes`, `frequency` (daily/weekly/monthly), `days[]`, `is_active`, `start_date`, `end_date`
-
-**UI :**
-- Liste des fiches par infrastructure avec filtres
-- Formulaire de création/édition
-- Génération auto de programme journalier/hebdo/mensuel (vue calendrier ou tableau)
-- Bouton Imprimer / Export PDF (via `feedingPrintUtils.ts` étendu)
-- Bouton Partager (WhatsApp/Email lien)
-- Validation d'une distribution → crée un `feeding_record` lié à la fiche
-- Historique des distributions par fiche
-- Design mobile-first
-
-**RLS :** policies user-scoped standard + accès team_members via `team_member_has_unit_access`.
-
-## Détails techniques
-
-- Une seule migration pour : extension `profiles` (colonnes manquantes) + nouvelle table `feeding_sheets` + GRANTs + RLS.
-- Hook réutilisable `useCompanyInfo()` avec cache React Query pour éviter refetch.
-- Uploads (logo/cachet/signature) vers bucket `company-logos` (public existant).
-- PDFs : refactor de `generateCompanyHeaderHTML` pour accepter cachet + signature en pied de page.
-
-## Ordre d'implémentation
-
-1. Migration DB (profils étendus + `feeding_sheets`)
-2. Hook `useCompanyInfo` + refonte onglet Entreprise
-3. Branchement infos entreprise dans tous les générateurs PDF
-4. KPI cards Comptabilité
-5. Fix scroll mobile global
-6. Module Fiches d'alimentation (UI + génération + PDF + partage)
-
-## Confirmation
-
-C'est un chantier substantiel (~15-20 fichiers modifiés/créés). Confirmez-vous ce plan, ou souhaitez-vous que je priorise un axe en particulier d'abord (ex: Paramètres Entreprise seul, ou Alimentation seul) ?
+## Vérifications
+- Tester un administrateur, un utilisateur standard et un membre d’équipe.
+- Tester au moins une unité de fabrication, une unité de commercialisation et une unité d’élevage.
+- Vérifier le changement d’unité, le menu, l’accès direct par URL et la mise à jour immédiate après modification admin.
+- Vérifier que les erreurs historiques ne reviennent pas et que les nouvelles erreurs réelles restent visibles/exportables.
+- Vérifier l’affichage sur ordinateur et mobile.
