@@ -105,20 +105,22 @@ const FeedLabStudio: React.FC = () => {
   const setTarget = (key: ParamKey, field: 'min' | 'target' | 'max', raw: string) =>
     setTargets(prev => ({ ...prev, [key]: { ...(prev[key] || {}), [field]: raw === '' ? null : Number(raw) } }));
 
+  const compute = (ings: LabIngredient[], tgts: TargetMap, qty: number, md: LabMode) => {
+    const res = optimizeLab({ ingredients: ings, targets: tgts, totalQuantityKg: qty, mode: md });
+    setResult(res);
+    const m: Record<string, number> = {};
+    res.lines.forEach(l => { m[l.ingredient_id] = round(l.inclusion_pct, 2); });
+    ings.forEach(c => { if (!(c.id in m)) m[c.id] = 0; });
+    setManual(m);
+    if (!res.feasible) toast({ title: 'Objectifs non atteints', description: res.problems[0] ?? '', variant: 'destructive' });
+    return res;
+  };
+
   const runOptimize = () => {
     if (chosen.length < 2) { toast({ title: 'Sélection insuffisante', description: 'Choisissez au moins deux ingrédients.', variant: 'destructive' }); return; }
     if (!quantity || quantity <= 0) { toast({ title: 'Quantité invalide', description: 'Indiquez une quantité à produire supérieure à 0.', variant: 'destructive' }); return; }
     setBusy(true);
-    setTimeout(() => {
-      const res = optimizeLab({ ingredients: chosen, targets, totalQuantityKg: quantity, mode });
-      setResult(res);
-      const m: Record<string, number> = {};
-      res.lines.forEach(l => { m[l.ingredient_id] = round(l.inclusion_pct, 2); });
-      chosen.forEach(c => { if (!(c.id in m)) m[c.id] = 0; });
-      setManual(m);
-      setBusy(false);
-      if (!res.feasible) toast({ title: 'Objectifs non atteints', description: res.problems[0] ?? '', variant: 'destructive' });
-    }, 10);
+    setTimeout(() => { compute(chosen, targets, quantity, mode); setBusy(false); }, 10);
   };
 
   const runManual = (next: Record<string, number>) => {
@@ -127,17 +129,52 @@ const FeedLabStudio: React.FC = () => {
     setResult(computeFormulation(chosen, chosen.map(c => Number(next[c.id] || 0)), quantity, targets));
   };
 
+  /** Interprète la demande en français ET lance immédiatement le calcul complet. */
   const applyRequest = () => {
     if (!request.trim()) return;
     const p = parseRequest(request, library);
-    if (p.species) setSpecies(p.species);
-    if (p.stage) { setStage(p.stage); setTargets(prev => ({ ...prev, pb: { ...(prev.pb || {}), min: STAGE_PB_SUGGESTION[p.stage!], target: STAGE_PB_SUGGESTION[p.stage!] } })); }
-    if (p.quantityKg) setQuantity(p.quantityKg);
-    if (p.pbTarget) setTargets(prev => ({ ...prev, pb: { ...(prev.pb || {}), min: p.pbTarget!, target: p.pbTarget! } }));
-    if (p.mode) setMode(p.mode);
-    if (p.ingredientIds.length >= 2) setSelected(p.ingredientIds);
-    toast({ title: 'Demande interprétée', description: "Vérifiez les paramètres puis lancez le calcul." });
+    const ctry = parseCountry(request);
+
+    const nextStage = p.stage ?? stage;
+    const nextSpecies = p.species ?? species;
+    const nextQty = p.quantityKg ?? quantity;
+    const nextMode = p.mode ?? mode;
+    const pb = p.pbTarget ?? STAGE_PB_SUGGESTION[nextStage] ?? 32;
+    const nextTargets: TargetMap = { ...targets, pb: { min: pb, target: pb, max: pb + 4 } };
+
+    let lib = library;
+    if (ctry) {
+      const market = COUNTRY_MARKETS.find(c => c.code === ctry);
+      if (market) {
+        setCountry(ctry);
+        lib = library.map(i => {
+          const s = market.suggestions.find(x => x.ref_id === i.id);
+          return s ? { ...i, price_per_kg: Math.round((s.price_min + s.price_max) / 2) } : i;
+        });
+        setLibrary(lib);
+      }
+    }
+
+    let ids = p.ingredientIds.filter(id => lib.some(i => i.id === id));
+    if (ids.length < 2) {
+      const base = ['ref-mais', 'ref-son-ble', 'ref-fp50', 'ref-tourteau-soja', 'ref-huile-rouge', 'ref-cmv'];
+      ids = Array.from(new Set([...ids, ...base])).filter(id => lib.some(i => i.id === id));
+    }
+
+    setSpecies(nextSpecies); setStage(nextStage); setQuantity(nextQty);
+    setMode(nextMode); setTargets(nextTargets); setSelected(ids);
+    setName(`Aliment ${SPECIES.find(s => s.key === nextSpecies)?.label ?? nextSpecies} ${STAGES.find(s => s.key === nextStage)?.label ?? ''} ${nextQty} kg`.trim());
+
+    const ings = ids.map(id => lib.find(i => i.id === id)!).filter(Boolean);
+    setBusy(true);
+    setTimeout(() => {
+      compute(ings, nextTargets, nextQty, nextMode);
+      setBusy(false);
+      setResultTab('fiche');
+      toast({ title: 'Formulation calculée', description: `${nextQty} kg · ${pb} % de protéines · consultez la fiche de fabrication.` });
+    }, 10);
   };
+
 
   const saveFormulation = async () => {
     if (!result) return;
