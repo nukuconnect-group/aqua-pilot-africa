@@ -275,7 +275,7 @@ const RAW: Record<string, string> = {
   'chèque': 'Cheque',
   'carte bancaire': 'Bank card',
   'mobile money': 'Mobile Money',
-  'espèces': 'Cash',
+  'paiement en espèces': 'Cash payment',
   'autre': 'Other',
   'autres': 'Others',
   'tous': 'All',
