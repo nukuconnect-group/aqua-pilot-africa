@@ -101,12 +101,22 @@ const AdminDashboard = () => {
   };
   const [selectedUserForHistory, setSelectedUserForHistory] = useState<{ id: string; name: string } | null>(null);
   const [isPurgingErrors, setIsPurgingErrors] = useState(false);
-  const [purgedAt, setPurgedAt] = useState<string | null>(null);
+  const [purgedAt, setPurgedAt] = useState<string | null>(() => {
+    try { return localStorage.getItem('aquapilote-error-log-purged-at'); } catch { return null; }
+  });
 
-  // Bruit connu déjà corrigé côté code (scanner code-barres) : on ne l'affiche plus.
+  // Bruit connu déjà corrigé côté code : on ne l'affiche plus.
   const RESOLVED_ERROR_PATTERNS = [
     'Cannot stop, scanner is not running or paused',
+    'postgres_changes',
+    'Stethoscope is not defined',
+    'useAuth must be used within an AuthProvider',
+    'Minified React error #310',
+    'invariant=310',
+    'dev-sw.js',
+    'ServiceWorker',
   ];
+
 
   const formatErrorDetails = (details: string) => {
     if (!details) return 'Erreur interne sans détail disponible.';
