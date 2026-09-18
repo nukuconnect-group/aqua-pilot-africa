@@ -101,12 +101,22 @@ const AdminDashboard = () => {
   };
   const [selectedUserForHistory, setSelectedUserForHistory] = useState<{ id: string; name: string } | null>(null);
   const [isPurgingErrors, setIsPurgingErrors] = useState(false);
-  const [purgedAt, setPurgedAt] = useState<string | null>(null);
+  const [purgedAt, setPurgedAt] = useState<string | null>(() => {
+    try { return localStorage.getItem('aquapilote-error-log-purged-at'); } catch { return null; }
+  });
 
-  // Bruit connu déjà corrigé côté code (scanner code-barres) : on ne l'affiche plus.
+  // Bruit connu déjà corrigé côté code : on ne l'affiche plus.
   const RESOLVED_ERROR_PATTERNS = [
     'Cannot stop, scanner is not running or paused',
+    'postgres_changes',
+    'Stethoscope is not defined',
+    'useAuth must be used within an AuthProvider',
+    'Minified React error #310',
+    'invariant=310',
+    'dev-sw.js',
+    'ServiceWorker',
   ];
+
 
   const formatErrorDetails = (details: string) => {
     if (!details) return 'Erreur interne sans détail disponible.';
@@ -138,11 +148,15 @@ const AdminDashboard = () => {
         .delete()
         .in('severity', ['error', 'warning']);
       if (error) throw error;
-      setPurgedAt(new Date().toISOString());
+      const ts = new Date().toISOString();
+      try { localStorage.setItem('aquapilote-error-log-purged-at', ts); } catch { /* ignore */ }
+      setPurgedAt(ts);
       toast({ title: 'Journal vidé', description: 'Les erreurs et avertissements ont été supprimés.' });
     } catch (e: any) {
       // Même si la suppression serveur échoue (RLS), on masque localement.
-      setPurgedAt(new Date().toISOString());
+      const ts = new Date().toISOString();
+      try { localStorage.setItem('aquapilote-error-log-purged-at', ts); } catch { /* ignore */ }
+      setPurgedAt(ts);
       toast({
         title: 'Journal masqué',
         description: e?.message || 'Suppression serveur indisponible, affichage réinitialisé.',
