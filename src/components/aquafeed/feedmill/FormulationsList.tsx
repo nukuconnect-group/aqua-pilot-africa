@@ -81,6 +81,29 @@ const FormulationsList: React.FC<Props> = ({ formulations, onEdit, onDuplicate, 
                   onClick={() => setCompare(p => p.includes(f.id) ? p.filter(x => x !== f.id) : [...p, f.id].slice(-3))}>
                   <Scale className="w-3.5 h-3.5 mr-1" />Comparer
                 </Button>
+                <ExportDropdown
+                  label="Exporter"
+                  options={buildFormulationExport({
+                    name: f.name,
+                    speciesLabel: getSpecies(f.species).label,
+                    stageLabel: getStage(f.species, f.stage).label,
+                    feedTypeLabel: `Aliment ${getStage(f.species, f.stage).label.toLowerCase()}`,
+                    quantityKg: Number(f.batch_size_kg || 0),
+                    lines: (f.lines ?? []).map((l: any) => ({
+                      name: l.name ?? 'Ingrédient',
+                      inclusion_pct: Number(l.inclusion_pct || 0),
+                      quantity_kg: Number(l.quantity_kg || 0),
+                      price_per_kg: Number(l.price_per_kg || 0),
+                      cost: Number(l.cost || 0),
+                    })),
+                    totalCost: Number(f.total_cost || 0),
+                    cost_per_kg: undefined as any,
+                    costPerKg: Number(f.cost_per_kg || 0),
+                    nutrition: f.nutrition ?? {},
+                    createdAt: f.created_at,
+                    notes: f.notes ?? undefined,
+                  } as any)}
+                />
                 <Button size="sm" variant="outline" onClick={() => onManufacture(f)}><Factory className="w-3.5 h-3.5 mr-1" />Fabriquer</Button>
                 <Button size="icon" variant="ghost" onClick={() => onEdit(f)}><Pencil className="w-3.5 h-3.5" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => onDuplicate(f)}><Copy className="w-3.5 h-3.5" /></Button>
