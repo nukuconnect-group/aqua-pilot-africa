@@ -187,14 +187,63 @@ interface ProductionUnitsContextType {
   convertCurrency: (amount: number, fromCurrency: string, toCurrency: string) => number;
 }
 
-const ProductionUnitsContext = createContext<ProductionUnitsContextType | undefined>(undefined);
+const EMPTY_FINANCIAL_DATA: UnitFinancialData = {
+  unitId: '',
+  revenue: 0,
+  expenses: 0,
+  profit: 0,
+  monthlyData: [],
+};
+
+const EMPTY_PRODUCTION_UNITS_CONTEXT: ProductionUnitsContextType = {
+  units: [],
+  infrastructures: [],
+  transactions: [],
+  purchases: [],
+  depreciableAssets: [],
+  currency: 'XOF',
+  formatCurrency: (amount) => `${Number.isFinite(amount) ? amount.toLocaleString('fr-FR') : '0'} FCFA`,
+  activeUnit: null,
+  setActiveUnit: () => undefined,
+  setCurrency: () => undefined,
+  setInfrastructures: () => undefined,
+  addUnit: () => undefined,
+  updateUnit: () => undefined,
+  deleteUnit: () => undefined,
+  getUnitInfrastructures: () => [],
+  addInfrastructure: () => undefined,
+  updateInfrastructure: () => undefined,
+  deleteInfrastructure: () => undefined,
+  getUnitEquipment: () => [],
+  addEquipment: () => undefined,
+  updateEquipment: () => undefined,
+  getUnitCycles: () => [],
+  addCycle: () => undefined,
+  updateCycle: () => undefined,
+  getUnitFinancialData: () => null,
+  getGlobalFinancialData: () => EMPTY_FINANCIAL_DATA,
+  addTransaction: () => undefined,
+  updateTransaction: () => undefined,
+  deleteTransaction: () => undefined,
+  getUnitTransactions: () => [],
+  addPurchase: () => undefined,
+  updatePurchase: () => undefined,
+  deletePurchase: () => undefined,
+  getUnitPurchases: () => [],
+  addDepreciableAsset: () => undefined,
+  updateDepreciableAsset: () => undefined,
+  deleteDepreciableAsset: () => undefined,
+  getUnitDepreciableAssets: () => [],
+  calculateDepreciation: () => 0,
+  convertCurrency: (amount) => amount,
+};
+
+// Keep consumers operational during a transient provider remount instead of
+// escalating a recoverable empty state to the application error boundary.
+const ProductionUnitsContext = createContext<ProductionUnitsContextType>(EMPTY_PRODUCTION_UNITS_CONTEXT);
 
 export const useProductionUnits = () => {
-  const context = useContext(ProductionUnitsContext);
-  if (!context) {
-    throw new Error('useProductionUnits must be used within a ProductionUnitsProvider');
-  }
-  return context;
+  return useContext(ProductionUnitsContext);
 };
 
 // Données de démonstration

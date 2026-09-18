@@ -27,6 +27,8 @@ const OBSOLETE_ERROR_PATTERNS = [
   'postgres_changes',
   'Stethoscope is not defined',
   'useAuth must be used within an AuthProvider',
+  'useLogs must be used within a LogsProvider',
+  'useProductionUnits must be used within a ProductionUnitsProvider',
   'Minified React error #310',
   'invariant=310',
   'dev-sw.js',
@@ -50,14 +52,20 @@ const isAfterLastPurge = (timestamp?: string | null) => {
   }
 };
 
-const LogsContext = createContext<LogsContextType | undefined>(undefined);
+const EMPTY_LOGS_CONTEXT: LogsContextType = {
+  logs: [],
+  addLog: async () => undefined,
+  clearLogs: async () => undefined,
+  getLogsByModule: () => [],
+  getLogsByUser: () => [],
+};
+
+// A safe default prevents a transient provider remount (notably during HMR or
+// route recovery) from crashing the whole application.
+const LogsContext = createContext<LogsContextType>(EMPTY_LOGS_CONTEXT);
 
 export const useLogs = () => {
-  const context = useContext(LogsContext);
-  if (context === undefined) {
-    throw new Error('useLogs must be used within a LogsProvider');
-  }
-  return context;
+  return useContext(LogsContext);
 };
 
 export const LogsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
