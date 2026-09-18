@@ -9,20 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FlaskConical, Info, Play, Save, Trash2, Wand2, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { FlaskConical, Info, Play, Save, Trash2, Wand2, CheckCircle2, AlertTriangle, Plus, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
+import ExportDropdown from '@/components/ExportDropdown';
 import {
   REFERENCE_INGREDIENTS, FEED_PARAMS, PARAM_HELP_PRICE, PARAM_HELP_INCORPORATION,
-  SPECIES, STAGES, STAGE_PB_SUGGESTION, QUANTITY_PRESETS,
+  INGREDIENT_CATEGORIES_LAB, SPECIES, STAGES, STAGE_PB_SUGGESTION, QUANTITY_PRESETS,
   LabIngredient, LabMode, LabResult, TargetMap, ParamKey,
   optimizeLab, computeFormulation, parseRequest, round,
 } from '@/lib/feedLab';
 
 const STORE_KEY = 'aquafeed-lab-formulations-v1';
-const LIB_KEY = 'aquafeed-lab-library-v1';
+const LIB_KEY = 'aquafeed-lab-library-v2';
 
 interface SavedLab {
   id: string;
@@ -45,6 +46,15 @@ const readStore = <T,>(key: string, fallback: T): T => {
 const writeStore = (key: string, value: unknown) => {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota */ }
 };
+
+const emptyIngredient = (): LabIngredient => ({
+  id: `user-${crypto.randomUUID()}`,
+  name: '', category: 'cereale', price_per_kg: null,
+  ed: 0, eb: 0, pb: 0, cb: 0, fb: 0, ca: 0, ph: 0,
+  lysine: 0, methionine: 0, meth_lys: 0, sel: 0,
+  min_inclusion_pct: 0, max_inclusion_pct: 100,
+  recommended_inclusion_pct: null, source: 'user', stock_kg: 0,
+});
 
 const FeedLabStudio: React.FC = () => {
   const { formatCurrency, activeUnit } = useProductionUnits();
@@ -70,6 +80,7 @@ const FeedLabStudio: React.FC = () => {
   const [request, setRequest] = useState('');
   const [saved, setSaved] = useState<SavedLab[]>(() => readStore<SavedLab[]>(STORE_KEY, []));
   const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState<LabIngredient | null>(null);
 
   useEffect(() => { writeStore(STORE_KEY, saved); }, [saved]);
 
@@ -80,6 +91,16 @@ const FeedLabStudio: React.FC = () => {
 
   const patchIngredient = (id: string, patch: Partial<LabIngredient>) =>
     setLibrary(prev => prev.map(i => (i.id === id ? { ...i, ...patch } : i)));
+
+  const removeIngredient = (id: string) => {
+    setLibrary(prev => prev.filter(i => i.id !== id));
+    setSelected(prev => prev.filter(x => x !== id));
+  };
+
+  const resetLibrary = () => {
+    setLibrary(REFERENCE_INGREDIENTS.map(i => ({ ...i })));
+    toast({ title: 'Bibliothèque réinitialisée', description: 'Les valeurs de la fiche de référence ont été restaurées.' });
+  };
 
   const setTarget = (key: ParamKey, field: 'min' | 'target' | 'max', raw: string) =>
     setTargets(prev => ({ ...prev, [key]: { ...(prev[key] || {}), [field]: raw === '' ? null : Number(raw) } }));
@@ -141,24 +162,53 @@ const FeedLabStudio: React.FC = () => {
     toast({ title: 'Formulation enregistrée', description: row.name });
   };
 
-  const exportCsv = () => {
-    if (!result) return;
-    const head = ['Ingrédient', 'Prix/kg', "Taux d'incorporation (%)", 'Quantité (kg)', 'Coût'];
-    const rows = result.lines.map(l => [l.name, l.price_per_kg, round(l.inclusion_pct, 2), round(l.quantity_kg, 3), round(l.cost, 2)]);
-    const nut = FEED_PARAMS.map(p => [p.full, round(result.totals.values[p.key], p.decimals), p.unit]);
-    const csv = [
-      [name], [],
-      head, ...rows, [],
-      ['Quantité totale (kg)', round(result.total_quantity_kg, 2)],
-      ['Coût total', round(result.total_cost, 2)],
-      ['Coût réel par kg', round(result.cost_per_kg, 2)], [],
-      ['Valeur nutritionnelle finale'], ...nut,
-    ].map(r => r.map(c => `"${String(c ?? '')}"`).join(';')).join('\n');
-    const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = `${name.replace(/\s+/g, '_')}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  };
+  /* ---------------- Export (PDF / Word / Excel / CSV) ---------------- */
+  const exportOptions = useMemo(() => {
+    const data = (result?.lines ?? []).map(l => ({
+      ingredient: l.name,
+      taux: round(l.inclusion_pct, 2),
+      quantite: round(l.quantity_kg, 3),
+      prix: round(l.price_per_kg, 2),
+      cout: round(l.cost, 2),
+      ...FEED_PARAMS.reduce((a, p) => {
+        a[`c_${p.key}`] = round(l.contributions[p.key], p.decimals);
+        return a;
+      }, {} as Record<string, number>),
+    }));
+    if (result) {
+      data.push({
+        ingredient: 'TOTAL',
+        taux: round(result.lines.reduce((s, l) => s + l.inclusion_pct, 0), 2),
+        quantite: round(result.total_quantity_kg, 3),
+        prix: 0,
+        cout: round(result.total_cost, 2),
+        ...FEED_PARAMS.reduce((a, p) => {
+          a[`c_${p.key}`] = round(result.totals.values[p.key], p.decimals);
+          return a;
+        }, {} as Record<string, number>),
+      } as any);
+    }
+    return {
+      title: name || 'Formulation aliment poisson',
+      subtitle: `${SPECIES.find(s => s.key === species)?.label} · ${STAGES.find(s => s.key === stage)?.label} · ${quantity} kg · Coût réel ${round(result?.cost_per_kg ?? 0, 2)} /kg`,
+      filename: (name || 'formulation').replace(/\s+/g, '_'),
+      unitName: activeUnit?.name,
+      columns: [
+        { key: 'ingredient', label: 'Ingrédient' },
+        { key: 'taux', label: "Taux d'incorporation (%)" },
+        { key: 'quantite', label: 'Quantité (kg)' },
+        { key: 'prix', label: 'Prix/kg' },
+        { key: 'cout', label: 'Coût' },
+        ...FEED_PARAMS.map(p => ({ key: `c_${p.key}`, label: `${p.label} (${p.unit})` })),
+      ],
+      data,
+    };
+  }, [result, name, species, stage, quantity, activeUnit?.name]);
+
+  const totalPct = useMemo(
+    () => round(chosen.reduce((s, c) => s + Number(manual[c.id] || 0), 0), 2),
+    [chosen, manual]
+  );
 
   return (
     <TooltipProvider>
@@ -221,15 +271,19 @@ const FeedLabStudio: React.FC = () => {
               </div>
 
               <div className="pt-2">
-                <Label className="flex items-center gap-1">Objectifs nutritionnels
-                  <Tip text="Laissez vide un paramètre que vous ne souhaitez pas contraindre." />
+                <Label className="flex items-center gap-1">Objectifs nutritionnels (11 paramètres)
+                  <Tip text="Minimum, valeur recommandée et maximum. Laissez vide un paramètre que vous ne souhaitez pas contraindre." />
                 </Label>
-                <div className="mt-2 space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                <div className="mt-2 space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-[1fr_repeat(3,3.5rem)] gap-1.5 text-[10px] text-muted-foreground">
+                    <span>Paramètre</span><span>Min</span><span>Reco.</span><span>Max</span>
+                  </div>
                   {FEED_PARAMS.map(p => (
-                    <div key={p.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-1.5">
+                    <div key={p.key} className="grid grid-cols-[1fr_repeat(3,3.5rem)] items-center gap-1.5">
                       <span className="text-xs flex items-center gap-1">{p.label}<Tip text={`${p.full} (${p.unit}) — ${p.help}`} /></span>
-                      <Input className="h-8 w-20 text-xs" placeholder="min" value={targets[p.key]?.min ?? ''} onChange={e => setTarget(p.key, 'min', e.target.value)} />
-                      <Input className="h-8 w-20 text-xs" placeholder="max" value={targets[p.key]?.max ?? ''} onChange={e => setTarget(p.key, 'max', e.target.value)} />
+                      <Input className="h-8 px-1.5 text-xs" placeholder="—" value={targets[p.key]?.min ?? ''} onChange={e => setTarget(p.key, 'min', e.target.value)} />
+                      <Input className="h-8 px-1.5 text-xs" placeholder="—" value={targets[p.key]?.target ?? ''} onChange={e => setTarget(p.key, 'target', e.target.value)} />
+                      <Input className="h-8 px-1.5 text-xs" placeholder="—" value={targets[p.key]?.max ?? ''} onChange={e => setTarget(p.key, 'max', e.target.value)} />
                     </div>
                   ))}
                 </div>
@@ -242,24 +296,69 @@ const FeedLabStudio: React.FC = () => {
           </Card>
 
           <Card className="lg:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Bibliothèque d'ingrédients (fiche de référence)</CardTitle>
-              <CardDescription>
-                Cochez les matières premières disponibles, ajustez le prix et les taux d'incorporation.
-              </CardDescription>
+            <CardHeader className="pb-3 flex-row items-start justify-between gap-2 flex-wrap">
+              <div>
+                <CardTitle className="text-base">Bibliothèque d'ingrédients ({library.length})</CardTitle>
+                <CardDescription>
+                  Toutes les colonnes de la fiche de référence sont affichées et modifiables : prix, ED, EB, PB, CB, FB, Ca, Ph, Lysine, Méthionine, Méth.+Lys., Sel et taux d'incorporation.
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setDraft(emptyIngredient())}><Plus className="w-4 h-4 mr-1.5" />Ingrédient</Button>
+                <Button size="sm" variant="ghost" onClick={resetLibrary}><RotateCcw className="w-4 h-4 mr-1.5" />Réinitialiser</Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
+              {draft && (
+                <div className="border rounded-md p-3 mb-3 space-y-2 bg-muted/30">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-xs">Nom de l'ingrédient</Label>
+                      <Input className="h-8" value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} />
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-xs">Catégorie</Label>
+                      <Select value={draft.category} onValueChange={v => setDraft({ ...draft, category: v })}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent className="z-50">{INGREDIENT_CATEGORIES_LAB.map(c => <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Prix/kg</Label>
+                      <Input className="h-8" type="number" value={draft.price_per_kg ?? ''} onChange={e => setDraft({ ...draft, price_per_kg: e.target.value === '' ? null : Number(e.target.value) })} />
+                    </div>
+                    {FEED_PARAMS.map(p => (
+                      <div key={p.key}>
+                        <Label className="text-xs">{p.label} ({p.unit})</Label>
+                        <Input className="h-8" type="number" value={(draft as any)[p.key]} onChange={e => setDraft({ ...draft, [p.key]: Number(e.target.value) } as LabIngredient)} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => {
+                      if (!draft.name.trim()) { toast({ title: 'Nom requis', description: "Indiquez le nom de l'ingrédient.", variant: 'destructive' }); return; }
+                      setLibrary(prev => [...prev, draft]); setDraft(null);
+                      toast({ title: 'Ingrédient ajouté', description: draft.name });
+                    }}>Ajouter</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>Annuler</Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
+                <table className="w-full text-xs min-w-[64rem]">
+                  <thead className="sticky top-0 bg-background">
                     <tr className="text-left text-muted-foreground border-b">
                       <th className="py-2 pr-2">Utiliser</th>
-                      <th className="py-2 pr-2">Ingrédient</th>
+                      <th className="py-2 pr-2 min-w-[11rem]">Ingrédient</th>
                       <th className="py-2 pr-2 whitespace-nowrap">Prix/kg <Tip text={PARAM_HELP_PRICE} /></th>
-                      <th className="py-2 pr-2">PB %</th>
-                      <th className="py-2 pr-2">ED</th>
+                      {FEED_PARAMS.map(p => (
+                        <th key={p.key} className="py-2 pr-2 whitespace-nowrap">{p.label}<Tip text={`${p.full} (${p.unit}) — ${p.help}`} /></th>
+                      ))}
                       <th className="py-2 pr-2 whitespace-nowrap">Min % <Tip text={PARAM_HELP_INCORPORATION} /></th>
-                      <th className="py-2 pr-2">Max %</th>
+                      <th className="py-2 pr-2 whitespace-nowrap">Reco. %</th>
+                      <th className="py-2 pr-2 whitespace-nowrap">Max %</th>
+                      <th className="py-2 pr-2"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -273,21 +372,34 @@ const FeedLabStudio: React.FC = () => {
                         </td>
                         <td className="py-1.5 pr-2">
                           <div className="font-medium">{i.name}</div>
-                          {i.price_per_kg == null && <span className="text-[10px] text-amber-600">Prix à renseigner</span>}
+                          <div className="text-[10px] text-muted-foreground">
+                            {INGREDIENT_CATEGORIES_LAB.find(c => c.key === i.category)?.label ?? i.category}
+                            {i.price_per_kg == null && <span className="text-amber-600"> · prix à renseigner</span>}
+                          </div>
                         </td>
                         <td className="py-1.5 pr-2">
                           <Input className="h-7 w-20" type="number" value={i.price_per_kg ?? ''} placeholder="—"
                             onChange={e => patchIngredient(i.id, { price_per_kg: e.target.value === '' ? null : Number(e.target.value) })} />
                         </td>
-                        <td className="py-1.5 pr-2">{i.pb}</td>
-                        <td className="py-1.5 pr-2">{i.ed}</td>
+                        {FEED_PARAMS.map(p => (
+                          <td key={p.key} className="py-1.5 pr-2">
+                            <Input className="h-7 w-20" type="number" value={(i as any)[p.key]}
+                              onChange={e => patchIngredient(i.id, { [p.key]: Number(e.target.value) } as Partial<LabIngredient>)} />
+                          </td>
+                        ))}
                         <td className="py-1.5 pr-2">
                           <Input className="h-7 w-16" type="number" value={i.min_inclusion_pct}
                             onChange={e => patchIngredient(i.id, { min_inclusion_pct: Number(e.target.value) })} />
                         </td>
+                        <td className="py-1.5 pr-2 whitespace-nowrap">{i.recommended_inclusion_pct ?? '—'}</td>
                         <td className="py-1.5 pr-2">
                           <Input className="h-7 w-16" type="number" value={i.max_inclusion_pct}
                             onChange={e => patchIngredient(i.id, { max_inclusion_pct: Number(e.target.value) })} />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeIngredient(i.id)}>
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -298,10 +410,17 @@ const FeedLabStudio: React.FC = () => {
           </Card>
         </div>
 
+        {!result && (
+          <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">
+            Sélectionnez vos matières premières, définissez vos objectifs puis lancez le calcul pour afficher la recette, les contributions, la valeur nutritionnelle et la vérification des objectifs.
+          </CardContent></Card>
+        )}
+
         {result && (
           <Tabs defaultValue="recette" className="space-y-3">
-            <TabsList>
+            <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="recette">Recette</TabsTrigger>
+              <TabsTrigger value="contributions">Contributions</TabsTrigger>
               <TabsTrigger value="nutrition">Valeur nutritionnelle</TabsTrigger>
               <TabsTrigger value="verification">Vérification des objectifs</TabsTrigger>
               <TabsTrigger value="historique">Historique ({saved.length})</TabsTrigger>
@@ -312,7 +431,7 @@ const FeedLabStudio: React.FC = () => {
                 <CardHeader className="pb-3 flex-row items-center justify-between gap-2 flex-wrap">
                   <CardTitle className="text-base flex items-center gap-2"><FlaskConical className="w-4 h-4 text-primary" />{name}</CardTitle>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={exportCsv}><Download className="w-4 h-4 mr-1.5" />Exporter</Button>
+                    <ExportDropdown options={exportOptions} label="Exporter" />
                     <Button size="sm" onClick={saveFormulation}><Save className="w-4 h-4 mr-1.5" />Enregistrer</Button>
                   </div>
                 </CardHeader>
@@ -342,6 +461,13 @@ const FeedLabStudio: React.FC = () => {
                             </tr>
                           );
                         })}
+                        <tr className="font-semibold">
+                          <td className="py-1.5 pr-2">TOTAL</td>
+                          <td className={`py-1.5 pr-2 ${Math.abs(totalPct - 100) > 0.5 ? 'text-destructive' : 'text-emerald-600'}`}>{totalPct} %</td>
+                          <td className="py-1.5 pr-2">{round(result.total_quantity_kg, 3)}</td>
+                          <td className="py-1.5 pr-2">—</td>
+                          <td className="py-1.5 pr-2">{formatCurrency(result.total_cost)}</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -350,6 +476,45 @@ const FeedLabStudio: React.FC = () => {
                     <Stat label="Coût total" value={formatCurrency(result.total_cost)} />
                     <Stat label="Coût réel / kg" value={formatCurrency(result.cost_per_kg)} />
                     <Stat label="Protéines finales" value={`${round(result.totals.values.pb, 2)} %`} />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="contributions">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Contributions par ingrédient</CardTitle>
+                  <CardDescription>Quantité × valeur de l'ingrédient, comme dans la fiche de référence.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs min-w-[52rem]">
+                      <thead><tr className="text-left text-muted-foreground border-b">
+                        <th className="py-2 pr-2 min-w-[11rem]">Ingrédient</th>
+                        <th className="py-2 pr-2">Qté (kg)</th>
+                        {FEED_PARAMS.map(p => <th key={p.key} className="py-2 pr-2 whitespace-nowrap">{p.label}</th>)}
+                      </tr></thead>
+                      <tbody>
+                        {result.lines.map(l => (
+                          <tr key={l.ingredient_id} className="border-b last:border-0">
+                            <td className="py-1.5 pr-2">{l.name}</td>
+                            <td className="py-1.5 pr-2">{round(l.quantity_kg, 3)}</td>
+                            {FEED_PARAMS.map(p => <td key={p.key} className="py-1.5 pr-2">{round(l.contributions[p.key], p.decimals)}</td>)}
+                          </tr>
+                        ))}
+                        <tr className="font-semibold">
+                          <td className="py-1.5 pr-2">Total contributions</td>
+                          <td className="py-1.5 pr-2">{round(result.total_quantity_kg, 3)}</td>
+                          {FEED_PARAMS.map(p => <td key={p.key} className="py-1.5 pr-2">{round(result.totals.contributions[p.key], p.decimals)}</td>)}
+                        </tr>
+                        <tr className="font-semibold text-primary">
+                          <td className="py-1.5 pr-2">Valeur finale de l'aliment</td>
+                          <td className="py-1.5 pr-2">/ kg</td>
+                          {FEED_PARAMS.map(p => <td key={p.key} className="py-1.5 pr-2">{round(result.totals.values[p.key], p.decimals)}</td>)}
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
@@ -391,15 +556,25 @@ const FeedLabStudio: React.FC = () => {
               <Card><CardContent className="p-4 space-y-2">
                 {saved.length === 0 && <p className="text-sm text-muted-foreground">Aucune formulation enregistrée pour l'instant.</p>}
                 {saved.map(s => (
-                  <div key={s.id} className="flex items-center justify-between gap-2 border rounded-md px-3 py-2">
+                  <div key={s.id} className="flex items-center justify-between gap-2 border rounded-md px-3 py-2 flex-wrap">
                     <div>
                       <p className="text-sm font-medium">{s.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {s.quantity_kg} kg · {formatCurrency(s.cost_per_kg)}/kg · {new Date(s.created_at).toLocaleDateString('fr-FR')}
+                        {s.quantity_kg} kg · {formatCurrency(s.cost_per_kg)}/kg · PB {round(Number(s.nutrition?.pb ?? 0), 2)} % · {new Date(s.created_at).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{s.species}</Badge>
+                      <Badge variant="outline">{SPECIES.find(x => x.key === s.species)?.label ?? s.species}</Badge>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setName(`${s.name} (copie)`); setSpecies(s.species); setStage(s.stage);
+                        setQuantity(s.quantity_kg); setMode(s.mode); setTargets(s.targets);
+                        const ids = s.lines.map((l: any) => l.ingredient_id).filter((id: string) => library.some(i => i.id === id));
+                        if (ids.length) setSelected(ids);
+                        const m: Record<string, number> = {};
+                        s.lines.forEach((l: any) => { m[l.ingredient_id] = l.inclusion_pct; });
+                        setManual(m);
+                        toast({ title: 'Formulation chargée', description: s.name });
+                      }}>Rouvrir</Button>
                       <Button size="icon" variant="ghost" onClick={() => setSaved(prev => prev.filter(x => x.id !== s.id))}>
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
