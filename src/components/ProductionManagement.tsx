@@ -124,6 +124,44 @@ const ProductionManagement = () => {
     });
   }, [cycles, allCycleInfrastructures, batches, healthRecords]);
 
+  const [cycleAlertsData, setCycleAlertsData] = useState<any>(null);
+
+  useEffect(() => {
+    if (!activeUnit) return;
+    if (unitCycles.length > 0) {
+      const activeCycles = unitCycles.filter(c => c.status === 'active');
+      const totalCurrent = activeCycles.reduce((sum, c) => sum + c.currentQuantity, 0);
+      const totalTarget = activeCycles.reduce((sum, c) => sum + c.targetQuantity, 0);
+      const avgProgress = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
+
+      const performanceIndex = activeCycles.reduce((sum, c) => {
+        const progress = (c.currentQuantity / Math.max(1, c.targetQuantity)) * 100;
+        const daysElapsed = Math.floor(
+          (new Date().getTime() - new Date(c.startDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const expectedProgress = Math.min(100, (daysElapsed / 150) * 100);
+        return sum + (progress / Math.max(1, expectedProgress));
+      }, 0) / Math.max(1, activeCycles.length);
+
+      setCycleAlertsData({
+        quantity: totalCurrent,
+        mortality: totalCurrent * 0.018,
+        growthRate: 2.5,
+        temperature: 25,
+        ph: 7.5,
+        oxygen: 6.8,
+        feedingEfficiency: 1.45,
+        unitName: activeUnit.name,
+        production: {
+          current: totalCurrent,
+          target: totalTarget,
+          progress: avgProgress,
+          performance: performanceIndex
+        }
+      });
+    }
+  }, [unitCycles, activeUnit]);
+
   if (!activeUnit) {
     return (
       <div className="space-y-responsive">
@@ -151,44 +189,6 @@ const ProductionManagement = () => {
       </div>
     );
   }
-
-  const [cycleAlertsData, setCycleAlertsData] = useState<any>(null);
-
-  useEffect(() => {
-    if (unitCycles.length > 0) {
-      const activeCycles = unitCycles.filter(c => c.status === 'active');
-      const totalCurrent = activeCycles.reduce((sum, c) => sum + c.currentQuantity, 0);
-      const totalTarget = activeCycles.reduce((sum, c) => sum + c.targetQuantity, 0);
-      const avgProgress = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
-
-      // Calcul d'un indice de performance basé sur les cycles actifs
-      const performanceIndex = activeCycles.reduce((sum, c) => {
-        const progress = (c.currentQuantity / c.targetQuantity) * 100;
-        const daysElapsed = Math.floor(
-          (new Date().getTime() - new Date(c.startDate).getTime()) / (1000 * 60 * 60 * 24)
-        );
-        const expectedProgress = Math.min(100, (daysElapsed / 150) * 100); // 150 jours cycle moyen
-        return sum + (progress / Math.max(1, expectedProgress));
-      }, 0) / Math.max(1, activeCycles.length);
-
-      setCycleAlertsData({
-        quantity: totalCurrent,
-        mortality: totalCurrent * 0.018, // 1.8% mortalité simulée
-        growthRate: 2.5,
-        temperature: 25,
-        ph: 7.5,
-        oxygen: 6.8,
-        feedingEfficiency: 1.45,
-        unitName: activeUnit.name,
-        production: {
-          current: totalCurrent,
-          target: totalTarget,
-          progress: avgProgress,
-          performance: performanceIndex
-        }
-      });
-    }
-  }, [unitCycles, activeUnit]);
 
   const handleSaveCycle = async (cycle) => {
     // Refetch cycles from database to get the newly created cycle
