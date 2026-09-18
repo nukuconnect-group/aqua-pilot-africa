@@ -6,3 +6,4 @@
 - [x] Séparer les permissions Prophylaxie et AquaHealth AI.
 - [x] Ajouter la persistance sécurisée et l’audit des changements.
 - [x] Vérifier les parcours admin/utilisateur/membre d’équipe sur mobile et ordinateur (compilation, règles et absence de crash; écran admin authentifié non disponible dans la session de test).
+- [x] Éliminer les crashs transitoires liés aux contextes Journaux et Unités de production.

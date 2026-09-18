@@ -84,11 +84,19 @@ export const recordDiagnostic = (kind: DiagnosticKind, label: string, data?: unk
   window.dispatchEvent(new CustomEvent('aqua:diagnostic-entry', { detail: entry }));
 };
 
-const shouldPersistError = (kind: DiagnosticKind, label: string) =>
-  kind === 'react-crash' ||
-  kind === 'error-boundary' ||
-  label.toLowerCase().includes('removechild') ||
-  label.toLowerCase().includes('module mismatch');
+const RECOVERED_PROVIDER_ERRORS = [
+  'useAuth must be used within an AuthProvider',
+  'useLogs must be used within a LogsProvider',
+  'useProductionUnits must be used within a ProductionUnitsProvider',
+];
+
+const shouldPersistError = (kind: DiagnosticKind, label: string) => {
+  if (RECOVERED_PROVIDER_ERRORS.some((message) => label.includes(message))) return false;
+  return kind === 'react-crash' ||
+    kind === 'error-boundary' ||
+    label.toLowerCase().includes('removechild') ||
+    label.toLowerCase().includes('module mismatch');
+};
 
 export const persistDiagnosticToServer = async (kind: DiagnosticKind, label: string, data?: unknown) => {
   if (typeof window === 'undefined') return;

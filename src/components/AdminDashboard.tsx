@@ -111,6 +111,8 @@ const AdminDashboard = () => {
     'postgres_changes',
     'Stethoscope is not defined',
     'useAuth must be used within an AuthProvider',
+    'useLogs must be used within a LogsProvider',
+    'useProductionUnits must be used within a ProductionUnitsProvider',
     'Minified React error #310',
     'invariant=310',
     'dev-sw.js',
