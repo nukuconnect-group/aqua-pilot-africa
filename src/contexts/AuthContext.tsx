@@ -70,10 +70,39 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+// Valeur de repli : évite qu'un composant monté hors du fournisseur
+// (portail, boundary, rendu transitoire) ne fasse planter toute l'application.
+const FALLBACK_AUTH: AuthContextType = {
+  user: null,
+  login: async () => ({ success: false }),
+  completeMFALogin: async () => false,
+  completeMFALoginWithRecoveryCode: async () => false,
+  cancelMFALogin: () => {},
+  mfaChallenge: null,
+  logout: () => {},
+  register: async () => ({ success: false, error: 'Service indisponible' }),
+  resetPassword: async () => false,
+  isLoading: false,
+  hasSeenOnboarding: false,
+  completeOnboarding: () => {},
+  isAuthenticated: false,
+  updateNotificationSettings: () => {},
+  selectedSubscriptionPlan: null,
+  setSelectedSubscriptionPlan: () => {},
+  hasSelectedPlan: false,
+  completeSubscriptionSelection: () => {},
+  isDemoMode: false,
+  enterDemoMode: () => {},
+  exitDemoMode: () => {},
+};
+
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    if (import.meta.env.DEV) {
+      console.warn('useAuth utilisé hors AuthProvider : valeur de repli appliquée.');
+    }
+    return FALLBACK_AUTH;
   }
   return context;
 };
@@ -631,6 +660,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (error.message.includes('rate limit')) {
           return { success: false, error: 'Trop de tentatives. Veuillez attendre quelques instants.' };
+        }
+
+        if (
+          error.message.toLowerCase().includes('confirmation email') ||
+          error.message.toLowerCase().includes('sending email') ||
+          (error as any)?.code === 'unexpected_failure'
+        ) {
+          return {
+            success: false,
+            error:
+              "L'email de confirmation n'a pas pu être envoyé (configuration SMTP). Contactez le support : support@aquapilote.com",
+          };
         }
 
         if (error.message.includes('invalid')) {
