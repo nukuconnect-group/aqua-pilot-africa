@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, FlaskConical, FolderOpen, Boxes, Factory, Wallet, Package } from 'lucide-react';
+import { ArrowLeft, FlaskConical, FolderOpen, Boxes, Factory, Wallet, Package, LayoutDashboard } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useFeedMill, StoredFormulation } from './useFeedMill';
 import FormulationStudio from './FormulationStudio';
@@ -11,13 +11,14 @@ import FormulationsList from './FormulationsList';
 import ManufacturingHistory from './ManufacturingHistory';
 import ManufactureDialog from './ManufactureDialog';
 import FeedLabStudio from './FeedLabStudio';
+import FeedMillDashboard from './FeedMillDashboard';
 
 interface Props { onBack: () => void; }
 
 const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
   const { formatCurrency, activeUnit } = useProductionUnits();
   const mill = useFeedMill();
-  const [tab, setTab] = useState('lab');
+  const [tab, setTab] = useState('dashboard');
   const [editing, setEditing] = useState<StoredFormulation | null>(null);
   const [toManufacture, setToManufacture] = useState<StoredFormulation | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -64,13 +65,23 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full sm:w-auto">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-6 w-full sm:w-auto">
+          <TabsTrigger value="dashboard"><LayoutDashboard className="w-4 h-4 mr-1.5" />Tableau de bord</TabsTrigger>
           <TabsTrigger value="lab"><FlaskConical className="w-4 h-4 mr-1.5" />Laboratoire</TabsTrigger>
           <TabsTrigger value="studio"><FlaskConical className="w-4 h-4 mr-1.5" />Formuler</TabsTrigger>
           <TabsTrigger value="formulations"><FolderOpen className="w-4 h-4 mr-1.5" />Mes formulations</TabsTrigger>
           <TabsTrigger value="ingredients"><Boxes className="w-4 h-4 mr-1.5" />Ingrédients</TabsTrigger>
           <TabsTrigger value="batches"><Factory className="w-4 h-4 mr-1.5" />Fabrications</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <FeedMillDashboard
+            formulations={mill.formulations}
+            batches={mill.batches}
+            ingredients={mill.ingredients}
+            onNavigate={setTab}
+          />
+        </TabsContent>
 
         <TabsContent value="lab">
           <FeedLabStudio />
