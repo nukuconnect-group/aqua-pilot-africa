@@ -220,7 +220,7 @@ const PlansModulesPanel: React.FC<{ users: AdminModuleUser[] }> = ({ users }) =>
 
       {draft && (
         <Tabs defaultValue="modules" className="space-y-4">
-          <TabsList>
+          <TabsList className="h-auto w-full flex-wrap justify-start">
             <TabsTrigger value="modules"><Layers className="w-4 h-4 mr-1" /> Modules inclus</TabsTrigger>
             <TabsTrigger value="permissions"><ShieldCheck className="w-4 h-4 mr-1" /> Permissions par rôle</TabsTrigger>
             <TabsTrigger value="users"><Users className="w-4 h-4 mr-1" /> Utilisateurs</TabsTrigger>

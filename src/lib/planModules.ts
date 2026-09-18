@@ -185,7 +185,7 @@ export const DEFAULT_PLANS: PlanConfig[] = [
     'Exploitation et gestion de base',
     0,
     'yearly',
-    ['units', 'infrastructure', 'livestock', 'feeding', 'health', 'production', 'sales', 'purchases', 'planning', 'reports'],
+    ['units', 'infrastructure', 'livestock', 'feeding', 'health', 'aquahealth', 'production', 'sales', 'purchases', 'planning', 'reports'],
     1,
   ),
   makePlan(
@@ -195,7 +195,7 @@ export const DEFAULT_PLANS: PlanConfig[] = [
     0,
     'yearly',
     [
-      'units', 'infrastructure', 'livestock', 'feeding', 'health', 'production',
+      'units', 'infrastructure', 'livestock', 'feeding', 'health', 'aquahealth', 'production',
       'sales', 'purchases', 'suppliers', 'accounting', 'planning', 'reports',
       'analytics', 'aquafeed', 'performance-alerts', 'environment', 'team', 'offline',
     ],
