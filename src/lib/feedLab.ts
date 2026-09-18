@@ -521,3 +521,189 @@ export function parseAdjustment(text: string, library: LabIngredient[]): Adjustm
   if (/reduis|diminue|moins de/.test(t) && match) return { kind: 'decrease', ingredientId: match.id };
   return { kind: 'unknown' };
 }
+
+/* ------------------------------------------------------------------ */
+/* Intelligence de marché — ingrédients disponibles par pays           */
+/* ------------------------------------------------------------------ */
+
+export interface MarketSuggestion {
+  /** Ingrédient de la bibliothèque de référence auquel rattacher l'offre. */
+  ref_id: string;
+  /** Prix indicatif observé sur le marché local (devise locale / kg). */
+  price_min: number;
+  price_max: number;
+  note?: string;
+}
+
+export interface CountryMarket {
+  code: string;
+  label: string;
+  currency: string;
+  suggestions: MarketSuggestion[];
+}
+
+/**
+ * Disponibilités et fourchettes de prix indicatives par pays.
+ * Ce sont des repères de marché à confirmer localement : l'utilisateur peut
+ * remplacer chaque prix par son prix d'achat réel.
+ */
+export const COUNTRY_MARKETS: CountryMarket[] = [
+  {
+    code: 'TG', label: 'Togo', currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 150, price_max: 220, note: 'Récolte locale, moins cher en période de récolte (oct.–déc.).' },
+      { ref_id: 'ref-son-ble', price_min: 60, price_max: 110, note: 'Minoteries de Lomé.' },
+      { ref_id: 'ref-son-riz', price_min: 20, price_max: 60, note: 'Rizeries de la Kara et des Savanes.' },
+      { ref_id: 'ref-manioc', price_min: 200, price_max: 350 },
+      { ref_id: 'ref-fp50', price_min: 300, price_max: 450, note: 'Farine de poisson du port de Lomé, qualité variable.' },
+      { ref_id: 'ref-tourteau-soja', price_min: 400, price_max: 600 },
+      { ref_id: 'ref-palmiste', price_min: 80, price_max: 150 },
+      { ref_id: 'ref-huile-rouge', price_min: 600, price_max: 900 },
+      { ref_id: 'ref-moringa', price_min: 300, price_max: 600, note: 'Feuilles séchées, production locale.' },
+    ],
+  },
+  {
+    code: 'BJ', label: 'Bénin', currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 150, price_max: 230 },
+      { ref_id: 'ref-son-ble', price_min: 70, price_max: 120 },
+      { ref_id: 'ref-manioc', price_min: 180, price_max: 320, note: 'Cossettes très disponibles.' },
+      { ref_id: 'ref-fp40', price_min: 250, price_max: 400 },
+      { ref_id: 'ref-tourteau-soja', price_min: 380, price_max: 550, note: 'Filière soja développée.' },
+      { ref_id: 'ref-coton', price_min: 60, price_max: 120, note: 'Tourteau de coton abondant.' },
+      { ref_id: 'ref-palmiste', price_min: 80, price_max: 160 },
+      { ref_id: 'ref-huile-rouge', price_min: 600, price_max: 900 },
+    ],
+  },
+  {
+    code: 'CI', label: "Côte d'Ivoire", currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 180, price_max: 260 },
+      { ref_id: 'ref-son-riz', price_min: 40, price_max: 90 },
+      { ref_id: 'ref-manioc', price_min: 200, price_max: 350 },
+      { ref_id: 'ref-fp50', price_min: 350, price_max: 550, note: 'Farine de poisson d’Abidjan.' },
+      { ref_id: 'ref-tourteau-soja', price_min: 450, price_max: 650 },
+      { ref_id: 'ref-palmiste', price_min: 70, price_max: 140, note: 'Sous-produit de la filière palmier.' },
+      { ref_id: 'ref-huile-rouge', price_min: 650, price_max: 950 },
+      { ref_id: 'ref-dreche', price_min: 120, price_max: 250, note: 'Brasseries locales.' },
+    ],
+  },
+  {
+    code: 'BF', label: 'Burkina Faso', currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 170, price_max: 260 },
+      { ref_id: 'ref-son-ble', price_min: 60, price_max: 110 },
+      { ref_id: 'ref-coton', price_min: 55, price_max: 110, note: 'Tourteau de coton très disponible.' },
+      { ref_id: 'ref-fp40', price_min: 350, price_max: 600, note: 'Importée, coût de transport élevé.' },
+      { ref_id: 'ref-dreche', price_min: 100, price_max: 220 },
+      { ref_id: 'ref-moringa', price_min: 350, price_max: 700 },
+    ],
+  },
+  {
+    code: 'SN', label: 'Sénégal', currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 180, price_max: 270 },
+      { ref_id: 'ref-son-riz', price_min: 40, price_max: 90, note: 'Vallée du fleuve Sénégal.' },
+      { ref_id: 'ref-fp50', price_min: 300, price_max: 500, note: 'Farine de poisson de la pêche artisanale.' },
+      { ref_id: 'ref-tourteau-soja', price_min: 450, price_max: 650 },
+      { ref_id: 'ref-coquille', price_min: 20, price_max: 60, note: 'Coquillages broyés, source de calcium.' },
+      { ref_id: 'ref-huile-soja', price_min: 900, price_max: 1400 },
+    ],
+  },
+  {
+    code: 'CM', label: 'Cameroun', currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 160, price_max: 250 },
+      { ref_id: 'ref-son-ble', price_min: 70, price_max: 130 },
+      { ref_id: 'ref-manioc', price_min: 150, price_max: 300 },
+      { ref_id: 'ref-fp50', price_min: 350, price_max: 600 },
+      { ref_id: 'ref-palmiste', price_min: 70, price_max: 150 },
+      { ref_id: 'ref-dreche', price_min: 120, price_max: 250 },
+      { ref_id: 'ref-huile-rouge', price_min: 600, price_max: 1000 },
+    ],
+  },
+  {
+    code: 'ML', label: 'Mali', currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 170, price_max: 260 },
+      { ref_id: 'ref-son-riz', price_min: 35, price_max: 80, note: 'Office du Niger.' },
+      { ref_id: 'ref-coton', price_min: 55, price_max: 115 },
+      { ref_id: 'ref-fp40', price_min: 400, price_max: 650 },
+    ],
+  },
+  {
+    code: 'NE', label: 'Niger', currency: 'FCFA',
+    suggestions: [
+      { ref_id: 'ref-mais', price_min: 200, price_max: 300 },
+      { ref_id: 'ref-son-ble', price_min: 80, price_max: 140 },
+      { ref_id: 'ref-coton', price_min: 70, price_max: 130 },
+      { ref_id: 'ref-fp40', price_min: 450, price_max: 700, note: 'Importée.' },
+    ],
+  },
+];
+
+/** Reconnaît un pays cité dans la demande de l'utilisateur. */
+export function parseCountry(text: string): string | undefined {
+  const t = norm(text);
+  const found = COUNTRY_MARKETS.find(c => t.includes(norm(c.label)) || t.includes(norm(c.label).split(' ')[0]));
+  return found?.code;
+}
+
+/* ------------------------------------------------------------------ */
+/* Recommandations & procédé de fabrication                            */
+/* ------------------------------------------------------------------ */
+
+export interface ProcessStep {
+  title: string;
+  detail: string;
+}
+
+/** Recommandations de formulation en fonction de l'espèce et du stade. */
+export function buildRecommendations(species: string, stage: string, result: LabResult | null): string[] {
+  const r: string[] = [];
+  const pb = STAGE_PB_SUGGESTION[stage] ?? 32;
+  const speciesLabel = SPECIES.find(s => s.key === species)?.label ?? species;
+  const stageLabel = STAGES.find(s => s.key === stage)?.label ?? stage;
+  r.push(`${speciesLabel} au stade ${stageLabel} : visez environ ${pb} % de protéines brutes et une énergie digestible de 2 800 à 3 200 kcal/kg.`);
+  if (species === 'clarias') r.push("Le Clarias est carnivore : gardez au moins 25 à 30 % de l'apport protéique d'origine animale (farine de poisson).");
+  if (species === 'tilapia') r.push('Le tilapia valorise bien les protéines végétales : le tourteau de soja peut couvrir une large part des protéines.');
+  if (stage === 'alevin') r.push("Pour les alevins, broyez finement (< 0,5 mm) et distribuez 6 à 8 fois par jour.");
+  if (stage === 'finition') r.push("En finition, limitez la farine de poisson pour réduire le coût sans nuire à la qualité de la chair.");
+  r.push('Fibres brutes : restez sous 8 % pour préserver la digestibilité.');
+  r.push('Rapport calcium/phosphore recommandé : 1,2 à 1,5 pour 1.');
+  r.push("Ajoutez toujours 1 à 2 % de complément minéral vitaminé et 0,3 à 0,5 % de sel.");
+  if (result) {
+    const fb = result.totals.values.fb;
+    if (fb > 8) r.push(`Vos fibres brutes atteignent ${round(fb, 2)} % : réduisez le son de riz ou le tourteau de palmiste.`);
+    const ca = result.totals.values.ca, ph = result.totals.values.ph;
+    if (ph > 0 && ca / ph < 1) r.push("Le calcium est faible par rapport au phosphore : ajoutez de la coquille d'huître broyée.");
+    if (result.cost_per_kg > 0) r.push(`Coût de revient obtenu : ${round(result.cost_per_kg, 2)} / kg d'aliment fabriqué.`);
+  }
+  return r;
+}
+
+/** Étapes de fabrication, dimensionnées selon la quantité à produire. */
+export function buildProcessSteps(result: LabResult | null, quantityKg: number, stage: string): ProcessStep[] {
+  const fine = stage === 'alevin' || stage === 'juvenile';
+  const pellet = fine ? (stage === 'alevin' ? '0,5 – 1 mm' : '1 – 2 mm') : '2 – 4 mm';
+  const eau = round(quantityKg * 0.3, 1);
+  const liant = round(quantityKg * 0.02, 2);
+  const sacs = Math.ceil(quantityKg / 50);
+  const lines = result?.lines ?? [];
+  const pesee = lines.length
+    ? lines.map(l => `${l.name} : ${round(l.quantity_kg, 2)} kg`).join(' · ')
+    : 'Lancez le calcul pour obtenir les quantités exactes à peser.';
+
+  return [
+    { title: '1. Pesée des matières premières', detail: `Pesez séparément chaque ingrédient sur une balance fiable : ${pesee}. Total visé : ${round(quantityKg, 2)} kg.` },
+    { title: '2. Nettoyage et séchage', detail: "Éliminez cailloux, moisissures et impuretés. Les matières doivent être sèches (humidité < 12 %) pour éviter le développement de moisissures." },
+    { title: '3. Broyage', detail: `Broyez chaque matière première au moulin à marteaux. Finesse recommandée : ${fine ? 'très fine, tamis de 0,5 mm' : 'fine, tamis de 1 mm'}.` },
+    { title: '4. Mélange à sec', detail: `Mélangez 10 à 15 minutes en commençant par les gros volumes, puis incorporez les petites quantités (CMV, sel, méthionine) après pré-mélange avec un peu de farine, pour une répartition homogène.` },
+    { title: '5. Ajout des liquides', detail: `Incorporez l'huile puis ajoutez progressivement environ ${eau} L d'eau tiède (≈ 30 % du poids) et ${liant} kg de liant (amidon de manioc ou farine gélatinisée) jusqu'à obtenir une pâte qui tient dans la main.` },
+    { title: '6. Granulation', detail: `Passez la pâte à la granuleuse ou au hachoir avec une filière de ${pellet} selon le stade. Émiettez ensuite pour obtenir des granulés réguliers.` },
+    { title: '7. Séchage', detail: "Séchez à l'ombre sur claies aérées 24 à 48 h, ou au séchoir à 50–60 °C jusqu'à une humidité inférieure à 10 %. Un granulé bien sec se casse net." },
+    { title: '8. Tamisage et calibrage', detail: 'Tamisez pour séparer les fines (à recycler dans le prochain mélange) et obtenir un calibre homogène adapté à la taille de la bouche des poissons.' },
+    { title: '9. Ensachage et stockage', detail: `Ensachez dans des sacs propres de 50 kg (≈ ${sacs} sac${sacs > 1 ? 's' : ''}) avec étiquette : nom de la formule, date, taux de protéines. Stockez sur palettes, au sec et à l'abri des rongeurs. Durée de conservation : 2 à 3 mois.` },
+    { title: '10. Test et suivi', detail: "Vérifiez la flottabilité/stabilité dans l'eau (au moins 10 minutes sans se déliter), puis suivez l'indice de consommation et la croissance sur le premier lot nourri avant de produire en grande quantité." },
+  ];
+}
