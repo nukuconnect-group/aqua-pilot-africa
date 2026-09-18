@@ -392,14 +392,7 @@ const RAW: Record<string, string> = {
   'matières premières': 'Raw materials',
   'matière première': 'Raw material',
   'taux d\'incorporation': 'Inclusion rate',
-  'coût total': 'Total cost',
   'coût / kg': 'Cost / kg',
-  'objectif': 'Target',
-  'objectifs': 'Targets',
-  'historique': 'History',
-  'dupliquer': 'Duplicate',
-  'comparer': 'Compare',
-  'archiver': 'Archive',
 
   // Eau / capteurs
   'température': 'Temperature',
