@@ -51,13 +51,14 @@ export interface AppModuleDefinition {
   applicableUnitTypes?: ProductionUnitType[];
 }
 
-const ALL_OPERATIONAL_UNIT_TYPES: ProductionUnitType[] = ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'commercialisation'];
+const ALL_OPERATIONAL_UNIT_TYPES: ProductionUnitType[] = ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'];
 export const UNIT_TYPE_LABELS: Record<ProductionUnitType, string> = {
   ecloserie: 'Écloserie',
   grossissement: 'Grossissement / élevage',
   transformation: 'Transformation',
   conservation: 'Conservation',
   fabrication_aliment: "Fabrication d’aliments",
+  algoculture: 'Algoculture',
   commercialisation: 'Commercialisation',
 };
 
