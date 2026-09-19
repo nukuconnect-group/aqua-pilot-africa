@@ -256,7 +256,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
         </div>
 
         <div className="sm:col-span-2">
-          <Label className="text-sm">Lot de poisson rattaché (optionnel)</Label>
+          <Label className="text-sm">{formTerms.attachedBatchLabel} (optionnel)</Label>
           <Select 
             value={newInfrastructure.suggestedBatchId || "none"} 
             onValueChange={(value) => setNewInfrastructure(prev => ({ ...prev, suggestedBatchId: value === "none" ? "" : value }))}

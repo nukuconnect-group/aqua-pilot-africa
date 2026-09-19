@@ -77,7 +77,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
   const [batchFormData, setBatchFormData] = useState({
     species: '',
     variety: '',
-    type: 'alevins',
+    type: '',
     quantity: 0,
     averageWeight: 0,
     acquisitionDate: new Date().toISOString().split('T')[0],
@@ -226,7 +226,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
       setBatchFormData({
         species: '',
         variety: '',
-        type: 'alevins',
+        type: '',
         quantity: 0,
         averageWeight: 0,
         acquisitionDate: new Date().toISOString().split('T')[0],
