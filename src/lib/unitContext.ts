@@ -72,6 +72,16 @@ export interface UnitContextTerms {
   cycleTargetWeightLabel: string;
   cycleSurvivalLabel: string;
   cycleAverageWeightLabel: string;
+  /** Libellés du module Alimentation / Intrants. */
+  feedSessionTitle: string;
+  feedSessionButton: string;
+  feedingDailyQuantityLabel: string;
+  feedingSessionsLabel: string;
+  feedingLastLabel: string;
+  feedingNextLabel: string;
+  feedingHistoryTitle: string;
+  behaviorLabel: string;
+  behaviorOptions: { value: string; label: string }[];
   /** Pathologies / contaminations fréquentes proposées en presets. */
   commonDiseasePresets: { name: string; symptoms: string[]; treatment: string }[];
   /** Activation/désactivation de sous-modules non pertinents. */
@@ -177,6 +187,22 @@ const DEFAULT_TERMS: UnitContextTerms = {
   cycleTargetWeightLabel: 'Biomasse objectif (kg)',
   cycleSurvivalLabel: 'Taux de survie attendu (%)',
   cycleAverageWeightLabel: 'Poids moyen individuel visé (g)',
+  feedSessionTitle: 'Session de nourrissage',
+  feedSessionButton: 'Ajouter une session',
+  feedingDailyQuantityLabel: 'Quantité/jour',
+  feedingSessionsLabel: 'Repas/jour',
+  feedingLastLabel: 'Dernier repas',
+  feedingNextLabel: 'Prochain repas',
+  feedingHistoryTitle: 'Historique de Nourrissage',
+  behaviorLabel: 'Comportement des poissons',
+  behaviorOptions: [
+    { value: 'normal', label: 'Normal - Bon appétit' },
+    { value: 'actif', label: 'Très actifs' },
+    { value: 'lent', label: 'Peu actifs / Lents' },
+    { value: 'refus_partiel', label: 'Refus partiel' },
+    { value: 'refus_total', label: 'Refus total' },
+    { value: 'stress', label: 'Stress visible' },
+  ],
   commonDiseasePresets: [
     { name: 'Ichtyophthirius (Points blancs)', symptoms: ['Points blancs sur le corps', 'Frottement', 'Respiration rapide'], treatment: 'Traitement au sel (3%) pendant 5 jours' },
     { name: 'Aeromonose', symptoms: ['Lésions cutanées', 'Hémorragies', 'Léthargie'], treatment: 'Antibiotique (Oxytétracycline)' },
@@ -341,6 +367,22 @@ export const ALGAE_TERMS: UnitContextTerms = {
   cycleTargetWeightLabel: 'Biomasse objectif à la récolte (kg)',
   cycleSurvivalLabel: 'Taux de réussite de culture attendu (%)',
   cycleAverageWeightLabel: 'Densité visée (g/L)',
+  feedSessionTitle: 'Apport d’intrants / nutriments',
+  feedSessionButton: 'Enregistrer un apport',
+  feedingDailyQuantityLabel: 'Intrants/jour',
+  feedingSessionsLabel: 'Apports/jour',
+  feedingLastLabel: 'Dernier apport',
+  feedingNextLabel: 'Prochain apport',
+  feedingHistoryTitle: 'Historique des apports nutritifs',
+  behaviorLabel: 'État de la culture',
+  behaviorOptions: [
+    { value: 'normal', label: 'Culture saine - couleur normale' },
+    { value: 'croissance_rapide', label: 'Croissance rapide / densité en hausse' },
+    { value: 'croissance_lente', label: 'Croissance lente' },
+    { value: 'decoloration', label: 'Décoloration (jaunissement/pâleur)' },
+    { value: 'sedimentation', label: 'Sédimentation / floculation' },
+    { value: 'contamination', label: 'Contamination suspectée' },
+  ],
   commonDiseasePresets: [
     { name: 'Contamination par algues concurrentes', symptoms: ['Changement de couleur du milieu', 'Chute de densité de la souche', 'Filaments étrangers au microscope'], treatment: 'Isoler le bassin, réensemencer depuis la souche mère, ajuster pH (9,5-10,5 pour spiruline) et salinité' },
     { name: 'Brouteurs / protozoaires (amibes, ciliés, rotifères)', symptoms: ['Baisse rapide de la biomasse', 'Milieu qui s’éclaircit', 'Organismes mobiles au microscope'], treatment: 'Choc pH ou ammoniaque contrôlé, filtration 50 µm, récolte anticipée puis redémarrage depuis l’inoculum' },

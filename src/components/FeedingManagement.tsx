@@ -322,7 +322,7 @@ const FeedingManagement = () => {
               <Utensils className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
             </div>
             <p className="text-lg sm:text-2xl font-bold">{feedingData.dailyQuantity}</p>
-            <p className="text-xs sm:text-sm text-gray-600">Quantité/jour</p>
+            <p className="text-xs sm:text-sm text-gray-600">{unitTerms.feedingDailyQuantityLabel}</p>
           </CardContent>
         </Card>
         
@@ -332,7 +332,7 @@ const FeedingManagement = () => {
               <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             </div>
             <p className="text-lg sm:text-2xl font-bold">{feedingData.feedingTimes}</p>
-            <p className="text-xs sm:text-sm text-gray-600">Repas/jour</p>
+            <p className="text-xs sm:text-sm text-gray-600">{unitTerms.feedingSessionsLabel}</p>
           </CardContent>
         </Card>
         
@@ -342,7 +342,7 @@ const FeedingManagement = () => {
               <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
             </div>
             <p className="text-sm sm:text-xl font-bold">{feedingData.lastFeeding}</p>
-            <p className="text-xs sm:text-sm text-gray-600">Dernier repas</p>
+            <p className="text-xs sm:text-sm text-gray-600">{unitTerms.feedingLastLabel}</p>
           </CardContent>
         </Card>
         
@@ -352,7 +352,7 @@ const FeedingManagement = () => {
               <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
             </div>
             <p className="text-sm sm:text-xl font-bold">{feedingData.nextFeeding}</p>
-            <p className="text-xs sm:text-sm text-gray-600">Prochain repas</p>
+            <p className="text-xs sm:text-sm text-gray-600">{unitTerms.feedingNextLabel}</p>
           </CardContent>
         </Card>
       </div>
@@ -408,7 +408,7 @@ const FeedingManagement = () => {
             <div className="flex justify-end">
               <ExportDropdown
                 options={{
-                  title: 'Historique de Nourrissage',
+                  title: unitTerms.feedingHistoryTitle,
                   subtitle: `Période: ${new Date().toLocaleDateString('fr-FR')}`,
                   filename: `historique-nourrissage-${activeUnit.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`,
                   unitName: activeUnit.name,
@@ -416,7 +416,7 @@ const FeedingManagement = () => {
                   columns: [
                     { key: 'date', label: 'Date' },
                     { key: 'time', label: 'Heure', format: (v) => v || '-' },
-                    { key: 'feed_type', label: 'Type d\'aliment', format: (v) => v || '-' },
+                    { key: 'feed_type', label: unitTerms.feedLabel, format: (v) => v || '-' },
                     { key: 'quantity', label: 'Quantité (kg)' },
                     { key: 'temperature', label: 'Température (°C)', format: (v) => v ? `${v}°C` : '-' },
                     { key: 'behavior', label: 'Comportement', format: (v) => v || '-' },
