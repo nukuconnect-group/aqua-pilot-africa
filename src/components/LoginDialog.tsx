@@ -309,7 +309,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
         <div className="hidden md:block fixed inset-y-0 left-0 w-1/2 z-[2] overflow-hidden pointer-events-none">
           <div className="absolute bottom-16 left-[8%] right-[8%] text-white/95">
             <h2 className="text-3xl xl:text-4xl font-semibold tracking-tight">AquaPilote</h2>
-            <p className="mt-2 text-sm xl:text-base text-white/75 max-w-md leading-relaxed">Pilotez votre pisciculture en toute simplicité. Suivi cheptel, IoT, comptabilité et IA.</p>
+            <p className="mt-2 text-sm xl:text-base text-white/75 max-w-md leading-relaxed">Pilotez votre exploitation aquacole en toute simplicité. Suivi cheptel, IoT, comptabilité et IA.</p>
           </div>
         </div>
         
