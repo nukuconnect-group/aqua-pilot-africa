@@ -27,6 +27,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { getCompanyDocumentFields, isSaleSettled } from '@/lib/salesDocumentUtils';
 import { SalesDocumentType, generateNextDocumentNumber, getDefaultLegalMentions, validateSalesDocumentDraft } from '@/lib/salesDocumentHelpers';
+import { getUnitTerms } from '@/lib/unitContext';
+
 
 interface SaleFormState {
   clientName: string;
@@ -61,6 +63,8 @@ const createEmptySale = (unitId = '', documentType: SalesDocumentType = 'receipt
 const SalesManagement = () => {
   const { addLog } = useLogs();
   const { units, activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
+
   const { formatCurrency, t, currency, companyInfo } = useSettings();
   const { toast } = useToast();
   const { sales, loading, addSale, updateSale, deleteSale } = useSales();
