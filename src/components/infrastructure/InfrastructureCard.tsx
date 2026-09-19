@@ -531,7 +531,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
               <div>
                 <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                   <Fish className="w-4 h-4" />
-                  Lot de poissons rattaché
+                  {unitTerms.attachedBatchLabel}
                 </h4>
                 {attachedBatch ? (
                   <InfrastructureLivestockCard 
@@ -545,7 +545,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                       Aucun lot rattaché
                     </p>
                     <p className="text-xs text-muted-foreground mb-4">
-                      Cette infrastructure n'a pas encore de lot de poissons associé
+                      {unitTerms.attachedBatchEmptyText}
                     </p>
                     <Button 
                       size="sm"
@@ -597,7 +597,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
       <Dialog open={isCreateBatchOpen} onOpenChange={setIsCreateBatchOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] p-0">
           <DialogHeader className="p-4 sm:p-6 pb-0">
-            <DialogTitle>Créer un lot de poisson</DialogTitle>
+            <DialogTitle>{unitTerms.createBatchTitle}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] p-4 sm:p-6">
             <div className="space-y-4">
@@ -638,11 +638,9 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                     <SelectValue placeholder="Sélectionner le type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="alevins">Alevins</SelectItem>
-                    <SelectItem value="geniteurs">Géniteurs</SelectItem>
-                    <SelectItem value="juveniles">Juvéniles</SelectItem>
-                    <SelectItem value="adultes">Adultes</SelectItem>
-                    <SelectItem value="autres">Autres</SelectItem>
+                    {unitTerms.batchTypeOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -654,7 +652,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                     type="number"
                     value={batchFormData.quantity || ''}
                     onChange={(e) => setBatchFormData({...batchFormData, quantity: parseInt(e.target.value) || 0})}
-                    placeholder="Nombre d'individus"
+                    placeholder={unitTerms.quantityLabel}
                   />
                 </div>
                 <div>
