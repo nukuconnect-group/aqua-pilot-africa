@@ -73,6 +73,7 @@ const SupportModule = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(0);
   const dateLocale = language === 'fr' ? fr : enUS;
