@@ -143,6 +143,8 @@ const SupportModule = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'open':
+        return <Badge className="bg-sky-100 text-sky-800">{language === 'fr' ? 'Nouveau' : 'New'}</Badge>;
+      case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">{t('awaiting')}</Badge>;
       case 'in_progress':
         return <Badge className="bg-blue-100 text-blue-800">{t('in_progress')}</Badge>;
