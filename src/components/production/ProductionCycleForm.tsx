@@ -10,7 +10,7 @@ import { Plus, Save, Calendar, AlertCircle, Lock } from 'lucide-react';
 import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
-import { ALGAE_TERMS } from '@/lib/unitContext';
+import { ALGAE_TERMS, getUnitTerms } from '@/lib/unitContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -36,6 +36,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
   
   // Récupérer les infrastructures réelles de l'unité
   const unitInfrastructures = getUnitInfrastructures(unitId);
+  const cycleTerms = getUnitTerms(unitType as any);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -297,7 +298,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="species">Espèce/Produit</Label>
+                  <Label htmlFor="species">{cycleTerms.speciesLabel}</Label>
                   <Select 
                     value={formData.species} 
                     onValueChange={(value) => setFormData({...formData, species: value})}
@@ -333,7 +334,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
           {/* Infrastructures rattachées */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Infrastructures rattachées au cycle</CardTitle>
+              <CardTitle className="text-sm">{cycleTerms.infrastructureLabel}s rattaché(e)s au cycle</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -417,7 +418,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
                                   )}
                                   {attachedBatch && !isAlreadyInCycle && (
                                     <div className="text-xs text-primary mt-1 font-medium">
-                                      → Lot attaché: {attachedBatch.species} - {attachedBatch.quantity.toLocaleString()} individus ({attachedBatch.average_weight || 0}g)
+                                      → Lot attaché: {attachedBatch.species} - {attachedBatch.quantity.toLocaleString()} {cycleTerms.individualsLabel} ({attachedBatch.average_weight || 0}g)
                                     </div>
                                   )}
                                 </div>
@@ -498,7 +499,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
               {/* Données initiales calculées */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="initialQuantity">Quantité initiale</Label>
+                  <Label htmlFor="initialQuantity">{cycleTerms.cycleQuantityLabel}</Label>
                   <Input
                     id="initialQuantity"
                     type="number"
@@ -515,7 +516,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
                 </div>
                 
                 <div>
-                  <Label htmlFor="initialWeight">Poids initial total (g)</Label>
+                  <Label htmlFor="initialWeight">{cycleTerms.cycleInitialWeightLabel}</Label>
                   <Input
                     id="initialWeight"
                     type="number"
@@ -537,7 +538,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
                 <p className="text-sm font-medium text-primary">📊 Paramètres pour calcul automatique des objectifs</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="expectedSurvivalRate">Taux de survie attendu (%)</Label>
+                    <Label htmlFor="expectedSurvivalRate">{cycleTerms.cycleSurvivalLabel}</Label>
                     <Input
                       id="expectedSurvivalRate"
                       type="number"
@@ -554,7 +555,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
                   </div>
                   
                   <div>
-                    <Label htmlFor="targetAverageWeight">Poids moyen individuel visé (g)</Label>
+                    <Label htmlFor="targetAverageWeight">{cycleTerms.cycleAverageWeightLabel}</Label>
                     <Input
                       id="targetAverageWeight"
                       type="number"
@@ -565,7 +566,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
                       placeholder="350"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Poids moyen par individu à la récolte
+                      {cycleTerms.cycleAverageWeightLabel}
                     </p>
                   </div>
                 </div>
@@ -574,7 +575,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
               {/* Objectifs calculés automatiquement */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="targetQuantity">🎯 Objectif quantité (individus)</Label>
+                  <Label htmlFor="targetQuantity">🎯 Objectif quantité ({cycleTerms.individualsLabel})</Label>
                   <Input
                     id="targetQuantity"
                     type="number"
@@ -592,7 +593,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
                 </div>
                 
                 <div>
-                  <Label htmlFor="targetWeight">🎯 Biomasse finale visée (kg)</Label>
+                  <Label htmlFor="targetWeight">🎯 {cycleTerms.cycleTargetWeightLabel}</Label>
                   <Input
                     id="targetWeight"
                     type="number"
@@ -612,7 +613,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
               
               {unitType === 'ecloserie' || unitType === 'grossissement' ? (
                 <div>
-                  <Label htmlFor="feedType">Programme alimentaire</Label>
+                  <Label htmlFor="feedType">{cycleTerms.feedLabel}</Label>
                   <Select onValueChange={(value) => setFormData({...formData, feedType: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un aliment" />
