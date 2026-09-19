@@ -619,6 +619,54 @@ export type Database = {
           },
         ]
       }
+      employee_loans: {
+        Row: {
+          amount: number
+          created_at: string
+          employee_id: string
+          employee_name: string
+          id: string
+          monthly_amount: number
+          months: number
+          reason: string | null
+          start_date: string
+          status: string
+          unit_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          employee_id: string
+          employee_name: string
+          id?: string
+          monthly_amount?: number
+          months?: number
+          reason?: string | null
+          start_date: string
+          status?: string
+          unit_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          employee_id?: string
+          employee_name?: string
+          id?: string
+          monthly_amount?: number
+          months?: number
+          reason?: string | null
+          start_date?: string
+          status?: string
+          unit_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           contract_type: string
@@ -1667,6 +1715,54 @@ export type Database = {
           },
         ]
       }
+      leave_requests: {
+        Row: {
+          created_at: string
+          days: number
+          employee_id: string
+          employee_name: string
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+          status: string
+          type: string
+          unit_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days?: number
+          employee_id: string
+          employee_name: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+          status?: string
+          type?: string
+          unit_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          employee_id?: string
+          employee_name?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+          status?: string
+          type?: string
+          unit_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       livestock_batches: {
         Row: {
           acquisition_date: string | null
@@ -1750,6 +1846,47 @@ export type Database = {
           variety?: string | null
         }
         Relationships: []
+      }
+      loan_repayments: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          loan_id: string
+          period: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          loan_id: string
+          period?: string | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          loan_id?: string
+          period?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_repayments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "employee_loans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mfa_recovery_codes: {
         Row: {
