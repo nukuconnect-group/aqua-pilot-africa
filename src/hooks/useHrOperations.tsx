@@ -76,10 +76,16 @@ export const DEFAULT_ANNUAL_LEAVE_DAYS = 30;
  */
 export const useHrOperations = (unitId?: string) => {
   const { user } = useAuth();
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [loans, setLoans] = useState<EmployeeLoan[]>([]);
-  const [repayments, setRepayments] = useState<LoanRepayment[]>([]);
-  const [remoteAvailable, setRemoteAvailable] = useState(false);
+  const [snapshot, setSnapshot] = useState<HrStore>(hrStore);
+
+  useEffect(() => subscribeHr(setSnapshot), []);
+
+  const { leaves, loans, repayments, remoteAvailable } = snapshot;
+  const setLeaves = (v: LeaveRequest[]) => patchHrStore({ leaves: v });
+  const setLoans = (v: EmployeeLoan[]) => patchHrStore({ loans: v });
+  const setRepayments = (v: LoanRepayment[]) => patchHrStore({ repayments: v });
+  const setRemoteAvailable = (v: boolean) => patchHrStore({ remoteAvailable: v });
+
 
   const load = useCallback(async () => {
     const localLeaves = read<LeaveRequest>(LEAVE_KEY);
