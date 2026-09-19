@@ -346,21 +346,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return key;
   };
 
-  const formatCurrency = (amount: number): string => {
-    const currencySymbols = {
-      EUR: '€',
-      USD: '$',
-      XOF: 'CFA',
-      MAD: 'MAD'
-    };
-
-    const formattedAmount = new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-
-    return `${formattedAmount} ${currencySymbols[currency]}`;
-  };
+  const formatCurrency = (amount: number): string => formatMoney(amount, currency);
 
   // Afficher un loader pendant l'initialisation
   if (!isInitialized) {
