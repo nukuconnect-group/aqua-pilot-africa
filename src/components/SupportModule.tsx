@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   MessageCircle, Plus, Send, Clock, CheckCircle, AlertCircle, 
-  HelpCircle, CreditCard, RefreshCw, Settings, User, Headphones
+  HelpCircle, CreditCard, RefreshCw, Settings, User, Headphones,
+  Trash2, Minus, Maximize2
 } from 'lucide-react';
 import { useSupportTickets, SupportTicket, SupportMessage } from '@/hooks/useSupportTickets';
 import { useAuth } from '@/contexts/AuthContext';
