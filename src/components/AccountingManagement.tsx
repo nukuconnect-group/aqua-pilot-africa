@@ -13,10 +13,15 @@ import CashFlowManager from './accounting/CashFlowManager';
 import ReportsGenerator from './accounting/ReportsGenerator';
 import DepreciationManager from './accounting/DepreciationManager';
 import { useSettings } from '@/contexts/SettingsContext';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useFinancialAlerts } from '@/hooks/useFinancialAlerts';
 
 const AccountingManagement = () => {
   const { activeUnit, getUnitFinancialData, getGlobalFinancialData } = useProductionUnits();
-  const { currency, setCurrency, t } = useSettings();
+  const { currency, setCurrency, t, formatCurrency } = useSettings();
+  const [showAlerts, setShowAlerts] = useState(false);
+  const { alerts, counts } = useFinancialAlerts(activeUnit?.id);
 
   const currencies = [
     { code: 'XOF', symbol: 'F CFA', name: 'Franc CFA' },
