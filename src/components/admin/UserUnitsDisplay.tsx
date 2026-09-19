@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Factory, Warehouse, FlaskConical, Package, Store } from 'lucide-react';
+import { Building2, Factory, Warehouse, FlaskConical, Package, Store, Leaf } from 'lucide-react';
 import { ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 
 interface UserUnit {
@@ -21,6 +21,7 @@ const unitTypeIcons: Record<ProductionUnitType, React.ReactNode> = {
   transformation: <Factory className="w-3 h-3" />,
   conservation: <Warehouse className="w-3 h-3" />,
   fabrication_aliment: <Package className="w-3 h-3" />,
+  algoculture: <Leaf className="w-3 h-3" />,
   commercialisation: <Store className="w-3 h-3" />
 };
 
@@ -30,6 +31,7 @@ const unitTypeLabels: Record<ProductionUnitType, string> = {
   transformation: 'Transformation',
   conservation: 'Conservation',
   fabrication_aliment: 'Fab. Aliment',
+  algoculture: 'Algoculture',
   commercialisation: 'Commercial'
 };
 
@@ -39,6 +41,7 @@ const unitTypeColors: Record<ProductionUnitType, string> = {
   transformation: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
   conservation: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
   fabrication_aliment: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  algoculture: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   commercialisation: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
 };
 
