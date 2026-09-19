@@ -356,6 +356,7 @@ export const DEFAULT_UNIT_MODULE_RULES: UnitModuleRules = (Object.keys(UNIT_TYPE
 /** Restrictions métier impératives, non réactivables par une configuration distante obsolète. */
 const UNIT_TYPE_DENIED_MODULES: Partial<Record<ProductionUnitType, string[]>> = {
   fabrication_aliment: ['livestock'],
+  algoculture: ['aquafeed'],
   commercialisation: ['feeding', 'aquafeed'],
 };
 

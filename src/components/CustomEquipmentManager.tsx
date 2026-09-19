@@ -50,6 +50,20 @@ const CustomEquipmentManager = () => {
           { value: 'extrudeur', label: 'Extrudeur' },
           { value: 'sechoir', label: 'Séchoir' }
         ];
+
+      case 'algoculture':
+        return [
+          { value: 'bassin_raceway', label: 'Bassin raceway' },
+          { value: 'photobioreacteur', label: 'Photobioréacteur' },
+          { value: 'pompe', label: 'Pompe de circulation' },
+          { value: 'aerateur', label: 'Aérateur / injection CO₂' },
+          { value: 'filtre', label: 'Système de filtration' },
+          { value: 'recolteuse', label: 'Équipement de récolte' },
+          { value: 'sechoir_algues', label: 'Séchoir à algues' },
+          { value: 'broyeur_algues', label: 'Broyeur / transformation' },
+          { value: 'autre', label: 'Autre' }
+        ];
+      
       
       default:
         return [

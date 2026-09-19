@@ -122,6 +122,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
     transformation: ['Produits transformés', 'Filets', 'Entiers vidés'],
     conservation: ['Produits frais', 'Produits congelés', 'Produits fumés'],
     fabrication_aliment: ['Aliment starter', 'Aliment croissance', 'Aliment finition'],
+    algoculture: ALGAE_TERMS.speciesOptions,
     commercialisation: ['Vente directe', 'Grossistes', 'Restauration']
   };
 
