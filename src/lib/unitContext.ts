@@ -68,7 +68,34 @@ const DEFAULT_TERMS: UnitContextTerms = {
   healthIssueOptions: ['Parasites', 'Infection bactérienne', 'Mycose', 'Stress', 'Mortalité anormale'],
   salesProductOptions: ['Poisson frais', 'Poisson transformé', 'Alevins'],
   purchaseCategoryOptions: ['Aliment', 'Alevins', 'Matériel', 'Équipement', 'Consommables'],
+  purchaseCategoryMap: {
+    'Aliments': ['Granulés flottants', 'Granulés coulants', 'Farine de poisson', 'Aliment croissance', 'Aliment finition', 'Compléments nutritionnels'],
+    'Équipements et matériels': ['Pompes', 'Filtres', 'Aérateurs', 'Bassins', 'Filets', 'Outils de mesure', 'Matériel de pêche'],
+    'Intrants': ['Engrais organiques', 'Probiotiques', 'Désinfectants', 'Produits de traitement', 'Chaux', 'Sel'],
+    'Alevins': ['Tilapia', 'Carpe', 'Truite', 'Bar', 'Dorade', 'Autres espèces'],
+    'Formations du personnel': ['Formation technique', 'Formation sécurité', 'Formation gestion', 'Certification', 'Séminaires'],
+    'Prestations externes': ['Consultance', 'Maintenance', 'Transport', 'Analyses laboratoire', 'Services vétérinaires'],
+    'Prestations internes': ["Main d'œuvre", 'Services internes', 'Transferts inter-unités'],
+    'Matières premières': ['Ciment', 'Bâches', 'Tuyaux', 'Vannes', 'Raccords', 'Électricité'],
+    'Kits et autres': ['Kits de test', "Produits d'entretien", 'Fournitures bureau', 'Carburant', 'Divers'],
+  },
+  supplierCategoryOptions: ['Aliments', 'Vétérinaire', 'Équipement', 'Alevins', 'Matériel', 'Autre'],
+  stockTypeOptions: [
+    { value: 'granules_flottants', label: 'Granulés flottants' },
+    { value: 'granules_coulants', label: 'Granulés coulants' },
+    { value: 'farine_poisson', label: 'Farine de poisson' },
+    { value: 'farine_soja', label: 'Farine de soja' },
+    { value: 'aliment_starter', label: 'Aliment starter (0.5-1mm)' },
+    { value: 'aliment_croissance', label: 'Aliment croissance (2-3mm)' },
+    { value: 'aliment_finition', label: 'Aliment finition (4-6mm)' },
+    { value: 'aliment_reproducteur', label: 'Aliment reproducteur' },
+    { value: 'complement_vitamine', label: 'Complément vitaminé' },
+    { value: 'probiotique', label: 'Probiotique' },
+  ],
+  conversionLabel: 'FCR',
+  conversionDescription: 'Indice de conversion alimentaire',
 };
+
 
 /** Vocabulaire et options propres à une unité d'algoculture. */
 export const ALGAE_TERMS: UnitContextTerms = {
