@@ -2,6 +2,14 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/appClient';
 import { emitDataMutation, recordHookState } from '@/lib/appRecovery';
+import {
+  formatMoney,
+  getCurrency,
+  setCurrency as setGlobalCurrency,
+  subscribeCurrency,
+  convertAmount,
+  type CurrencyCode,
+} from '@/lib/currency';
 
 export type ProductionUnitType = 
   | 'ecloserie' 
