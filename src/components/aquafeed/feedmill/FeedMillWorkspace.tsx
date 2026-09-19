@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, FlaskConical, FolderOpen, Boxes, Factory, Wallet, Package, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, FlaskConical, FolderOpen, Boxes, Factory, Wallet, Package, LayoutDashboard, ShieldCheck, ScanLine, Workflow } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useFeedMill, StoredFormulation } from './useFeedMill';
 import FormulationStudio from './FormulationStudio';
@@ -12,6 +12,10 @@ import ManufacturingHistory from './ManufacturingHistory';
 import ManufactureDialog from './ManufactureDialog';
 import FeedLabStudio from './FeedLabStudio';
 import FeedMillDashboard from './FeedMillDashboard';
+import useFeedOperations from './useFeedOperations';
+import FeedQualityControls from './FeedQualityControls';
+import FeedProductionCycles from './FeedProductionCycles';
+import FeedTraceability from './FeedTraceability';
 
 interface Props { onBack: () => void; }
 
@@ -22,6 +26,8 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
   const [editing, setEditing] = useState<StoredFormulation | null>(null);
   const [toManufacture, setToManufacture] = useState<StoredFormulation | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [presetIngredientIds, setPresetIngredientIds] = useState<string[]>([]);
+  const ops = useFeedOperations();
 
   const stats = useMemo(() => {
     const producedKg = mill.batches.reduce((s, b) => s + Number(b.quantity_kg || 0), 0);
@@ -65,13 +71,16 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-6 w-full sm:w-auto">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-9 w-full">
           <TabsTrigger value="dashboard"><LayoutDashboard className="w-4 h-4 mr-1.5" />Tableau de bord</TabsTrigger>
           <TabsTrigger value="lab"><FlaskConical className="w-4 h-4 mr-1.5" />Laboratoire</TabsTrigger>
           <TabsTrigger value="studio"><FlaskConical className="w-4 h-4 mr-1.5" />Formuler</TabsTrigger>
           <TabsTrigger value="formulations"><FolderOpen className="w-4 h-4 mr-1.5" />Mes formulations</TabsTrigger>
           <TabsTrigger value="ingredients"><Boxes className="w-4 h-4 mr-1.5" />Ingrédients</TabsTrigger>
           <TabsTrigger value="batches"><Factory className="w-4 h-4 mr-1.5" />Fabrications</TabsTrigger>
+          <TabsTrigger value="cycles"><Workflow className="w-4 h-4 mr-1.5" />Cycles</TabsTrigger>
+          <TabsTrigger value="quality"><ShieldCheck className="w-4 h-4 mr-1.5" />Prophylaxie</TabsTrigger>
+          <TabsTrigger value="trace"><ScanLine className="w-4 h-4 mr-1.5" />Traçabilité</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -93,6 +102,7 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
             onSave={mill.saveFormulation}
             onManufacture={openManufacture}
             editing={editing}
+            presetIngredientIds={presetIngredientIds}
             onClearEditing={() => setEditing(null)}
           />
         </TabsContent>
@@ -113,11 +123,29 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
             ingredients={mill.ingredients}
             onSave={mill.saveIngredient}
             onDelete={mill.deleteIngredient}
+            onUseSelection={(ids) => { setPresetIngredientIds(ids); setTab('studio'); }}
           />
         </TabsContent>
 
         <TabsContent value="batches">
           <ManufacturingHistory batches={mill.batches} onDelete={mill.deleteBatch} />
+        </TabsContent>
+
+        <TabsContent value="cycles">
+          <FeedProductionCycles
+            cycles={ops.cycles}
+            formulationNames={mill.formulations.map(f => f.name)}
+            onSave={ops.saveCycle}
+            onDelete={ops.deleteCycle}
+          />
+        </TabsContent>
+
+        <TabsContent value="quality">
+          <FeedQualityControls controls={ops.controls} onSave={ops.saveControl} onDelete={ops.deleteControl} />
+        </TabsContent>
+
+        <TabsContent value="trace">
+          <FeedTraceability records={ops.traces} onSave={ops.saveTrace} onDelete={ops.deleteTrace} />
         </TabsContent>
       </Tabs>
 
