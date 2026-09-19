@@ -121,9 +121,14 @@ const AccountingManagement = () => {
                 ))}
               </select>
             </div>
-            <Button variant="secondary" size="sm" className="text-xs sm:text-sm whitespace-nowrap">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="text-xs sm:text-sm whitespace-nowrap"
+              onClick={() => setShowAlerts(true)}
+            >
               <AlertTriangle className="icon-responsive mr-1" />
-              {t('active_alerts')} ({cashFlowData.overdueInvoices})
+              {t('active_alerts')} ({counts.total})
             </Button>
           </div>
         </div>
