@@ -59,6 +59,7 @@ interface HealthAlert {
 const ProphylaxieManagement = () => {
   const { units, activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
+  const isAlgae = activeUnit?.type === 'algoculture';
   const { addLog } = useLogs();
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -73,7 +74,7 @@ const ProphylaxieManagement = () => {
 
   const [newTreatment, setNewTreatment] = useState({
     unitId: activeUnit?.id || '',
-    type: 'vaccination' as Treatment['type'],
+    type: 'treatment' as Treatment['type'],
     product: '',
     dosage: '',
     lot: '',
@@ -94,7 +95,7 @@ const ProphylaxieManagement = () => {
     
     setNewTreatment({
       unitId: activeUnit?.id || '',
-      type: 'vaccination',
+      type: 'treatment',
       product: '',
       dosage: '',
       lot: '',
@@ -219,9 +220,9 @@ const ProphylaxieManagement = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="vaccination" className="text-sm">Vaccination</SelectItem>
+                      {!isAlgae && <SelectItem value="vaccination" className="text-sm">Vaccination</SelectItem>}
                       <SelectItem value="treatment" className="text-sm">Traitement</SelectItem>
-                      <SelectItem value="disinfection" className="text-sm">Désinfection</SelectItem>
+                      <SelectItem value="disinfection" className="text-sm">{isAlgae ? 'Assainissement du milieu' : 'Désinfection'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -248,7 +249,7 @@ const ProphylaxieManagement = () => {
                   <Input 
                     value={newTreatment.dosage}
                     onChange={(e) => setNewTreatment(prev => ({ ...prev, dosage: e.target.value }))}
-                    placeholder="ex: 0.5 ml/kg"
+                     placeholder={isAlgae ? 'Ex : 2 g/L pendant 24 h' : 'ex: 0.5 ml/kg'}
                     className="text-sm"
                   />
                 </div>
@@ -316,10 +317,10 @@ const ProphylaxieManagement = () => {
 
       <Tabs defaultValue="calendar" className="space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className="grid grid-cols-6 w-full min-w-[600px] sm:min-w-0">
-            <TabsTrigger value="cheptel" className="text-xs sm:text-sm px-1 sm:px-3">
+          <TabsList className={`grid ${isAlgae ? 'grid-cols-5 min-w-[520px]' : 'grid-cols-6 min-w-[600px]'} w-full sm:min-w-0`}>
+            {!isAlgae && <TabsTrigger value="cheptel" className="text-xs sm:text-sm px-1 sm:px-3">
               {unitTerms.healthCheptelTabLabel}
-            </TabsTrigger>
+            </TabsTrigger>}
             <TabsTrigger value="calendar" className="text-xs sm:text-sm px-1 sm:px-3">
               Calendrier
             </TabsTrigger>
@@ -343,9 +344,7 @@ const ProphylaxieManagement = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="cheptel">
-          <CheptelSante />
-        </TabsContent>
+        {!isAlgae && <TabsContent value="cheptel"><CheptelSante /></TabsContent>}
 
         <TabsContent value="calendar" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

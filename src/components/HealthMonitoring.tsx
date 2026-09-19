@@ -119,10 +119,13 @@ const HealthMonitoring = () => {
   const getStatusColor = (value: number, type: string) => {
     switch (type) {
       case 'temperature':
+        if (activeUnit?.type === "algoculture") return value < 25 || value > 35 ? "text-red-600" : value < 28 || value > 32 ? "text-yellow-600" : "text-green-600";
         return value < 20 || value > 30 ? 'text-red-600' : value < 22 || value > 28 ? 'text-yellow-600' : 'text-green-600';
       case 'ph':
+        if (activeUnit?.type === "algoculture") return value < 8 || value > 11 ? "text-red-600" : value < 9 || value > 10.5 ? "text-yellow-600" : "text-green-600";
         return value < 6.5 || value > 8.5 ? 'text-red-600' : value < 7 || value > 8 ? 'text-yellow-600' : 'text-green-600';
       case 'oxygen':
+        if (activeUnit?.type === "algoculture") return value < 2 ? "text-red-600" : value < 4 ? "text-yellow-600" : "text-green-600";
         return value < 5 ? 'text-red-600' : value < 6 ? 'text-yellow-600' : 'text-green-600';
       case 'mortality':
         return value > 2 ? 'text-red-600' : value > 1 ? 'text-yellow-600' : 'text-green-600';
@@ -226,7 +229,7 @@ const HealthMonitoring = () => {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Alimentation (kg)</Label>
+                    <Label className="text-sm">{activeUnit?.type === 'algoculture' ? 'Intrants (kg)' : 'Alimentation (kg)'}</Label>
                     <Input 
                       type="number" 
                       step="0.1"
@@ -388,7 +391,7 @@ const HealthMonitoring = () => {
                           </span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Aliment:</span>
+                          <span className="text-gray-600">{activeUnit?.type === 'algoculture' ? 'Intrant:' : 'Aliment:'}</span>
                           <span className="ml-1 font-medium">{record.feeding || '-'} kg</span>
                         </div>
                       </div>

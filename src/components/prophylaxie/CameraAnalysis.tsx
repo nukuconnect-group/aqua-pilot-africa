@@ -17,6 +17,7 @@ import {
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/components/ui/use-toast';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 
 export interface VisionDisease {
   name: string;
@@ -145,6 +146,8 @@ export const analyzeWithAI = async (payload: {
 
 const CameraAnalysis = () => {
   const { activeUnit } = useProductionUnits();
+  const isAlgae = isAlgaeUnitType(activeUnit?.type);
+  const unitTerms = getUnitTerms(activeUnit?.type);
   const { toast } = useToast();
   const [analyzing, setAnalyzing] = useState(false);
   const [species, setSpecies] = useState('');
@@ -181,7 +184,7 @@ const CameraAnalysis = () => {
     setAnalyzing(true);
     try {
       const imageBase64 = await toDataUrl(selectedFile);
-      const res = await analyzeWithAI({ mode: 'image', imageBase64, species: species.trim() || undefined });
+      const res = await analyzeWithAI({ mode: 'image', domain: isAlgae ? 'algae' : 'fish', imageBase64, species: species.trim() || undefined });
       setResult(res);
       toast({ title: 'Analyse terminée', description: `${res.diseases.length} anomalie(s) évaluée(s).` });
     } catch (e: any) {
@@ -199,7 +202,7 @@ const CameraAnalysis = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Camera className="w-4 h-4 text-primary" />
-            Détection de maladie par caméra{activeUnit ? ` — ${activeUnit.name}` : ''}
+             {isAlgae ? 'Analyse visuelle de la culture' : 'Détection de maladie par caméra'}{activeUnit ? ` — ${activeUnit.name}` : ''}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -209,7 +212,7 @@ const CameraAnalysis = () => {
               id="ah-species"
               value={species}
               onChange={(e) => setSpecies(e.target.value)}
-              placeholder="Ex : Tilapia du Nil, Clarias gariepinus..."
+              placeholder={unitTerms.aiSpeciesPlaceholder}
             />
           </div>
 
@@ -229,7 +232,7 @@ const CameraAnalysis = () => {
           ) : (
             <div className="space-y-3">
               <div className="relative rounded-lg overflow-hidden bg-muted">
-                <img src={previewUrl} alt="Poissons à analyser" className="w-full max-h-80 object-contain" />
+                 <img src={previewUrl} alt={isAlgae ? 'Culture d’algues à analyser' : 'Poissons à analyser'} className="w-full max-h-80 object-contain" />
                 <Button size="icon" variant="secondary" className="absolute top-2 right-2" onClick={reset} aria-label="Retirer la photo">
                   <X className="w-4 h-4" />
                 </Button>

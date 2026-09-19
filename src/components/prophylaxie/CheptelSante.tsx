@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Fish, Building2, History, Activity, AlertTriangle, Search, Heart } from 'lucide-react';
+import { Fish, Building2, History, Activity, AlertTriangle, Search, Heart, Leaf } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useHealthRecords } from '@/hooks/useHealthRecords';
@@ -64,7 +64,7 @@ const CheptelSante: React.FC = () => {
             <div className="p-2 bg-primary/10 rounded-lg"><Heart className="w-6 h-6 text-primary" /></div>
             <div>
               <CardTitle className="text-xl">Cheptel Sanitaire</CardTitle>
-              <CardDescription>Vue sanitaire des lots empoissonnés — par lot, par infrastructure et historique des maladies.</CardDescription>
+              <CardDescription>Vue sanitaire des lots — par lot, par infrastructure et historique des maladies.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -80,7 +80,7 @@ const CheptelSante: React.FC = () => {
 
       <Tabs defaultValue="batches" className="space-y-3">
         <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-          <TabsTrigger value="batches"><Fish className="w-4 h-4 mr-2" />Lots</TabsTrigger>
+          <TabsTrigger value="batches">{activeUnit?.type === "algoculture" ? <Leaf className="w-4 h-4 mr-2" /> : <Fish className="w-4 h-4 mr-2" />}{activeUnit?.type === "algoculture" ? "Lots de culture" : "Lots"}</TabsTrigger>
           <TabsTrigger value="infra"><Building2 className="w-4 h-4 mr-2" />Infrastructures</TabsTrigger>
           <TabsTrigger value="history"><History className="w-4 h-4 mr-2" />Historique</TabsTrigger>
         </TabsList>
@@ -96,7 +96,7 @@ const CheptelSante: React.FC = () => {
             <div className="text-center py-12 text-muted-foreground">Chargement...</div>
           ) : filteredBatches.length === 0 ? (
             <Card><CardContent className="py-12 text-center text-muted-foreground">
-              Aucun lot de poissons empoissonné. Créez d'abord un lot depuis <strong>Cheptel</strong>.
+              Aucun lot enregistré. Créez d'abord un lot depuis <strong>Cheptel</strong>.
             </CardContent></Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -108,7 +108,7 @@ const CheptelSante: React.FC = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-semibold flex items-center gap-2 flex-wrap">
-                            <Fish className="w-4 h-4" />{b.species}
+                            {activeUnit?.type === "algoculture" ? <Leaf className="w-4 h-4" /> : <Fish className="w-4 h-4" />}{b.species}
                             {b.variety && <Badge variant="outline" className="text-[10px]">{b.variety}</Badge>}
                           </p>
                           <p className="text-xs text-muted-foreground">{b.unit_name}{infra ? ` · ${infra.name}` : ''}</p>
@@ -173,7 +173,7 @@ const CheptelSante: React.FC = () => {
                           {list.map(b => (
                             <div key={b.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
                               <div className="flex items-center gap-2 min-w-0">
-                                <Fish className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                {activeUnit?.type === "algoculture" ? <Leaf className="w-4 h-4 text-muted-foreground flex-shrink-0" /> : <Fish className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
                                 <span className="truncate">{b.species}{b.variety ? ` — ${b.variety}` : ''}</span>
                                 <span className="text-xs text-muted-foreground">({b.quantity.toLocaleString()} × {b.average_weight}g)</span>
                               </div>

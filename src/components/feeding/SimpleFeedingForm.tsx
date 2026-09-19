@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card } from '@/components/ui/card';
 import { Plus, Save, User, Clock, Utensils } from 'lucide-react';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
-import { getUnitTerms } from '@/lib/unitContext';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 
 interface SimpleFeedingFormProps {
@@ -46,7 +46,10 @@ const BEHAVIORS = [
 
 const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingFormProps) => {
   const { units: allUnits } = useProductionUnits();
-  const terms = getUnitTerms(allUnits.find((u) => u.id === unitId)?.type);
+  const unitType = allUnits.find((u) => u.id === unitId)?.type;
+  const terms = getUnitTerms(unitType);
+  const isAlgae = isAlgaeUnitType(unitType);
+  const isAlgae = isAlgaeUnitType(allUnits.find((u) => u.id === unitId)?.type);
   const feedTypes = terms.features.feedingSheets ? FEED_TYPES : terms.feedOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { infrastructures } = useCycleInfrastructures(cycleId || '');
@@ -131,7 +134,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Session type - Grand choix visuel */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Session du jour *</Label>
+            <Label className="text-sm font-medium mb-2 block">{isAlgae ? 'Moment de l’apport *' : 'Session du jour *'}</Label>
             <div className="grid grid-cols-5 gap-2">
               {SESSION_TYPES.map((session) => (
                 <button
@@ -181,13 +184,13 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
           <div>
             <Label htmlFor="feederName" className="text-sm font-medium flex items-center gap-1">
               <User className="w-4 h-4" />
-              Qui a nourri ? *
+              {isAlgae ? 'Opérateur de culture *' : 'Qui a nourri ? *'}
             </Label>
             <Input
               id="feederName"
               value={formData.feederName}
               onChange={(e) => setFormData({ ...formData, feederName: e.target.value })}
-              placeholder="Nom de la personne"
+              placeholder={isAlgae ? "Nom de l’opérateur" : 'Nom de la personne'}
               required
               className="h-10 text-base"
             />
@@ -196,7 +199,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
           {/* Infrastructure si disponible */}
           {infrastructures.length > 0 && (
             <div>
-              <Label className="text-xs">Infrastructure utilisée</Label>
+              <Label className="text-xs">{isAlgae ? 'Bassin / réacteur traité' : 'Infrastructure utilisée'}</Label>
               <Select 
                 value={formData.infrastructureId || undefined} 
                 onValueChange={(value) => setFormData({ ...formData, infrastructureId: value })}
@@ -215,15 +218,15 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
             </div>
           )}
 
-          {/* Type d'aliment */}
+          {/* {terms.feedLabel} */}
           <div>
-            <Label className="text-xs">Type d'aliment</Label>
+            <Label className="text-xs">{terms.feedLabel}</Label>
             <Select 
               value={formData.feedType || undefined} 
               onValueChange={(value) => setFormData({ ...formData, feedType: value })}
             >
               <SelectTrigger className="h-9">
-                <SelectValue placeholder="Sélectionner l'aliment" />
+                <SelectValue placeholder={isAlgae ? 'Sélectionner le nutriment ou produit' : "Sélectionner l'aliment"} />
               </SelectTrigger>
               <SelectContent>
                 {feedTypes.map((type) => (
@@ -237,7 +240,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
           <Card className="p-3 bg-muted/30">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="prescribedQuantity" className="text-xs">Qté prescrite (kg)</Label>
+                <Label htmlFor="prescribedQuantity" className="text-xs">{isAlgae ? 'Dose prévue (kg ou L)' : 'Qté prescrite (kg)'}</Label>
                 <Input
                   id="prescribedQuantity"
                   type="number"
@@ -249,7 +252,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
                 />
               </div>
               <div>
-                <Label htmlFor="actualQuantity" className="text-xs">Qté servie (kg) *</Label>
+                <Label htmlFor="actualQuantity" className="text-xs">{isAlgae ? 'Dose appliquée (kg ou L) *' : 'Qté servie (kg) *'}</Label>
                 <Input
                   id="actualQuantity"
                   type="number"
@@ -264,7 +267,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
             </div>
             {remainingQuantity > 0 && (
               <div className="mt-2 text-sm text-orange-600 font-medium">
-                ⚠️ Reste: {remainingQuantity.toFixed(1)} kg non servi
+                Reste prévu : {remainingQuantity.toFixed(1)} {isAlgae ? 'kg ou L non appliqué' : 'kg non servi'}
               </div>
             )}
           </Card>
@@ -272,7 +275,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
           {/* Observations rapides */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="temperature" className="text-xs">Temp. eau (°C)</Label>
+              <Label htmlFor="temperature" className="text-xs">Température de culture (°C)</Label>
               <Input
                 id="temperature"
                 type="number"
@@ -284,7 +287,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
               />
             </div>
             <div>
-              <Label htmlFor="mortality" className="text-xs">Mortalité observée</Label>
+              <Label htmlFor="mortality" className="text-xs">{isAlgae ? 'Pertes observées (kg)' : '{isAlgae ? 'Perte observée (kg)' : 'Mortalité observée'}'}</Label>
               <Input
                 id="mortality"
                 type="number"

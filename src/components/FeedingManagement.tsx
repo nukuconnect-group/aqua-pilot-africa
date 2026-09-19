@@ -35,6 +35,7 @@ const FeedingManagement = () => {
   const { toast } = useToast();
   const [feedingTab, setFeedingTab] = useState('history');
   const unitTerms = getUnitTerms(activeUnit?.type);
+  const isAlgae = activeUnit?.type === 'algoculture';
   
   // Filtrer les enregistrements par unité active
   const { records: feedingRecords, loading, createRecord, updateRecord, deleteRecord } = useFeedingRecords(undefined, activeUnit?.id);
@@ -191,10 +192,10 @@ const FeedingManagement = () => {
           if (user) {
             await createNotification({
               userId: user.id,
-              title: 'Sortie d\'aliment',
-              message: `${quantityUsed} kg de ${feedType} utilisé. Stock restant: ${newQuantity.toFixed(1)} ${matchingStock.unit}`,
+              title: isAlgae ? 'Mouvement d’intrant' : 'Sortie d’aliment',
+              message: `${quantityUsed} ${matchingStock.unit} de ${feedType} utilisé. Stock restant: ${newQuantity.toFixed(1)} ${matchingStock.unit}`,
               type: 'info',
-              module: 'Alimentation',
+              module: activeUnit.type === 'algoculture' ? 'Intrants' : 'Alimentation',
               isCritical: false,
               metadata: {
                 feedType: feedType,
@@ -207,10 +208,10 @@ const FeedingManagement = () => {
             if (newQuantity <= (matchingStock.min_threshold || 50)) {
               await createNotification({
                 userId: user.id,
-                title: 'Stock d\'aliment bas',
+                title: isAlgae ? 'Stock d’intrant bas' : 'Stock d’aliment bas',
                 message: `Le stock de ${feedType} est bas (${newQuantity.toFixed(1)} ${matchingStock.unit}). Seuil minimum: ${matchingStock.min_threshold || 50}`,
                 type: 'warning',
-                module: 'Alimentation',
+                module: activeUnit.type === 'algoculture' ? 'Intrants' : 'Alimentation',
                 isCritical: newQuantity <= 0,
                 metadata: {
                   feedType: feedType,
@@ -382,8 +383,8 @@ const FeedingManagement = () => {
             )}
             <TabsTrigger value="stock" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">{unitTerms.features.feedingSheets ? 'Stock aliment' : 'Stock intrants'}</span>
-              <span className="sm:hidden">Stock</span>
+              <span className="hidden sm:inline">{isAlgae ? 'Inventaire des intrants' : 'Stock aliment'}</span>
+              <span className="sm:hidden">{isAlgae ? 'Intrants' : 'Stock'}</span>
             </TabsTrigger>
             <TabsTrigger value="alerts" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <Bell className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -470,8 +471,8 @@ const FeedingManagement = () => {
                     <Bell className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm">Alertes stock aliment</p>
-                    <p className="text-xs text-muted-foreground truncate">{lowStockItems.length} aliment(s) sous seuil</p>
+                    <p className="font-semibold text-sm">{isAlgae ? 'Alertes sur les intrants' : 'Alertes stock aliment'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{lowStockItems.length} {isAlgae ? 'intrant(s)' : 'aliment(s)'} sous seuil</p>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => setFeedingTab('stock')}>Stock</Button>
@@ -481,8 +482,8 @@ const FeedingManagement = () => {
               <CardContent className="p-4 flex items-center gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
                 <div>
-                  <p className="font-semibold text-sm">Nourrissage</p>
-                  <p className="text-xs text-muted-foreground">{feedingData.feedingTimes} repas enregistrés aujourd’hui</p>
+                  <p className="font-semibold text-sm">{isAlgae ? 'Apports nutritifs' : 'Nourrissage'}</p>
+                  <p className="text-xs text-muted-foreground">{feedingData.feedingTimes} {isAlgae ? 'apport(s)' : 'repas'} enregistré(s) aujourd’hui</p>
                 </div>
               </CardContent>
             </Card>

@@ -550,7 +550,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
                       placeholder="85"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Ex: 85% = 15% de mortalité attendue
+                      {unitType === 'algoculture' ? 'Ex : 85 % = 15 % de pertes de culture attendues' : 'Ex: 85% = 15% de mortalité attendue'}
                     </p>
                   </div>
                   
@@ -575,7 +575,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
               {/* Objectifs calculés automatiquement */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="targetQuantity">🎯 Objectif quantité ({cycleTerms.individualsLabel})</Label>
+                  <Label htmlFor="targetQuantity">Objectif de quantité à la récolte ({cycleTerms.individualsLabel})</Label>
                   <Input
                     id="targetQuantity"
                     type="number"

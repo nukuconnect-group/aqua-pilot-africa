@@ -392,7 +392,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <BarChart3 className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-muted-foreground">Types d'aliments</span>
+              <span className="text-xs text-muted-foreground">Types {unitTerms.feedLabel.toLowerCase()}s</span>
             </div>
             <p className="text-xl font-bold text-blue-600">{getTotalStocks()}</p>
           </CardContent>
@@ -414,7 +414,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
           <CardContent className="p-4 space-y-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold">Gestion des Stocks d'Aliment</h3>
+                <h3 className="text-lg font-semibold">Gestion des Stocks {unitTerms.feedLabel.toLowerCase()}s</h3>
                 <p className="text-sm text-muted-foreground">Interface avancée type gestion de stock avec recherche, couverture et alertes.</p>
               </div>
               <div className="relative w-full md:w-[280px]">

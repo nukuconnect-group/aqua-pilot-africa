@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Stethoscope, AlertTriangle, ShieldAlert, Save, History, Search, Loader2, Fish } from 'lucide-react';
+import { Brain, Stethoscope, AlertTriangle, ShieldAlert, Save, History, Search, Loader2, Fish, Leaf } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import CameraAnalysis, { analyzeWithAI, VisionResultView, type VisionResult } from './CameraAnalysis';
 import { loadSymptoms, runDiagnosis, Symptom, DiagnosisResult } from '@/lib/diseaseDiagnosis';
@@ -117,7 +117,7 @@ const AquaHealthAI: React.FC = () => {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2"><Fish className="w-4 h-4" />{unitTerms.aiSpeciesTitle}</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">{isAlgae ? <Leaf className="w-4 h-4" /> : <Fish className="w-4 h-4" />}{unitTerms.aiSpeciesTitle}</CardTitle>
           <CardDescription>{unitTerms.aiSpeciesDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

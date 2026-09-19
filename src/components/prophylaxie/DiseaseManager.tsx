@@ -177,9 +177,9 @@ const DiseaseManager = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Gestion des Maladies</h3>
+          <h3 className="text-lg font-semibold">Gestion des {unitTerms.healthDiseasesTabLabel.toLowerCase()}s</h3>
           <p className="text-sm text-muted-foreground">
-            Enregistrez et suivez les maladies par espèce
+            Enregistrez et suivez les {unitTerms.healthDiseasesTabLabel.toLowerCase()}s par espèce
           </p>
         </div>
         
@@ -187,25 +187,25 @@ const DiseaseManager = () => {
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              Ajouter une maladie
+              Ajouter une entrée
             </Button>
           </DialogTrigger>
           
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Enregistrer une maladie</DialogTitle>
+              <DialogTitle>Enregistrer une {unitTerms.healthDiseasesTabLabel.toLowerCase()}</DialogTitle>
             </DialogHeader>
 
             <Tabs defaultValue="manual" className="space-y-4">
               <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger value="manual">Saisie manuelle</TabsTrigger>
-                <TabsTrigger value="predefined">Maladies courantes</TabsTrigger>
+                <TabsTrigger value="predefined">{unitTerms.healthDiseasesTabLabel} courantes</TabsTrigger>
               </TabsList>
 
               <TabsContent value="manual" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <Label>Nom de la maladie</Label>
+                    <Label>Désignation</Label>
                     <Input
                       value={newDisease.name}
                       onChange={(e) => setNewDisease(prev => ({ ...prev, name: e.target.value }))}
@@ -223,7 +223,7 @@ const DiseaseManager = () => {
                           className="cursor-pointer"
                           onClick={() => handleSpeciesChange(species)}
                         >
-                          <Fish className="w-3 h-3 mr-1" />
+                          {activeUnit?.type === 'algoculture' ? <Leaf className="w-3 h-3 mr-1" /> : <Fish className="w-3 h-3 mr-1" />}
                           {species}
                         </Badge>
                       ))}
@@ -318,7 +318,7 @@ const DiseaseManager = () => {
                 </div>
 
                 <Button onClick={handleSaveDisease} className="w-full">
-                  Enregistrer la maladie
+                  Enregistrer
                 </Button>
               </TabsContent>
 
@@ -365,7 +365,7 @@ const DiseaseManager = () => {
                   <div className="flex flex-wrap gap-2">
                     {disease.species.map(species => (
                       <Badge key={species} variant="outline" className="text-xs">
-                        <Fish className="w-3 h-3 mr-1" />
+                        {activeUnit?.type === 'algoculture' ? <Leaf className="w-3 h-3 mr-1" /> : <Fish className="w-3 h-3 mr-1" />}
                         {species}
                       </Badge>
                     ))}
@@ -451,7 +451,7 @@ const DiseaseManager = () => {
             </p>
             <Button onClick={() => setShowDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Ajouter une maladie
+              Ajouter une entrée
             </Button>
           </CardContent>
         </Card>
