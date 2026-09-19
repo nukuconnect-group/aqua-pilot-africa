@@ -46,7 +46,7 @@ interface SettingsContextType {
   formatCurrency: (amount: number) => string;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 const defaultCompanyInfo: CompanyInfo = {
   name: '',
