@@ -10,6 +10,7 @@ import { Plus } from 'lucide-react';
 import { useProductionUnits, Infrastructure } from '@/contexts/ProductionUnitsContext';
 import { useLogs } from '@/contexts/LogsContext';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
+import { getUnitTerms } from '@/lib/unitContext';
 
 interface InfrastructureFormProps {
   onSave?: (infrastructure: any) => void;
