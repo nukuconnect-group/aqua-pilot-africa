@@ -62,5 +62,29 @@ create policy "own leave requests" on public.leave_requests
 create policy "own employee loans" on public.employee_loans
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "own loan repayments" on public.loan_repayments;
 create policy "own loan repayments" on public.loan_repayments
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Index utiles
+create index if not exists idx_leave_requests_user on public.leave_requests(user_id);
+create index if not exists idx_leave_requests_employee on public.leave_requests(employee_id);
+create index if not exists idx_employee_loans_user on public.employee_loans(user_id);
+create index if not exists idx_employee_loans_employee on public.employee_loans(employee_id);
+create index if not exists idx_loan_repayments_loan on public.loan_repayments(loan_id);
+
+-- Mise à jour automatique de updated_at
+create or replace function public.hr_touch_updated_at()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  new.updated_at = now();
+  return new;
+end $$;
+
+drop trigger if exists trg_leave_requests_updated_at on public.leave_requests;
+create trigger trg_leave_requests_updated_at before update on public.leave_requests
+  for each row execute function public.hr_touch_updated_at();
+
+drop trigger if exists trg_employee_loans_updated_at on public.employee_loans;
+create trigger trg_employee_loans_updated_at before update on public.employee_loans
+  for each row execute function public.hr_touch_updated_at();
