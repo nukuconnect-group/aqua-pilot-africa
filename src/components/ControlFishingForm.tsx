@@ -41,6 +41,10 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
   const { infrastructures } = useCycleInfrastructures(selectedCycleId);
   const { createRecord, records: allHealthRecords } = useHealthRecords(selectedCycleId, unitId);
   const { batches: livestockBatches } = useLivestockBatches(unitId);
+  const { units: allUnits } = useProductionUnits();
+  const cfUnitType = allUnits.find(u => u.id === unitId)?.type;
+  const cfTerms = getUnitTerms(cfUnitType);
+  const isAlgae = isAlgaeUnitType(cfUnitType);
   
   const [formData, setFormData] = useState({
     infrastructureId: '',
