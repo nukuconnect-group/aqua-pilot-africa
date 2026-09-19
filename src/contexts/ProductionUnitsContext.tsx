@@ -2,6 +2,14 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/appClient';
 import { emitDataMutation, recordHookState } from '@/lib/appRecovery';
+import {
+  formatMoney,
+  getCurrency,
+  setCurrency as setGlobalCurrency,
+  subscribeCurrency,
+  convertAmount,
+  type CurrencyCode,
+} from '@/lib/currency';
 
 export type ProductionUnitType = 
   | 'ecloserie' 
@@ -202,7 +210,7 @@ const EMPTY_PRODUCTION_UNITS_CONTEXT: ProductionUnitsContextType = {
   purchases: [],
   depreciableAssets: [],
   currency: 'XOF',
-  formatCurrency: (amount) => `${Number.isFinite(amount) ? amount.toLocaleString('fr-FR') : '0'} FCFA`,
+  formatCurrency: (amount) => formatMoney(amount),
   activeUnit: null,
   setActiveUnit: () => undefined,
   setCurrency: () => undefined,
@@ -348,7 +356,13 @@ const getDemoInfrastructures = (): Infrastructure[] => [
 
 export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) => {
   const { isDemoMode, isAuthenticated, user } = useAuth();
-  const [currency, setCurrency] = useState<'XOF' | 'EUR' | 'USD' | 'MAD'>('XOF');
+  // La devise vient du réglage global de l'application (une seule source de vérité).
+  const [currency, setCurrencyState] = useState<'XOF' | 'EUR' | 'USD' | 'MAD'>(() => getCurrency());
+  useEffect(() => subscribeCurrency((c) => setCurrencyState(c)), []);
+  const setCurrency = useCallback((c: 'XOF' | 'EUR' | 'USD' | 'MAD') => {
+    setGlobalCurrency(c);
+    setCurrencyState(c);
+  }, []);
   const [isLoadingUnits, setIsLoadingUnits] = useState(false);
   
   // Initialiser avec des tableaux vides - les données démo seront ajoutées via useEffect
@@ -786,40 +800,11 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
     });
   }, [units.length, infrastructures.length, activeUnit?.id, isLoadingUnits, isAuthenticated]);
 
-  const formatCurrency = (amount: number): string => {
-    const currencySymbols = {
-      'XOF': 'FCFA',
-      'EUR': '€',
-      'USD': '$',
-      'MAD': 'DH'
-    };
-    
-    const symbol = currencySymbols[currency];
-    const formatted = amount.toLocaleString('fr-FR');
-    
-    if (currency === 'XOF' || currency === 'MAD') {
-      return `${formatted} ${symbol}`;
-    } else {
-      return currency === 'USD' ? `${symbol}${formatted}` : `${formatted}${symbol}`;
-    }
-  };
+  // Formatage unique, partagé avec le reste de l'application.
+  const formatCurrency = (amount: number): string => formatMoney(amount, currency);
 
-  const exchangeRates = {
-    'XOF': 1,
-    'EUR': 655.957,
-    'USD': 600,
-    'MAD': 10.8
-  };
-
-  const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number => {
-    if (fromCurrency === toCurrency) return amount;
-    
-    // Convertir d'abord en XOF (Franc CFA)
-    const xofAmount = fromCurrency === 'XOF' ? amount : amount * exchangeRates[fromCurrency as keyof typeof exchangeRates];
-    
-    // Puis convertir vers la devise cible
-    return toCurrency === 'XOF' ? xofAmount : xofAmount / exchangeRates[toCurrency as keyof typeof exchangeRates];
-  };
+  const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number =>
+    convertAmount(amount, fromCurrency as CurrencyCode, toCurrency as CurrencyCode);
 
   const addUnit = async (unitData: Omit<ProductionUnit, 'id' | 'createdAt'>) => {
     // Mode démo: ajout local uniquement

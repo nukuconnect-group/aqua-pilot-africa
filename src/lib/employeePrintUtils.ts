@@ -1,3 +1,4 @@
+import { formatMoney as formatMoneyGlobal } from '@/lib/currency';
 import { translateHtmlDocument } from '@/i18n/runtime';
 import { Employee } from '@/hooks/useEmployees';
 
@@ -23,7 +24,7 @@ export const generateEmployeeListHTML = (
     year: 'numeric'
   });
 
-  const formatMoney = formatCurrency || ((v: number) => `${v.toLocaleString()} FCFA`);
+  const formatMoney = formatCurrency || ((v: number) => formatMoneyGlobal(v));
 
   const totalSalary = employees.reduce((sum, emp) => sum + emp.salary, 0);
   const activeCount = employees.filter(e => e.status === 'active').length;

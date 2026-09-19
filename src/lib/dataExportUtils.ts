@@ -3,6 +3,7 @@
  * Les libellés suivent la langue sélectionnée dans l'application.
  */
 import { tr, runtimeLocale } from '@/i18n/runtime';
+import { formatMoney, getCurrency, type CurrencyCode } from '@/lib/currency';
 
 const L = () => runtimeLocale();
 const now = () => `${new Date().toLocaleDateString(L())} ${tr('à')} ${new Date().toLocaleTimeString(L())}`;
@@ -222,7 +223,7 @@ export const formatDate = (date: string): string => {
 };
 
 // Format currency
-export const formatCurrency = (amount: number, currency: string = 'XOF'): string => {
+export const formatCurrency = (amount: number, currency?: string): string => {
   if (!amount && amount !== 0) return '-';
-  return new Intl.NumberFormat(L()).format(amount) + ' F CFA';
+  return formatMoney(amount, (currency as CurrencyCode) || getCurrency());
 };

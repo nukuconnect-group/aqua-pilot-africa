@@ -2,6 +2,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { translations, type SupportedLanguage } from '@/i18n';
+import {
+  defaultCurrencyForLanguage,
+  formatMoney,
+  setCurrency as setGlobalCurrency,
+} from '@/lib/currency';
 
 export interface CompanyInfo {
   name: string;
@@ -118,9 +123,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         localStorage.setItem('app-language', detectedLanguage);
       }
       
-      // FORCER F CFA par défaut - toujours initialiser à XOF
-      setCurrency('XOF');
-      localStorage.setItem('app-currency', 'XOF');
+      // Devise : choix utilisateur prioritaire, sinon valeur conseillée selon la langue.
+      const activeLanguage = (localStorage.getItem('app-language') as SupportedLanguage) || 'fr';
+      const resolvedCurrency = savedCurrency && ['EUR', 'USD', 'XOF', 'MAD'].includes(savedCurrency)
+        ? savedCurrency
+        : defaultCurrencyForLanguage(activeLanguage);
+      setCurrency(resolvedCurrency);
+      setGlobalCurrency(resolvedCurrency);
       
       if (savedOfflineMode !== null) setOfflineModeState(savedOfflineMode === 'true');
       if (savedShowOfflineIndicator !== null) setShowOfflineIndicatorState(savedShowOfflineIndicator === 'true');
@@ -258,11 +267,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleSetCurrency = (newCurrency: 'EUR' | 'USD' | 'XOF' | 'MAD') => {
-    try {
-      localStorage.setItem('app-currency', newCurrency);
-    } catch (error) {
-      console.error('Error saving currency:', error);
-    }
+    setGlobalCurrency(newCurrency);
     setCurrency(newCurrency);
   };
 
@@ -341,21 +346,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return key;
   };
 
-  const formatCurrency = (amount: number): string => {
-    const currencySymbols = {
-      EUR: '€',
-      USD: '$',
-      XOF: 'CFA',
-      MAD: 'MAD'
-    };
-
-    const formattedAmount = new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-
-    return `${formattedAmount} ${currencySymbols[currency]}`;
-  };
+  const formatCurrency = (amount: number): string => formatMoney(amount, currency);
 
   // Afficher un loader pendant l'initialisation
   if (!isInitialized) {

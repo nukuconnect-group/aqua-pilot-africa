@@ -1,4 +1,5 @@
 import { translateHtmlDocument, translateDelimitedText } from '@/i18n/runtime';
+import { formatMoney, getCurrency, type CurrencyCode } from '@/lib/currency';
 /**
  * Utilitaires pour l'export des rapports en différents formats
  */
@@ -481,10 +482,5 @@ export const getReportFilename = (reportType: string, unitName?: string): string
 /**
  * Formate un montant en devise
  */
-export const formatAmount = (amount: number, currency: string = 'XOF'): string => {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount) + ' F CFA';
-};
+export const formatAmount = (amount: number, currency?: string): string =>
+  formatMoney(amount, (currency as CurrencyCode) || getCurrency());

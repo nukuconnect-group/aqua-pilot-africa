@@ -67,6 +67,8 @@ const SupportModule = () => {
 
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -157,10 +159,23 @@ const SupportModule = () => {
 
   const suggestedSubjects = SUBJECT_SUGGESTIONS.find(s => s.category === formData.category)?.subjects || [];
 
-  // Filtrer les tickets selon le rôle
-  const displayedTickets = isAdmin 
-    ? tickets 
+  // Filtrer les tickets selon le rôle, la recherche et le statut
+  const visibleTickets = isAdmin
+    ? tickets
     : tickets.filter(t => t.user_id === user?.id);
+
+  const displayedTickets = visibleTickets.filter(t => {
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      t.subject?.toLowerCase().includes(q) ||
+      t.message?.toLowerCase().includes(q) ||
+      t.category?.toLowerCase().includes(q) ||
+      t.user_email?.toLowerCase().includes(q) ||
+      (t.user_name || '').toLowerCase().includes(q)
+    );
+  });
 
   // Si pas d'utilisateur, afficher un message
   if (!user) {
@@ -339,8 +354,23 @@ const SupportModule = () => {
       <div className="grid md:grid-cols-3 gap-4">
         {/* Liste des tickets */}
         <Card className="md:col-span-1">
-          <CardHeader className="p-4">
-            <CardTitle className="text-lg">Mes demandes</CardTitle>
+          <CardHeader className="p-4 space-y-3">
+            <CardTitle className="text-lg">{language === 'fr' ? 'Mes demandes' : 'My requests'}</CardTitle>
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={language === 'fr' ? 'Rechercher un ticket...' : 'Search a ticket...'}
+            />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{language === 'fr' ? 'Tous les statuts' : 'All statuses'}</SelectItem>
+                <SelectItem value="open">{language === 'fr' ? 'Ouverts' : 'Open'}</SelectItem>
+                <SelectItem value="in_progress">{language === 'fr' ? 'En attente' : 'In progress'}</SelectItem>
+                <SelectItem value="resolved">{language === 'fr' ? 'Résolus' : 'Resolved'}</SelectItem>
+                <SelectItem value="closed">{language === 'fr' ? 'Fermés' : 'Closed'}</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[500px]">

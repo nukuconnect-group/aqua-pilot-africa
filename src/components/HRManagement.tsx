@@ -21,6 +21,9 @@ import { generateProfessionalPayslipHTML } from '@/lib/payslipGenerator';
 import { printEmployeeList } from '@/lib/employeePrintUtils';
 import PayslipEditor from './PayslipEditor';
 import EmploymentContractsManager from './hr/EmploymentContractsManager';
+import LeaveManagement from './hr/LeaveManagement';
+import LoansManagement from './hr/LoansManagement';
+import { useHrOperations } from '@/hooks/useHrOperations';
 
 const HRManagement = () => {
   const { addLog } = useLogs();
@@ -36,6 +39,7 @@ const HRManagement = () => {
     addEmployee, 
     addPaySlip 
   } = useEmployees();
+  const { payrollDeductionFor, applyPayrollRepayments } = useHrOperations(activeUnit?.id);
 
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [showPaySlipGenerator, setShowPaySlipGenerator] = useState(false);
@@ -162,7 +166,10 @@ const HRManagement = () => {
     const grossSalary = employee.salary + paySlipData.overtime + allBonuses;
     
     // Calcul des cotisations (environ 22% du brut)
-    const calculatedDeductions = Math.round(grossSalary * 0.22);
+    const socialDeductions = Math.round(grossSalary * 0.22);
+    // Remboursement de prêt/avance retenu automatiquement sur la paie
+    const loanDeduction = payrollDeductionFor(paySlipData.employeeId, paySlipData.period);
+    const calculatedDeductions = socialDeductions + loanDeduction;
     const netSalary = grossSalary - calculatedDeductions;
 
     const result = await addPaySlip({
@@ -179,10 +186,16 @@ const HRManagement = () => {
     });
 
     if (result) {
+      // Enregistrer les remboursements de prêt retenus sur ce bulletin
+      if (loanDeduction > 0) {
+        await applyPayrollRepayments(paySlipData.employeeId, paySlipData.period);
+      }
       addLog('Bulletin généré', 'RH', `Bulletin de paie généré pour ${employee.firstName} ${employee.lastName} - ${paySlipData.period}`, 'success');
       toast({
         title: "Bulletin généré",
-        description: `Bulletin de paie créé pour ${employee.firstName} ${employee.lastName}`
+        description: loanDeduction > 0
+          ? `Bulletin créé pour ${employee.firstName} ${employee.lastName} — ${formatCurrency(loanDeduction)} de remboursement de prêt déduit`
+          : `Bulletin de paie créé pour ${employee.firstName} ${employee.lastName}`
       });
     }
 
@@ -267,13 +280,7 @@ const HRManagement = () => {
 
   // Formater en F CFA par défaut - utilisé dans ce module RH
   // FCFA par défaut, change seulement si langue = 'en'
-  const formatSalary = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value) + ' F CFA';
-  };
+  const formatSalary = (value: number) => formatCurrency(value);
 
   const openPayslipEditor = (paySlip: PaySlip) => {
     const employee = employees.find(e => e.id === paySlip.employeeId);
@@ -392,10 +399,12 @@ const HRManagement = () => {
       {/* Tabs */}
       <Tabs defaultValue="employees" className="space-y-3 md:space-y-4">
         <div className="overflow-x-auto">
-          <TabsList className="grid grid-cols-4 w-full text-xs md:text-sm">
+          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full text-xs md:text-sm">
             <TabsTrigger value="employees">Employés</TabsTrigger>
             <TabsTrigger value="contracts">Contrats</TabsTrigger>
             <TabsTrigger value="payroll">Bulletins</TabsTrigger>
+            <TabsTrigger value="leaves">Congés</TabsTrigger>
+            <TabsTrigger value="loans">Prêts</TabsTrigger>
             <TabsTrigger value="reports">Rapports</TabsTrigger>
           </TabsList>
         </div>
@@ -574,6 +583,14 @@ const HRManagement = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="leaves">
+          <LeaveManagement employees={filteredEmployees} unitId={activeUnit?.id} />
+        </TabsContent>
+
+        <TabsContent value="loans">
+          <LoansManagement employees={filteredEmployees} unitId={activeUnit?.id} />
         </TabsContent>
 
         <TabsContent value="reports">
