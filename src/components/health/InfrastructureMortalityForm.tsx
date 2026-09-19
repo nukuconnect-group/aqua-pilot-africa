@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Skull } from 'lucide-react';
+import { AlertTriangle, Skull, TrendingDown, Leaf } from 'lucide-react';
 import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useHealthRecords } from '@/hooks/useHealthRecords';
@@ -19,7 +19,7 @@ interface InfrastructureMortalityFormProps {
   onRecorded?: () => void;
 }
 
-const MORTALITY_CAUSES = [
+const MORTALITY_CAUSES = isAlgae ? ['Contamination', 'Mauvaise qualité d'eau', 'Température extrême', 'Manque de nutriments', 'Parasites', 'Vénusté', 'Cause inconnue'] : [
   'Maladie bactérienne',
   'Maladie virale',
   'Maladie parasitaire',
@@ -34,6 +34,9 @@ const MORTALITY_CAUSES = [
 ];
 
 const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMortalityFormProps) => {
+  const { activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
+  const isAlgae = isAlgaeUnitType(activeUnit?.type);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const { cycles, updateCycle } = useProductionCycles(unitId);
@@ -94,7 +97,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
     }
     if (selected.available > 0 && mortalityCount > selected.available) {
       return setError(
-        `${selected.name} ne contient que ${selected.available} sujets : impossible d'y déclarer ${mortalityCount} mortalités.`
+        `${selected.name} ne contient que ${selected.available}  {isAlgae ? 'kg' : 'sujets'}  : impossible d'y déclarer ${mortalityCount} mortalités.`
       );
     }
     if (!cause) return setError('Indiquez la cause principale de la mortalité.');
@@ -112,7 +115,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
         notes: [
           `=== DÉCLARATION DE MORTALITÉ ===`,
           `Infrastructure: ${selected.name} (${selected.type})`,
-          `Mortalités: ${mortalityCount} sujets`,
+          `Mortalités: ${mortalityCount}  {isAlgae ? 'kg' : 'sujets'} `,
           `Effectif avant: ${selected.available}`,
           `Effectif après: ${Math.max(0, selected.available - mortalityCount)}`,
           `Taux: ${rate.toFixed(2)}%`,
@@ -148,7 +151,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
       await refetchBatches();
       toast({
         title: 'Mortalité enregistrée',
-        description: `${mortalityCount} sujets retirés de ${selected.name}. Lot, unité et cycle mis à jour.`,
+        description: `${mortalityCount}  {isAlgae ? 'kg' : 'sujets'}  retirés de ${selected.name}. Lot, unité et cycle mis à jour.`,
       });
       onRecorded?.();
       reset();
@@ -165,16 +168,16 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="destructive" className="w-full sm:w-auto">
-          <Skull className="w-4 h-4 mr-2" />
-          Déclarer une mortalité
+           {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : <Skull className="w-4 h-4 mr-2" />}
+           {isAlgae ? 'Déclarer une perte de biomasse' : 'Déclarer une mortalité'} 
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Skull className="w-5 h-5 text-destructive" />
-            Déclarer une mortalité par infrastructure
+             {isAlgae ? <TrendingDown className="w-5 h-5 text-destructive" /> : <Skull className="w-5 h-5 text-destructive" />}
+             {isAlgae ? 'Déclarer une perte de biomasse' : 'Déclarer une mortalité'}  par infrastructure
           </DialogTitle>
         </DialogHeader>
 
@@ -227,7 +230,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
                       <SelectContent>
                         {infraRows.map((i) => (
                           <SelectItem key={i.id} value={i.id}>
-                            {i.name} — {i.available.toLocaleString()} sujets
+                            {i.name} — {i.available.toLocaleString()}  {isAlgae ? 'kg' : 'sujets'} 
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -253,7 +256,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
                     </p>
                   </div>
                   <div>
-                    <span className="block text-xs text-muted-foreground">Taux de mortalité</span>
+                    <span className="block text-xs text-muted-foreground"> {isAlgae ? 'Taux de perte' : 'Taux de mortalité'} </span>
                     <p className="font-bold text-destructive">{rate.toFixed(2)}%</p>
                   </div>
                 </div>
@@ -272,7 +275,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
                   <Input id="mortality-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="mortality-count">Nombre de sujets morts</Label>
+                  <Label htmlFor="mortality-count"> {isAlgae ? 'Perte de biomasse (kg)' : 'Nombre de  {isAlgae ? 'kg' : 'sujets'}  morts'} </Label>
                   <Input
                     id="mortality-count"
                     type="number"
