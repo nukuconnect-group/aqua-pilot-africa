@@ -154,7 +154,7 @@ const FeedProphylaxisManagement: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <ExportDropdown data={exportData} filename="prophylaxie-aliments" title="Prophylaxie — Fabrication d'aliments" />
+          <ExportDropdown options={exportOptions} />
           <Button onClick={() => { setForm(empty); setOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" /> {text('Nouveau contrôle')}
           </Button>
