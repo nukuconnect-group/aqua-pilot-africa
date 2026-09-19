@@ -356,7 +356,13 @@ const getDemoInfrastructures = (): Infrastructure[] => [
 
 export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) => {
   const { isDemoMode, isAuthenticated, user } = useAuth();
-  const [currency, setCurrency] = useState<'XOF' | 'EUR' | 'USD' | 'MAD'>('XOF');
+  // La devise vient du réglage global de l'application (une seule source de vérité).
+  const [currency, setCurrencyState] = useState<'XOF' | 'EUR' | 'USD' | 'MAD'>(() => getCurrency());
+  useEffect(() => subscribeCurrency((c) => setCurrencyState(c)), []);
+  const setCurrency = useCallback((c: 'XOF' | 'EUR' | 'USD' | 'MAD') => {
+    setGlobalCurrency(c);
+    setCurrencyState(c);
+  }, []);
   const [isLoadingUnits, setIsLoadingUnits] = useState(false);
   
   // Initialiser avec des tableaux vides - les données démo seront ajoutées via useEffect
