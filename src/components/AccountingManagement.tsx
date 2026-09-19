@@ -186,6 +186,56 @@ const AccountingManagement = () => {
           <ReportsGenerator />
         </TabsContent>
       </Tabs>
+
+      {/* Alertes financières réelles */}
+      <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              {t('active_alerts')} — {activeUnit.name}
+            </DialogTitle>
+            <DialogDescription>
+              {counts.critical} critique(s), {counts.warning} avertissement(s), {counts.info} information(s)
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-3">
+            {alerts.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                Aucune alerte financière à signaler sur cette unité.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {alerts.map(alert => (
+                  <div
+                    key={alert.id}
+                    className={`rounded-lg border p-3 ${
+                      alert.level === 'critical'
+                        ? 'border-destructive/40 bg-destructive/5'
+                        : alert.level === 'warning'
+                          ? 'border-amber-400/50 bg-amber-50 dark:bg-amber-950/20'
+                          : 'border-border bg-muted/40'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{alert.title}</p>
+                        <p className="text-xs text-muted-foreground break-words">{alert.message}</p>
+                      </div>
+                      <Badge variant={alert.level === 'critical' ? 'destructive' : 'secondary'} className="shrink-0">
+                        {alert.category}
+                      </Badge>
+                    </div>
+                    {typeof alert.amount === 'number' && (
+                      <p className="mt-2 text-sm font-semibold">{formatCurrency(alert.amount)}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
