@@ -345,3 +345,16 @@ export const isAlgaeUnitType = (type?: ProductionUnitType | null) => type === 'a
 
 export const getUnitTerms = (type?: ProductionUnitType | null): UnitContextTerms =>
   (type && TERMS_BY_TYPE[type]) || DEFAULT_TERMS;
+
+/** Libellé lisible d'un type d'infrastructure, adapté au type d'unité. */
+export const getInfrastructureTypeLabel = (
+  type: string,
+  unitType?: ProductionUnitType | null,
+): string => {
+  const terms = getUnitTerms(unitType);
+  const found =
+    terms.infrastructureTypeOptions.find((o) => o.value === type) ||
+    DEFAULT_TERMS.infrastructureTypeOptions.find((o) => o.value === type) ||
+    ALGAE_TERMS.infrastructureTypeOptions.find((o) => o.value === type);
+  return found ? found.label : type.replace(/_/g, ' ');
+};
