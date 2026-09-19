@@ -32,11 +32,15 @@ import {
 } from 'lucide-react';
 import { useLogs } from '@/contexts/LogsContext';
 import { useToast } from '@/hooks/use-toast';
+import { getUnitTerms } from '@/lib/unitContext';
+
 
 const SuppliersManagement = () => {
   const { addLog } = useLogs();
   const { toast } = useToast();
   const { activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
+
   const { 
     suppliers, 
     orders, 
@@ -334,12 +338,10 @@ const SuppliersManagement = () => {
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Aliments">Aliments</SelectItem>
-                        <SelectItem value="Vétérinaire">Vétérinaire</SelectItem>
-                        <SelectItem value="Équipement">Équipement</SelectItem>
-                        <SelectItem value="Alevins">Alevins</SelectItem>
-                        <SelectItem value="Matériel">Matériel</SelectItem>
-                        <SelectItem value="Autre">Autre</SelectItem>
+                        {unitTerms.supplierCategoryOptions.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+
                       </SelectContent>
                     </Select>
                   </div>

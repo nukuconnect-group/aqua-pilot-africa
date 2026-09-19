@@ -30,6 +30,9 @@ import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import AlertHistory from '@/components/alerts/AlertHistory';
 import { notificationHelpers } from '@/lib/notificationService';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms } from '@/lib/unitContext';
+
 
 interface FeedStockManagerProps {
   unitId: string;
@@ -37,7 +40,10 @@ interface FeedStockManagerProps {
 }
 
 const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
+  const { activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
   const { stocks, loading, createStock, updateStock, deleteStock } = useFeedStocks(unitId);
+
   const { toast } = useToast();
   const [sendingAlerts, setSendingAlerts] = useState(false);
 
@@ -65,18 +71,10 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   });
 
   const predefinedFeedTypes = [
-    { value: 'granules_flottants', label: 'Granulés flottants' },
-    { value: 'granules_coulants', label: 'Granulés coulants' },
-    { value: 'farine_poisson', label: 'Farine de poisson' },
-    { value: 'farine_soja', label: 'Farine de soja' },
-    { value: 'aliment_starter', label: 'Aliment starter (0.5-1mm)' },
-    { value: 'aliment_croissance', label: 'Aliment croissance (2-3mm)' },
-    { value: 'aliment_finition', label: 'Aliment finition (4-6mm)' },
-    { value: 'aliment_reproducteur', label: 'Aliment reproducteur' },
-    { value: 'complement_vitamine', label: 'Complément vitaminé' },
-    { value: 'probiotique', label: 'Probiotique' },
+    ...unitTerms.stockTypeOptions,
     { value: 'custom', label: 'Type personnalisé...' }
   ];
+
 
   const allFeedTypes = [
     ...predefinedFeedTypes.filter(t => t.value !== 'custom'),

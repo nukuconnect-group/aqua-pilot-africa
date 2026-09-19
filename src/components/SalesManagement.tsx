@@ -27,6 +27,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { getCompanyDocumentFields, isSaleSettled } from '@/lib/salesDocumentUtils';
 import { SalesDocumentType, generateNextDocumentNumber, getDefaultLegalMentions, validateSalesDocumentDraft } from '@/lib/salesDocumentHelpers';
+import { getUnitTerms } from '@/lib/unitContext';
+
 
 interface SaleFormState {
   clientName: string;
@@ -61,6 +63,8 @@ const createEmptySale = (unitId = '', documentType: SalesDocumentType = 'receipt
 const SalesManagement = () => {
   const { addLog } = useLogs();
   const { units, activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
+
   const { formatCurrency, t, currency, companyInfo } = useSettings();
   const { toast } = useToast();
   const { sales, loading, addSale, updateSale, deleteSale } = useSales();
@@ -708,11 +712,18 @@ const SalesManagement = () => {
                       {newSale.products.map((product, index) => (
                         <div key={index} className="flex flex-col gap-2 p-2 sm:p-3 border rounded">
                           <Input 
-                            placeholder="Produit"
+                            placeholder={unitTerms.salesProductOptions[0] || 'Produit'}
+                            list="unit-sale-products"
                             value={product.name}
                             onChange={(e) => updateProduct(index, 'name', e.target.value)}
                             className="text-sm sm:text-base"
                           />
+                          <datalist id="unit-sale-products">
+                            {unitTerms.salesProductOptions.map((opt) => (
+                              <option key={opt} value={opt} />
+                            ))}
+                          </datalist>
+
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <Input 
                               type="number"

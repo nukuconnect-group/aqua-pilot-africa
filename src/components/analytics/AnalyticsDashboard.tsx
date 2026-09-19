@@ -50,6 +50,8 @@ import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useSales } from '@/hooks/useSales';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms } from '@/lib/unitContext';
+
 import { useSettings } from '@/contexts/SettingsContext';
 import { format, subDays, subMonths, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
 import { fr as frLocale } from 'date-fns/locale';
@@ -140,7 +142,9 @@ const AnalyticsDashboard: React.FC = () => {
   const { records: healthRecords, loading: healthLoading } = useHealthRecords();
   const { batches, loading: batchesLoading } = useLivestockBatches();
   const { sales, loading: salesLoading } = useSales();
-  const { units } = useProductionUnits();
+  const { units, activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
+
   
   const dateLocale = language === 'fr' ? frLocale : undefined;
 
@@ -689,9 +693,10 @@ const AnalyticsDashboard: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
-                  Évolution du FCR
+                  Évolution du {unitTerms.conversionLabel}
                 </CardTitle>
-                <CardDescription>Indice de conversion alimentaire</CardDescription>
+                <CardDescription>{unitTerms.conversionDescription}</CardDescription>
+
               </CardHeader>
               <CardContent>
                 <div className="h-72">
@@ -721,7 +726,7 @@ const AnalyticsDashboard: React.FC = () => {
                       <Area
                         type="monotone"
                         dataKey="fcr"
-                        name="FCR"
+                        name={unitTerms.conversionLabel}
                         stroke={COLORS.secondary}
                         strokeWidth={2}
                         fill="url(#fcrGrad)"
@@ -736,7 +741,7 @@ const AnalyticsDashboard: React.FC = () => {
             {/* Statistiques alimentation */}
             <Card>
               <CardHeader>
-                <CardTitle>Statistiques Alimentation</CardTitle>
+                <CardTitle>Statistiques {unitTerms.feedingTitle}</CardTitle>
                 <CardDescription>Résumé de la période sélectionnée</CardDescription>
               </CardHeader>
               <CardContent>
@@ -748,7 +753,7 @@ const AnalyticsDashboard: React.FC = () => {
                     </div>
                     <div className="p-4 bg-muted/50 rounded-lg text-center">
                       <p className="text-2xl font-bold text-secondary">{kpis.avgFCR.toFixed(2)}</p>
-                      <p className="text-sm text-muted-foreground">FCR moyen</p>
+                      <p className="text-sm text-muted-foreground">{unitTerms.conversionLabel} moyen</p>
                     </div>
                     <div className="p-4 bg-muted/50 rounded-lg text-center">
                       <p className="text-2xl font-bold text-success">{filteredFeedingRecords.length}</p>

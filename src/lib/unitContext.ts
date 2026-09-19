@@ -34,7 +34,17 @@ export interface UnitContextTerms {
   healthIssueOptions: string[];
   salesProductOptions: string[];
   purchaseCategoryOptions: string[];
+  /** Catégories/sous-catégories d'achats proposées dans le module Achats. */
+  purchaseCategoryMap: Record<string, string[]>;
+  /** Catégories proposées à la création d'un fournisseur. */
+  supplierCategoryOptions: string[];
+  /** Types proposés dans la gestion des stocks d'aliments / intrants. */
+  stockTypeOptions: { value: string; label: string }[];
+  /** Libellés d'analyse (indice de conversion / rendement). */
+  conversionLabel: string;
+  conversionDescription: string;
 }
+
 
 const DEFAULT_TERMS: UnitContextTerms = {
   livestockTitle: 'Gestion du Cheptel',
@@ -58,7 +68,34 @@ const DEFAULT_TERMS: UnitContextTerms = {
   healthIssueOptions: ['Parasites', 'Infection bactérienne', 'Mycose', 'Stress', 'Mortalité anormale'],
   salesProductOptions: ['Poisson frais', 'Poisson transformé', 'Alevins'],
   purchaseCategoryOptions: ['Aliment', 'Alevins', 'Matériel', 'Équipement', 'Consommables'],
+  purchaseCategoryMap: {
+    'Aliments': ['Granulés flottants', 'Granulés coulants', 'Farine de poisson', 'Aliment croissance', 'Aliment finition', 'Compléments nutritionnels'],
+    'Équipements et matériels': ['Pompes', 'Filtres', 'Aérateurs', 'Bassins', 'Filets', 'Outils de mesure', 'Matériel de pêche'],
+    'Intrants': ['Engrais organiques', 'Probiotiques', 'Désinfectants', 'Produits de traitement', 'Chaux', 'Sel'],
+    'Alevins': ['Tilapia', 'Carpe', 'Truite', 'Bar', 'Dorade', 'Autres espèces'],
+    'Formations du personnel': ['Formation technique', 'Formation sécurité', 'Formation gestion', 'Certification', 'Séminaires'],
+    'Prestations externes': ['Consultance', 'Maintenance', 'Transport', 'Analyses laboratoire', 'Services vétérinaires'],
+    'Prestations internes': ["Main d'œuvre", 'Services internes', 'Transferts inter-unités'],
+    'Matières premières': ['Ciment', 'Bâches', 'Tuyaux', 'Vannes', 'Raccords', 'Électricité'],
+    'Kits et autres': ['Kits de test', "Produits d'entretien", 'Fournitures bureau', 'Carburant', 'Divers'],
+  },
+  supplierCategoryOptions: ['Aliments', 'Vétérinaire', 'Équipement', 'Alevins', 'Matériel', 'Autre'],
+  stockTypeOptions: [
+    { value: 'granules_flottants', label: 'Granulés flottants' },
+    { value: 'granules_coulants', label: 'Granulés coulants' },
+    { value: 'farine_poisson', label: 'Farine de poisson' },
+    { value: 'farine_soja', label: 'Farine de soja' },
+    { value: 'aliment_starter', label: 'Aliment starter (0.5-1mm)' },
+    { value: 'aliment_croissance', label: 'Aliment croissance (2-3mm)' },
+    { value: 'aliment_finition', label: 'Aliment finition (4-6mm)' },
+    { value: 'aliment_reproducteur', label: 'Aliment reproducteur' },
+    { value: 'complement_vitamine', label: 'Complément vitaminé' },
+    { value: 'probiotique', label: 'Probiotique' },
+  ],
+  conversionLabel: 'FCR',
+  conversionDescription: 'Indice de conversion alimentaire',
 };
+
 
 /** Vocabulaire et options propres à une unité d'algoculture. */
 export const ALGAE_TERMS: UnitContextTerms = {
@@ -134,7 +171,42 @@ export const ALGAE_TERMS: UnitContextTerms = {
     'Équipements',
     'Consommables',
   ],
+  purchaseCategoryMap: {
+    'Nutriments & fertilisants': ['Nitrate de sodium', 'Bicarbonate de sodium', 'Phosphate (KH2PO4)', 'Sulfate de magnésium', 'Sulfate de fer', 'Urée', 'Oligo-éléments', 'Milieu nutritif F/2', 'CO₂'],
+    'Souches & inoculum': ['Souche mère', 'Inoculum de spiruline', 'Inoculum de chlorella', 'Boutures de macro-algues'],
+    'Matériel de culture': ['Bâches de bassin', 'Agitateurs / roues à aubes', 'Pompes', 'Système de filtration', 'Toiles de filtration', 'Tuyauterie'],
+    'Équipements': ['Photobioréacteur', 'Séchoir à algues', 'Broyeur / granulateur', 'Presse / essoreuse', 'Injecteur de CO₂'],
+    'Produits de laboratoire': ['Kits de test pH', 'Kits de salinité', 'Microscope / consommables', 'Réactifs', 'Analyses laboratoire'],
+    'Emballages & conditionnement': ['Sachets alimentaires', 'Bocaux', 'Étiquettes', 'Cartons', 'Sacs de stockage'],
+    'Prestations externes': ['Consultance', 'Maintenance', 'Transport', 'Analyses qualité', 'Certification'],
+    'Formations du personnel': ['Formation culture', 'Hygiène & sécurité alimentaire', 'Formation récolte & séchage'],
+    'Kits et autres': ['Produits de nettoyage', 'Carburant', 'Fournitures bureau', 'Divers'],
+  },
+  supplierCategoryOptions: [
+    'Nutriments & fertilisants',
+    'Souches & inoculum',
+    'Matériel de culture',
+    'Équipements',
+    'Laboratoire',
+    'Emballages',
+    'Autre',
+  ],
+  stockTypeOptions: [
+    { value: 'nitrate_sodium', label: 'Nitrate de sodium' },
+    { value: 'bicarbonate_sodium', label: 'Bicarbonate de sodium' },
+    { value: 'phosphate', label: 'Phosphate (KH2PO4)' },
+    { value: 'sulfate_magnesium', label: 'Sulfate de magnésium' },
+    { value: 'sulfate_fer', label: 'Sulfate de fer' },
+    { value: 'uree', label: 'Urée' },
+    { value: 'oligo_elements', label: 'Oligo-éléments' },
+    { value: 'milieu_f2', label: 'Milieu nutritif F/2' },
+    { value: 'co2', label: 'CO₂' },
+    { value: 'correcteur_ph', label: 'Chaux / correcteur de pH' },
+  ],
+  conversionLabel: 'Rendement nutritif',
+  conversionDescription: 'Kg d’intrants consommés par kg de biomasse algale produite',
 };
+
 
 const TERMS_BY_TYPE: Partial<Record<ProductionUnitType, UnitContextTerms>> = {
   algoculture: ALGAE_TERMS,
