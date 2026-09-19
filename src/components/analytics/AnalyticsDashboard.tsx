@@ -253,6 +253,24 @@ const AnalyticsDashboard: React.FC = () => {
     });
   }, [dateFilters, filteredFeedingRecords, filteredHealthRecords]);
 
+  // Évolution du FCR - uniquement à partir des FCR réellement enregistrés
+  const fcrChartData = useMemo(() => {
+    const byDate = new Map<string, { sum: number; count: number }>();
+    filteredFeedingRecords.forEach(r => {
+      if (!r.fcr || r.fcr <= 0 || !r.date) return;
+      const entry = byDate.get(r.date) || { sum: 0, count: 0 };
+      entry.sum += r.fcr;
+      entry.count += 1;
+      byDate.set(r.date, entry);
+    });
+    return Array.from(byDate.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, { sum, count }]) => ({
+        date: format(parseISO(date), 'dd/MM', { locale: dateLocale }),
+        fcr: Number((sum / count).toFixed(2))
+      }));
+  }, [filteredFeedingRecords, dateLocale]);
+
   // Données pour le graphique mensuel
   const monthlyChartData = useMemo(() => {
     const months = eachMonthOfInterval({ 
