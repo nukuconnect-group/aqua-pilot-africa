@@ -331,7 +331,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const t = (key: string): string => {
-    return translations[language]?.[key] || translations['fr']?.[key] || translations['en']?.[key] || key;
+    const value = translations[language]?.[key] || translations['fr']?.[key] || translations['en']?.[key];
+    if (value) return value;
+    // Clé absente : on affiche un libellé lisible (la couche de traduction runtime le traduira).
+    if (/^[a-z0-9_.-]+$/i.test(key)) {
+      const label = key.replace(/[_.-]+/g, ' ').trim();
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+    return key;
   };
 
   const formatCurrency = (amount: number): string => {

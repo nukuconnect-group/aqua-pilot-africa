@@ -1,3 +1,4 @@
+import { translateHtmlDocument } from '@/i18n/runtime';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -583,7 +584,7 @@ export const generateControlFishingPdf = (options: PrintOptions) => {
     </html>
   `;
 
-  printWindow.document.write(html);
+  printWindow.document.write(translateHtmlDocument(html));
   printWindow.document.close();
 };
 

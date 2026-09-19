@@ -1,3 +1,4 @@
+import { translateDelimitedText, translateHtmlDocument } from '@/i18n/runtime';
 // Utility for exporting control fishing records in multiple formats
 
 interface ControlFishingRecord {
@@ -279,13 +280,13 @@ export const exportControlFishingToPDF = (options: ExportOptions) => {
     alert('Veuillez autoriser les popups pour imprimer');
     return;
   }
-  printWindow.document.write(html);
+  printWindow.document.write(translateHtmlDocument(html));
   printWindow.document.close();
 };
 
 export const exportControlFishingToWord = (options: ExportOptions) => {
   const html = generateDailyHTML(options);
-  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const blob = new Blob(['\ufeff', translateHtmlDocument(html)], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -329,7 +330,7 @@ export const exportControlFishingToExcel = (options: ExportOptions) => {
     ...rows
   ].map(row => row.join('\t')).join('\n');
   
-  const blob = new Blob(['\ufeff' + content], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const blob = new Blob(['\ufeff' + translateDelimitedText(content)], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -366,7 +367,7 @@ export const exportControlFishingToCSV = (options: ExportOptions) => {
   
   const content = [headers, ...rows].map(row => row.join(',')).join('\n');
   
-  const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['\ufeff' + translateDelimitedText(content)], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

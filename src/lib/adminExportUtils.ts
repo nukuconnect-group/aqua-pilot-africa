@@ -1,3 +1,4 @@
+import { translateDelimitedText } from '@/i18n/runtime';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -31,7 +32,7 @@ export function exportRowsToCsv<T>(rows: T[], columns: ExportColumn<T>[], fileNa
   const header = columns.map((c) => escapeCsv(c.header)).join(';');
   const body = rows.map((row) => columns.map((c) => escapeCsv(c.value(row))).join(';'));
   const csv = ['\uFEFF' + header, ...body].join('\r\n');
-  triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `${fileName}.csv`);
+  triggerDownload(new Blob([translateDelimitedText(csv)], { type: 'text/csv;charset=utf-8;' }), `${fileName}.csv`);
 }
 
 /** Export any tabular data to a paginated, branded PDF report. */

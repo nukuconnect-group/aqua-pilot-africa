@@ -1,3 +1,4 @@
+import { translateHtmlDocument } from '@/i18n/runtime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -337,7 +338,7 @@ export const generateFeedingSheetHTML = (
 export const printHTML = (html: string) => {
   const printWindow = window.open('', '_blank');
   if (printWindow) {
-    printWindow.document.write(html);
+    printWindow.document.write(translateHtmlDocument(html));
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
@@ -347,7 +348,7 @@ export const printHTML = (html: string) => {
 };
 
 export const downloadHTML = (html: string, filename: string) => {
-  const blob = new Blob([html], { type: 'text/html' });
+  const blob = new Blob([translateHtmlDocument(html)], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

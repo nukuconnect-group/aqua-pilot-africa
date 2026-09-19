@@ -1,3 +1,4 @@
+import { translateDelimitedText, translateHtmlDocument } from '@/i18n/runtime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -310,7 +311,7 @@ export const exportFeedingToPDF = (options: ExportFeedingOptions) => {
   const html = generateDetailedFeedingHTML(options);
   const printWindow = window.open('', '_blank');
   if (printWindow) {
-    printWindow.document.write(html);
+    printWindow.document.write(translateHtmlDocument(html));
     printWindow.document.close();
     printWindow.print();
   }
@@ -383,7 +384,7 @@ export const exportFeedingToExcel = (options: ExportFeedingOptions) => {
   ];
   
   const csvContent = rows.map(row => row.join('\t')).join('\n');
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const blob = new Blob(['\ufeff' + translateDelimitedText(csvContent), ], { type: 'application/vnd.ms-excel;charset=utf-8' });
   
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -417,7 +418,7 @@ export const exportFeedingToCSV = (options: ExportFeedingOptions) => {
   ];
   
   const csvContent = [headers.join(','), values.map(v => `"${v}"`).join(',')].join('\n');
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['\ufeff' + translateDelimitedText(csvContent)], { type: 'text/csv;charset=utf-8' });
   
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

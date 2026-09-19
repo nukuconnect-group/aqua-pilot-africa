@@ -1,3 +1,4 @@
+import { translateHtmlDocument } from '@/i18n/runtime';
 import { Employee } from '@/hooks/useEmployees';
 
 export interface CompanyInfoForPrint {
@@ -388,7 +389,7 @@ export const printEmployeeList = (
   const html = generateEmployeeListHTML(employees, companyInfo, unitName, formatCurrency);
   const printWindow = window.open('', '_blank');
   if (printWindow) {
-    printWindow.document.write(html);
+    printWindow.document.write(translateHtmlDocument(html));
     printWindow.document.close();
     printWindow.onload = () => {
       printWindow.print();
