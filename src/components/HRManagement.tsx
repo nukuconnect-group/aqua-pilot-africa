@@ -165,7 +165,10 @@ const HRManagement = () => {
     const grossSalary = employee.salary + paySlipData.overtime + allBonuses;
     
     // Calcul des cotisations (environ 22% du brut)
-    const calculatedDeductions = Math.round(grossSalary * 0.22);
+    const socialDeductions = Math.round(grossSalary * 0.22);
+    // Remboursement de prêt/avance retenu automatiquement sur la paie
+    const loanDeduction = payrollDeductionFor(paySlipData.employeeId, paySlipData.period);
+    const calculatedDeductions = socialDeductions + loanDeduction;
     const netSalary = grossSalary - calculatedDeductions;
 
     const result = await addPaySlip({
