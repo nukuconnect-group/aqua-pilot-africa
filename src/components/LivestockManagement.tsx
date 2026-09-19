@@ -1258,7 +1258,7 @@ const LivestockManagement = () => {
               Reproduction
             </TabsTrigger>
           )}
-          <TabsTrigger value="control" className="text-xs sm:text-sm px-2 py-2">Pêche</TabsTrigger>
+          <TabsTrigger value="control" className="text-xs sm:text-sm px-2 py-2">{unitTerms.samplingTabLabel}</TabsTrigger>
           <TabsTrigger value="charts" className="text-xs sm:text-sm px-2 py-2">Graphiques</TabsTrigger>
         </TabsList>
 
