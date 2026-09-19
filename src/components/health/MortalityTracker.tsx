@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,29 +49,9 @@ interface MortalityTrackerProps {
 }
 
 const MortalityTracker = ({ unitId, unitName, onMortalityRecorded }: MortalityTrackerProps) => {
-  const [mortalityRecords, setMortalityRecords] = useState<MortalityRecord[]>([
-    {
-      id: '1',
-      date: '2024-03-15',
-      unitId: unitId,
-      basinId: 'BAS001',
-      mortalityCount: 12,
-      totalPopulation: 2500,
-      mortalityRate: 0.48,
-      primaryCause: 'Qualité de l\'eau',
-      secondaryCauses: ['Stress', 'Température élevée'],
-      waterQuality: {
-        temperature: 31.5,
-        ph: 8.2,
-        oxygen: 4.2,
-        ammonia: 0.8
-      },
-      treatment: 'Aération renforcée + changement d\'eau partiel',
-      preventiveMeasures: 'Surveillance température quotidienne',
-      notes: 'Mortalité liée à pic de température. Mesures correctives appliquées.',
-      followUpRequired: true
-    }
-  ]);
+  const { activeUnit } = useProductionUnits();
+  const isAlgae = isAlgaeUnitType(activeUnit?.type);
+  const [mortalityRecords, setMortalityRecords] = useState<MortalityRecord[]>([]);
 
   const [showDialog, setShowDialog] = useState(false);
   const [newRecord, setNewRecord] = useState({
@@ -187,7 +169,7 @@ const MortalityTracker = ({ unitId, unitName, onMortalityRecorded }: MortalityTr
           <DialogTrigger asChild>
             <Button className="text-sm bg-red-600 hover:bg-red-700">
               <Plus className="w-4 h-4 mr-2" />
-              Enregistrer mortalité
+              {isAlgae ? 'Enregistrer perte' : 'Enregistrer mortalité'}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-full sm:max-w-3xl mx-2 max-h-[90vh] overflow-y-auto">
@@ -215,7 +197,7 @@ const MortalityTracker = ({ unitId, unitName, onMortalityRecorded }: MortalityTr
                 />
               </div>
               <div>
-                <Label className="text-sm">Nombre de mortalités</Label>
+                <Label className="text-sm">{isAlgae ? 'Perte de biomasse (kg)' : 'Nombre de mortalités'}</Label>
                 <Input 
                   type="number"
                   value={newRecord.mortalityCount}
@@ -353,7 +335,7 @@ const MortalityTracker = ({ unitId, unitName, onMortalityRecorded }: MortalityTr
               <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
             </div>
             <p className="text-lg sm:text-2xl font-bold">{stats.totalMortality}</p>
-            <p className="text-xs sm:text-sm text-gray-600">Total mortalités</p>
+            <p className="text-xs sm:text-sm text-gray-600">{isAlgae ? 'Pertes totales (kg)' : 'Total mortalités'}</p>
           </CardContent>
         </Card>
         

@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,59 +52,13 @@ interface Alert {
 }
 
 const DiseaseTracker = () => {
-  const [diseases, setDiseases] = useState<Disease[]>([
-    {
-      id: '1',
-      name: 'Infection bactérienne',
-      type: 'bacterial',
-      severity: 'medium',
-      affectedFish: 15,
-      unitId: 'GROSS001',
-      unitName: 'Unité de Grossissement A',
-      symptoms: 'Nageoires effilochées, comportement léthargique',
-      dateDetected: '2024-07-01',
-      status: 'treated',
-      notes: 'Traitement antibiotique en cours'
-    }
-  ]);
+  const { activeUnit } = useProductionUnits();
+  const isAlgae = isAlgaeUnitType(activeUnit?.type);
+  const [diseases, setDiseases] = useState<Disease[]>([]);
 
-  const [treatments, setTreatments] = useState<Treatment[]>([
-    {
-      id: '1',
-      diseaseId: '1',
-      productName: 'Oxytetracycline',
-      productType: 'antibiotic',
-      dosage: '50mg/kg de poisson',
-      applicationMethod: 'Mélangé à la nourriture',
-      startDate: '2024-07-02',
-      endDate: '2024-07-09',
-      frequency: '1 fois par jour',
-      administeredBy: 'Dr. Marie Dubois',
-      notes: 'Surveiller les signes d\'amélioration',
-      status: 'ongoing'
-    }
-  ]);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
 
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: '1',
-      type: 'treatment_due',
-      message: 'Administration d\'antibiotique prévue pour 14h00',
-      priority: 'high',
-      date: '2024-07-04',
-      unitId: 'GROSS001',
-      resolved: false
-    },
-    {
-      id: '2',
-      type: 'follow_up',
-      message: 'Contrôle sanitaire recommandé après traitement',
-      priority: 'medium',
-      date: '2024-07-10',
-      unitId: 'GROSS001',
-      resolved: false
-    }
-  ]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const [showAddDisease, setShowAddDisease] = useState(false);
   const [showAddTreatment, setShowAddTreatment] = useState(false);
@@ -281,7 +237,7 @@ const DiseaseTracker = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="affectedFish">Poissons affectés</Label>
+                    <Label htmlFor="affectedFish">{isAlgae ? 'Quantité affectée (kg)' : 'Poissons affectés'}</Label>
                     <Input
                       id="affectedFish"
                       type="number"
@@ -354,7 +310,7 @@ const DiseaseTracker = () => {
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-500">
                         <span>Unité: <strong>{disease.unitName}</strong></span>
-                        <span>Poissons affectés: <strong>{disease.affectedFish}</strong></span>
+                        <span>{isAlgae ? 'Quantité affectée (kg)' : 'Poissons affectés'}: <strong>{disease.affectedFish}</strong></span>
                         <span>Détecté le: <strong>{disease.dateDetected}</strong></span>
                       </div>
                     </div>

@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +36,10 @@ const MORTALITY_CAUSES = isAlgae ? ['Contamination', 'Mauvaise qualité d'eau', 
 ];
 
 const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMortalityFormProps) => {
+  const { activeUnit } = useProductionUnits();
+  const isAlgae = isAlgaeUnitType(activeUnit?.type);
+  const { activeUnit } = useProductionUnits();
+  const isAlgae = isAlgaeUnitType(activeUnit?.type);
   const { activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
   const isAlgae = isAlgaeUnitType(activeUnit?.type);
@@ -168,7 +174,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="destructive" className="w-full sm:w-auto">
-           {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : <Skull className="w-4 h-4 mr-2" />}
+           {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : <Skull className="w-4 h-4 mr-2" />}}
            {isAlgae ? 'Déclarer une perte de biomasse' : 'Déclarer une mortalité'} 
         </Button>
       </DialogTrigger>
@@ -176,7 +182,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-             {isAlgae ? <TrendingDown className="w-5 h-5 text-destructive" /> : <Skull className="w-5 h-5 text-destructive" />}
+             {isAlgae ? <TrendingDown className="w-5 h-5 text-destructive" /> : {isAlgae ? <TrendingDown className="w-5 h-5 text-destructive" /> : <Skull className="w-5 h-5 text-destructive" />}}
              {isAlgae ? 'Déclarer une perte de biomasse' : 'Déclarer une mortalité'}  par infrastructure
           </DialogTitle>
         </DialogHeader>
@@ -256,7 +262,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
                     </p>
                   </div>
                   <div>
-                    <span className="block text-xs text-muted-foreground"> {isAlgae ? 'Taux de perte' : 'Taux de mortalité'} </span>
+                    <span className="block text-xs text-muted-foreground"> {isAlgae ? 'Taux de perte' : '{isAlgae ? 'Taux de perte' : 'Taux de mortalité'}'} </span>
                     <p className="font-bold text-destructive">{rate.toFixed(2)}%</p>
                   </div>
                 </div>
