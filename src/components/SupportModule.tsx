@@ -496,9 +496,21 @@ const SupportModule = () => {
                               </span>
                             </div>
                             <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                            <p className="text-xs opacity-50 mt-1">
-                              {format(new Date(msg.created_at), 'HH:mm', { locale: dateLocale })}
-                            </p>
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              <p className="text-xs opacity-50">
+                                {format(new Date(msg.created_at), 'HH:mm', { locale: dateLocale })}
+                              </p>
+                              {(isOwnMessage || isAdmin) && (
+                                <button
+                                  type="button"
+                                  aria-label={language === 'fr' ? 'Supprimer le message' : 'Delete message'}
+                                  className="opacity-60 hover:opacity-100 transition-opacity"
+                                  onClick={() => deleteMessage(msg.id)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
