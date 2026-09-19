@@ -62,6 +62,7 @@ const SupportModule = () => {
     createTicket, 
     sendMessage, 
     updateTicketStatus,
+    deleteMessage,
     fetchMessages,
     markMessagesAsRead 
   } = useSupportTickets();
