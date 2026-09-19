@@ -91,26 +91,9 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
     setShowDialog(open);
   };
 
+  const selectedUnitType = units.find(u => u.id === newInfrastructure.unitId)?.type;
   const predefinedTypes = [
-    { value: 'bassin_incubation', label: 'Bassin d\'incubation' },
-    { value: 'bassin_grossissement', label: 'Bassin de grossissement' },
-    { value: 'bassin_beton', label: 'Bassin en béton' },
-    { value: 'etang_naturel', label: 'Étang naturel' },
-    { value: 'etang_artificiel', label: 'Étang artificiel' },
-    { value: 'chambre_froide', label: 'Chambre froide' },
-    { value: 'chambre_froide_positive', label: 'Chambre froide positive' },
-    { value: 'chambre_froide_negative', label: 'Chambre froide négative' },
-    { value: 'four_fumage', label: 'Four de fumage' },
-    { value: 'four_sechage', label: 'Four de séchage' },
-    { value: 'table_decoupe', label: 'Table de découpe' },
-    { value: 'machine_filetage', label: 'Machine de filetage' },
-    { value: 'tunnel_congelation', label: 'Tunnel de congélation' },
-    { value: 'silo_aliment', label: 'Silo à aliment' },
-    { value: 'reservoir_eau', label: 'Réservoir d\'eau' },
-    { value: 'systeme_filtration', label: 'Système de filtration' },
-    { value: 'pompe_eau', label: 'Pompe à eau' },
-    { value: 'aerateur', label: 'Aérateur' },
-    { value: 'laboratoire', label: 'Laboratoire d\'analyse' },
+    ...getUnitTerms(selectedUnitType).infrastructureTypeOptions,
     { value: 'custom', label: 'Type personnalisé...' }
   ];
 
