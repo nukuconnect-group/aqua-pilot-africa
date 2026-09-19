@@ -395,10 +395,12 @@ const HRManagement = () => {
       {/* Tabs */}
       <Tabs defaultValue="employees" className="space-y-3 md:space-y-4">
         <div className="overflow-x-auto">
-          <TabsList className="grid grid-cols-4 w-full text-xs md:text-sm">
+          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full text-xs md:text-sm">
             <TabsTrigger value="employees">Employés</TabsTrigger>
             <TabsTrigger value="contracts">Contrats</TabsTrigger>
             <TabsTrigger value="payroll">Bulletins</TabsTrigger>
+            <TabsTrigger value="leaves">Congés</TabsTrigger>
+            <TabsTrigger value="loans">Prêts</TabsTrigger>
             <TabsTrigger value="reports">Rapports</TabsTrigger>
           </TabsList>
         </div>
