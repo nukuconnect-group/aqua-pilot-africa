@@ -43,6 +43,27 @@ export interface UnitContextTerms {
   /** Libellés d'analyse (indice de conversion / rendement). */
   conversionLabel: string;
   conversionDescription: string;
+  /** Types d'infrastructures proposés à la création. */
+  infrastructureTypeOptions: { value: string; label: string }[];
+  /** Onglet « Pêche de contrôle » / échantillonnage. */
+  samplingTabLabel: string;
+  samplingTitle: string;
+  samplingSubtitle: string;
+  /** Onglets du module Prophylaxie. */
+  healthCheptelTabLabel: string;
+  healthDiseasesTabLabel: string;
+  /** Onglet « Alimentation » dans l'analytique. */
+  analyticsInputsTabLabel: string;
+  /** Assistant IA santé. */
+  aiSpeciesTitle: string;
+  aiSpeciesDescription: string;
+  aiSpeciesPlaceholder: string;
+  /** Activation/désactivation de sous-modules non pertinents. */
+  features: {
+    feedingSheets: boolean;
+    feedingPlanning: boolean;
+    sampling: boolean;
+  };
 }
 
 
