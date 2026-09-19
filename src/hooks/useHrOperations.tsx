@@ -70,6 +70,27 @@ export const countLeaveDays = (start: string, end: string): number => {
 
 export const DEFAULT_ANNUAL_LEAVE_DAYS = 30;
 
+/** État partagé : tous les écrans RH voient les mêmes congés et prêts. */
+interface HrStore {
+  leaves: LeaveRequest[];
+  loans: EmployeeLoan[];
+  repayments: LoanRepayment[];
+  remoteAvailable: boolean;
+}
+
+let hrStore: HrStore = { leaves: [], loans: [], repayments: [], remoteAvailable: false };
+const hrListeners = new Set<(s: HrStore) => void>();
+
+const subscribeHr = (listener: (s: HrStore) => void) => {
+  hrListeners.add(listener);
+  return () => { hrListeners.delete(listener); };
+};
+
+const patchHrStore = (patch: Partial<HrStore>) => {
+  hrStore = { ...hrStore, ...patch };
+  hrListeners.forEach(l => l(hrStore));
+};
+
 /**
  * Congés, prêts et remboursements. Les données sont stockées dans la base
  * quand les tables existent, avec repli local sinon (aucune donnée fictive).
