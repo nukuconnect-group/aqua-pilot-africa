@@ -370,8 +370,9 @@ const SupportModule = () => {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{language === 'fr' ? 'Tous les statuts' : 'All statuses'}</SelectItem>
-                <SelectItem value="open">{language === 'fr' ? 'Ouverts' : 'Open'}</SelectItem>
-                <SelectItem value="in_progress">{language === 'fr' ? 'En attente' : 'In progress'}</SelectItem>
+                <SelectItem value="open">{language === 'fr' ? 'Nouveaux' : 'New'}</SelectItem>
+                <SelectItem value="pending">{language === 'fr' ? 'En attente' : 'Pending'}</SelectItem>
+                <SelectItem value="in_progress">{language === 'fr' ? 'En cours' : 'In progress'}</SelectItem>
                 <SelectItem value="resolved">{language === 'fr' ? 'Résolus' : 'Resolved'}</SelectItem>
                 <SelectItem value="closed">{language === 'fr' ? 'Fermés' : 'Closed'}</SelectItem>
               </SelectContent>
