@@ -1,9 +1,4 @@
-# Roadmap
-
-- [x] Corriger définitivement l’affichage et le comptage des erreurs admin.
-- [x] Ajouter la sélection utilisateur et les restrictions individuelles de modules.
-- [x] Ajouter les règles de modules par type d’unité et unité active.
-- [x] Séparer les permissions Prophylaxie et AquaHealth AI.
-- [x] Ajouter la persistance sécurisée et l’audit des changements.
-- [x] Vérifier les parcours admin/utilisateur/membre d’équipe sur mobile et ordinateur (compilation, règles et absence de crash; écran admin authentifié non disponible dans la session de test).
-- [x] Éliminer les crashs transitoires liés aux contextes Journaux et Unités de production.
+- [ ] Traduire Prophylaxie alimentaire, Production d’aliments et Traçabilité selon la langue sélectionnée
+- [ ] Centraliser les règles de modules par type d’unité
+- [ ] Générer et vérifier un PDF complet en anglais
+- [ ] Tester le parcours anglais puis français
