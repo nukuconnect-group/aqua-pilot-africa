@@ -56,9 +56,11 @@ alter table public.leave_requests enable row level security;
 alter table public.employee_loans enable row level security;
 alter table public.loan_repayments enable row level security;
 
+drop policy if exists "own leave requests" on public.leave_requests;
 create policy "own leave requests" on public.leave_requests
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "own employee loans" on public.employee_loans;
 create policy "own employee loans" on public.employee_loans
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
