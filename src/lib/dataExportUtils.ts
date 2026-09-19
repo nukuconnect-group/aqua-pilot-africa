@@ -1,6 +1,11 @@
 /**
- * Utilitaires pour l'export de données en différents formats
+ * Utilitaires pour l'export de données en différents formats.
+ * Les libellés suivent la langue sélectionnée dans l'application.
  */
+import { tr, runtimeLocale } from '@/i18n/runtime';
+
+const L = () => runtimeLocale();
+const now = () => `${new Date().toLocaleDateString(L())} ${tr('à')} ${new Date().toLocaleTimeString(L())}`;
 
 /**
  * Escape HTML special characters to prevent XSS attacks
@@ -33,23 +38,26 @@ export interface ExportOptions {
 
 // Generate CSV content
 export const exportToCSV = (options: ExportOptions) => {
-  const { title, subtitle, columns, data, unitName } = options;
+  const { columns, data } = options;
+  const title = tr(options.title);
+  const subtitle = options.subtitle ? tr(options.subtitle) : undefined;
+  const unitName = options.unitName;
   
   let csvContent = '';
   csvContent += `"${title}"\n`;
   if (subtitle) csvContent += `"${subtitle}"\n`;
-  if (unitName) csvContent += `"Unité: ${unitName}"\n`;
-  csvContent += `"Généré le: ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}"\n`;
+  if (unitName) csvContent += `"${tr('Unité')}: ${unitName}"\n`;
+  csvContent += `"${tr('Généré le')}: ${now()}"\n`;
   csvContent += '\n';
 
   // Headers
-  csvContent += columns.map(col => `"${col.label}"`).join(',') + '\n';
+  csvContent += columns.map(col => `"${tr(col.label)}"`).join(',') + '\n';
   
   // Data rows
   data.forEach(row => {
     csvContent += columns.map(col => {
       const value = col.format ? col.format(row[col.key], row) : row[col.key];
-      return `"${value ?? ''}"`;
+      return `"${typeof value === 'string' ? tr(value) : value ?? ''}"`;
     }).join(',') + '\n';
   });
 
@@ -58,23 +66,26 @@ export const exportToCSV = (options: ExportOptions) => {
 
 // Generate Excel (TSV) content
 export const exportToExcel = (options: ExportOptions) => {
-  const { title, subtitle, columns, data, unitName } = options;
+  const { columns, data } = options;
+  const title = tr(options.title);
+  const subtitle = options.subtitle ? tr(options.subtitle) : undefined;
+  const unitName = options.unitName;
   
   let content = '';
   content += `${title}\n`;
   if (subtitle) content += `${subtitle}\n`;
-  if (unitName) content += `Unité: ${unitName}\n`;
-  content += `Généré le: ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}\n`;
+  if (unitName) content += `${tr('Unité')}: ${unitName}\n`;
+  content += `${tr('Généré le')}: ${now()}\n`;
   content += '\n';
 
   // Headers
-  content += columns.map(col => col.label).join('\t') + '\n';
+  content += columns.map(col => tr(col.label)).join('\t') + '\n';
   
   // Data rows
   data.forEach(row => {
     content += columns.map(col => {
       const value = col.format ? col.format(row[col.key], row) : row[col.key];
-      return value ?? '';
+      return (typeof value === 'string' ? tr(value) : value) ?? '';
     }).join('\t') + '\n';
   });
 
@@ -83,7 +94,10 @@ export const exportToExcel = (options: ExportOptions) => {
 
 // Generate Word (HTML) document
 export const exportToWord = (options: ExportOptions) => {
-  const { title, subtitle, columns, data, unitName, companyName } = options;
+  const { columns, data, companyName } = options;
+  const title = tr(options.title);
+  const subtitle = options.subtitle ? tr(options.subtitle) : undefined;
+  const unitName = options.unitName;
   
   let htmlContent = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
@@ -105,15 +119,15 @@ export const exportToWord = (options: ExportOptions) => {
       ${companyName ? `<div class="company">${escapeHtml(companyName)}</div>` : ''}
       <h1>${escapeHtml(title)}</h1>
       ${subtitle ? `<h2>${escapeHtml(subtitle)}</h2>` : ''}
-      ${unitName ? `<p class="header-info"><strong>Unité:</strong> ${escapeHtml(unitName)}</p>` : ''}
-      <p class="header-info"><strong>Généré le:</strong> ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+      ${unitName ? `<p class="header-info"><strong>${escapeHtml(tr('Unité'))}:</strong> ${escapeHtml(unitName)}</p>` : ''}
+      <p class="header-info"><strong>${escapeHtml(tr('Généré le'))}:</strong> ${escapeHtml(now())}</p>
       
       <table>
-        <tr>${columns.map(col => `<th>${escapeHtml(col.label)}</th>`).join('')}</tr>
+        <tr>${columns.map(col => `<th>${escapeHtml(tr(col.label))}</th>`).join('')}</tr>
         ${data.map(row => `
           <tr>${columns.map(col => {
             const value = col.format ? col.format(row[col.key], row) : row[col.key];
-            return `<td>${escapeHtml(value)}</td>`;
+            return `<td>${escapeHtml(typeof value === 'string' ? tr(value) : value)}</td>`;
           }).join('')}</tr>
         `).join('')}
       </table>
@@ -126,11 +140,14 @@ export const exportToWord = (options: ExportOptions) => {
 
 // Generate PDF via print
 export const exportToPDF = (options: ExportOptions) => {
-  const { title, subtitle, columns, data, unitName, companyName } = options;
+  const { columns, data, companyName } = options;
+  const title = tr(options.title);
+  const subtitle = options.subtitle ? tr(options.subtitle) : undefined;
+  const unitName = options.unitName;
   
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert('Veuillez autoriser les popups pour générer le PDF');
+    alert(tr('Veuillez autoriser les popups pour générer le PDF'));
     return;
   }
 
@@ -158,21 +175,21 @@ export const exportToPDF = (options: ExportOptions) => {
       ${companyName ? `<div class="company">${escapeHtml(companyName)}</div>` : ''}
       <h1>${escapeHtml(title)}</h1>
       ${subtitle ? `<h2>${escapeHtml(subtitle)}</h2>` : ''}
-      ${unitName ? `<p class="header-info"><strong>Unité:</strong> ${escapeHtml(unitName)}</p>` : ''}
-      <p class="header-info"><strong>Généré le:</strong> ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+      ${unitName ? `<p class="header-info"><strong>${escapeHtml(tr('Unité'))}:</strong> ${escapeHtml(unitName)}</p>` : ''}
+      <p class="header-info"><strong>${escapeHtml(tr('Généré le'))}:</strong> ${escapeHtml(now())}</p>
       
       <table>
-        <tr>${columns.map(col => `<th>${escapeHtml(col.label)}</th>`).join('')}</tr>
+        <tr>${columns.map(col => `<th>${escapeHtml(tr(col.label))}</th>`).join('')}</tr>
         ${data.map(row => `
           <tr>${columns.map(col => {
             const value = col.format ? col.format(row[col.key], row) : row[col.key];
-            return `<td>${escapeHtml(value)}</td>`;
+            return `<td>${escapeHtml(typeof value === 'string' ? tr(value) : value)}</td>`;
           }).join('')}</tr>
         `).join('')}
       </table>
       
       <div class="footer">
-        <p>Document généré automatiquement par AquaPilot</p>
+        <p>${escapeHtml(tr('Document généré automatiquement par AquaPilote'))}</p>
       </div>
       <script>
         window.onload = function() { window.print(); }
@@ -201,11 +218,11 @@ const downloadFile = (content: string, filename: string, mimeType: string) => {
 // Format date for display
 export const formatDate = (date: string): string => {
   if (!date) return '-';
-  return new Date(date).toLocaleDateString('fr-FR');
+  return new Date(date).toLocaleDateString(L());
 };
 
 // Format currency
 export const formatCurrency = (amount: number, currency: string = 'XOF'): string => {
   if (!amount && amount !== 0) return '-';
-  return new Intl.NumberFormat('fr-FR').format(amount) + ' F CFA';
+  return new Intl.NumberFormat(L()).format(amount) + ' F CFA';
 };

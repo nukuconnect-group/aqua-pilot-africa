@@ -1,3 +1,4 @@
+import { getRuntimeLanguage } from '@/i18n/runtime';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -144,7 +145,7 @@ const IoTAIAnalysis = () => {
       const analyzeAuto = async () => {
         try {
           const { data, error } = await supabase.functions.invoke('aquapilote-recommendation', {
-            body: { iotData: latestSensorData }
+            body: { iotData: latestSensorData, language: getRuntimeLanguage() }
           });
 
           if (!error && !data.error) {
@@ -174,7 +175,7 @@ const IoTAIAnalysis = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('aquapilote-recommendation', {
-        body: { iotData }
+        body: { iotData, language: getRuntimeLanguage() }
       });
 
       if (error) {

@@ -1,35 +1,14 @@
 import { useEffect } from 'react';
-import { translateFrToEn } from './frToEn';
-import { aiTranslate, onTranslationsReady } from './aiTranslate';
+import { onTranslationsReady } from './aiTranslate';
+import { setRuntimeLanguage, translateRuntime } from './runtime';
 
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA']);
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
 const MARK = 'data-i18n-en';
 
-// Textes déjà anglais ou neutres : inutile de les envoyer à la traduction.
-const ENGLISH_ONLY =
-  /^(ok|yes|no|on|off|email|e-mail|dashboard|home|login|logout|admin|pdf|csv|excel|word|kg|g|mg|l|ml|ph|id|url|api|ia|ai|sms|http[s]?:\/\/.*)$/i;
+let activeLanguage = 'fr';
 
-const shouldAiTranslate = (text: string) => {
-  const t = text.trim();
-  if (t.length < 2 || t.length > 400) return false;
-  // Doit contenir au moins deux lettres consécutives.
-  if (!/[a-zà-ÿ]{2}/i.test(t)) return false;
-  // Nombres, dates, pourcentages, montants, codes.
-  if (/^[\d\s.,:%€$/+-]+$/.test(t)) return false;
-  if (ENGLISH_ONLY.test(t)) return false;
-  return true;
-};
-
-const translate = (value: string): string | null => {
-  const dict = translateFrToEn(value);
-  if (dict) return dict;
-  if (!shouldAiTranslate(value)) return null;
-  const leading = value.match(/^\s*/)?.[0] ?? '';
-  const trailing = value.match(/\s*$/)?.[0] ?? '';
-  const ai = aiTranslate(value.trim());
-  return ai ? leading + ai + trailing : null;
-};
+const translate = (value: string): string | null => translateRuntime(value, activeLanguage);
 
 const translateNode = (node: Text) => {
   const parent = node.parentElement;
@@ -86,12 +65,14 @@ const walk = (root: Node) => {
 export const useAutoTranslate = (language: string) => {
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    document.documentElement.lang = language === 'en' ? 'en' : language;
-    if (language !== 'en') {
+    document.documentElement.lang = language || 'fr';
+    activeLanguage = language;
+    setRuntimeLanguage(language);
+    if (!language || language === 'fr') {
       document.documentElement.removeAttribute(MARK);
       return;
     }
-    document.documentElement.setAttribute(MARK, 'true');
+    document.documentElement.setAttribute(MARK, language);
 
     let scheduled = false;
     const pending: Node[] = [];

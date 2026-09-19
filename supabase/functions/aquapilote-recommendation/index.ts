@@ -120,7 +120,7 @@ serve(async (req) => {
       throw new Error('Utilisateur non authentifié. Veuillez vous connecter.');
     }
 
-    const { iotData }: { iotData: IoTData } = await req.json();
+    const { iotData, language }: { iotData: IoTData; language?: string } = await req.json();
     
     console.log('Received IoT data:', iotData);
 
@@ -172,7 +172,9 @@ Réponds UNIQUEMENT avec un objet JSON contenant:
         messages: [
           {
             role: 'system',
-            content: `Tu es Aquapilote, un expert senior en aquaculture avec 20 ans d'expérience. Tu analyses les paramètres d'eau des bassins piscicoles et fournis des recommandations PRÉCISES, ACTIONNABLES et URGENTES quand nécessaire.
+            content: `Réponds impérativement en ${language || 'Français'}.
+
+Tu es Aquapilote, un expert senior en aquaculture avec 20 ans d'expérience. Tu analyses les paramètres d'eau des bassins piscicoles et fournis des recommandations PRÉCISES, ACTIONNABLES et URGENTES quand nécessaire.
 
 RÈGLES CRITIQUES:
 - Si pH < 6.0 ou pH > 9.0 → ALERTE CRITIQUE

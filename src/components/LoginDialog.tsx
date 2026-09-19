@@ -497,7 +497,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
                       ? (t('reset_password_desc') || 'Entrez votre email pour réinitialiser')
                       : isRegistering 
                         ? (t('join_aquaculture') || 'Rejoignez la révolution de l\'aquaculture intelligente')
-                        : (t('login_desc') || 'Connectez-vous à votre espace de gestion')}
+                        : 'Connectez-vous à votre espace de gestion'}
                   </DialogDescription>
                 </div>
               

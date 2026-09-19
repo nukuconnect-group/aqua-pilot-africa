@@ -1,3 +1,4 @@
+import { getRuntimeLanguage } from '@/i18n/runtime';
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -132,7 +133,7 @@ export const analyzeWithAI = async (payload: {
   imageBase64?: string;
   species?: string;
 }): Promise<VisionResult> => {
-  const { data, error } = await supabase.functions.invoke('aqua-health-vision', { body: payload });
+  const { data, error } = await supabase.functions.invoke('aqua-health-vision', { body: { ...payload, language: getRuntimeLanguage() } });
   if (error) {
     const message = (data as any)?.error || error.message || "L'analyse IA a échoué";
     throw new Error(message);

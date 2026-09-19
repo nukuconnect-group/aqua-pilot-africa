@@ -1,3 +1,4 @@
+import { translateHtmlDocument, translateDelimitedText } from '@/i18n/runtime';
 /**
  * Utilitaires pour l'export des rapports en différents formats
  */
@@ -455,7 +456,9 @@ function drawHeader(
  * Télécharge un fichier
  */
 const downloadFile = (content: string, filename: string, mimeType: string) => {
-  const blob = new Blob(['\ufeff' + content], { type: mimeType });
+  const isHtml = /msword|html/.test(mimeType) || /^\s*<(!DOCTYPE|html)/i.test(content);
+  const localized = isHtml ? translateHtmlDocument(content) : translateDelimitedText(content);
+  const blob = new Blob(['\ufeff' + localized], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

@@ -94,7 +94,10 @@ ${SCHEMA_HINT}`,
       body: JSON.stringify({
         model: "google/gemini-3.7-flash",
         messages: [
-          { role: "system", content: SYSTEM },
+          {
+            role: "system",
+            content: `${SYSTEM}\n\nRéponds impérativement dans la langue suivante : ${String(body.language ?? "Français")}. Tous les textes libres (descriptions, recommandations, traitements) doivent être dans cette langue.`,
+          },
           { role: "user", content },
         ],
         response_format: { type: "json_object" },
