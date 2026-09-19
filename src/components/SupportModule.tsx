@@ -437,25 +437,38 @@ const SupportModule = () => {
                       {isAdmin && `De: ${selectedTicket.user_name || selectedTicket.user_email}`}
                     </p>
                   </div>
-                  {isAdmin && (
-                    <Select 
-                      value={selectedTicket.status} 
-                      onValueChange={(v) => updateTicketStatus(selectedTicket.id, v)}
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <Select 
+                        value={selectedTicket.status} 
+                        onValueChange={(v) => updateTicketStatus(selectedTicket.id, v)}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="open">{language === 'fr' ? 'Nouveau' : 'New'}</SelectItem>
+                          <SelectItem value="pending">{language === 'fr' ? 'En attente' : 'Pending'}</SelectItem>
+                          <SelectItem value="in_progress">{language === 'fr' ? 'En cours' : 'In progress'}</SelectItem>
+                          <SelectItem value="resolved">{language === 'fr' ? 'Résolu' : 'Resolved'}</SelectItem>
+                          <SelectItem value="closed">{language === 'fr' ? 'Fermé' : 'Closed'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={chatMinimized
+                        ? (language === 'fr' ? 'Agrandir la conversation' : 'Expand conversation')
+                        : (language === 'fr' ? 'Réduire la conversation' : 'Minimize conversation')}
+                      onClick={() => setChatMinimized(v => !v)}
                     >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="open">En attente</SelectItem>
-                        <SelectItem value="in_progress">En cours</SelectItem>
-                        <SelectItem value="resolved">Résolu</SelectItem>
-                        <SelectItem value="closed">Fermé</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                      {chatMinimized ? <Maximize2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className={`p-0 ${chatMinimized ? 'hidden' : ''}`}>
                 <ScrollArea className="h-[350px] p-4">
                   <div className="space-y-4">
                     {messages.map(msg => {
