@@ -20,6 +20,9 @@ import FeedingManagement from '@/components/FeedingManagement';
 import AquaFeedAI from '@/components/aquafeed/AquaFeedAI';
 import PremiumLibrary from '@/components/library/PremiumLibrary';
 import ProphylaxieManagement from '@/components/ProphylaxieManagement';
+import FeedProphylaxisManagement from '@/components/feedmill/FeedProphylaxisManagement';
+import FeedProductionManagement from '@/components/feedmill/FeedProductionManagement';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import AquaHealthAI from '@/components/prophylaxie/AquaHealthAI';
 import TransformationManagement from '@/components/TransformationManagement';
 import ProductionManagement from '@/components/ProductionManagement';
@@ -73,6 +76,8 @@ const Dashboard: React.FC = () => {
   const [moduleResetKey, setModuleResetKey] = useState(0);
   const { isTeamMember, teamMemberInfo, isLoading: isLoadingAccess, hasAccessToModule, getAllowedModulesList } = useTeamMemberAccess();
   const { hasModuleAccess, isLoading: isLoadingPlan } = useModuleAccess();
+  const { activeUnit } = useProductionUnits();
+  const isFeedMillUnit = activeUnit?.type === 'fabrication_aliment';
 
   const getFirstAllowedTab = () => {
     const allowed = getAllowedModulesList();
