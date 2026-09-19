@@ -159,6 +159,22 @@ const DEFAULT_TERMS: UnitContextTerms = {
   aiSpeciesTitle: 'Maladies par espèce',
   aiSpeciesDescription: 'Saisissez une espèce élevée pour obtenir ses maladies réelles et les recommandations.',
   aiSpeciesPlaceholder: 'Ex : Tilapia du Nil, Clarias gariepinus, Carpe commune...',
+  batchTypeOptions: [
+    { value: 'alevins', label: 'Alevins' },
+    { value: 'geniteurs', label: 'Géniteurs' },
+    { value: 'juveniles', label: 'Juvéniles' },
+    { value: 'adultes', label: 'Adultes' },
+    { value: 'autres', label: 'Autres' },
+  ],
+  attachedBatchLabel: 'Lot de poissons rattaché',
+  attachedBatchEmptyText: "Cette infrastructure n'a pas encore de lot de poissons associé",
+  createBatchTitle: 'Créer un lot de poisson',
+  individualsLabel: 'individus',
+  cycleQuantityLabel: 'Quantité initiale (individus)',
+  cycleInitialWeightLabel: 'Poids initial total (kg)',
+  cycleTargetWeightLabel: 'Biomasse objectif (kg)',
+  cycleSurvivalLabel: 'Taux de survie attendu (%)',
+  cycleAverageWeightLabel: 'Poids moyen individuel visé (g)',
   features: { feedingSheets: true, feedingPlanning: true, sampling: true },
 };
 
