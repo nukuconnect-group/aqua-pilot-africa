@@ -3,6 +3,7 @@
  * Les libellés suivent la langue sélectionnée dans l'application.
  */
 import { tr, runtimeLocale } from '@/i18n/runtime';
+import { formatMoney, getCurrency, type CurrencyCode } from '@/lib/currency';
 
 const L = () => runtimeLocale();
 const now = () => `${new Date().toLocaleDateString(L())} ${tr('à')} ${new Date().toLocaleTimeString(L())}`;
