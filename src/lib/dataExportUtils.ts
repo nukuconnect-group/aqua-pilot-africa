@@ -222,7 +222,7 @@ export const formatDate = (date: string): string => {
 };
 
 // Format currency
-export const formatCurrency = (amount: number, currency: string = 'XOF'): string => {
+export const formatCurrency = (amount: number, currency?: string): string => {
   if (!amount && amount !== 0) return '-';
-  return new Intl.NumberFormat(L()).format(amount) + ' F CFA';
+  return formatMoney(amount, (currency as CurrencyCode) || getCurrency());
 };
