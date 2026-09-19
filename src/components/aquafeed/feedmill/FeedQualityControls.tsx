@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Plus, Trash2, ShieldCheck } from 'lucide-react';
 import ExportDropdown from '@/components/ExportDropdown';
 import type { QualityControl } from './useFeedOperations';
+import { useSettings } from '@/contexts/SettingsContext';
+import { tr } from '@/i18n/runtime';
 
 const CONTROL_TYPES = [
   { key: 'hygiene', label: 'Hygiène atelier' },
@@ -45,6 +47,8 @@ interface Props {
 }
 
 const FeedQualityControls: React.FC<Props> = ({ controls, onSave, onDelete }) => {
+  const { language } = useSettings();
+  const text = (value: string) => tr(value, language);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
   const [filter, setFilter] = useState('all');
@@ -68,17 +72,17 @@ const FeedQualityControls: React.FC<Props> = ({ controls, onSave, onDelete }) =>
   };
 
   const exportOptions = {
-    title: 'Prophylaxie alimentaire — contrôles qualité',
+    title: text('Prophylaxie alimentaire — contrôles qualité'),
     filename: `controles-qualite-${new Date().toISOString().slice(0, 10)}`,
     columns: [
-      { key: 'control_date', label: 'Date' },
-      { key: 'control_type', label: 'Type' },
-      { key: 'item_name', label: 'Élément contrôlé' },
-      { key: 'batch_number', label: 'Lot' },
-      { key: 'supplier', label: 'Fournisseur' },
-      { key: 'status', label: 'Statut' },
-      { key: 'anomaly', label: 'Anomalie' },
-      { key: 'corrective_action', label: 'Action corrective' },
+      { key: 'control_date', label: text('Date') },
+      { key: 'control_type', label: text('Type'), format: (value: string) => text(CONTROL_TYPES.find(item => item.key === value)?.label ?? value) },
+      { key: 'item_name', label: text('Élément contrôlé') },
+      { key: 'batch_number', label: text('Lot') },
+      { key: 'supplier', label: text('Fournisseur') },
+      { key: 'status', label: text('Statut'), format: (value: string) => text(STATUSES.find(item => item.key === value)?.label ?? value) },
+      { key: 'anomaly', label: text('Anomalie') },
+      { key: 'corrective_action', label: text('Action corrective') },
     ],
     data: filtered as any[],
   };
@@ -89,16 +93,16 @@ const FeedQualityControls: React.FC<Props> = ({ controls, onSave, onDelete }) =>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />Prophylaxie alimentaire
+              <ShieldCheck className="w-4 h-4 text-primary" />{text('Prophylaxie alimentaire')}
             </CardTitle>
             <CardDescription className="text-xs">
-              {stats.total} contrôles — {stats.nc} non conformes, {stats.watch} à surveiller.
+              {stats.total} {text('contrôles')} — {stats.nc} {text('non conformes')}, {stats.watch} {text('à surveiller')}.
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <ExportDropdown options={exportOptions as any} />
             <Button size="sm" onClick={() => { setForm(empty); setOpen(true); }}>
-              <Plus className="w-4 h-4 mr-1.5" />Nouveau contrôle
+              <Plus className="w-4 h-4 mr-1.5" />{text('Nouveau contrôle')}
             </Button>
           </div>
         </div>
@@ -106,8 +110,8 @@ const FeedQualityControls: React.FC<Props> = ({ controls, onSave, onDelete }) =>
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              {STATUSES.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
+              <SelectItem value="all">{text('Tous les statuts')}</SelectItem>
+              {STATUSES.map(s => <SelectItem key={s.key} value={s.key}>{text(s.label)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -116,20 +120,20 @@ const FeedQualityControls: React.FC<Props> = ({ controls, onSave, onDelete }) =>
         <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr className="text-left text-xs text-muted-foreground border-b">
-              <th className="py-2">Date</th><th className="py-2">Type</th><th className="py-2">Élément</th>
-              <th className="py-2">Lot</th><th className="py-2">Statut</th><th className="py-2">Anomalie</th><th />
+              <th className="py-2">{text('Date')}</th><th className="py-2">{text('Type')}</th><th className="py-2">{text('Élément')}</th>
+              <th className="py-2">{text('Lot')}</th><th className="py-2">{text('Statut')}</th><th className="py-2">{text('Anomalie')}</th><th />
             </tr>
           </thead>
           <tbody>
             {filtered.map(c => (
               <tr key={c.id} className="border-b last:border-0">
                 <td className="py-1.5">{c.control_date}</td>
-                <td className="py-1.5">{CONTROL_TYPES.find(t => t.key === c.control_type)?.label ?? c.control_type}</td>
+                <td className="py-1.5">{text(CONTROL_TYPES.find(t => t.key === c.control_type)?.label ?? c.control_type)}</td>
                 <td className="py-1.5 font-medium">{c.item_name}</td>
                 <td className="py-1.5 text-xs text-muted-foreground">{c.batch_number || '—'}</td>
                 <td className="py-1.5">
                   <Badge variant={c.status === 'non_conforme' ? 'destructive' : c.status === 'a_surveiller' ? 'secondary' : 'outline'} className="text-[10px]">
-                    {STATUSES.find(s => s.key === c.status)?.label ?? c.status}
+                    {text(STATUSES.find(s => s.key === c.status)?.label ?? c.status)}
                   </Badge>
                 </td>
                 <td className="py-1.5 text-xs">{c.anomaly || '—'}</td>
@@ -141,7 +145,7 @@ const FeedQualityControls: React.FC<Props> = ({ controls, onSave, onDelete }) =>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">Aucun contrôle enregistré.</td></tr>
+              <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">{text('Aucun contrôle enregistré.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -149,54 +153,54 @@ const FeedQualityControls: React.FC<Props> = ({ controls, onSave, onDelete }) =>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Nouveau contrôle qualité</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{text('Nouveau contrôle qualité')}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Date</Label>
+              <Label className="text-xs">{text('Date')}</Label>
               <Input type="date" value={form.control_date} onChange={e => setForm({ ...form, control_date: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Type de contrôle</Label>
+              <Label className="text-xs">{text('Type de contrôle')}</Label>
               <Select value={form.control_type} onValueChange={v => setForm({ ...form, control_type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{CONTROL_TYPES.map(t => <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{CONTROL_TYPES.map(t => <SelectItem key={t.key} value={t.key}>{text(t.label)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="sm:col-span-2">
-              <Label className="text-xs">Élément contrôlé</Label>
-              <Input value={form.item_name} onChange={e => setForm({ ...form, item_name: e.target.value })} placeholder="Maïs, broyeur, aliment 35 %…" />
+              <Label className="text-xs">{text('Élément contrôlé')}</Label>
+              <Input value={form.item_name} onChange={e => setForm({ ...form, item_name: e.target.value })} placeholder={text('Maïs, broyeur, aliment 35 %…')} />
             </div>
             <div>
-              <Label className="text-xs">N° de lot</Label>
+              <Label className="text-xs">{text('N° de lot')}</Label>
               <Input value={form.batch_number} onChange={e => setForm({ ...form, batch_number: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Fournisseur</Label>
+              <Label className="text-xs">{text('Fournisseur')}</Label>
               <Input value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Responsable</Label>
+              <Label className="text-xs">{text('Responsable')}</Label>
               <Input value={form.responsible} onChange={e => setForm({ ...form, responsible: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Statut</Label>
+              <Label className="text-xs">{text('Statut')}</Label>
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{STATUSES.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{STATUSES.map(s => <SelectItem key={s.key} value={s.key}>{text(s.label)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="sm:col-span-2">
-              <Label className="text-xs">Anomalie constatée</Label>
+              <Label className="text-xs">{text('Anomalie constatée')}</Label>
               <Textarea rows={2} value={form.anomaly} onChange={e => setForm({ ...form, anomaly: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <Label className="text-xs">Action corrective</Label>
+              <Label className="text-xs">{text('Action corrective')}</Label>
               <Textarea rows={2} value={form.corrective_action} onChange={e => setForm({ ...form, corrective_action: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-            <Button onClick={submit}>Enregistrer</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{text('Annuler')}</Button>
+            <Button onClick={submit}>{text('Enregistrer')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
