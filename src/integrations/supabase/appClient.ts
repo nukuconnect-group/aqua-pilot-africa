@@ -10,6 +10,27 @@ import type { Database } from './types';
 export const APP_SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL;
 export const APP_SUPABASE_ANON_KEY: string = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Purge des sessions provenant d'un autre projet (ancienne base) :
+// elles provoquent des erreurs "No suitable key was found to decode the JWT".
+if (typeof window !== 'undefined') {
+  try {
+    const raw = window.localStorage.getItem('aqua-pilot-auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const token: string | undefined = parsed?.access_token;
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const iss: string = payload?.iss ?? '';
+        if (!iss.startsWith(APP_SUPABASE_URL)) {
+          window.localStorage.removeItem('aqua-pilot-auth');
+        }
+      }
+    }
+  } catch {
+    window.localStorage.removeItem('aqua-pilot-auth');
+  }
+}
+
 // Verrou personnalisé : LockManager pose problème sur iOS / WebView.
 const customLock = async (_name: string, _timeout: number, fn: () => Promise<any>) => fn();
 
