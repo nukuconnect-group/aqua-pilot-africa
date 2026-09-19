@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { toast } from '@/hooks/use-toast';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 
 const RISK_COLOR: Record<string, string> = {
   low: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
@@ -35,6 +36,8 @@ const AquaHealthAI: React.FC = () => {
   const [speciesQuery, setSpeciesQuery] = useState('');
   const [speciesLoading, setSpeciesLoading] = useState(false);
   const [speciesResult, setSpeciesResult] = useState<VisionResult | null>(null);
+  const unitTerms = getUnitTerms(activeUnit?.type);
+  const isAlgae = isAlgaeUnitType(activeUnit?.type);
 
   useEffect(() => { loadSymptoms().then(setSymptoms); }, []);
   useEffect(() => { loadHistory(); }, [user?.id]);
@@ -89,7 +92,7 @@ const AquaHealthAI: React.FC = () => {
     if (!value) { toast({ title: 'Saisissez une espèce', variant: 'destructive' }); return; }
     setSpeciesLoading(true);
     try {
-      const res = await analyzeWithAI({ mode: 'species', species: value });
+      const res = await analyzeWithAI({ mode: 'species', species: value, domain: isAlgae ? 'algae' : 'fish' });
       setSpeciesResult(res);
     } catch (e: any) {
       toast({ title: 'Recherche impossible', description: e?.message ?? 'Erreur inconnue', variant: 'destructive' });
@@ -114,8 +117,8 @@ const AquaHealthAI: React.FC = () => {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2"><Fish className="w-4 h-4" />Maladies par espèce</CardTitle>
-          <CardDescription>Saisissez une espèce élevée pour obtenir ses maladies réelles et les recommandations.</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2"><Fish className="w-4 h-4" />{unitTerms.aiSpeciesTitle}</CardTitle>
+          <CardDescription>{unitTerms.aiSpeciesDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
@@ -123,7 +126,7 @@ const AquaHealthAI: React.FC = () => {
               value={speciesQuery}
               onChange={e => setSpeciesQuery(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleSpeciesSearch(); }}
-              placeholder="Ex : Tilapia du Nil, Clarias gariepinus, Carpe commune..."
+              placeholder={unitTerms.aiSpeciesPlaceholder}
             />
             <Button onClick={handleSpeciesSearch} disabled={speciesLoading} className="sm:w-auto">
               {speciesLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}

@@ -130,6 +130,7 @@ export const VisionResultView: React.FC<{ result: VisionResult }> = ({ result })
 
 export const analyzeWithAI = async (payload: {
   mode: 'image' | 'species';
+  domain?: 'algae' | 'fish';
   imageBase64?: string;
   species?: string;
 }): Promise<VisionResult> => {
