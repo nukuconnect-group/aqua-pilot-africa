@@ -280,13 +280,7 @@ const HRManagement = () => {
 
   // Formater en F CFA par défaut - utilisé dans ce module RH
   // FCFA par défaut, change seulement si langue = 'en'
-  const formatSalary = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value) + ' F CFA';
-  };
+  const formatSalary = (value: number) => formatCurrency(value);
 
   const openPayslipEditor = (paySlip: PaySlip) => {
     const employee = employees.find(e => e.id === paySlip.employeeId);
