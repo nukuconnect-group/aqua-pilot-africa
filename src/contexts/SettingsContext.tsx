@@ -2,6 +2,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { translations, type SupportedLanguage } from '@/i18n';
+import {
+  defaultCurrencyForLanguage,
+  formatMoney,
+  setCurrency as setGlobalCurrency,
+} from '@/lib/currency';
 
 export interface CompanyInfo {
   name: string;
