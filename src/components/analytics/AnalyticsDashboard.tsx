@@ -50,6 +50,8 @@ import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useSales } from '@/hooks/useSales';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms } from '@/lib/unitContext';
+
 import { useSettings } from '@/contexts/SettingsContext';
 import { format, subDays, subMonths, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
 import { fr as frLocale } from 'date-fns/locale';
@@ -140,7 +142,9 @@ const AnalyticsDashboard: React.FC = () => {
   const { records: healthRecords, loading: healthLoading } = useHealthRecords();
   const { batches, loading: batchesLoading } = useLivestockBatches();
   const { sales, loading: salesLoading } = useSales();
-  const { units } = useProductionUnits();
+  const { units, activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
+
   
   const dateLocale = language === 'fr' ? frLocale : undefined;
 
