@@ -72,6 +72,8 @@ export interface UnitContextTerms {
   cycleTargetWeightLabel: string;
   cycleSurvivalLabel: string;
   cycleAverageWeightLabel: string;
+  /** Pathologies / contaminations fréquentes proposées en presets. */
+  commonDiseasePresets: { name: string; symptoms: string[]; treatment: string }[];
   /** Activation/désactivation de sous-modules non pertinents. */
   features: {
     feedingSheets: boolean;
@@ -175,6 +177,12 @@ const DEFAULT_TERMS: UnitContextTerms = {
   cycleTargetWeightLabel: 'Biomasse objectif (kg)',
   cycleSurvivalLabel: 'Taux de survie attendu (%)',
   cycleAverageWeightLabel: 'Poids moyen individuel visé (g)',
+  commonDiseasePresets: [
+    { name: 'Ichtyophthirius (Points blancs)', symptoms: ['Points blancs sur le corps', 'Frottement', 'Respiration rapide'], treatment: 'Traitement au sel (3%) pendant 5 jours' },
+    { name: 'Aeromonose', symptoms: ['Lésions cutanées', 'Hémorragies', 'Léthargie'], treatment: 'Antibiotique (Oxytétracycline)' },
+    { name: 'Columnariose', symptoms: ['Taches blanches/grises', 'Érosion des nageoires', 'Mucus excessif'], treatment: 'Bain de permanganate de potassium' },
+    { name: 'Saprolegniose', symptoms: ['Masses cotonneuses blanches', 'Érosion de la peau'], treatment: 'Bain de vert de malachite ou permanganate' },
+  ],
   features: { feedingSheets: true, feedingPlanning: true, sampling: true },
 };
 
@@ -333,6 +341,14 @@ export const ALGAE_TERMS: UnitContextTerms = {
   cycleTargetWeightLabel: 'Biomasse objectif à la récolte (kg)',
   cycleSurvivalLabel: 'Taux de réussite de culture attendu (%)',
   cycleAverageWeightLabel: 'Densité visée (g/L)',
+  commonDiseasePresets: [
+    { name: 'Contamination par algues concurrentes', symptoms: ['Changement de couleur du milieu', 'Chute de densité de la souche', 'Filaments étrangers au microscope'], treatment: 'Isoler le bassin, réensemencer depuis la souche mère, ajuster pH (9,5-10,5 pour spiruline) et salinité' },
+    { name: 'Brouteurs / protozoaires (amibes, ciliés, rotifères)', symptoms: ['Baisse rapide de la biomasse', 'Milieu qui s’éclaircit', 'Organismes mobiles au microscope'], treatment: 'Choc pH ou ammoniaque contrôlé, filtration 50 µm, récolte anticipée puis redémarrage depuis l’inoculum' },
+    { name: 'Épiphytes sur macro-algues', symptoms: ['Dépôts sur les thalles', 'Croissance ralentie', 'Thalles cassants'], treatment: 'Nettoyage mécanique des lignes, réduction de la densité, rotation des filières' },
+    { name: 'Maladie de l’ice-ice (Kappaphycus/Eucheuma)', symptoms: ['Blanchiment des thalles', 'Ramollissement', 'Casse des branches'], treatment: 'Déplacer les filières vers un courant plus fort, retirer les thalles atteints, replanter des boutures saines' },
+    { name: 'Contamination bactérienne / fongique', symptoms: ['Odeur anormale', 'Mousse et biofilm', 'Milieu trouble'], treatment: 'Désinfection du bassin (hypochlorite puis neutralisation), stérilisation de l’eau d’appoint, redémarrage d’inoculum' },
+    { name: 'Dérive des paramètres (pH, salinité, nutriments)', symptoms: ['Décoloration jaune/verte pâle', 'Arrêt de croissance', 'Sédimentation de la biomasse'], treatment: 'Correction du pH (bicarbonate), réajustement des nitrates/phosphates, contrôle de la température et de l’ombrage' },
+  ],
   features: { feedingSheets: false, feedingPlanning: false, sampling: true },
 };
 

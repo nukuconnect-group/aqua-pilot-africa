@@ -67,53 +67,9 @@ const ProphylaxieManagement = () => {
   const [showAlertDialog, setShowAlertDialog] = useState(false);
   const [showIoTDialog, setShowIoTDialog] = useState(false);
 
-  const [treatments, setTreatments] = useState<Treatment[]>([
-    {
-      id: '1',
-      date: '2024-03-20',
-      unitId: 'GROSS001',
-      type: 'vaccination',
-      product: 'Vaccin Anti-Aeromonas',
-      dosage: '0.5 ml/kg',
-      lot: 'VAC2024-03',
-      operator: 'Dr. Martin',
-      notes: 'Vaccination annuelle, tous les bassins',
-      status: 'completed'
-    },
-    {
-      id: '2',
-      date: '2024-03-25',
-      unitId: 'TRANS001',
-      type: 'disinfection',
-      product: 'Chlore actif',
-      dosage: '5 ppm',
-      lot: 'DIS2024-01',
-      operator: 'Jean Dupont',
-      notes: 'Désinfection mensuelle',
-      status: 'planned'
-    }
-  ]);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
 
-  const [alerts, setAlerts] = useState<HealthAlert[]>([
-    {
-      id: '1',
-      date: '2024-03-15',
-      unitId: 'GROSS001',
-      severity: 'high',
-      type: 'Mortalité anormale',
-      description: 'Taux de mortalité supérieur à 2% dans le bassin B3',
-      status: 'active'
-    },
-    {
-      id: '2',
-      date: '2024-03-14',
-      unitId: 'TRANS001',
-      severity: 'medium',
-      type: 'Température anormale',
-      description: 'Température en dessous de 20°C',
-      status: 'resolved'
-    }
-  ]);
+  const [alerts, setAlerts] = useState<HealthAlert[]>([]);
 
   const [newTreatment, setNewTreatment] = useState({
     unitId: activeUnit?.id || '',
