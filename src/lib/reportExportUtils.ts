@@ -1,4 +1,5 @@
 import { translateHtmlDocument, translateDelimitedText } from '@/i18n/runtime';
+import { formatMoney, getCurrency, type CurrencyCode } from '@/lib/currency';
 /**
  * Utilitaires pour l'export des rapports en différents formats
  */
