@@ -456,8 +456,8 @@ const AnalyticsDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="feeding" className="flex items-center gap-2">
             <Scale className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('feeding')}</span>
-            <span className="sm:hidden">{t('feeding')}</span>
+            <span className="hidden sm:inline">{unitTerms.analyticsInputsTabLabel}</span>
+            <span className="sm:hidden">{unitTerms.analyticsInputsTabLabel}</span>
           </TabsTrigger>
           <TabsTrigger value="performance" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
