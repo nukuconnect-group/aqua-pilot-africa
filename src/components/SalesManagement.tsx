@@ -708,11 +708,18 @@ const SalesManagement = () => {
                       {newSale.products.map((product, index) => (
                         <div key={index} className="flex flex-col gap-2 p-2 sm:p-3 border rounded">
                           <Input 
-                            placeholder="Produit"
+                            placeholder={unitTerms.salesProductOptions[0] || 'Produit'}
+                            list="unit-sale-products"
                             value={product.name}
                             onChange={(e) => updateProduct(index, 'name', e.target.value)}
                             className="text-sm sm:text-base"
                           />
+                          <datalist id="unit-sale-products">
+                            {unitTerms.salesProductOptions.map((opt) => (
+                              <option key={opt} value={opt} />
+                            ))}
+                          </datalist>
+
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <Input 
                               type="number"
