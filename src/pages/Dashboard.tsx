@@ -278,13 +278,13 @@ const Dashboard: React.FC = () => {
       case 'library':
         return <PremiumLibrary />;
       case 'health':
-        return <ProphylaxieManagement />;
+        return isFeedMillUnit ? <FeedProphylaxisManagement /> : <ProphylaxieManagement />;
       case 'aquahealth':
         return <AquaHealthAI />;
       case 'transformation':
         return <TransformationManagement />;
       case 'production':
-        return <ProductionManagement />;
+        return isFeedMillUnit ? <FeedProductionManagement /> : <ProductionManagement />;
       case 'accounting':
         return <AccountingManagement />;
       case 'hr':
