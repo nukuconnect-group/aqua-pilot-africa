@@ -23,6 +23,8 @@ interface Props {
   onManufacture: (formulation: StoredFormulation) => void;
   editing?: StoredFormulation | null;
   onClearEditing?: () => void;
+  /** Ingrédients pré-sélectionnés depuis la bibliothèque. */
+  presetIngredientIds?: string[];
 }
 
 const MODES: { key: FormulationMode; label: string; hint: string; icon: string }[] = [
@@ -31,7 +33,7 @@ const MODES: { key: FormulationMode; label: string; hint: string; icon: string }
   { key: 'performance', label: 'Performance', hint: 'Priorité aux objectifs nutritionnels', icon: '⭐' },
 ];
 
-const FormulationStudio: React.FC<Props> = ({ ingredients, onSave, onManufacture, editing, onClearEditing }) => {
+const FormulationStudio: React.FC<Props> = ({ ingredients, onSave, onManufacture, editing, onClearEditing, presetIngredientIds }) => {
   const { formatCurrency } = useProductionUnits();
   const [name, setName] = useState('');
   const [speciesKey, setSpeciesKey] = useState('tilapia');
@@ -69,6 +71,11 @@ const FormulationStudio: React.FC<Props> = ({ ingredients, onSave, onManufacture
       messages: [],
     });
   }, [editing]);
+
+  useEffect(() => {
+    if (!presetIngredientIds || presetIngredientIds.length === 0) return;
+    setSelected(prev => Array.from(new Set([...prev, ...presetIngredientIds])));
+  }, [presetIngredientIds]);
 
   const applyProfile = (sp: string, st: string) => {
     setTargets({ ...getStage(sp, st).targets });

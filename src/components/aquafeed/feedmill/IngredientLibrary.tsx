@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, ListPlus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import ExportDropdown from '@/components/ExportDropdown';
 import { INGREDIENT_CATEGORIES } from '@/lib/feedFormulation';
@@ -16,6 +17,8 @@ interface Props {
   ingredients: StoredIngredient[];
   onSave: (payload: any) => Promise<any>;
   onDelete: (id: string) => Promise<void>;
+  /** Envoie les ingrédients cochés vers la liste de travail de formulation. */
+  onUseSelection?: (ids: string[]) => void;
 }
 
 const empty = {
@@ -24,12 +27,16 @@ const empty = {
   min_inclusion_pct: 0, max_inclusion_pct: 100, stock_kg: 0, supplier: '', notes: '', is_active: true,
 };
 
-const IngredientLibrary: React.FC<Props> = ({ ingredients, onSave, onDelete }) => {
+const IngredientLibrary: React.FC<Props> = ({ ingredients, onSave, onDelete, onUseSelection }) => {
   const { formatCurrency } = useProductionUnits();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+  const [picked, setPicked] = useState<string[]>([]);
+
+  const togglePick = (id: string) =>
+    setPicked(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   const filtered = useMemo(() => ingredients.filter(i =>
     (category === 'all' || i.category === category) &&
@@ -66,6 +73,12 @@ const IngredientLibrary: React.FC<Props> = ({ ingredients, onSave, onDelete }) =
             <CardDescription className="text-xs">{ingredients.length} ingrédients — prix, valeurs nutritionnelles et stocks.</CardDescription>
           </div>
           <div className="flex gap-2">
+            {onUseSelection && (
+              <Button size="sm" variant="secondary" disabled={picked.length === 0}
+                onClick={() => { onUseSelection(picked); setPicked([]); }}>
+                <ListPlus className="w-4 h-4 mr-1.5" />Formuler ({picked.length})
+              </Button>
+            )}
             <ExportDropdown options={exportOptions as any} />
             <Button size="sm" onClick={openNew}><Plus className="w-4 h-4 mr-1.5" />Nouvel ingrédient</Button>
           </div>
@@ -88,6 +101,14 @@ const IngredientLibrary: React.FC<Props> = ({ ingredients, onSave, onDelete }) =
         <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr className="text-left text-xs text-muted-foreground border-b">
+              {onUseSelection && (
+                <th className="py-2 w-8">
+                  <Checkbox
+                    checked={filtered.length > 0 && filtered.every(i => picked.includes(i.id))}
+                    onCheckedChange={(v) => setPicked(v ? filtered.map(i => i.id) : [])}
+                  />
+                </th>
+              )}
               <th className="py-2">Ingrédient</th><th className="py-2">Catégorie</th>
               <th className="py-2 text-right">Prix/kg</th><th className="py-2 text-right">PB %</th>
               <th className="py-2 text-right">MG %</th><th className="py-2 text-right">Fibres %</th>
@@ -97,8 +118,13 @@ const IngredientLibrary: React.FC<Props> = ({ ingredients, onSave, onDelete }) =
           </thead>
           <tbody>
             {filtered.map(i => (
-              <tr key={i.id} className="border-b last:border-0">
-                <td className="py-1.5 font-medium">{i.name}</td>
+              <tr key={i.id} className={`border-b last:border-0 ${picked.includes(i.id) ? 'bg-muted/50' : ''}`}>
+                {onUseSelection && (
+                  <td className="py-1.5">
+                    <Checkbox checked={picked.includes(i.id)} onCheckedChange={() => togglePick(i.id)} />
+                  </td>
+                )}
+                <td className="py-1.5 font-medium cursor-pointer" onClick={() => onUseSelection && togglePick(i.id)}>{i.name}</td>
                 <td className="py-1.5"><Badge variant="outline" className="text-[10px]">{INGREDIENT_CATEGORIES.find(c => c.key === i.category)?.label ?? i.category}</Badge></td>
                 <td className="py-1.5 text-right">{formatCurrency(i.price_per_kg)}</td>
                 <td className="py-1.5 text-right">{i.protein_pct}</td>
@@ -113,7 +139,7 @@ const IngredientLibrary: React.FC<Props> = ({ ingredients, onSave, onDelete }) =
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Aucun ingrédient.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={11} className="py-10 text-center text-muted-foreground">Aucun ingrédient.</td></tr>}
           </tbody>
         </table>
       </CardContent>
