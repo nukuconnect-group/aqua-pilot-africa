@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card } from '@/components/ui/card';
 import { Plus, Save, User, Clock, Utensils } from 'lucide-react';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
+import { getUnitTerms } from '@/lib/unitContext';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 
 interface SimpleFeedingFormProps {
   unitId: string;
