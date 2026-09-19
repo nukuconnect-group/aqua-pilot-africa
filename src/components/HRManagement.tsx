@@ -186,10 +186,16 @@ const HRManagement = () => {
     });
 
     if (result) {
+      // Enregistrer les remboursements de prêt retenus sur ce bulletin
+      if (loanDeduction > 0) {
+        await applyPayrollRepayments(paySlipData.employeeId, paySlipData.period);
+      }
       addLog('Bulletin généré', 'RH', `Bulletin de paie généré pour ${employee.firstName} ${employee.lastName} - ${paySlipData.period}`, 'success');
       toast({
         title: "Bulletin généré",
-        description: `Bulletin de paie créé pour ${employee.firstName} ${employee.lastName}`
+        description: loanDeduction > 0
+          ? `Bulletin créé pour ${employee.firstName} ${employee.lastName} — ${formatCurrency(loanDeduction)} de remboursement de prêt déduit`
+          : `Bulletin de paie créé pour ${employee.firstName} ${employee.lastName}`
       });
     }
 
