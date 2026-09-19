@@ -4,6 +4,7 @@
  * coût par kg, prix de vente proposé, marge, espèce, stade, date.
  */
 import { ExportOptions } from '@/lib/dataExportUtils';
+import { runtimeLocale, tr } from '@/i18n/runtime';
 
 export interface ExportLine {
   name: string;
@@ -70,7 +71,7 @@ export function buildFormulationExport(input: FormulationExportInput): ExportOpt
     ['Prix de vente indicatif par kg', selling],
     ['Marge potentielle par kg', marginPerKg],
     ['Marge potentielle totale', marginTotal],
-    ['Date de formulation', date.toLocaleDateString('fr-FR')],
+    ['Date de formulation', date.toLocaleDateString(runtimeLocale())],
   ];
   if (input.unitName) infos.push(['Unité de production', input.unitName]);
   if (input.notes) infos.push(['Informations complémentaires', input.notes]);
@@ -86,8 +87,8 @@ export function buildFormulationExport(input: FormulationExportInput): ExportOpt
   });
 
   return {
-    title: `Formulation — ${input.name}`,
-    subtitle: `${input.speciesLabel}${input.stageLabel ? ` · ${input.stageLabel}` : ''} · ${n(input.quantityKg, 2)} kg · coût de revient ${n(input.costPerKg, 2)}/kg · prix conseillé ${selling}/kg`,
+    title: `${tr('Formulation')} — ${input.name}`,
+    subtitle: `${input.speciesLabel}${input.stageLabel ? ` · ${input.stageLabel}` : ''} · ${n(input.quantityKg, 2)} kg · ${tr('coût de revient')} ${n(input.costPerKg, 2)}/kg · ${tr('prix conseillé')} ${selling}/kg`,
     filename: `formulation_${input.name.replace(/\s+/g, '_').replace(/[^\w\-]/g, '')}_${date.toISOString().slice(0, 10)}`,
     unitName: input.unitName,
     columns: [

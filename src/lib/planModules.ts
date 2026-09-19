@@ -67,11 +67,11 @@ const MODULE_META: Record<string, { category: string; premium?: boolean; core?: 
   iot: { category: 'Technique', premium: true },
   environment: { category: 'Technique' },
   units: { category: 'Exploitation' },
-  infrastructure: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment'] },
-  livestock: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement'] },
-  feeding: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement'] },
+  infrastructure: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'commercialisation'] },
+  livestock: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'commercialisation'] },
+  feeding: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment'] },
   aquafeed: { category: 'Intelligence', premium: true, unitTypes: ['fabrication_aliment'] },
-  health: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement'] },
+  health: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment', 'commercialisation'] },
   aquahealth: { category: 'Intelligence', premium: true, unitTypes: ['ecloserie', 'grossissement'] },
   production: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment'] },
   accounting: { category: 'Gestion' },
@@ -352,6 +352,17 @@ export const DEFAULT_UNIT_MODULE_RULES: UnitModuleRules = (Object.keys(UNIT_TYPE
   {} as UnitModuleRules,
 );
 
+/** Restrictions métier impératives, non réactivables par une configuration distante obsolète. */
+const UNIT_TYPE_DENIED_MODULES: Partial<Record<ProductionUnitType, string[]>> = {
+  fabrication_aliment: ['livestock'],
+  commercialisation: ['feeding', 'aquafeed'],
+};
+
+export const enforceUnitTypeRestrictions = (type: ProductionUnitType, modules: Iterable<string>) => {
+  const denied = new Set(UNIT_TYPE_DENIED_MODULES[type] || []);
+  return new Set(Array.from(modules).filter((key) => !denied.has(key)));
+};
+
 const localOverrides = (): Record<string, UserModuleOverrides> => {
   try { return JSON.parse(localStorage.getItem(LOCAL_USER_OVERRIDES_KEY) || '{}'); } catch { return {}; }
 };
@@ -619,7 +630,10 @@ export const computeModuleAccess = (
   plan.modules.forEach((key) => allowed.add(key));
 
   if (options.activeUnitType) {
-    const compatible = new Set((options.unitRules || DEFAULT_UNIT_MODULE_RULES)[options.activeUnitType]);
+    const compatible = enforceUnitTypeRestrictions(
+      options.activeUnitType,
+      (options.unitRules || DEFAULT_UNIT_MODULE_RULES)[options.activeUnitType],
+    );
     Array.from(allowed).forEach((key) => {
       if (!CORE_MODULE_KEYS.includes(key) && !compatible.has(key)) allowed.delete(key);
     });
