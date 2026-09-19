@@ -267,11 +267,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleSetCurrency = (newCurrency: 'EUR' | 'USD' | 'XOF' | 'MAD') => {
-    try {
-      localStorage.setItem('app-currency', newCurrency);
-    } catch (error) {
-      console.error('Error saving currency:', error);
-    }
+    setGlobalCurrency(newCurrency);
     setCurrency(newCurrency);
   };
 
