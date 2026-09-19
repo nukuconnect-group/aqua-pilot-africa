@@ -58,6 +58,20 @@ export interface UnitContextTerms {
   aiSpeciesTitle: string;
   aiSpeciesDescription: string;
   aiSpeciesPlaceholder: string;
+  /** Types de lots proposés à la création d'un lot. */
+  batchTypeOptions: { value: string; label: string }[];
+  /** Libellés liés au rattachement d'un lot à une infrastructure. */
+  attachedBatchLabel: string;
+  attachedBatchEmptyText: string;
+  createBatchTitle: string;
+  /** Unité de comptage des individus d'un lot. */
+  individualsLabel: string;
+  /** Libellés du formulaire de cycle de production. */
+  cycleQuantityLabel: string;
+  cycleInitialWeightLabel: string;
+  cycleTargetWeightLabel: string;
+  cycleSurvivalLabel: string;
+  cycleAverageWeightLabel: string;
   /** Activation/désactivation de sous-modules non pertinents. */
   features: {
     feedingSheets: boolean;
