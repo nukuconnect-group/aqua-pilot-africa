@@ -794,40 +794,11 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
     });
   }, [units.length, infrastructures.length, activeUnit?.id, isLoadingUnits, isAuthenticated]);
 
-  const formatCurrency = (amount: number): string => {
-    const currencySymbols = {
-      'XOF': 'FCFA',
-      'EUR': '€',
-      'USD': '$',
-      'MAD': 'DH'
-    };
-    
-    const symbol = currencySymbols[currency];
-    const formatted = amount.toLocaleString('fr-FR');
-    
-    if (currency === 'XOF' || currency === 'MAD') {
-      return `${formatted} ${symbol}`;
-    } else {
-      return currency === 'USD' ? `${symbol}${formatted}` : `${formatted}${symbol}`;
-    }
-  };
+  // Formatage unique, partagé avec le reste de l'application.
+  const formatCurrency = (amount: number): string => formatMoney(amount, currency);
 
-  const exchangeRates = {
-    'XOF': 1,
-    'EUR': 655.957,
-    'USD': 600,
-    'MAD': 10.8
-  };
-
-  const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number => {
-    if (fromCurrency === toCurrency) return amount;
-    
-    // Convertir d'abord en XOF (Franc CFA)
-    const xofAmount = fromCurrency === 'XOF' ? amount : amount * exchangeRates[fromCurrency as keyof typeof exchangeRates];
-    
-    // Puis convertir vers la devise cible
-    return toCurrency === 'XOF' ? xofAmount : xofAmount / exchangeRates[toCurrency as keyof typeof exchangeRates];
-  };
+  const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number =>
+    convertAmount(amount, fromCurrency as CurrencyCode, toCurrency as CurrencyCode);
 
   const addUnit = async (unitData: Omit<ProductionUnit, 'id' | 'createdAt'>) => {
     // Mode démo: ajout local uniquement
