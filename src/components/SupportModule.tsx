@@ -67,6 +67,8 @@ const SupportModule = () => {
 
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
