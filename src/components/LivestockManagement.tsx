@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getUnitTerms } from '@/lib/unitContext';
 import { Fish, Plus, Edit, Trash2, Calendar, TrendingUp, Activity, BarChart3, Heart, Printer, FileText, QrCode, Download, ChevronDown, Search, ScanBarcode, Link2, Repeat, Shield, AlertTriangle, HeartPulse, Stethoscope, ArrowRight, Eye, Waves } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -284,6 +285,7 @@ const LivestockManagement = () => {
   const { addLog } = useLogs();
   const { toast } = useToast();
   const { units, activeUnit, setActiveUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
   const { t } = useSettings();
   const { isDemoMode } = useAuth();
   const navigate = useNavigate();
@@ -782,8 +784,8 @@ const LivestockManagement = () => {
       <div className="bg-gradient-to-r from-green-600 to-blue-600 p-4 sm:p-6 rounded-xl text-white">
         <div className="flex flex-col gap-3 sm:gap-4">
           <div>
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1">Gestion du Cheptel</h2>
-            <p className="text-green-100 text-xs sm:text-sm">Suivi et gestion des lots de poissons par unité</p>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1">{unitTerms.livestockTitle}</h2>
+            <p className="text-green-100 text-xs sm:text-sm">{unitTerms.livestockSubtitle}</p>
           </div>
           <div className="flex flex-col gap-2">
             <Select value={selectedUnit} onValueChange={handleUnitChange}>

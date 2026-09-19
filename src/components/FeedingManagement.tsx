@@ -92,7 +92,8 @@ const FeedingManagement = () => {
     const unitTypeLabels: Record<string, { title: string; subtitle: string }> = {
       ecloserie: { title: 'Alimentation - Écloserie', subtitle: 'Nourriture spécialisée pour alevins et géniteurs' },
       grossissement: { title: 'Alimentation - Grossissement', subtitle: 'Programme d\'alimentation pour la croissance' },
-      fabrication_aliment: { title: 'Production d\'Aliment', subtitle: 'Fabrication et formulation' }
+      fabrication_aliment: { title: 'Production d\'Aliment', subtitle: 'Fabrication et formulation' },
+      algoculture: { title: 'Intrants & Nutriments', subtitle: 'Nutriments, fertilisants, minéraux, CO₂ et solutions nutritives' }
     };
     
     const typeInfo = unitTypeLabels[activeUnit.type] || { 
@@ -115,7 +116,7 @@ const FeedingManagement = () => {
   const feedingData = getFeedingData();
   const lowStockItems = stocks.filter((stock) => (stock.quantity || 0) <= (stock.min_threshold || 50));
 
-  if (!['ecloserie', 'grossissement', 'fabrication_aliment'].includes(activeUnit.type)) {
+  if (!['ecloserie', 'grossissement', 'fabrication_aliment', 'algoculture'].includes(activeUnit.type)) {
     return (
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 sm:p-6 rounded-xl text-white">

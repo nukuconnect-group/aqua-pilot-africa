@@ -182,6 +182,7 @@ export const dashboard = {
   transformation: 'Transformation',
   conservation: 'Storage',
   fabrication_aliment: 'Feed Manufacturing',
+  algoculture: 'Algae farming',
   commercialisation: 'Marketing',
 
   no_performance_alerts: 'No performance alerts recorded',

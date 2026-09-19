@@ -183,6 +183,7 @@ export const dashboard = {
   transformation: 'Transformation',
   conservation: 'Conservation',
   fabrication_aliment: 'Fabrication d\'aliment',
+  algoculture: 'Algoculture',
   commercialisation: 'Commercialisation',
 
   // Performance alerts

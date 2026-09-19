@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getUnitTerms } from '@/lib/unitContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,7 @@ interface HealthAlert {
 
 const ProphylaxieManagement = () => {
   const { units, activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
   const { addLog } = useLogs();
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -214,10 +216,10 @@ const ProphylaxieManagement = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 break-words">
-              Gestion de la Prophylaxie
+              {unitTerms.healthTitle}
             </h2>
             <p className="text-red-100 text-sm sm:text-base">
-              Calendrier sanitaire et suivi des traitements avec IA
+              {unitTerms.healthSubtitle}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

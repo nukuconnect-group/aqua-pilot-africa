@@ -69,6 +69,7 @@ const ProductionUnitsManagement = () => {
     { value: 'transformation', label: t('transformation') },
     { value: 'conservation', label: t('conservation') },
     { value: 'fabrication_aliment', label: t('fabrication_aliment') },
+    { value: 'algoculture', label: t('algoculture') },
     { value: 'commercialisation', label: t('commercialisation') }
   ];
 

@@ -51,13 +51,14 @@ export interface AppModuleDefinition {
   applicableUnitTypes?: ProductionUnitType[];
 }
 
-const ALL_OPERATIONAL_UNIT_TYPES: ProductionUnitType[] = ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'commercialisation'];
+const ALL_OPERATIONAL_UNIT_TYPES: ProductionUnitType[] = ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'];
 export const UNIT_TYPE_LABELS: Record<ProductionUnitType, string> = {
   ecloserie: 'Écloserie',
   grossissement: 'Grossissement / élevage',
   transformation: 'Transformation',
   conservation: 'Conservation',
   fabrication_aliment: "Fabrication d’aliments",
+  algoculture: 'Algoculture',
   commercialisation: 'Commercialisation',
 };
 
@@ -67,17 +68,17 @@ const MODULE_META: Record<string, { category: string; premium?: boolean; core?: 
   iot: { category: 'Technique', premium: true },
   environment: { category: 'Technique' },
   units: { category: 'Exploitation' },
-  infrastructure: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'commercialisation'] },
-  livestock: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'commercialisation'] },
-  feeding: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment'] },
+  infrastructure: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
+  livestock: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'algoculture', 'commercialisation'] },
+  feeding: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment', 'algoculture'] },
   aquafeed: { category: 'Intelligence', premium: true, unitTypes: ['fabrication_aliment'] },
-  health: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment', 'commercialisation'] },
-  aquahealth: { category: 'Intelligence', premium: true, unitTypes: ['ecloserie', 'grossissement'] },
-  production: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment'] },
+  health: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
+  aquahealth: { category: 'Intelligence', premium: true, unitTypes: ['ecloserie', 'grossissement', 'algoculture'] },
+  production: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'algoculture'] },
   accounting: { category: 'Gestion' },
   purchases: { category: 'Gestion', unitTypes: ALL_OPERATIONAL_UNIT_TYPES },
-  sales: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'commercialisation'] },
-  suppliers: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'commercialisation'] },
+  sales: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
+  suppliers: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
   hr: { category: 'Gestion', premium: true },
   planning: { category: 'Pilotage' },
   reports: { category: 'Pilotage' },
@@ -355,6 +356,7 @@ export const DEFAULT_UNIT_MODULE_RULES: UnitModuleRules = (Object.keys(UNIT_TYPE
 /** Restrictions métier impératives, non réactivables par une configuration distante obsolète. */
 const UNIT_TYPE_DENIED_MODULES: Partial<Record<ProductionUnitType, string[]>> = {
   fabrication_aliment: ['livestock'],
+  algoculture: ['aquafeed'],
   commercialisation: ['feeding', 'aquafeed'],
 };
 

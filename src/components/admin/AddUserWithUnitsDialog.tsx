@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Building2, Factory, Warehouse, FlaskConical, Package, Store, Settings, UserPlus } from 'lucide-react';
+import { Building2, Factory, Warehouse, FlaskConical, Package, Store, Settings, UserPlus, Leaf } from 'lucide-react';
 import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -27,6 +27,7 @@ const unitTypeIcons: Record<ProductionUnitType, React.ReactNode> = {
   transformation: <Factory className="w-4 h-4" />,
   conservation: <Warehouse className="w-4 h-4" />,
   fabrication_aliment: <Package className="w-4 h-4" />,
+  algoculture: <Leaf className="w-4 h-4" />,
   commercialisation: <Store className="w-4 h-4" />
 };
 
@@ -36,6 +37,7 @@ const unitTypeLabels: Record<ProductionUnitType, string> = {
   transformation: 'Transformation',
   conservation: 'Conservation',
   fabrication_aliment: 'Fabrication aliment',
+  algoculture: 'Algoculture',
   commercialisation: 'Commercialisation'
 };
 
@@ -46,6 +48,7 @@ const unitTypeOptions: Record<ProductionUnitType, string[]> = {
   transformation: ['Réception', 'Transformation', 'Conditionnement', 'Qualité', 'Rapports'],
   conservation: ['Stockage', 'Température', 'Inventaire', 'Expédition', 'Rapports'],
   fabrication_aliment: ['Matières premières', 'Production', 'Contrôle qualité', 'Stock', 'Rapports'],
+  algoculture: ['Lots de culture', 'Intrants & nutriments', 'Suivi de croissance', 'Récolte', 'Qualité', 'Rapports'],
   commercialisation: ['Clients', 'Commandes', 'Facturation', 'Livraison', 'Rapports']
 };
 

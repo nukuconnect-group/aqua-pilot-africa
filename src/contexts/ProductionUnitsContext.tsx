@@ -17,6 +17,7 @@ export type ProductionUnitType =
   | 'transformation' 
   | 'conservation' 
   | 'fabrication_aliment' 
+  | 'algoculture'
   | 'commercialisation';
 
 export interface Equipment {

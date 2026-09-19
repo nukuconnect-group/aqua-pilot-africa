@@ -20,6 +20,8 @@ const ProductionUnitSelector = () => {
         return 'Conservation';
       case 'fabrication_aliment':
         return 'Fabrication Aliment';
+      case 'algoculture':
+        return 'Algoculture';
       case 'commercialisation':
         return 'Commercialisation';
     }
@@ -36,6 +38,8 @@ const ProductionUnitSelector = () => {
         return 'bg-purple-100 text-purple-800';
       case 'fabrication_aliment':
         return 'bg-yellow-100 text-yellow-800';
+      case 'algoculture':
+        return 'bg-emerald-100 text-emerald-800';
       case 'commercialisation':
         return 'bg-red-100 text-red-800';
     }

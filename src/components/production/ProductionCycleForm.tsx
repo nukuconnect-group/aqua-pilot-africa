@@ -10,6 +10,7 @@ import { Plus, Save, Calendar, AlertCircle, Lock } from 'lucide-react';
 import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
+import { ALGAE_TERMS } from '@/lib/unitContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -122,6 +123,7 @@ const ProductionCycleForm = ({ unitId, unitName, unitType, onSave }: ProductionC
     transformation: ['Produits transformés', 'Filets', 'Entiers vidés'],
     conservation: ['Produits frais', 'Produits congelés', 'Produits fumés'],
     fabrication_aliment: ['Aliment starter', 'Aliment croissance', 'Aliment finition'],
+    algoculture: ALGAE_TERMS.speciesOptions,
     commercialisation: ['Vente directe', 'Grossistes', 'Restauration']
   };
 
