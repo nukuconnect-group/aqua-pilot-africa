@@ -695,8 +695,13 @@ const AnalyticsDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="h-72">
+                  {fcrChartData.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-center text-sm text-muted-foreground px-4">
+                      Aucun indice de conversion enregistré sur la période sélectionnée.
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={productionChartData.map((d, i) => ({ ...d, fcr: 1.5 + Math.random() * 0.5 }))}>
+                    <AreaChart data={fcrChartData}>
                       <defs>
                         <linearGradient id="fcrGrad" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={COLORS.secondary} stopOpacity={0.3}/>
@@ -705,7 +710,7 @@ const AnalyticsDashboard: React.FC = () => {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-50" />
                       <XAxis dataKey="date" />
-                      <YAxis domain={[1, 3]} />
+                      <YAxis domain={['auto', 'auto']} />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--background))', 
@@ -723,6 +728,7 @@ const AnalyticsDashboard: React.FC = () => {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
               </CardContent>
             </Card>
