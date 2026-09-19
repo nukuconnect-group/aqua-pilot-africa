@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { getDemoData } from '@/lib/demoData';
 import { emitDataMutation } from '@/lib/appRecovery';
+import { getCurrency } from '@/lib/currency';
 
 const RETRYABLE_SALE_ERROR_CODES = new Set(['23505', '40001', '40P01', '57014']);
 
@@ -184,7 +185,7 @@ export const useSales = () => {
             category: 'Vente de poissons',
             description: `Vente à ${sale.clientName}`,
             amount: sale.totalAmount,
-            currency: 'XOF',
+            currency: getCurrency(),
             paymentMethod: sale.paymentMethod,
             client: sale.clientName,
             status: sale.status === 'paid' ? 'confirmed' : 'pending',
@@ -246,7 +247,7 @@ export const useSales = () => {
           category: 'Vente de poissons',
           description: `Vente à ${updatedSale.clientName}`,
           amount: updatedSale.totalAmount,
-          currency: 'XOF',
+          currency: getCurrency(),
           paymentMethod: updatedSale.paymentMethod,
           client: updatedSale.clientName,
           status: updates.status === 'paid' ? 'confirmed' : 'pending',
@@ -295,7 +296,7 @@ export const useSales = () => {
           category: 'Vente de poissons',
           description: `Vente à ${updatedSale.clientName}`,
           amount: updatedSale.totalAmount,
-          currency: 'XOF',
+          currency: getCurrency(),
           paymentMethod: updatedSale.paymentMethod,
           client: updatedSale.clientName,
           status: updates.status === 'paid' ? 'confirmed' : 'pending',
