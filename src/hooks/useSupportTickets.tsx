@@ -306,16 +306,22 @@ export const useSupportTickets = () => {
       .on(
         'postgres_changes',
         { 
-          event: 'INSERT', 
+          event: '*', 
           schema: 'public', 
           table: 'support_messages',
           filter: `ticket_id=eq.${currentTicketIdForRealtime}`
         },
         (payload) => {
-          // Add the new message instantly without refetching all
           setMessages((prev) => {
+            if (payload.eventType === 'DELETE') {
+              const oldId = (payload.old as { id?: string })?.id;
+              return oldId ? prev.filter(m => m.id !== oldId) : prev;
+            }
             const newMsg = payload.new as SupportMessage;
-            // Avoid duplicates
+            if (!newMsg?.id) return prev;
+            if (payload.eventType === 'UPDATE') {
+              return prev.map(m => (m.id === newMsg.id ? { ...m, ...newMsg } : m));
+            }
             if (prev.some(m => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
