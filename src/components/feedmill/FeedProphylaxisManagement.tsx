@@ -112,18 +112,34 @@ const FeedProphylaxisManagement: React.FC = () => {
     setForm(empty);
   };
 
-  const exportData = filtered.map(c => ({
-    Date: c.control_date,
-    Type: typeLabel(c.control_type),
-    Élément: c.item_name,
-    Lot: c.batch_number || '',
-    Fournisseur: c.supplier || '',
-    Responsable: c.responsible || '',
-    Statut: c.status,
-    Anomalie: c.anomaly || '',
-    'Action corrective': c.corrective_action || '',
-    Observations: c.notes || '',
-  }));
+  const exportOptions = {
+    title: "Prophylaxie — Fabrication d'aliments",
+    filename: 'prophylaxie-aliments',
+    columns: [
+      { key: 'date', label: 'Date' },
+      { key: 'type', label: 'Type' },
+      { key: 'item', label: 'Élément' },
+      { key: 'batch', label: 'Lot' },
+      { key: 'supplier', label: 'Fournisseur' },
+      { key: 'responsible', label: 'Responsable' },
+      { key: 'status', label: 'Statut' },
+      { key: 'anomaly', label: 'Anomalie' },
+      { key: 'corrective', label: 'Action corrective' },
+      { key: 'notes', label: 'Observations' },
+    ],
+    data: filtered.map(c => ({
+      date: c.control_date,
+      type: typeLabel(c.control_type),
+      item: c.item_name,
+      batch: c.batch_number || '',
+      supplier: c.supplier || '',
+      responsible: c.responsible || '',
+      status: c.status,
+      anomaly: c.anomaly || '',
+      corrective: c.corrective_action || '',
+      notes: c.notes || '',
+    })),
+  };
 
   return (
     <div className="space-y-6">
