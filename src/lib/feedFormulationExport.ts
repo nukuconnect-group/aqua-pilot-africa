@@ -39,6 +39,7 @@ const n = (v: any, d = 2) => {
 export const suggestedSellingPrice = (costPerKg: number) => n(costPerKg * 1.25, 2);
 
 export function buildFormulationExport(input: FormulationExportInput): ExportOptions {
+  const text = (value: string) => tr(value);
   const date = input.createdAt ? new Date(input.createdAt) : new Date();
   const selling = input.sellingPricePerKg ?? suggestedSellingPrice(input.costPerKg);
   const marginPerKg = n(selling - input.costPerKg, 2);
@@ -61,24 +62,24 @@ export function buildFormulationExport(input: FormulationExportInput): ExportOpt
   });
 
   const infos: [string, string | number][] = [
-    ['Nom de la formulation', input.name],
-    ["Type d'aliment", input.feedTypeLabel ?? '—'],
-    ['Espèce', input.speciesLabel],
-    ['Stade', input.stageLabel ?? '—'],
-    ['Quantité totale à fabriquer (kg)', n(input.quantityKg, 2)],
-    ['Coût total de fabrication', n(input.totalCost, 2)],
-    ['Coût de revient par kg', n(input.costPerKg, 2)],
-    ['Prix de vente indicatif par kg', selling],
-    ['Marge potentielle par kg', marginPerKg],
-    ['Marge potentielle totale', marginTotal],
-    ['Date de formulation', date.toLocaleDateString(runtimeLocale())],
+    [text('Nom de la formulation'), input.name],
+    [text("Type d'aliment"), input.feedTypeLabel ?? '—'],
+    [text('Espèce'), input.speciesLabel],
+    [text('Stade'), input.stageLabel ?? '—'],
+    [text('Quantité totale à fabriquer (kg)'), n(input.quantityKg, 2)],
+    [text('Coût total de fabrication'), n(input.totalCost, 2)],
+    [text('Coût de revient par kg'), n(input.costPerKg, 2)],
+    [text('Prix de vente indicatif par kg'), selling],
+    [text('Marge potentielle par kg'), marginPerKg],
+    [text('Marge potentielle totale'), marginTotal],
+    [text('Date de formulation'), date.toLocaleDateString(runtimeLocale())],
   ];
-  if (input.unitName) infos.push(['Unité de production', input.unitName]);
-  if (input.notes) infos.push(['Informations complémentaires', input.notes]);
+  if (input.unitName) infos.push([text('Unité de production'), input.unitName]);
+  if (input.notes) infos.push([text('Informations complémentaires'), input.notes]);
 
   Object.entries(input.nutrition ?? {}).forEach(([k, v]) => {
     if (v == null || !Number.isFinite(Number(v))) return;
-    infos.push([`Valeur nutritionnelle — ${k}`, n(v, 2)]);
+    infos.push([`${text('Valeur nutritionnelle')} — ${text(k)}`, n(v, 2)]);
   });
 
   rows.push({ ingredient: '', pourcentage: '', quantite: '', prix: '', cout: '' });
@@ -92,11 +93,11 @@ export function buildFormulationExport(input: FormulationExportInput): ExportOpt
     filename: `formulation_${input.name.replace(/\s+/g, '_').replace(/[^\w\-]/g, '')}_${date.toISOString().slice(0, 10)}`,
     unitName: input.unitName,
     columns: [
-      { key: 'ingredient', label: 'Ingrédient / Information' },
-      { key: 'pourcentage', label: 'Pourcentage (%)' },
-      { key: 'quantite', label: 'Quantité (kg)' },
-      { key: 'prix', label: 'Prix unitaire / kg' },
-      { key: 'cout', label: 'Coût / Valeur' },
+      { key: 'ingredient', label: text('Ingrédient / Information') },
+      { key: 'pourcentage', label: text('Pourcentage (%)') },
+      { key: 'quantite', label: text('Quantité (kg)') },
+      { key: 'prix', label: text('Prix unitaire / kg') },
+      { key: 'cout', label: text('Coût / Valeur') },
     ],
     data: rows,
   };
