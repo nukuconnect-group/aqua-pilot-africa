@@ -7,8 +7,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-export const APP_SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL;
-export const APP_SUPABASE_ANON_KEY: string = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Base historique AquaPilote (comptes et données existants).
+export const APP_SUPABASE_URL = 'https://hhsvraqchtqqgaezhnzn.supabase.co';
+export const APP_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhoc3ZyYXFjaHRxcWdhZXpobnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMTQ0OTUsImV4cCI6MjA3NzY5MDQ5NX0.yPX0oLUaW5L2_d43MB7X8xpwPaTGCMDNsWKx9JbGrbA';
 
 // Purge des sessions provenant d'un autre projet (ancienne base) :
 // elles provoquent des erreurs "No suitable key was found to decode the JWT".
