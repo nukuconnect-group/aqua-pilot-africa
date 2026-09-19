@@ -18,6 +18,8 @@ import { createNotification } from '@/lib/notificationService';
 import { supabase } from '@/integrations/supabase/appClient';
 import PurchaseInvoice from './PurchaseInvoice';
 import { useSuppliers, Supplier } from '@/hooks/useSuppliers';
+import { getUnitTerms } from '@/lib/unitContext';
+
 
 const PurchaseManager = () => {
   const { addLog } = useLogs();
@@ -85,17 +87,8 @@ const PurchaseManager = () => {
     setNewPurchase((prev) => ({ ...prev, unitId: activeUnit.id }));
   }, [activeUnit?.id]);
 
-  const predefinedPurchaseCategories = {
-    'Aliments': ['Granulés flottants', 'Granulés coulants', 'Farine de poisson', 'Aliment croissance', 'Aliment finition', 'Compléments nutritionnels'],
-    'Équipements et matériels': ['Pompes', 'Filtres', 'Aérateurs', 'Bassins', 'Filets', 'Outils de mesure', 'Matériel de pêche'],
-    'Intrants': ['Engrais organiques', 'Probiotiques', 'Désinfectants', 'Produits de traitement', 'Chaux', 'Sel'],
-    'Alevins': ['Tilapia', 'Carpe', 'Truite', 'Bar', 'Dorade', 'Autres espèces'],
-    'Formations du personnel': ['Formation technique', 'Formation sécurité', 'Formation gestion', 'Certification', 'Séminaires'],
-    'Prestations externes': ['Consultance', 'Maintenance', 'Transport', 'Analyses laboratoire', 'Services vétérinaires'],
-    'Prestations internes': ['Main d\'œuvre', 'Services internes', 'Transferts inter-unités'],
-    'Matières premières': ['Ciment', 'Bâches', 'Tuyaux', 'Vannes', 'Raccords', 'Électricité'],
-    'Kits et autres': ['Kits de test', 'Produits d\'entretien', 'Fournitures bureau', 'Carburant', 'Divers']
-  };
+  const predefinedPurchaseCategories = getUnitTerms(activeUnit?.type).purchaseCategoryMap;
+
 
   // Merge predefined and custom categories
   const purchaseCategories = useMemo(() => {
