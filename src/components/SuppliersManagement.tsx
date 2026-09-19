@@ -334,12 +334,10 @@ const SuppliersManagement = () => {
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Aliments">Aliments</SelectItem>
-                        <SelectItem value="Vétérinaire">Vétérinaire</SelectItem>
-                        <SelectItem value="Équipement">Équipement</SelectItem>
-                        <SelectItem value="Alevins">Alevins</SelectItem>
-                        <SelectItem value="Matériel">Matériel</SelectItem>
-                        <SelectItem value="Autre">Autre</SelectItem>
+                        {unitTerms.supplierCategoryOptions.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+
                       </SelectContent>
                     </Select>
                   </div>

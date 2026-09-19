@@ -105,7 +105,7 @@ const PurchaseManager = () => {
       }
     });
     return merged;
-  }, [customCategories, customSubcategories]);
+  }, [customCategories, customSubcategories, predefinedPurchaseCategories]);
 
   const paymentMethods = [
     'Espèces',
