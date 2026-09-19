@@ -87,8 +87,8 @@ const AccountingManagement = () => {
     totalInflow: currentData.revenue || 0,
     totalOutflow: currentData.expenses || 0,
     currentBalance: (currentData.revenue || 0) - (currentData.expenses || 0),
-    pendingInvoices: 0,
-    overdueInvoices: 0
+    pendingInvoices: counts.pendingInvoices,
+    overdueInvoices: counts.overdueInvoices
   };
 
   return (
