@@ -93,8 +93,9 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
   };
 
   const selectedUnitType = units.find(u => u.id === newInfrastructure.unitId)?.type;
+  const formTerms = getUnitTerms(selectedUnitType);
   const predefinedTypes = [
-    ...getUnitTerms(selectedUnitType).infrastructureTypeOptions,
+    ...formTerms.infrastructureTypeOptions,
     { value: 'custom', label: 'Type personnalisé...' }
   ];
 
