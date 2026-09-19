@@ -32,11 +32,15 @@ import {
 } from 'lucide-react';
 import { useLogs } from '@/contexts/LogsContext';
 import { useToast } from '@/hooks/use-toast';
+import { getUnitTerms } from '@/lib/unitContext';
+
 
 const SuppliersManagement = () => {
   const { addLog } = useLogs();
   const { toast } = useToast();
   const { activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
+
   const { 
     suppliers, 
     orders, 
