@@ -21,6 +21,9 @@ import { generateProfessionalPayslipHTML } from '@/lib/payslipGenerator';
 import { printEmployeeList } from '@/lib/employeePrintUtils';
 import PayslipEditor from './PayslipEditor';
 import EmploymentContractsManager from './hr/EmploymentContractsManager';
+import LeaveManagement from './hr/LeaveManagement';
+import LoansManagement from './hr/LoansManagement';
+import { useHrOperations } from '@/hooks/useHrOperations';
 
 const HRManagement = () => {
   const { addLog } = useLogs();
