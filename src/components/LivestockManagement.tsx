@@ -85,6 +85,7 @@ interface EditBatchFormProps {
 }
 
 const EditBatchForm: React.FC<EditBatchFormProps> = ({ batch, units, allSuppliers, feedStocks, onSave, onCancel }) => {
+  const editTerms = getUnitTerms(units.find((u: any) => u.id === batch.unitId)?.type);
   const [formData, setFormData] = useState({
     species: batch.species,
     variety: batch.variety,
@@ -103,7 +104,7 @@ const EditBatchForm: React.FC<EditBatchFormProps> = ({ batch, units, allSupplier
     expectedSurvivalRate: 95
   });
   const [saving, setSaving] = useState(false);
-  const speciesList = ['Tilapia', 'Carpe', 'Truite', 'Poisson-chat', 'Bar', 'Daurade'];
+  const speciesList = editTerms.speciesOptions;
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -138,11 +139,9 @@ const EditBatchForm: React.FC<EditBatchFormProps> = ({ batch, units, allSupplier
           <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value, sex: value === 'geniteurs' ? formData.sex : ''})}>
             <SelectTrigger><SelectValue placeholder="Sélectionner le type" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="alevins">Alevins</SelectItem>
-              <SelectItem value="geniteurs">Géniteurs</SelectItem>
-              <SelectItem value="juveniles">Juvéniles</SelectItem>
-              <SelectItem value="adultes">Adultes</SelectItem>
-              <SelectItem value="autres">Autres</SelectItem>
+              {editTerms.batchTypeOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -445,7 +444,7 @@ const LivestockManagement = () => {
   const [formData, setFormData] = useState({
     species: '',
     variety: '',
-    type: 'alevins',
+    type: '',
     sex: '' as '' | 'male' | 'female' | 'mixed',
     maleCount: 0,
     femaleCount: 0,
@@ -462,7 +461,7 @@ const LivestockManagement = () => {
     expectedSurvivalRate: 95
   });
 
-  const species = ['Tilapia', 'Carpe', 'Truite', 'Poisson-chat', 'Bar', 'Daurade'];
+  const species = unitTerms.speciesOptions;
 
   const handleAddBatch = async (keepOpen: boolean = false) => {
     if (!formData.species || !formData.quantity || !formData.unitId) {
@@ -810,7 +809,7 @@ const LivestockManagement = () => {
                 <DialogHeader>
                   <DialogTitle>Ajouter un nouveau lot</DialogTitle>
                   <DialogDescription>
-                    Enregistrez un nouveau lot de poissons dans une unité
+                    Enregistrez un nouveau {unitTerms.batchLabel.toLowerCase()} dans une unité
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -845,11 +844,9 @@ const LivestockManagement = () => {
                         <SelectValue placeholder="Sélectionner le type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="alevins">Alevins</SelectItem>
-                        <SelectItem value="geniteurs">Géniteurs</SelectItem>
-                        <SelectItem value="juveniles">Juvéniles</SelectItem>
-                        <SelectItem value="adultes">Adultes</SelectItem>
-                        <SelectItem value="autres">Autres</SelectItem>
+                        {unitTerms.batchTypeOptions.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1155,7 +1152,7 @@ const LivestockManagement = () => {
                     Modifier le lot
                   </DialogTitle>
                   <DialogDescription>
-                    Modifiez les informations du lot de poissons
+                    Modifiez les informations du {unitTerms.batchLabel.toLowerCase()}
                   </DialogDescription>
                 </DialogHeader>
                 {editingBatch && (
@@ -1268,7 +1265,7 @@ const LivestockManagement = () => {
             <CardHeader>
               <div className="flex flex-col gap-3">
                 <div>
-                  <CardTitle>Lots de poissons</CardTitle>
+                  <CardTitle>{unitTerms.livestockTitle}</CardTitle>
                   <CardDescription>
                     Gestion et suivi de tous les lots par unité de production
                   </CardDescription>
@@ -2149,7 +2146,7 @@ const LivestockManagement = () => {
                   <Fish className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-semibold mb-2">Aucune donnée disponible</h3>
                   <p className="text-muted-foreground">
-                    Ajoutez des lots de poissons pour voir les graphiques de performance.
+                    Ajoutez des {unitTerms.batchLabel.toLowerCase()}s pour voir les graphiques de performance.
                   </p>
                 </CardContent>
               </Card>
@@ -2196,7 +2193,7 @@ const LivestockManagement = () => {
               <Card>
                 <CardHeader className="p-3 sm:p-6">
                   <CardTitle className="text-base sm:text-lg">Tendances de croissance globale</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">Évolution globale du cheptel</CardDescription>
+                  <CardDescription className="text-xs sm:text-sm">{unitTerms.livestockSubtitle}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                   <div className="w-full overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">

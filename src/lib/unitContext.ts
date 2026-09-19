@@ -58,6 +58,32 @@ export interface UnitContextTerms {
   aiSpeciesTitle: string;
   aiSpeciesDescription: string;
   aiSpeciesPlaceholder: string;
+  /** Types de lots proposés à la création d'un lot. */
+  batchTypeOptions: { value: string; label: string }[];
+  /** Libellés liés au rattachement d'un lot à une infrastructure. */
+  attachedBatchLabel: string;
+  attachedBatchEmptyText: string;
+  createBatchTitle: string;
+  /** Unité de comptage des individus d'un lot. */
+  individualsLabel: string;
+  /** Libellés du formulaire de cycle de production. */
+  cycleQuantityLabel: string;
+  cycleInitialWeightLabel: string;
+  cycleTargetWeightLabel: string;
+  cycleSurvivalLabel: string;
+  cycleAverageWeightLabel: string;
+  /** Libellés du module Alimentation / Intrants. */
+  feedSessionTitle: string;
+  feedSessionButton: string;
+  feedingDailyQuantityLabel: string;
+  feedingSessionsLabel: string;
+  feedingLastLabel: string;
+  feedingNextLabel: string;
+  feedingHistoryTitle: string;
+  behaviorLabel: string;
+  behaviorOptions: { value: string; label: string }[];
+  /** Pathologies / contaminations fréquentes proposées en presets. */
+  commonDiseasePresets: { name: string; symptoms: string[]; treatment: string }[];
   /** Activation/désactivation de sous-modules non pertinents. */
   features: {
     feedingSheets: boolean;
@@ -145,6 +171,44 @@ const DEFAULT_TERMS: UnitContextTerms = {
   aiSpeciesTitle: 'Maladies par espèce',
   aiSpeciesDescription: 'Saisissez une espèce élevée pour obtenir ses maladies réelles et les recommandations.',
   aiSpeciesPlaceholder: 'Ex : Tilapia du Nil, Clarias gariepinus, Carpe commune...',
+  batchTypeOptions: [
+    { value: 'alevins', label: 'Alevins' },
+    { value: 'geniteurs', label: 'Géniteurs' },
+    { value: 'juveniles', label: 'Juvéniles' },
+    { value: 'adultes', label: 'Adultes' },
+    { value: 'autres', label: 'Autres' },
+  ],
+  attachedBatchLabel: 'Lot de poissons rattaché',
+  attachedBatchEmptyText: "Cette infrastructure n'a pas encore de lot de poissons associé",
+  createBatchTitle: 'Créer un lot de poisson',
+  individualsLabel: 'individus',
+  cycleQuantityLabel: 'Quantité initiale (individus)',
+  cycleInitialWeightLabel: 'Poids initial total (kg)',
+  cycleTargetWeightLabel: 'Biomasse objectif (kg)',
+  cycleSurvivalLabel: 'Taux de survie attendu (%)',
+  cycleAverageWeightLabel: 'Poids moyen individuel visé (g)',
+  feedSessionTitle: 'Session de nourrissage',
+  feedSessionButton: 'Ajouter une session',
+  feedingDailyQuantityLabel: 'Quantité/jour',
+  feedingSessionsLabel: 'Repas/jour',
+  feedingLastLabel: 'Dernier repas',
+  feedingNextLabel: 'Prochain repas',
+  feedingHistoryTitle: 'Historique de Nourrissage',
+  behaviorLabel: 'Comportement des poissons',
+  behaviorOptions: [
+    { value: 'normal', label: 'Normal - Bon appétit' },
+    { value: 'actif', label: 'Très actifs' },
+    { value: 'lent', label: 'Peu actifs / Lents' },
+    { value: 'refus_partiel', label: 'Refus partiel' },
+    { value: 'refus_total', label: 'Refus total' },
+    { value: 'stress', label: 'Stress visible' },
+  ],
+  commonDiseasePresets: [
+    { name: 'Ichtyophthirius (Points blancs)', symptoms: ['Points blancs sur le corps', 'Frottement', 'Respiration rapide'], treatment: 'Traitement au sel (3%) pendant 5 jours' },
+    { name: 'Aeromonose', symptoms: ['Lésions cutanées', 'Hémorragies', 'Léthargie'], treatment: 'Antibiotique (Oxytétracycline)' },
+    { name: 'Columnariose', symptoms: ['Taches blanches/grises', 'Érosion des nageoires', 'Mucus excessif'], treatment: 'Bain de permanganate de potassium' },
+    { name: 'Saprolegniose', symptoms: ['Masses cotonneuses blanches', 'Érosion de la peau'], treatment: 'Bain de vert de malachite ou permanganate' },
+  ],
   features: { feedingSheets: true, feedingPlanning: true, sampling: true },
 };
 
@@ -287,6 +351,46 @@ export const ALGAE_TERMS: UnitContextTerms = {
   aiSpeciesDescription:
     'Saisissez une espèce ou souche d’algue pour obtenir ses pathologies, contaminations, symptômes, traitements et dosages recommandés.',
   aiSpeciesPlaceholder: 'Ex : Spiruline (Arthrospira platensis), Chlorella vulgaris, Gracilaria...',
+  batchTypeOptions: [
+    { value: 'souche_mere', label: 'Souche mère' },
+    { value: 'inoculum', label: 'Inoculum / pré-culture' },
+    { value: 'culture_croissance', label: 'Culture en croissance' },
+    { value: 'boutures', label: 'Boutures / thalles (macro-algues)' },
+    { value: 'culture_recoltable', label: 'Culture récoltable' },
+  ],
+  attachedBatchLabel: 'Lot de culture rattaché',
+  attachedBatchEmptyText: "Ce bassin n'a pas encore de lot de culture associé",
+  createBatchTitle: 'Créer un lot de culture',
+  individualsLabel: 'kg / L ensemencés',
+  cycleQuantityLabel: 'Quantité ensemencée (kg ou L)',
+  cycleInitialWeightLabel: 'Biomasse initiale (kg)',
+  cycleTargetWeightLabel: 'Biomasse objectif à la récolte (kg)',
+  cycleSurvivalLabel: 'Taux de réussite de culture attendu (%)',
+  cycleAverageWeightLabel: 'Densité visée (g/L)',
+  feedSessionTitle: 'Apport d’intrants / nutriments',
+  feedSessionButton: 'Enregistrer un apport',
+  feedingDailyQuantityLabel: 'Intrants/jour',
+  feedingSessionsLabel: 'Apports/jour',
+  feedingLastLabel: 'Dernier apport',
+  feedingNextLabel: 'Prochain apport',
+  feedingHistoryTitle: 'Historique des apports nutritifs',
+  behaviorLabel: 'État de la culture',
+  behaviorOptions: [
+    { value: 'normal', label: 'Culture saine - couleur normale' },
+    { value: 'croissance_rapide', label: 'Croissance rapide / densité en hausse' },
+    { value: 'croissance_lente', label: 'Croissance lente' },
+    { value: 'decoloration', label: 'Décoloration (jaunissement/pâleur)' },
+    { value: 'sedimentation', label: 'Sédimentation / floculation' },
+    { value: 'contamination', label: 'Contamination suspectée' },
+  ],
+  commonDiseasePresets: [
+    { name: 'Contamination par algues concurrentes', symptoms: ['Changement de couleur du milieu', 'Chute de densité de la souche', 'Filaments étrangers au microscope'], treatment: 'Isoler le bassin, réensemencer depuis la souche mère, ajuster pH (9,5-10,5 pour spiruline) et salinité' },
+    { name: 'Brouteurs / protozoaires (amibes, ciliés, rotifères)', symptoms: ['Baisse rapide de la biomasse', 'Milieu qui s’éclaircit', 'Organismes mobiles au microscope'], treatment: 'Choc pH ou ammoniaque contrôlé, filtration 50 µm, récolte anticipée puis redémarrage depuis l’inoculum' },
+    { name: 'Épiphytes sur macro-algues', symptoms: ['Dépôts sur les thalles', 'Croissance ralentie', 'Thalles cassants'], treatment: 'Nettoyage mécanique des lignes, réduction de la densité, rotation des filières' },
+    { name: 'Maladie de l’ice-ice (Kappaphycus/Eucheuma)', symptoms: ['Blanchiment des thalles', 'Ramollissement', 'Casse des branches'], treatment: 'Déplacer les filières vers un courant plus fort, retirer les thalles atteints, replanter des boutures saines' },
+    { name: 'Contamination bactérienne / fongique', symptoms: ['Odeur anormale', 'Mousse et biofilm', 'Milieu trouble'], treatment: 'Désinfection du bassin (hypochlorite puis neutralisation), stérilisation de l’eau d’appoint, redémarrage d’inoculum' },
+    { name: 'Dérive des paramètres (pH, salinité, nutriments)', symptoms: ['Décoloration jaune/verte pâle', 'Arrêt de croissance', 'Sédimentation de la biomasse'], treatment: 'Correction du pH (bicarbonate), réajustement des nitrates/phosphates, contrôle de la température et de l’ombrage' },
+  ],
   features: { feedingSheets: false, feedingPlanning: false, sampling: true },
 };
 
@@ -299,3 +403,16 @@ export const isAlgaeUnitType = (type?: ProductionUnitType | null) => type === 'a
 
 export const getUnitTerms = (type?: ProductionUnitType | null): UnitContextTerms =>
   (type && TERMS_BY_TYPE[type]) || DEFAULT_TERMS;
+
+/** Libellé lisible d'un type d'infrastructure, adapté au type d'unité. */
+export const getInfrastructureTypeLabel = (
+  type: string,
+  unitType?: ProductionUnitType | null,
+): string => {
+  const terms = getUnitTerms(unitType);
+  const found =
+    terms.infrastructureTypeOptions.find((o) => o.value === type) ||
+    DEFAULT_TERMS.infrastructureTypeOptions.find((o) => o.value === type) ||
+    ALGAE_TERMS.infrastructureTypeOptions.find((o) => o.value === type);
+  return found ? found.label : type.replace(/_/g, ' ');
+};

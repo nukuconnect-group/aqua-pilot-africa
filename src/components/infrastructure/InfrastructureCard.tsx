@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSettings } from '@/contexts/SettingsContext';
+import { getUnitTerms, getInfrastructureTypeLabel as getInfraLabel } from '@/lib/unitContext';
 
 interface InfrastructureCardProps {
   infrastructure: Infrastructure;
@@ -76,7 +77,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
   const [batchFormData, setBatchFormData] = useState({
     species: '',
     variety: '',
-    type: 'alevins',
+    type: '',
     quantity: 0,
     averageWeight: 0,
     acquisitionDate: new Date().toISOString().split('T')[0],
@@ -87,7 +88,8 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
     status: 'healthy' as const
   });
 
-  const species = ['Tilapia', 'Carpe', 'Truite', 'Poisson-chat', 'Bar', 'Daurade', 'Autre'];
+  const unitTerms = getUnitTerms(activeUnit?.type);
+  const species = [...unitTerms.speciesOptions, 'Autre'];
 
   const getInfrastructureIcon = (type: string) => {
     if (type.includes('bassin')) return Droplets;
@@ -114,19 +116,14 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
   };
 
   const getInfrastructureTypeLabel = (type: string) => {
-    const types: Record<string, string> = {
-      'bassin_incubation': 'Bassin d\'incubation',
-      'bassin_grossissement': 'Bassin de grossissement',
-      'chambre_froide': 'Chambre froide',
-      'chambre_froide_positive': 'Chambre froide positive',
+    const legacy: Record<string, string> = {
       'bassin_quarantaine': 'Bassin de quarantaine',
       'salle_transformation': 'Salle de transformation',
       'pompe_oxygene': 'Pompe à oxygène',
-      'systeme_filtration': 'Système de filtration',
       'generateur': 'Générateur électrique',
       'autre': 'Autre'
     };
-    return types[type] || type.replace('_', ' ');
+    return legacy[type] || getInfraLabel(type, activeUnit?.type);
   };
 
   const toggleStatus = (newStatus: 'active' | 'inactive') => {
@@ -229,7 +226,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
       setBatchFormData({
         species: '',
         variety: '',
-        type: 'alevins',
+        type: '',
         quantity: 0,
         averageWeight: 0,
         acquisitionDate: new Date().toISOString().split('T')[0],
@@ -534,7 +531,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
               <div>
                 <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                   <Fish className="w-4 h-4" />
-                  Lot de poissons rattaché
+                  {unitTerms.attachedBatchLabel}
                 </h4>
                 {attachedBatch ? (
                   <InfrastructureLivestockCard 
@@ -548,7 +545,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                       Aucun lot rattaché
                     </p>
                     <p className="text-xs text-muted-foreground mb-4">
-                      Cette infrastructure n'a pas encore de lot de poissons associé
+                      {unitTerms.attachedBatchEmptyText}
                     </p>
                     <Button 
                       size="sm"
@@ -600,7 +597,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
       <Dialog open={isCreateBatchOpen} onOpenChange={setIsCreateBatchOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] p-0">
           <DialogHeader className="p-4 sm:p-6 pb-0">
-            <DialogTitle>Créer un lot de poisson</DialogTitle>
+            <DialogTitle>{unitTerms.createBatchTitle}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] p-4 sm:p-6">
             <div className="space-y-4">
@@ -641,11 +638,9 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                     <SelectValue placeholder="Sélectionner le type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="alevins">Alevins</SelectItem>
-                    <SelectItem value="geniteurs">Géniteurs</SelectItem>
-                    <SelectItem value="juveniles">Juvéniles</SelectItem>
-                    <SelectItem value="adultes">Adultes</SelectItem>
-                    <SelectItem value="autres">Autres</SelectItem>
+                    {unitTerms.batchTypeOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -657,7 +652,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                     type="number"
                     value={batchFormData.quantity || ''}
                     onChange={(e) => setBatchFormData({...batchFormData, quantity: parseInt(e.target.value) || 0})}
-                    placeholder="Nombre d'individus"
+                    placeholder={unitTerms.quantityLabel}
                   />
                 </div>
                 <div>

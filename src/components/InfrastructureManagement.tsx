@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { getInfrastructureTypeLabel as getInfraLabel } from '@/lib/unitContext';
 
 // Composant pour programmer la maintenance
 const MaintenanceScheduleForm = ({ infrastructure }: { infrastructure: any }) => {
@@ -110,17 +111,8 @@ const InfrastructureManagement = () => {
     }
   };
 
-  const getInfrastructureTypeLabel = (type: string) => {
-    switch (type) {
-      case 'bassin_incubation': return 'Bassin d\'incubation';
-      case 'bassin_grossissement': return 'Bassin de grossissement';
-      case 'chambre_froide': return 'Chambre froide';
-      case 'chambre_froide_positive': return 'Chambre froide positive';
-      case 'bassin_quarantaine': return 'Bassin de quarantaine';
-      case 'salle_transformation': return 'Salle de transformation';
-      default: return type.replace('_', ' ');
-    }
-  };
+  const getInfrastructureTypeLabel = (type: string) =>
+    getInfraLabel(type, activeUnit.type);
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">

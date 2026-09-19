@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card } from '@/components/ui/card';
 import { Plus, Save, User, Clock, Utensils } from 'lucide-react';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
+import { getUnitTerms } from '@/lib/unitContext';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 
 interface SimpleFeedingFormProps {
   unitId: string;
@@ -43,6 +45,9 @@ const BEHAVIORS = [
 ];
 
 const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingFormProps) => {
+  const { units: allUnits } = useProductionUnits();
+  const terms = getUnitTerms(allUnits.find((u) => u.id === unitId)?.type);
+  const feedTypes = terms.features.feedingSheets ? FEED_TYPES : terms.feedOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { infrastructures } = useCycleInfrastructures(cycleId || '');
   
@@ -112,14 +117,14 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
       <DialogTrigger asChild>
         <Button className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
-          Ajouter une session
+          {terms.feedSessionButton}
         </Button>
       </DialogTrigger>
       <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Utensils className="w-5 h-5 text-primary" />
-            Session de nourrissage
+            {terms.feedSessionTitle}
           </DialogTitle>
         </DialogHeader>
         
@@ -221,7 +226,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
                 <SelectValue placeholder="Sélectionner l'aliment" />
               </SelectTrigger>
               <SelectContent>
-                {FEED_TYPES.map((type) => (
+                {feedTypes.map((type) => (
                   <SelectItem key={type} value={type}>{type}</SelectItem>
                 ))}
               </SelectContent>
@@ -293,7 +298,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
 
           {/* Comportement */}
           <div>
-            <Label className="text-xs">Comportement des poissons</Label>
+            <Label className="text-xs">{terms.behaviorLabel}</Label>
             <Select 
               value={formData.behavior || 'normal'} 
               onValueChange={(value) => setFormData({ ...formData, behavior: value })}
@@ -302,7 +307,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {BEHAVIORS.map((b) => (
+                {terms.behaviorOptions.map((b) => (
                   <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                 ))}
               </SelectContent>

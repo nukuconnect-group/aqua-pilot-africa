@@ -18,6 +18,7 @@ import {
   Fish,
   Activity
 } from 'lucide-react';
+import { getUnitTerms } from '@/lib/unitContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useLogs } from '@/contexts/LogsContext';
 import { useToast } from '@/hooks/use-toast';
@@ -38,38 +39,12 @@ interface Disease {
 
 const DiseaseManager = () => {
   const { units, activeUnit } = useProductionUnits();
+  const unitTerms = getUnitTerms(activeUnit?.type);
   const { addLog } = useLogs();
   const { toast } = useToast();
   
   const [showDialog, setShowDialog] = useState(false);
-  const [diseases, setDiseases] = useState<Disease[]>([
-    {
-      id: '1',
-      name: 'Ichtyophthirius (Maladie des points blancs)',
-      species: ['Tilapia', 'Carpe', 'Silure'],
-      symptoms: ['Points blancs sur le corps', 'Frottement contre les parois', 'Respiration rapide'],
-      treatment: 'Traitement au sel (3%) pendant 5 jours',
-      severity: 'high',
-      source: 'camera',
-      unitId: 'GROSS001',
-      detectedDate: '2024-03-18',
-      status: 'active',
-      notes: 'Détecté automatiquement par analyse IA'
-    },
-    {
-      id: '2',
-      name: 'Aeromonose',
-      species: ['Tilapia', 'Bar', 'Dorade'],
-      symptoms: ['Lésions cutanées', 'Hémorragies', 'Léthargie'],
-      treatment: 'Antibiotique (Oxytétracycline) dans l\'aliment',
-      severity: 'high',
-      source: 'iot',
-      unitId: 'TRANS001',
-      detectedDate: '2024-03-15',
-      status: 'treated',
-      notes: 'Corrélation détectée avec baisse d\'oxygène'
-    }
-  ]);
+  const [diseases, setDiseases] = useState<Disease[]>([]);
 
   const [newDisease, setNewDisease] = useState({
     name: '',
@@ -85,40 +60,9 @@ const DiseaseManager = () => {
   const [symptomInput, setSymptomInput] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
 
-  const fishSpecies = [
-    'Tilapia',
-    'Carpe',
-    'Silure',
-    'Bar',
-    'Dorade',
-    'Truite',
-    'Saumon',
-    'Crevette',
-    'Autre'
-  ];
+  const fishSpecies = [...unitTerms.speciesOptions, 'Autre'];
 
-  const commonDiseases = [
-    {
-      name: 'Ichtyophthirius (Points blancs)',
-      symptoms: ['Points blancs sur le corps', 'Frottement', 'Respiration rapide'],
-      treatment: 'Traitement au sel (3%) pendant 5 jours'
-    },
-    {
-      name: 'Aeromonose',
-      symptoms: ['Lésions cutanées', 'Hémorragies', 'Léthargie'],
-      treatment: 'Antibiotique (Oxytétracycline)'
-    },
-    {
-      name: 'Columnariose',
-      symptoms: ['Taches blanches/grises', 'Érosion des nageoires', 'Mucus excessif'],
-      treatment: 'Bain de permanganate de potassium'
-    },
-    {
-      name: 'Saprolegniose',
-      symptoms: ['Masses cotonneuses blanches', 'Érosion de la peau'],
-      treatment: 'Bain de vert de malachite ou permanganate'
-    }
-  ];
+  const commonDiseases = unitTerms.commonDiseasePresets;
 
   const handleAddSymptom = () => {
     if (symptomInput.trim() && !newDisease.symptoms.includes(symptomInput.trim())) {
