@@ -581,6 +581,14 @@ const HRManagement = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="leaves">
+          <LeaveManagement employees={filteredEmployees} unitId={activeUnit?.id} />
+        </TabsContent>
+
+        <TabsContent value="loans">
+          <LoansManagement employees={filteredEmployees} unitId={activeUnit?.id} />
+        </TabsContent>
+
         <TabsContent value="reports">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
