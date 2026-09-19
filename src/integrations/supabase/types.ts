@@ -2181,6 +2181,63 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_module_audit: {
+        Row: {
+          action: string | null
+          admin_email: string | null
+          after_value: Json | null
+          before_value: Json | null
+          created_at: string
+          id: string
+          module_key: string | null
+          plan_key: string | null
+        }
+        Insert: {
+          action?: string | null
+          admin_email?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          created_at?: string
+          id?: string
+          module_key?: string | null
+          plan_key?: string | null
+        }
+        Update: {
+          action?: string | null
+          admin_email?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          created_at?: string
+          id?: string
+          module_key?: string | null
+          plan_key?: string | null
+        }
+        Relationships: []
+      }
+      plan_modules: {
+        Row: {
+          enabled: boolean
+          module_key: string
+          permissions: Json
+          plan_key: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          module_key: string
+          permissions?: Json
+          plan_key: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          module_key?: string
+          permissions?: Json
+          plan_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       planned_tasks: {
         Row: {
           alert_sent: boolean | null
@@ -2238,6 +2295,42 @@ export type Database = {
           unit_name?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          billing_period: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          key: string
+          name: string
+          price: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          name: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          name?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3408,6 +3501,27 @@ export type Database = {
         }
         Relationships: []
       }
+      unit_type_module_rules: {
+        Row: {
+          enabled: boolean
+          module_key: string
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          module_key: string
+          unit_type: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          module_key?: string
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_files: {
         Row: {
           compressed_size: number | null
@@ -3446,6 +3560,30 @@ export type Database = {
           metadata?: Json | null
           module?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_module_overrides: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          module_key: string
+          user_id: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          module_key: string
+          user_id: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          module_key?: string
           user_id?: string
         }
         Relationships: []
