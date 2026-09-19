@@ -33,6 +33,7 @@ const FeedingManagement = () => {
   const { t } = useSettings();
   const { toast } = useToast();
   const [feedingTab, setFeedingTab] = useState('history');
+  const unitTerms = getUnitTerms(activeUnit?.type);
   
   // Filtrer les enregistrements par unité active
   const { records: feedingRecords, loading, createRecord, updateRecord, deleteRecord } = useFeedingRecords(undefined, activeUnit?.id);
