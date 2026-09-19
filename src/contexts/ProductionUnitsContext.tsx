@@ -202,7 +202,7 @@ const EMPTY_PRODUCTION_UNITS_CONTEXT: ProductionUnitsContextType = {
   purchases: [],
   depreciableAssets: [],
   currency: 'XOF',
-  formatCurrency: (amount) => `${Number.isFinite(amount) ? amount.toLocaleString('fr-FR') : '0'} FCFA`,
+  formatCurrency: (amount) => formatMoney(amount),
   activeUnit: null,
   setActiveUnit: () => undefined,
   setCurrency: () => undefined,
