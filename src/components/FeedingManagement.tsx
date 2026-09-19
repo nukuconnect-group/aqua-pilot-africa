@@ -27,6 +27,7 @@ import { createNotification } from '@/lib/notificationService';
 import { supabase } from '@/integrations/supabase/appClient';
 import ExportDropdown from './ExportDropdown';
 import { ExportOptions } from '@/lib/dataExportUtils';
+import { getUnitTerms } from '@/lib/unitContext';
 
 const FeedingManagement = () => {
   const { activeUnit } = useProductionUnits();
