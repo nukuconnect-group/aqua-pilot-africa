@@ -10,6 +10,7 @@ import { Plus, Save, Calendar, AlertCircle, Lock } from 'lucide-react';
 import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
+import { ALGAE_TERMS } from '@/lib/unitContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
