@@ -70,16 +70,43 @@ export const countLeaveDays = (start: string, end: string): number => {
 
 export const DEFAULT_ANNUAL_LEAVE_DAYS = 30;
 
+/** État partagé : tous les écrans RH voient les mêmes congés et prêts. */
+interface HrStore {
+  leaves: LeaveRequest[];
+  loans: EmployeeLoan[];
+  repayments: LoanRepayment[];
+  remoteAvailable: boolean;
+}
+
+let hrStore: HrStore = { leaves: [], loans: [], repayments: [], remoteAvailable: false };
+const hrListeners = new Set<(s: HrStore) => void>();
+
+const subscribeHr = (listener: (s: HrStore) => void) => {
+  hrListeners.add(listener);
+  return () => { hrListeners.delete(listener); };
+};
+
+const patchHrStore = (patch: Partial<HrStore>) => {
+  hrStore = { ...hrStore, ...patch };
+  hrListeners.forEach(l => l(hrStore));
+};
+
 /**
  * Congés, prêts et remboursements. Les données sont stockées dans la base
  * quand les tables existent, avec repli local sinon (aucune donnée fictive).
  */
 export const useHrOperations = (unitId?: string) => {
   const { user } = useAuth();
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [loans, setLoans] = useState<EmployeeLoan[]>([]);
-  const [repayments, setRepayments] = useState<LoanRepayment[]>([]);
-  const [remoteAvailable, setRemoteAvailable] = useState(false);
+  const [snapshot, setSnapshot] = useState<HrStore>(hrStore);
+
+  useEffect(() => subscribeHr(setSnapshot), []);
+
+  const { leaves, loans, repayments, remoteAvailable } = snapshot;
+  const setLeaves = (v: LeaveRequest[]) => patchHrStore({ leaves: v });
+  const setLoans = (v: EmployeeLoan[]) => patchHrStore({ loans: v });
+  const setRepayments = (v: LoanRepayment[]) => patchHrStore({ repayments: v });
+  const setRemoteAvailable = (v: boolean) => patchHrStore({ remoteAvailable: v });
+
 
   const load = useCallback(async () => {
     const localLeaves = read<LeaveRequest>(LEAVE_KEY);

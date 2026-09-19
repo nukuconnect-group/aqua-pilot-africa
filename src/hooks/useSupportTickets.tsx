@@ -178,6 +178,69 @@ export const useSupportTickets = () => {
     }
   };
 
+  /** Suppression d'un message : l'auteur peut supprimer le sien, l'admin tous. */
+  const deleteMessage = async (messageId: string) => {
+    if (!user?.id) return false;
+
+    const target = messages.find(m => m.id === messageId);
+    if (target && target.sender_id !== user.id && user.role !== 'admin') {
+      toast({
+        title: 'Suppression impossible',
+        description: "Vous ne pouvez supprimer que vos propres messages",
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('support_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      return true;
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      toast({
+        title: 'Suppression impossible',
+        description: "Le message n'a pas pu être supprimé",
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  /** Modification d'un message existant (auteur uniquement). */
+  const updateMessage = async (messageId: string, message: string) => {
+    if (!user?.id || !message.trim()) return false;
+
+    const target = messages.find(m => m.id === messageId);
+    if (target && target.sender_id !== user.id && user.role !== 'admin') return false;
+
+    try {
+      const { error } = await supabase
+        .from('support_messages')
+        .update({ message: message.trim() } as never)
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, message: message.trim() } : m)));
+      return true;
+    } catch (err) {
+      console.error('Error updating message:', err);
+      toast({
+        title: 'Modification impossible',
+        description: "Le message n'a pas pu être modifié",
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   const markMessagesAsRead = async (ticketId: string) => {
     if (!user?.id) return;
 
@@ -243,16 +306,22 @@ export const useSupportTickets = () => {
       .on(
         'postgres_changes',
         { 
-          event: 'INSERT', 
+          event: '*', 
           schema: 'public', 
           table: 'support_messages',
           filter: `ticket_id=eq.${currentTicketIdForRealtime}`
         },
         (payload) => {
-          // Add the new message instantly without refetching all
           setMessages((prev) => {
+            if (payload.eventType === 'DELETE') {
+              const oldId = (payload.old as { id?: string })?.id;
+              return oldId ? prev.filter(m => m.id !== oldId) : prev;
+            }
             const newMsg = payload.new as SupportMessage;
-            // Avoid duplicates
+            if (!newMsg?.id) return prev;
+            if (payload.eventType === 'UPDATE') {
+              return prev.map(m => (m.id === newMsg.id ? { ...m, ...newMsg } : m));
+            }
             if (prev.some(m => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
@@ -283,6 +352,8 @@ export const useSupportTickets = () => {
     createTicket,
     sendMessage,
     updateTicketStatus,
+    deleteMessage,
+    updateMessage,
     fetchMessages: fetchMessagesAndSubscribe,
     markMessagesAsRead,
     refetch: fetchTickets
