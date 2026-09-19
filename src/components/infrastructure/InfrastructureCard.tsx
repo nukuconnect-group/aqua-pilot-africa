@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSettings } from '@/contexts/SettingsContext';
+import { getUnitTerms, getInfrastructureTypeLabel as getInfraLabel } from '@/lib/unitContext';
 
 interface InfrastructureCardProps {
   infrastructure: Infrastructure;
@@ -87,7 +88,8 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
     status: 'healthy' as const
   });
 
-  const species = ['Tilapia', 'Carpe', 'Truite', 'Poisson-chat', 'Bar', 'Daurade', 'Autre'];
+  const unitTerms = getUnitTerms(activeUnit?.type);
+  const species = [...unitTerms.speciesOptions, 'Autre'];
 
   const getInfrastructureIcon = (type: string) => {
     if (type.includes('bassin')) return Droplets;
@@ -114,19 +116,14 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
   };
 
   const getInfrastructureTypeLabel = (type: string) => {
-    const types: Record<string, string> = {
-      'bassin_incubation': 'Bassin d\'incubation',
-      'bassin_grossissement': 'Bassin de grossissement',
-      'chambre_froide': 'Chambre froide',
-      'chambre_froide_positive': 'Chambre froide positive',
+    const legacy: Record<string, string> = {
       'bassin_quarantaine': 'Bassin de quarantaine',
       'salle_transformation': 'Salle de transformation',
       'pompe_oxygene': 'Pompe à oxygène',
-      'systeme_filtration': 'Système de filtration',
       'generateur': 'Générateur électrique',
       'autre': 'Autre'
     };
-    return types[type] || type.replace('_', ' ');
+    return legacy[type] || getInfraLabel(type, activeUnit?.type);
   };
 
   const toggleStatus = (newStatus: 'active' | 'inactive') => {
