@@ -354,8 +354,23 @@ const SupportModule = () => {
       <div className="grid md:grid-cols-3 gap-4">
         {/* Liste des tickets */}
         <Card className="md:col-span-1">
-          <CardHeader className="p-4">
-            <CardTitle className="text-lg">Mes demandes</CardTitle>
+          <CardHeader className="p-4 space-y-3">
+            <CardTitle className="text-lg">{language === 'fr' ? 'Mes demandes' : 'My requests'}</CardTitle>
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={language === 'fr' ? 'Rechercher un ticket...' : 'Search a ticket...'}
+            />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{language === 'fr' ? 'Tous les statuts' : 'All statuses'}</SelectItem>
+                <SelectItem value="open">{language === 'fr' ? 'Ouverts' : 'Open'}</SelectItem>
+                <SelectItem value="in_progress">{language === 'fr' ? 'En attente' : 'In progress'}</SelectItem>
+                <SelectItem value="resolved">{language === 'fr' ? 'Résolus' : 'Resolved'}</SelectItem>
+                <SelectItem value="closed">{language === 'fr' ? 'Fermés' : 'Closed'}</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[500px]">
