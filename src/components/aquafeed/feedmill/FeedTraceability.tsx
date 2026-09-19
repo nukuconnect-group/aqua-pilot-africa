@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Plus, Trash2, ScanLine, Search } from 'lucide-react';
 import ExportDropdown from '@/components/ExportDropdown';
 import type { TraceabilityRecord } from './useFeedOperations';
+import { useSettings } from '@/contexts/SettingsContext';
+import { tr } from '@/i18n/runtime';
 
 const PRODUCT_TYPES = [
   { key: 'matiere_premiere', label: 'Matière première' },
@@ -46,6 +48,8 @@ interface Props {
 }
 
 const FeedTraceability: React.FC<Props> = ({ records, onSave, onDelete }) => {
+  const { language } = useSettings();
+  const text = (value: string) => tr(value, language);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
   const [search, setSearch] = useState('');
@@ -73,18 +77,18 @@ const FeedTraceability: React.FC<Props> = ({ records, onSave, onDelete }) => {
   };
 
   const exportOptions = {
-    title: 'Traçabilité des lots',
+    title: text('Traçabilité des lots'),
     filename: `tracabilite-${new Date().toISOString().slice(0, 10)}`,
     columns: [
-      { key: 'batch_number', label: 'N° de lot' },
-      { key: 'product_type', label: 'Type' },
-      { key: 'product_name', label: 'Produit' },
-      { key: 'entry_date', label: 'Date' },
-      { key: 'quantity', label: 'Quantité' },
-      { key: 'unit_label', label: 'Unité' },
-      { key: 'origin', label: 'Origine' },
-      { key: 'destination', label: 'Destination' },
-      { key: 'state', label: 'État' },
+      { key: 'batch_number', label: text('N° de lot') },
+      { key: 'product_type', label: text('Type'), format: (value: string) => text(PRODUCT_TYPES.find(item => item.key === value)?.label ?? value) },
+      { key: 'product_name', label: text('Produit') },
+      { key: 'entry_date', label: text('Date') },
+      { key: 'quantity', label: text('Quantité') },
+      { key: 'unit_label', label: text('Unité') },
+      { key: 'origin', label: text('Origine') },
+      { key: 'destination', label: text('Destination') },
+      { key: 'state', label: text('État'), format: (value: string) => text(STATES.find(item => item.key === value)?.label ?? value) },
     ],
     data: filtered as any[],
   };
@@ -95,38 +99,38 @@ const FeedTraceability: React.FC<Props> = ({ records, onSave, onDelete }) => {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <ScanLine className="w-4 h-4 text-primary" />Traçabilité
+              <ScanLine className="w-4 h-4 text-primary" />{text('Traçabilité')}
             </CardTitle>
             <CardDescription className="text-xs">
-              {records.length} lots suivis — origine, mouvements et destination.
+              {records.length} {text('lots suivis')} — {text('origine, mouvements et destination')}.
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <ExportDropdown options={exportOptions as any} />
             <Button size="sm" onClick={() => { setForm(empty); setOpen(true); }}>
-              <Plus className="w-4 h-4 mr-1.5" />Nouveau lot
+              <Plus className="w-4 h-4 mr-1.5" />{text('Nouveau lot')}
             </Button>
           </div>
         </div>
         <div className="relative pt-2">
           <Search className="w-4 h-4 absolute left-2.5 top-4.5 text-muted-foreground" />
-          <Input className="pl-8" placeholder="Rechercher un lot, un produit, une origine…" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-8" placeholder={text('Rechercher un lot, un produit, une origine…')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <table className="w-full text-sm min-w-[780px]">
           <thead>
             <tr className="text-left text-xs text-muted-foreground border-b">
-              <th className="py-2">N° de lot</th><th className="py-2">Type</th><th className="py-2">Produit</th>
-              <th className="py-2">Date</th><th className="py-2 text-right">Quantité</th>
-              <th className="py-2">Origine</th><th className="py-2">Destination</th><th className="py-2">État</th><th />
+              <th className="py-2">{text('N° de lot')}</th><th className="py-2">{text('Type')}</th><th className="py-2">{text('Produit')}</th>
+              <th className="py-2">{text('Date')}</th><th className="py-2 text-right">{text('Quantité')}</th>
+              <th className="py-2">{text('Origine')}</th><th className="py-2">{text('Destination')}</th><th className="py-2">{text('État')}</th><th />
             </tr>
           </thead>
           <tbody>
             {filtered.map(r => (
               <tr key={r.id} className="border-b last:border-0">
                 <td className="py-1.5 font-medium">{r.batch_number}</td>
-                <td className="py-1.5 text-xs">{PRODUCT_TYPES.find(p => p.key === r.product_type)?.label ?? r.product_type}</td>
+                <td className="py-1.5 text-xs">{text(PRODUCT_TYPES.find(p => p.key === r.product_type)?.label ?? r.product_type)}</td>
                 <td className="py-1.5">{r.product_name || '—'}</td>
                 <td className="py-1.5 text-xs text-muted-foreground">{r.entry_date}</td>
                 <td className="py-1.5 text-right">{Number(r.quantity).toFixed(1)} {r.unit_label}</td>
@@ -134,7 +138,7 @@ const FeedTraceability: React.FC<Props> = ({ records, onSave, onDelete }) => {
                 <td className="py-1.5 text-xs">{r.destination || '—'}</td>
                 <td className="py-1.5">
                   <Badge variant={r.state === 'rebut' ? 'destructive' : 'outline'} className="text-[10px]">
-                    {STATES.find(s => s.key === r.state)?.label ?? r.state}
+                    {text(STATES.find(s => s.key === r.state)?.label ?? r.state)}
                   </Badge>
                 </td>
                 <td className="py-1.5 text-right">
@@ -145,7 +149,7 @@ const FeedTraceability: React.FC<Props> = ({ records, onSave, onDelete }) => {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">Aucun lot tracé.</td></tr>
+              <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">{text('Aucun lot tracé.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -153,58 +157,58 @@ const FeedTraceability: React.FC<Props> = ({ records, onSave, onDelete }) => {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Nouveau lot tracé</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{text('Nouveau lot tracé')}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">N° de lot</Label>
+              <Label className="text-xs">{text('N° de lot')}</Label>
               <Input value={form.batch_number} onChange={e => setForm({ ...form, batch_number: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Type de produit</Label>
+              <Label className="text-xs">{text('Type de produit')}</Label>
               <Select value={form.product_type} onValueChange={v => setForm({ ...form, product_type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PRODUCT_TYPES.map(p => <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{PRODUCT_TYPES.map(p => <SelectItem key={p.key} value={p.key}>{text(p.label)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="sm:col-span-2">
-              <Label className="text-xs">Nom du produit</Label>
+              <Label className="text-xs">{text('Nom du produit')}</Label>
               <Input value={form.product_name} onChange={e => setForm({ ...form, product_name: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Date d’entrée</Label>
+              <Label className="text-xs">{text('Date d’entrée')}</Label>
               <Input type="date" value={form.entry_date} onChange={e => setForm({ ...form, entry_date: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Quantité</Label>
+              <Label className="text-xs">{text('Quantité')}</Label>
               <Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} />
             </div>
             <div>
-              <Label className="text-xs">Unité</Label>
+              <Label className="text-xs">{text('Unité')}</Label>
               <Input value={form.unit_label} onChange={e => setForm({ ...form, unit_label: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">État</Label>
+              <Label className="text-xs">{text('État')}</Label>
               <Select value={form.state} onValueChange={v => setForm({ ...form, state: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{STATES.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
+                <SelectContent>{STATES.map(s => <SelectItem key={s.key} value={s.key}>{text(s.label)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Origine</Label>
+              <Label className="text-xs">{text('Origine')}</Label>
               <Input value={form.origin} onChange={e => setForm({ ...form, origin: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">Destination</Label>
+              <Label className="text-xs">{text('Destination')}</Label>
               <Input value={form.destination} onChange={e => setForm({ ...form, destination: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <Label className="text-xs">Notes</Label>
+              <Label className="text-xs">{text('Notes')}</Label>
               <Textarea rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-            <Button onClick={submit}>Enregistrer</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{text('Annuler')}</Button>
+            <Button onClick={submit}>{text('Enregistrer')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

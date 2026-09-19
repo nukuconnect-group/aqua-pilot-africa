@@ -16,11 +16,15 @@ import useFeedOperations from './useFeedOperations';
 import FeedQualityControls from './FeedQualityControls';
 import FeedProductionCycles from './FeedProductionCycles';
 import FeedTraceability from './FeedTraceability';
+import { useSettings } from '@/contexts/SettingsContext';
+import { tr } from '@/i18n/runtime';
 
 interface Props { onBack: () => void; }
 
 const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
   const { formatCurrency, activeUnit } = useProductionUnits();
+  const { language } = useSettings();
+  const text = (value: string) => tr(value, language);
   const mill = useFeedMill();
   const [tab, setTab] = useState('dashboard');
   const [editing, setEditing] = useState<StoredFormulation | null>(null);
@@ -54,33 +58,33 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
           <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft className="w-4 h-4 mr-1.5" />AquaFeed AI</Button>
           <div>
             <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-              <FlaskConical className="w-5 h-5 text-primary" />Fabrication & Formulation d'aliments
+              <FlaskConical className="w-5 h-5 text-primary" />{text("Fabrication & Formulation d'aliments")}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Formulez, optimisez, fabriquez et suivez vos aliments{activeUnit ? ` — ${activeUnit.name}` : ''}.
+              {text('Formulez, optimisez, fabriquez et suivez vos aliments')}{activeUnit ? ` — ${activeUnit.name}` : ''}.
             </p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Kpi icon={<FolderOpen className="w-4 h-4" />} label="Formulations actives" value={String(stats.formulations)} />
-        <Kpi icon={<Boxes className="w-4 h-4" />} label="Matières premières" value={String(stats.ingredients)} />
-        <Kpi icon={<Package className="w-4 h-4" />} label="Aliment fabriqué" value={`${stats.producedKg.toFixed(1)} kg`} />
-        <Kpi icon={<Wallet className="w-4 h-4" />} label="Coût moyen / kg" value={formatCurrency(stats.avgCost)} />
+         <Kpi icon={<FolderOpen className="w-4 h-4" />} label={text('Formulations actives')} value={String(stats.formulations)} />
+         <Kpi icon={<Boxes className="w-4 h-4" />} label={text('Matières premières')} value={String(stats.ingredients)} />
+         <Kpi icon={<Package className="w-4 h-4" />} label={text('Aliment fabriqué')} value={`${stats.producedKg.toFixed(1)} kg`} />
+         <Kpi icon={<Wallet className="w-4 h-4" />} label={text('Coût moyen / kg')} value={formatCurrency(stats.avgCost)} />
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-9 w-full">
-          <TabsTrigger value="dashboard"><LayoutDashboard className="w-4 h-4 mr-1.5" />Tableau de bord</TabsTrigger>
-          <TabsTrigger value="lab"><FlaskConical className="w-4 h-4 mr-1.5" />Laboratoire</TabsTrigger>
-          <TabsTrigger value="studio"><FlaskConical className="w-4 h-4 mr-1.5" />Formuler</TabsTrigger>
-          <TabsTrigger value="formulations"><FolderOpen className="w-4 h-4 mr-1.5" />Mes formulations</TabsTrigger>
-          <TabsTrigger value="ingredients"><Boxes className="w-4 h-4 mr-1.5" />Ingrédients</TabsTrigger>
-          <TabsTrigger value="batches"><Factory className="w-4 h-4 mr-1.5" />Fabrications</TabsTrigger>
-          <TabsTrigger value="cycles"><Workflow className="w-4 h-4 mr-1.5" />Cycles</TabsTrigger>
-          <TabsTrigger value="quality"><ShieldCheck className="w-4 h-4 mr-1.5" />Prophylaxie</TabsTrigger>
-          <TabsTrigger value="trace"><ScanLine className="w-4 h-4 mr-1.5" />Traçabilité</TabsTrigger>
+          <TabsTrigger value="dashboard"><LayoutDashboard className="w-4 h-4 mr-1.5" />{text('Tableau de bord')}</TabsTrigger>
+          <TabsTrigger value="lab"><FlaskConical className="w-4 h-4 mr-1.5" />{text('Laboratoire')}</TabsTrigger>
+          <TabsTrigger value="studio"><FlaskConical className="w-4 h-4 mr-1.5" />{text('Formuler')}</TabsTrigger>
+          <TabsTrigger value="formulations"><FolderOpen className="w-4 h-4 mr-1.5" />{text('Mes formulations')}</TabsTrigger>
+          <TabsTrigger value="ingredients"><Boxes className="w-4 h-4 mr-1.5" />{text('Ingrédients')}</TabsTrigger>
+          <TabsTrigger value="batches"><Factory className="w-4 h-4 mr-1.5" />{text('Fabrications')}</TabsTrigger>
+          <TabsTrigger value="cycles"><Workflow className="w-4 h-4 mr-1.5" />{text('Cycles')}</TabsTrigger>
+          <TabsTrigger value="quality"><ShieldCheck className="w-4 h-4 mr-1.5" />{text('Prophylaxie')}</TabsTrigger>
+          <TabsTrigger value="trace"><ScanLine className="w-4 h-4 mr-1.5" />{text('Traçabilité')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">

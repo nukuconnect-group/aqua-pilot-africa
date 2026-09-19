@@ -12,6 +12,7 @@ import {
   type ModulePermissionSet,
   type PlanConfig,
   computeModuleAccess,
+  enforceUnitTypeRestrictions,
   loadPlanConfigs,
   loadUnitModuleRules,
   loadUserModuleOverrides,
@@ -95,7 +96,12 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const { allowed, permissions } = useMemo(() => {
     if (isUnrestricted) {
-      const all = new Set(MODULE_CATALOG.map((m) => m.key));
+      const all = activeUnit?.type
+        ? enforceUnitTypeRestrictions(
+            activeUnit.type,
+            (unitRules || undefined)?.[activeUnit.type] || MODULE_CATALOG.map((m) => m.key),
+          )
+        : new Set(MODULE_CATALOG.map((m) => m.key));
       const perms: Record<string, ModulePermissionSet> = {};
       all.forEach((key) => { perms[key] = FULL_PERMISSIONS; });
       return { allowed: all, permissions: perms };
@@ -111,23 +117,23 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
     (moduleOrTabId: string) => {
       const moduleId = tabToModuleId(moduleOrTabId);
       if (moduleId === 'admin') return user?.role === 'admin';
-      if (isUnrestricted) return true;
+       if (isUnrestricted) return allowed.has(moduleId);
       if (!allowed.has(moduleId)) return false;
       // Le rôle d'équipe restreint en plus l'abonnement.
       if (isTeamMember && !hasAccessToModule(moduleId)) return false;
       return true;
     },
-    [allowed, hasAccessToModule, isTeamMember, isUnrestricted, user?.role],
+     [allowed, hasAccessToModule, isTeamMember, isUnrestricted, user?.role],
   );
 
   const getPermissions = useCallback(
     (moduleOrTabId: string): ModulePermissionSet => {
       const moduleId = tabToModuleId(moduleOrTabId);
-      if (isUnrestricted) return FULL_PERMISSIONS;
+      if (isUnrestricted) return allowed.has(moduleId) ? FULL_PERMISSIONS : NO_PERMISSIONS;
       if (!hasModuleAccess(moduleId)) return NO_PERMISSIONS;
       return permissions[moduleId] || FULL_PERMISSIONS;
     },
-    [hasModuleAccess, isUnrestricted, permissions],
+    [allowed, hasModuleAccess, isUnrestricted, permissions],
   );
 
   const value: ModuleAccessValue = {

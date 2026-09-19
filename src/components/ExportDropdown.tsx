@@ -14,6 +14,8 @@ import {
   exportToWord, 
   exportToPDF 
 } from '@/lib/dataExportUtils';
+import { useSettings } from '@/contexts/SettingsContext';
+import { tr } from '@/i18n/runtime';
 
 interface ExportDropdownProps {
   options: ExportOptions;
@@ -30,30 +32,32 @@ const ExportDropdown = ({
   label = 'Exporter',
   className = ''
 }: ExportDropdownProps) => {
+  const { language } = useSettings();
+  const text = (value: string) => tr(value, language);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant={variant} size={size} className={className}>
           <Download className="w-4 h-4 mr-2" />
-          {label}
+          {text(label)}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onClick={() => exportToPDF(options)}>
           <Printer className="w-4 h-4 mr-2 text-red-500" />
-          Exporter en PDF
+          {text('Exporter en PDF')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => exportToWord(options)}>
           <FileText className="w-4 h-4 mr-2 text-blue-500" />
-          Exporter en Word
+          {text('Exporter en Word')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => exportToExcel(options)}>
           <FileSpreadsheet className="w-4 h-4 mr-2 text-green-500" />
-          Exporter en Excel
+          {text('Exporter en Excel')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => exportToCSV(options)}>
           <FileSpreadsheet className="w-4 h-4 mr-2 text-gray-500" />
-          Exporter en CSV
+          {text('Exporter en CSV')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
