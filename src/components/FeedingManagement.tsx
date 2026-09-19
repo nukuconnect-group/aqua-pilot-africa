@@ -192,9 +192,9 @@ const FeedingManagement = () => {
             await createNotification({
               userId: user.id,
               title: 'Sortie d\'aliment',
-              message: `${quantityUsed} kg de ${feedType} utilisé. Stock restant: ${newQuantity.toFixed(1)} ${matchingStock.unit}`,
+              message: `${quantityUsed} ${matchingStock.unit} de ${feedType} utilisé. Stock restant: ${newQuantity.toFixed(1)} ${matchingStock.unit}`,
               type: 'info',
-              module: 'Alimentation',
+              module: activeUnit.type === 'algoculture' ? 'Intrants' : 'Alimentation',
               isCritical: false,
               metadata: {
                 feedType: feedType,
@@ -210,7 +210,7 @@ const FeedingManagement = () => {
                 title: 'Stock d\'aliment bas',
                 message: `Le stock de ${feedType} est bas (${newQuantity.toFixed(1)} ${matchingStock.unit}). Seuil minimum: ${matchingStock.min_threshold || 50}`,
                 type: 'warning',
-                module: 'Alimentation',
+                module: activeUnit.type === 'algoculture' ? 'Intrants' : 'Alimentation',
                 isCritical: newQuantity <= 0,
                 metadata: {
                   feedType: feedType,
