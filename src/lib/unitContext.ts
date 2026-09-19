@@ -343,7 +343,7 @@ export const ALGAE_TERMS: UnitContextTerms = {
   ],
   samplingTabLabel: 'Suivi culture',
   samplingTitle: 'Contrôle de croissance de la culture',
-  samplingSubtitle: 'Densité, biomasse, pH, salinité et transparence par bassin',
+  samplingSubtitle: 'Biomasse, densité, pH, salinité, pertes et contaminations par bassin',
   healthCheptelTabLabel: 'Lots de culture',
   healthDiseasesTabLabel: 'Contaminations',
   analyticsInputsTabLabel: 'Intrants',
