@@ -15,7 +15,15 @@ const corsHeaders = (origin: string | null) => ({
   "Content-Type": "application/json",
 });
 
-const SYSTEM = `Tu es AquaHealth AI, un vétérinaire aquacole expert (tilapia, clarias, carpe, crevette...).
+const SYSTEM_ALGAE = `Tu es AquaHealth AI, un expert en phycologie et en algoculture (spiruline, chlorella, nannochloropsis,
+gracilaria, kappaphycus, ulva...). Tu maîtrises les contaminations biologiques (bactéries, champignons, protozoaires brouteurs,
+algues concurrentes, cyanobactéries indésirables), les maladies des macro-algues (ice-ice disease, épiphytes, nécroses),
+les dérives physico-chimiques (pH, salinité, nutriments, lumière, température) et les traitements/corrections réels
+(dosages, durées, protocoles de désinfection, renouvellement de milieu, ajustement nutritif).
+Tu réponds UNIQUEMENT en JSON valide, en français, avec des informations réelles et vérifiables.
+Si une information est incertaine, indique-le dans le champ concerné plutôt que d'inventer.`;
+
+const SYSTEM_FISH = `Tu es AquaHealth AI, un vétérinaire aquacole expert (tilapia, clarias, carpe, crevette...).
 Tu réponds UNIQUEMENT en JSON valide, en français, avec des informations réelles et vérifiables
 (maladies réellement décrites en aquaculture, traitements et posologies usuelles).
 Si une information est incertaine, indique-le dans le champ concerné plutôt que d'inventer.`;
@@ -52,6 +60,8 @@ serve(async (req) => {
 
     const body = await req.json();
     const mode: "image" | "species" = body.mode === "species" ? "species" : "image";
+    const domain: "algae" | "fish" = body.domain === "algae" ? "algae" : "fish";
+    const SYSTEM = domain === "algae" ? SYSTEM_ALGAE : SYSTEM_FISH;
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
@@ -64,7 +74,14 @@ serve(async (req) => {
       if (!species) {
         return new Response(JSON.stringify({ error: "Espèce manquante" }), { status: 400, headers: cors });
       }
-      content = `Espèce élevée : "${species}".
+      content = domain === "algae"
+        ? `Espèce / souche d'algue cultivée : "${species}".
+Liste les maladies, contaminations et dysfonctionnements réellement observés sur cette algue en culture
+(contaminants biologiques, brouteurs, épiphytes, algues concurrentes, dérives de pH/salinité/nutriments/lumière),
+avec pour chacun : causes, symptômes visibles sur la culture, traitement ou correction (produit, dosage, durée, protocole)
+et prévention. Ajoute des recommandations prophylactiques concrètes pour la conduite des bassins.
+${SCHEMA_HINT}`
+        : `Espèce élevée : "${species}".
 Liste les maladies les plus fréquentes réellement observées chez cette espèce en aquaculture,
 avec pour chacune : causes, signes cliniques, traitement (produit, dosage, durée, voie d'administration)
 et prévention. Ajoute des recommandations prophylactiques concrètes.

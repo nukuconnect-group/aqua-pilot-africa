@@ -353,8 +353,8 @@ const AnalyticsDashboard: React.FC = () => {
     return [
       { metric: 'Production', value: Math.min(kpis.progressRate, 100), fullMark: 100 },
       { metric: 'Survie', value: kpis.survivalRate, fullMark: 100 },
-      { metric: 'FCR', value: feedingEfficiency, fullMark: 100 },
-      { metric: 'Alimentation', value: kpis.totalFeeding > 0 ? Math.min((kpis.totalFeeding / 1000) * 10, 100) : 0, fullMark: 100 },
+      { metric: unitTerms.conversionLabel, value: feedingEfficiency, fullMark: 100 },
+      { metric: unitTerms.analyticsInputsTabLabel, value: kpis.totalFeeding > 0 ? Math.min((kpis.totalFeeding / 1000) * 10, 100) : 0, fullMark: 100 },
       { metric: 'Qualité eau', value: waterQuality, fullMark: 100 },
       { metric: 'Croissance', value: kpis.avgTemperature > 0 ? Math.min(kpis.avgTemperature * 3, 100) : 0, fullMark: 100 }
     ];
@@ -456,8 +456,8 @@ const AnalyticsDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="feeding" className="flex items-center gap-2">
             <Scale className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('feeding')}</span>
-            <span className="sm:hidden">{t('feeding')}</span>
+            <span className="hidden sm:inline">{unitTerms.analyticsInputsTabLabel}</span>
+            <span className="sm:hidden">{unitTerms.analyticsInputsTabLabel}</span>
           </TabsTrigger>
           <TabsTrigger value="performance" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
@@ -608,7 +608,7 @@ const AnalyticsDashboard: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Évolution Quotidienne</CardTitle>
-                <CardDescription>Alimentation et mortalité sur 14 jours</CardDescription>
+                <CardDescription>{`${unitTerms.analyticsInputsTabLabel} et pertes sur 14 jours`}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-72">
@@ -626,7 +626,7 @@ const AnalyticsDashboard: React.FC = () => {
                         }}
                       />
                       <Legend />
-                      <Bar yAxisId="left" dataKey="alimentation" name="Alimentation (kg)" fill={COLORS.primary} radius={[4, 4, 0, 0]} />
+                      <Bar yAxisId="left" dataKey="alimentation" name={`${unitTerms.analyticsInputsTabLabel} (kg)`} fill={COLORS.primary} radius={[4, 4, 0, 0]} />
                       <Line yAxisId="right" type="monotone" dataKey="mortalite" name="Mortalité" stroke={COLORS.danger} strokeWidth={2} dot />
                     </ComposedChart>
                   </ResponsiveContainer>

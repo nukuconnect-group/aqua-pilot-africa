@@ -17,6 +17,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { exportControlFishingPDF } from '@/lib/controlFishingPdf';
 import { useToast } from '@/hooks/use-toast';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 
 interface ControlFishingFormProps {
   unitId: string;
@@ -41,6 +43,10 @@ const ControlFishingForm = ({ unitId, onRecordCreated }: ControlFishingFormProps
   const { infrastructures } = useCycleInfrastructures(selectedCycleId);
   const { createRecord, records: allHealthRecords } = useHealthRecords(selectedCycleId, unitId);
   const { batches: livestockBatches } = useLivestockBatches(unitId);
+  const { units: allUnits } = useProductionUnits();
+  const cfUnitType = allUnits.find(u => u.id === unitId)?.type;
+  const cfTerms = getUnitTerms(cfUnitType);
+  const isAlgae = isAlgaeUnitType(cfUnitType);
   
   const [formData, setFormData] = useState({
     infrastructureId: '',
@@ -505,7 +511,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
 
               {selectedCycleId && (
                 <div className="space-y-2">
-                  <Label>Infrastructures à échantillonner (sélection multiple)</Label>
+                  <Label>{isAlgae ? 'Bassins de culture à échantillonner (sélection multiple)' : 'Infrastructures à échantillonner (sélection multiple)'}</Label>
                   {infraAvailability.length === 0 ? (
                     <Alert>
                       <AlertDescription>
@@ -658,16 +664,16 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                       </Select>
                     </div>
                     <div className="col-span-12 sm:col-span-2">
-                      <Label className="text-xs">Espèce</Label>
+                      <Label className="text-xs">{cfTerms.speciesLabel}</Label>
                       <Input
                         value={newBatch.species}
                         onChange={(e) => setNewBatch({...newBatch, species: e.target.value})}
-                        placeholder={attachedBatch?.species || 'Tilapia'}
+                        placeholder={attachedBatch?.species || cfTerms.speciesOptions[0]}
                       />
                     </div>
 
                     <div className="col-span-4 sm:col-span-2">
-                      <Label className="text-xs">Nb sujets</Label>
+                      <Label className="text-xs">{isAlgae ? 'Nb échantillons' : 'Nb sujets'}</Label>
                       <Input
                         type="number"
                         min="1"
@@ -677,7 +683,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                       />
                     </div>
                     <div className="col-span-8 sm:col-span-3">
-                      <Label className="text-xs">Poids TOTAL du lot (g)</Label>
+                      <Label className="text-xs">{isAlgae ? 'Biomasse TOTALE prélevée (g)' : 'Poids TOTAL du lot (g)'}</Label>
                       <Input
                         type="number"
                         step="0.1"
@@ -837,7 +843,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="date">Date de la pêche</Label>
+                    <Label htmlFor="date">{isAlgae ? 'Date du contrôle de culture' : 'Date de la pêche'}</Label>
                     <Input
                       id="date"
                       type="date"
@@ -873,7 +879,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                     </div>
 
                     <div>
-                      <Label htmlFor="oxygen">Oxygène dissous (mg/L)</Label>
+                      <Label htmlFor="oxygen">{isAlgae ? 'Salinité (g/L)' : 'Oxygène dissous (mg/L)'}</Label>
                       <Input
                         id="oxygen"
                         type="number"
@@ -885,7 +891,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                     </div>
 
                     <div>
-                      <Label htmlFor="mortality">Mortalité observée</Label>
+                      <Label htmlFor="mortality">{isAlgae ? 'Pertes / contamination observée' : 'Mortalité observée'}</Label>
                       <Input
                         id="mortality"
                         type="number"

@@ -1258,7 +1258,7 @@ const LivestockManagement = () => {
               Reproduction
             </TabsTrigger>
           )}
-          <TabsTrigger value="control" className="text-xs sm:text-sm px-2 py-2">Pêche</TabsTrigger>
+          <TabsTrigger value="control" className="text-xs sm:text-sm px-2 py-2">{unitTerms.samplingTabLabel}</TabsTrigger>
           <TabsTrigger value="charts" className="text-xs sm:text-sm px-2 py-2">Graphiques</TabsTrigger>
         </TabsList>
 
@@ -1808,10 +1808,10 @@ const LivestockManagement = () => {
                   <div>
                     <CardTitle className="flex items-center gap-2 text-base sm:text-lg flex-wrap">
                       <Fish className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-600 flex-shrink-0" />
-                      <span className="text-sm sm:text-base">Pêche de Contrôle</span>
+                      <span className="text-sm sm:text-base">{unitTerms.samplingTitle}</span>
                     </CardTitle>
                     <CardDescription className="text-xs sm:text-sm mt-1">
-                      Enregistrez les pêches de contrôle par infrastructure
+                      {unitTerms.samplingSubtitle}
                     </CardDescription>
                   </div>
                 </div>

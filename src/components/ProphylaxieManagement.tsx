@@ -362,7 +362,7 @@ const ProphylaxieManagement = () => {
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
           <TabsList className="grid grid-cols-6 w-full min-w-[600px] sm:min-w-0">
             <TabsTrigger value="cheptel" className="text-xs sm:text-sm px-1 sm:px-3">
-              Cheptel
+              {unitTerms.healthCheptelTabLabel}
             </TabsTrigger>
             <TabsTrigger value="calendar" className="text-xs sm:text-sm px-1 sm:px-3">
               Calendrier
@@ -379,7 +379,7 @@ const ProphylaxieManagement = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="diseases" className="text-xs sm:text-sm px-1 sm:px-3">
-              Maladies
+              {unitTerms.healthDiseasesTabLabel}
             </TabsTrigger>
             <TabsTrigger value="planning" className="text-xs sm:text-sm px-1 sm:px-3">
               Planning

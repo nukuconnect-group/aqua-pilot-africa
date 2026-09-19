@@ -43,6 +43,27 @@ export interface UnitContextTerms {
   /** Libellés d'analyse (indice de conversion / rendement). */
   conversionLabel: string;
   conversionDescription: string;
+  /** Types d'infrastructures proposés à la création. */
+  infrastructureTypeOptions: { value: string; label: string }[];
+  /** Onglet « Pêche de contrôle » / échantillonnage. */
+  samplingTabLabel: string;
+  samplingTitle: string;
+  samplingSubtitle: string;
+  /** Onglets du module Prophylaxie. */
+  healthCheptelTabLabel: string;
+  healthDiseasesTabLabel: string;
+  /** Onglet « Alimentation » dans l'analytique. */
+  analyticsInputsTabLabel: string;
+  /** Assistant IA santé. */
+  aiSpeciesTitle: string;
+  aiSpeciesDescription: string;
+  aiSpeciesPlaceholder: string;
+  /** Activation/désactivation de sous-modules non pertinents. */
+  features: {
+    feedingSheets: boolean;
+    feedingPlanning: boolean;
+    sampling: boolean;
+  };
 }
 
 
@@ -94,6 +115,37 @@ const DEFAULT_TERMS: UnitContextTerms = {
   ],
   conversionLabel: 'FCR',
   conversionDescription: 'Indice de conversion alimentaire',
+  infrastructureTypeOptions: [
+    { value: 'bassin_incubation', label: "Bassin d'incubation" },
+    { value: 'bassin_grossissement', label: 'Bassin de grossissement' },
+    { value: 'bassin_beton', label: 'Bassin en béton' },
+    { value: 'etang_naturel', label: 'Étang naturel' },
+    { value: 'etang_artificiel', label: 'Étang artificiel' },
+    { value: 'chambre_froide', label: 'Chambre froide' },
+    { value: 'chambre_froide_positive', label: 'Chambre froide positive' },
+    { value: 'chambre_froide_negative', label: 'Chambre froide négative' },
+    { value: 'four_fumage', label: 'Four de fumage' },
+    { value: 'four_sechage', label: 'Four de séchage' },
+    { value: 'table_decoupe', label: 'Table de découpe' },
+    { value: 'machine_filetage', label: 'Machine de filetage' },
+    { value: 'tunnel_congelation', label: 'Tunnel de congélation' },
+    { value: 'silo_aliment', label: 'Silo à aliment' },
+    { value: 'reservoir_eau', label: "Réservoir d'eau" },
+    { value: 'systeme_filtration', label: 'Système de filtration' },
+    { value: 'pompe_eau', label: 'Pompe à eau' },
+    { value: 'aerateur', label: 'Aérateur' },
+    { value: 'laboratoire', label: "Laboratoire d'analyse" },
+  ],
+  samplingTabLabel: 'Pêche',
+  samplingTitle: 'Pêche de Contrôle',
+  samplingSubtitle: 'Enregistrez les pêches de contrôle par infrastructure',
+  healthCheptelTabLabel: 'Cheptel',
+  healthDiseasesTabLabel: 'Maladies',
+  analyticsInputsTabLabel: 'Alimentation',
+  aiSpeciesTitle: 'Maladies par espèce',
+  aiSpeciesDescription: 'Saisissez une espèce élevée pour obtenir ses maladies réelles et les recommandations.',
+  aiSpeciesPlaceholder: 'Ex : Tilapia du Nil, Clarias gariepinus, Carpe commune...',
+  features: { feedingSheets: true, feedingPlanning: true, sampling: true },
 };
 
 
@@ -205,6 +257,37 @@ export const ALGAE_TERMS: UnitContextTerms = {
   ],
   conversionLabel: 'Rendement nutritif',
   conversionDescription: 'Kg d’intrants consommés par kg de biomasse algale produite',
+  infrastructureTypeOptions: [
+    { value: 'bassin_raceway', label: 'Bassin raceway (open pond)' },
+    { value: 'bassin_circulaire', label: 'Bassin circulaire de culture' },
+    { value: 'photobioreacteur_tubulaire', label: 'Photobioréacteur tubulaire' },
+    { value: 'photobioreacteur_plan', label: 'Photobioréacteur à panneaux' },
+    { value: 'bassin_inoculum', label: 'Bassin d’inoculum / pré-culture' },
+    { value: 'reservoir_culture', label: 'Réservoir de culture' },
+    { value: 'bassin_decantation', label: 'Bassin de décantation' },
+    { value: 'ligne_flottante', label: 'Ligne flottante / filière en mer' },
+    { value: 'table_culture', label: 'Table de culture (macro-algues)' },
+    { value: 'unite_filtration', label: 'Unité de filtration / essorage' },
+    { value: 'sechoir_solaire', label: 'Séchoir solaire' },
+    { value: 'sechoir_electrique', label: 'Séchoir électrique' },
+    { value: 'salle_conditionnement', label: 'Salle de conditionnement' },
+    { value: 'laboratoire_souches', label: 'Laboratoire de souches' },
+    { value: 'station_co2', label: 'Station d’injection CO₂' },
+    { value: 'station_pompage', label: 'Station de pompage / eau de mer' },
+    { value: 'reservoir_nutriments', label: 'Réservoir de solution nutritive' },
+    { value: 'magasin_stockage', label: 'Magasin de stockage produits secs' },
+  ],
+  samplingTabLabel: 'Suivi culture',
+  samplingTitle: 'Contrôle de croissance de la culture',
+  samplingSubtitle: 'Densité, biomasse, pH, salinité et transparence par bassin',
+  healthCheptelTabLabel: 'Lots de culture',
+  healthDiseasesTabLabel: 'Contaminations',
+  analyticsInputsTabLabel: 'Intrants',
+  aiSpeciesTitle: 'Maladies & contaminations par espèce d’algue',
+  aiSpeciesDescription:
+    'Saisissez une espèce ou souche d’algue pour obtenir ses pathologies, contaminations, symptômes, traitements et dosages recommandés.',
+  aiSpeciesPlaceholder: 'Ex : Spiruline (Arthrospira platensis), Chlorella vulgaris, Gracilaria...',
+  features: { feedingSheets: false, feedingPlanning: false, sampling: true },
 };
 
 
