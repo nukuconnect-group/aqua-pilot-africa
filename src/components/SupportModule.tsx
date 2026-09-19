@@ -157,10 +157,23 @@ const SupportModule = () => {
 
   const suggestedSubjects = SUBJECT_SUGGESTIONS.find(s => s.category === formData.category)?.subjects || [];
 
-  // Filtrer les tickets selon le rôle
-  const displayedTickets = isAdmin 
-    ? tickets 
+  // Filtrer les tickets selon le rôle, la recherche et le statut
+  const visibleTickets = isAdmin
+    ? tickets
     : tickets.filter(t => t.user_id === user?.id);
+
+  const displayedTickets = visibleTickets.filter(t => {
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      t.subject?.toLowerCase().includes(q) ||
+      t.message?.toLowerCase().includes(q) ||
+      t.category?.toLowerCase().includes(q) ||
+      t.user_email?.toLowerCase().includes(q) ||
+      (t.user_name || '').toLowerCase().includes(q)
+    );
+  });
 
   // Si pas d'utilisateur, afficher un message
   if (!user) {
