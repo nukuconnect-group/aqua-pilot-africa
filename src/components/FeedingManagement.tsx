@@ -364,19 +364,23 @@ const FeedingManagement = () => {
               <span className="hidden sm:inline">Historique</span>
               <span className="sm:hidden">Hist.</span>
             </TabsTrigger>
-            <TabsTrigger value="sheets" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
-              <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Fiches</span>
-              <span className="sm:hidden">Fiches</span>
-            </TabsTrigger>
-            <TabsTrigger value="planning" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
-              <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Planification</span>
-              <span className="sm:hidden">Plan.</span>
-            </TabsTrigger>
+            {unitTerms.features.feedingSheets && (
+              <TabsTrigger value="sheets" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
+                <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Fiches</span>
+                <span className="sm:hidden">Fiches</span>
+              </TabsTrigger>
+            )}
+            {unitTerms.features.feedingPlanning && (
+              <TabsTrigger value="planning" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Planification</span>
+                <span className="sm:hidden">Plan.</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="stock" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Stock aliment</span>
+              <span className="hidden sm:inline">{unitTerms.features.feedingSheets ? 'Stock aliment' : 'Stock intrants'}</span>
               <span className="sm:hidden">Stock</span>
             </TabsTrigger>
             <TabsTrigger value="alerts" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
