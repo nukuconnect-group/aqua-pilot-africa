@@ -317,6 +317,22 @@ export const ALGAE_TERMS: UnitContextTerms = {
   aiSpeciesDescription:
     'Saisissez une espèce ou souche d’algue pour obtenir ses pathologies, contaminations, symptômes, traitements et dosages recommandés.',
   aiSpeciesPlaceholder: 'Ex : Spiruline (Arthrospira platensis), Chlorella vulgaris, Gracilaria...',
+  batchTypeOptions: [
+    { value: 'souche_mere', label: 'Souche mère' },
+    { value: 'inoculum', label: 'Inoculum / pré-culture' },
+    { value: 'culture_croissance', label: 'Culture en croissance' },
+    { value: 'boutures', label: 'Boutures / thalles (macro-algues)' },
+    { value: 'culture_recoltable', label: 'Culture récoltable' },
+  ],
+  attachedBatchLabel: 'Lot de culture rattaché',
+  attachedBatchEmptyText: "Ce bassin n'a pas encore de lot de culture associé",
+  createBatchTitle: 'Créer un lot de culture',
+  individualsLabel: 'kg / L ensemencés',
+  cycleQuantityLabel: 'Quantité ensemencée (kg ou L)',
+  cycleInitialWeightLabel: 'Biomasse initiale (kg)',
+  cycleTargetWeightLabel: 'Biomasse objectif à la récolte (kg)',
+  cycleSurvivalLabel: 'Taux de réussite de culture attendu (%)',
+  cycleAverageWeightLabel: 'Densité visée (g/L)',
   features: { feedingSheets: false, feedingPlanning: false, sampling: true },
 };
 
