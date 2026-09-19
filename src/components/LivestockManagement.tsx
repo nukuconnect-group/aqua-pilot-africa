@@ -444,7 +444,7 @@ const LivestockManagement = () => {
   const [formData, setFormData] = useState({
     species: '',
     variety: '',
-    type: 'alevins',
+    type: '',
     sex: '' as '' | 'male' | 'female' | 'mixed',
     maleCount: 0,
     femaleCount: 0,
