@@ -17,6 +17,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { exportControlFishingPDF } from '@/lib/controlFishingPdf';
 import { useToast } from '@/hooks/use-toast';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 
 interface ControlFishingFormProps {
   unitId: string;
