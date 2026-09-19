@@ -39,6 +39,7 @@ const HRManagement = () => {
     addEmployee, 
     addPaySlip 
   } = useEmployees();
+  const { payrollDeductionFor, applyPayrollRepayments } = useHrOperations(activeUnit?.id);
 
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [showPaySlipGenerator, setShowPaySlipGenerator] = useState(false);
