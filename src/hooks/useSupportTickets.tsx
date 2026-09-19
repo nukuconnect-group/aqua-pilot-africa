@@ -352,6 +352,8 @@ export const useSupportTickets = () => {
     createTicket,
     sendMessage,
     updateTicketStatus,
+    deleteMessage,
+    updateMessage,
     fetchMessages: fetchMessagesAndSubscribe,
     markMessagesAsRead,
     refetch: fetchTickets
