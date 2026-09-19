@@ -34,7 +34,17 @@ export interface UnitContextTerms {
   healthIssueOptions: string[];
   salesProductOptions: string[];
   purchaseCategoryOptions: string[];
+  /** Catégories/sous-catégories d'achats proposées dans le module Achats. */
+  purchaseCategoryMap: Record<string, string[]>;
+  /** Catégories proposées à la création d'un fournisseur. */
+  supplierCategoryOptions: string[];
+  /** Types proposés dans la gestion des stocks d'aliments / intrants. */
+  stockTypeOptions: { value: string; label: string }[];
+  /** Libellés d'analyse (indice de conversion / rendement). */
+  conversionLabel: string;
+  conversionDescription: string;
 }
+
 
 const DEFAULT_TERMS: UnitContextTerms = {
   livestockTitle: 'Gestion du Cheptel',
