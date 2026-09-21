@@ -47,12 +47,9 @@ const FISH_MORTALITY_CAUSES = [
 
 const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMortalityFormProps) => {
   const { activeUnit } = useProductionUnits();
-  const isAlgae = isAlgaeUnitType(activeUnit?.type);
-  const { activeUnit } = useProductionUnits();
-  const isAlgae = isAlgaeUnitType(activeUnit?.type);
-  const { activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
   const isAlgae = isAlgaeUnitType(activeUnit?.type);
+  const MORTALITY_CAUSES = isAlgae ? ALGAE_MORTALITY_CAUSES : FISH_MORTALITY_CAUSES;
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const { cycles, updateCycle } = useProductionCycles(unitId);
