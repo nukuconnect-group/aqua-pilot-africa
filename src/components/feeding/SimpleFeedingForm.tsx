@@ -49,7 +49,6 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
   const unitType = allUnits.find((u) => u.id === unitId)?.type;
   const terms = getUnitTerms(unitType);
   const isAlgae = isAlgaeUnitType(unitType);
-  const isAlgae = isAlgaeUnitType(allUnits.find((u) => u.id === unitId)?.type);
   const feedTypes = terms.features.feedingSheets ? FEED_TYPES : terms.feedOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { infrastructures } = useCycleInfrastructures(cycleId || '');
@@ -287,7 +286,7 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
               />
             </div>
             <div>
-              <Label htmlFor="mortality" className="text-xs">{isAlgae ? 'Pertes observées (kg)' : '{isAlgae ? 'Perte observée (kg)' : 'Mortalité observée'}'}</Label>
+              <Label htmlFor="mortality" className="text-xs">{isAlgae ? 'Pertes observées (kg)' : 'Mortalité observée'}</Label>
               <Input
                 id="mortality"
                 type="number"

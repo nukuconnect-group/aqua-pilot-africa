@@ -21,7 +21,17 @@ interface InfrastructureMortalityFormProps {
   onRecorded?: () => void;
 }
 
-const MORTALITY_CAUSES = isAlgae ? ['Contamination', 'Mauvaise qualité d'eau', 'Température extrême', 'Manque de nutriments', 'Parasites', 'Vénusté', 'Cause inconnue'] : [
+const ALGAE_MORTALITY_CAUSES = [
+  'Contamination',
+  "Mauvaise qualité d'eau",
+  'Température extrême',
+  'Manque de nutriments',
+  'Parasites',
+  'Vétusté du matériel',
+  'Cause inconnue',
+];
+
+const FISH_MORTALITY_CAUSES = [
   'Maladie bactérienne',
   'Maladie virale',
   'Maladie parasitaire',
@@ -37,12 +47,9 @@ const MORTALITY_CAUSES = isAlgae ? ['Contamination', 'Mauvaise qualité d'eau', 
 
 const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMortalityFormProps) => {
   const { activeUnit } = useProductionUnits();
-  const isAlgae = isAlgaeUnitType(activeUnit?.type);
-  const { activeUnit } = useProductionUnits();
-  const isAlgae = isAlgaeUnitType(activeUnit?.type);
-  const { activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
   const isAlgae = isAlgaeUnitType(activeUnit?.type);
+  const MORTALITY_CAUSES = isAlgae ? ALGAE_MORTALITY_CAUSES : FISH_MORTALITY_CAUSES;
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const { cycles, updateCycle } = useProductionCycles(unitId);
@@ -174,7 +181,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="destructive" className="w-full sm:w-auto">
-           {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : <Skull className="w-4 h-4 mr-2" />}}
+           {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : <Skull className="w-4 h-4 mr-2" />}
            {isAlgae ? 'Déclarer une perte de biomasse' : 'Déclarer une mortalité'} 
         </Button>
       </DialogTrigger>
@@ -182,7 +189,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-             {isAlgae ? <TrendingDown className="w-5 h-5 text-destructive" /> : {isAlgae ? <TrendingDown className="w-5 h-5 text-destructive" /> : <Skull className="w-5 h-5 text-destructive" />}}
+             {isAlgae ? <TrendingDown className="w-5 h-5 text-destructive" /> : <Skull className="w-5 h-5 text-destructive" />}
              {isAlgae ? 'Déclarer une perte de biomasse' : 'Déclarer une mortalité'}  par infrastructure
           </DialogTitle>
         </DialogHeader>
@@ -262,7 +269,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
                     </p>
                   </div>
                   <div>
-                    <span className="block text-xs text-muted-foreground"> {isAlgae ? 'Taux de perte' : '{isAlgae ? 'Taux de perte' : 'Taux de mortalité'}'} </span>
+                    <span className="block text-xs text-muted-foreground">{isAlgae ? 'Taux de perte' : 'Taux de mortalité'}</span>
                     <p className="font-bold text-destructive">{rate.toFixed(2)}%</p>
                   </div>
                 </div>
@@ -281,7 +288,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
                   <Input id="mortality-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="mortality-count"> {isAlgae ? 'Perte de biomasse (kg)' : 'Nombre de  {isAlgae ? 'kg' : 'sujets'}  morts'} </Label>
+                  <Label htmlFor="mortality-count">{isAlgae ? 'Perte de biomasse (kg)' : 'Nombre de sujets morts'}</Label>
                   <Input
                     id="mortality-count"
                     type="number"

@@ -16,6 +16,7 @@ import {
   Edit,
   Trash2,
   Fish,
+  Leaf,
   Activity
 } from 'lucide-react';
 import { getUnitTerms } from '@/lib/unitContext';
