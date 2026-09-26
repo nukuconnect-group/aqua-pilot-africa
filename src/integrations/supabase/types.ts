@@ -389,6 +389,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cycle_budgets: {
+        Row: {
+          created_at: string
+          cycle_id: string
+          discount_rate: number
+          id: string
+          initial_cash: number
+          lines: Json
+          unit_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_id: string
+          discount_rate?: number
+          id?: string
+          initial_cash?: number
+          lines?: Json
+          unit_id: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          cycle_id?: string
+          discount_rate?: number
+          id?: string
+          initial_cash?: number
+          lines?: Json
+          unit_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cycle_infrastructures: {
         Row: {
           created_at: string | null
