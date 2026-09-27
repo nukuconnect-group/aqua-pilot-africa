@@ -25,6 +25,7 @@ import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import ControlFishingForm from './ControlFishingForm';
+import AlgaeCultureTracking from './algae/AlgaeCultureTracking';
 import InfrastructureMortalityForm from './health/InfrastructureMortalityForm';
 import ReproductionManagement from './reproduction/ReproductionManagement';
 import { generateControlFishingPdf } from '@/lib/controlFishingPdf';
@@ -1798,6 +1799,9 @@ const LivestockManagement = () => {
 
         {/* Onglet Pêche de contrôle */}
         <TabsContent value="control">
+          {activeUnit?.type === 'algoculture' ? (
+            <AlgaeCultureTracking unitId={activeUnit.id} />
+          ) : (
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-3 sm:gap-4">
@@ -2134,6 +2138,7 @@ const LivestockManagement = () => {
               </Dialog>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         {/* Onglet Graphiques & Évolution */}
