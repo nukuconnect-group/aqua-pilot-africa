@@ -27,6 +27,7 @@ import {
   type ReportData 
 } from '@/lib/reportExportUtils';
 import { toast } from 'sonner';
+import CycleFinancialReport from './reports/CycleFinancialReport';
 
 interface ReportPreviewData {
   id: string;
@@ -817,8 +818,9 @@ const ReportsManagement = () => {
 
       {/* Contenu principal */}
       <Tabs defaultValue="journal" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 h-12">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
           <TabsTrigger value="journal" className="text-sm">📔 Journal</TabsTrigger>
+          <TabsTrigger value="finance" className="text-sm">💰 Financier</TabsTrigger>
           <TabsTrigger value="generate" className="text-sm">📄 Générer</TabsTrigger>
           <TabsTrigger value="units" className="text-sm">🏢 Par Unité</TabsTrigger>
           <TabsTrigger value="history" className="text-sm">📚 Historique</TabsTrigger>
@@ -827,6 +829,10 @@ const ReportsManagement = () => {
 
         <TabsContent value="journal" className="space-y-4">
           <FarmJournal />
+        </TabsContent>
+
+        <TabsContent value="finance" className="space-y-4">
+          <CycleFinancialReport />
         </TabsContent>
 
         <TabsContent value="generate" className="space-y-4">
