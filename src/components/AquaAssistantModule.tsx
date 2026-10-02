@@ -1,17 +1,14 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Mic, MicOff, Volume2, Building2, Fish, Utensils, HeartPulse, TrendingUp, Settings, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Activity, PackageCheck, CircleCheck, Clock3, WalletCards, Bot } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, PackageX, PackageSearch, Trophy, WalletCards, Bot } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
-import { useProductionCycles } from '@/hooks/useProductionCycles';
-import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useSales } from '@/hooks/useSales';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -20,7 +17,6 @@ import { Conversation, ConversationContent, ConversationScrollButton } from '@/c
 import { Message as AIMessage, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
 import { Shimmer } from '@/components/ai-elements/shimmer';
-import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 import { formatMoney } from '@/lib/currency';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 
@@ -30,8 +26,6 @@ interface Message {
   category?: string;
   unitId?: string;
 }
-
-// Category type no longer needed - using config arrays instead
 
 interface Language {
   id: string;
@@ -47,102 +41,6 @@ const languages: Language[] = [
   { id: 'kabye', label: 'Kabɩyɛ', code: 'fr-TG', flag: '🇹🇬' },
   { id: 'wolof', label: 'Wolof', code: 'wo-SN', flag: '🇸🇳' },
   { id: 'swahili', label: 'Kiswahili', code: 'sw-KE', flag: '🇰🇪' },
-];
-
-// Categories with full labels for mobile display
-const getCategoryLabel = (lang: string, key: string): string => {
-  const labels: Record<string, Record<string, string>> = {
-    production: { fr: 'Production', en: 'Production' },
-    feeding: { fr: 'Alimentation', en: 'Feeding' },
-    health: { fr: 'Santé', en: 'Health' },
-    economics: { fr: 'Économie', en: 'Economics' },
-    general: { fr: 'Général', en: 'General' }
-  };
-  return labels[key]?.[lang] || labels[key]?.['fr'] || key;
-};
-
-const getCategorySuggestions = (lang: string, key: string): string[] => {
-  const suggestions: Record<string, Record<string, string[]>> = {
-    production: {
-      fr: [
-        "Quel est l'état de mes cycles de production ?",
-        "Combien de poissons ai-je en stock ?",
-        "Quand prévoir la prochaine récolte ?",
-        "Comment optimiser ma densité d'élevage ?",
-      ],
-      en: [
-        "What is the status of my production cycles?",
-        "How many fish do I have in stock?",
-        "When should I plan the next harvest?",
-        "How to optimize my stocking density?",
-      ]
-    },
-    feeding: {
-      fr: [
-        "Quel est mon stock d'aliments actuel ?",
-        "Calcule la ration journalière optimale",
-        "Quand dois-je commander de l'aliment ?",
-        "Quel est mon FCR moyen ?",
-      ],
-      en: [
-        "What is my current feed stock?",
-        "Calculate the optimal daily ration",
-        "When should I order feed?",
-        "What is my average FCR?",
-      ]
-    },
-    health: {
-      fr: [
-        "Y a-t-il des alertes sanitaires ?",
-        "Quel est le taux de mortalité actuel ?",
-        "Quand faire le prochain contrôle sanitaire ?",
-        "Comment prévenir les maladies courantes ?",
-      ],
-      en: [
-        "Are there any health alerts?",
-        "What is the current mortality rate?",
-        "When to do the next health check?",
-        "How to prevent common diseases?",
-      ]
-    },
-    economics: {
-      fr: [
-        "Quel est mon coût de production par kg ?",
-        "Analyse ma rentabilité actuelle",
-        "Prévision des revenus ce mois",
-        "Comment réduire mes coûts ?",
-      ],
-      en: [
-        "What is my production cost per kg?",
-        "Analyze my current profitability",
-        "Revenue forecast for this month",
-        "How to reduce my costs?",
-      ]
-    },
-    general: {
-      fr: [
-        "Donne-moi un résumé de ma ferme",
-        "Quelles tâches sont prioritaires aujourd'hui ?",
-        "Comment améliorer mes performances ?",
-        "Conseils pour la saison actuelle",
-      ],
-      en: [
-        "Give me a summary of my farm",
-        "What tasks are priority today?",
-        "How to improve my performance?",
-        "Tips for the current season",
-      ]
-    }
-  };
-  return suggestions[key]?.[lang] || suggestions[key]?.['fr'] || [];
-};
-
-const categoryConfigs = [
-  { id: 'production', icon: <Fish className="w-4 h-4" /> },
-  { id: 'feeding', icon: <Utensils className="w-4 h-4" /> },
-  { id: 'health', icon: <HeartPulse className="w-4 h-4" /> },
-  { id: 'economics', icon: <TrendingUp className="w-4 h-4" /> },
-  { id: 'general', icon: <Settings className="w-4 h-4" /> }
 ];
 
 const AquaAssistantModule = () => {
@@ -229,8 +127,6 @@ const AquaAssistantModule = () => {
 
   // Données réelles
   const { stocks: feedStocks } = useFeedStocks(selectedUnitId || undefined);
-  const { cycles } = useProductionCycles(selectedUnitId || undefined);
-  const { records: healthRecords } = useHealthRecords(undefined, selectedUnitId || undefined);
   const { allSales } = useSales();
 
   // Auto-scroll robuste : cible le viewport interne de Radix ScrollArea
@@ -306,10 +202,6 @@ const AquaAssistantModule = () => {
       utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion);
   };
 
   const sendMessage = async (messageText?: string, options?: { retry?: boolean }) => {
@@ -464,21 +356,15 @@ const AquaAssistantModule = () => {
     }
   };
 
-  const langKey = selectedLanguage === 'en' ? 'en' : 'fr';
-  const currentCategorySuggestions = selectedCategory ? getCategorySuggestions(langKey, selectedCategory) : [];
   const currentUnit = units.find((unit) => unit.id === selectedUnitId);
-  const terms = getUnitTerms(currentUnit?.type);
-  const isAlgae = isAlgaeUnitType(currentUnit?.type);
   const unitProfile = getAssistantUnitProfile(currentUnit?.type);
-  const activeCycles = cycles.filter((cycle) => cycle.status === 'active');
   const unitStocks = feedStocks;
+  const outOfStocks = unitStocks.filter((stock) => Number(stock.quantity) <= 0);
   const lowStocks = unitStocks.filter(
-    (stock) => Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
+    (stock) => Number(stock.quantity) > 0 &&
+      Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
   );
-  const latestHealth = healthRecords[0];
   const unitLabel = currentUnit?.name || 'Toutes les unités';
-  const cultureLabel = isAlgae ? 'cultures' : 'élevages';
-  const stockLabel = isAlgae ? 'Intrants disponibles' : 'Stock alimentaire';
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -486,46 +372,15 @@ const AquaAssistantModule = () => {
   const monthlyRevenue = scopedSales
     .filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending')
     .reduce((sum, sale) => sum + Number(sale.totalAmount || 0), 0);
-  const latestControlLabel = latestHealth
-    ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(latestHealth.date))
-    : 'Non renseigné';
-
-  const operationalAdvice = useMemo(() => {
-    const advice: Array<{ tone: 'warning' | 'ok' | 'info'; title: string; detail: string }> = [];
-    if (lowStocks.length > 0) {
-      advice.push({
-        tone: 'warning',
-        title: `${lowStocks.length} stock${lowStocks.length > 1 ? 's' : ''} sous le seuil`,
-        detail: lowStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', '),
-      });
-    }
-    const lateCycles = activeCycles.filter((cycle) => {
-      if (!cycle.end_date) return false;
-      return new Date(cycle.end_date).getTime() < Date.now();
-    });
-    if (lateCycles.length > 0) {
-      advice.push({
-        tone: 'warning',
-        title: `${lateCycles.length} cycle${lateCycles.length > 1 ? 's' : ''} à revoir`,
-        detail: 'La date de fin enregistrée est dépassée.',
-      });
-    }
-    if (latestHealth) {
-      advice.push({
-        tone: 'ok',
-        title: 'Dernier contrôle disponible',
-        detail: `${latestHealth.date} · pH ${latestHealth.ph ?? 'non renseigné'} · ${latestHealth.temperature ?? '—'} °C`,
-      });
-    }
-    if (advice.length === 0) {
-      advice.push({
-        tone: 'info',
-        title: 'Analyse en attente de données',
-        detail: `Enregistrez un cycle, un stock ou un contrôle pour obtenir des conseils sur ${unitLabel}.`,
-      });
-    }
-    return advice.slice(0, 3);
-  }, [activeCycles, latestHealth, lowStocks, unitLabel]);
+  const monthlyProductTotals = scopedSales
+    .filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending')
+    .flatMap((sale) => sale.products)
+    .reduce<Record<string, number>>((totals, product) => {
+      totals[product.name] = (totals[product.name] || 0) + Number(product.total || 0);
+      return totals;
+    }, {});
+  const starProduct = Object.entries(monthlyProductTotals).sort(([, first], [, second]) => second - first)[0];
+  const quickQuestions = unitProfile.suggestions.slice(0, 3);
 
   const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
 
@@ -540,21 +395,18 @@ const AquaAssistantModule = () => {
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className="relative shrink-0 overflow-visible rounded-md border bg-card text-card-foreground shadow-sm">
-        <div className="flex flex-col gap-4 px-3 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+      <header className="relative shrink-0 overflow-visible border-b bg-background">
+        <div className="flex items-center justify-between gap-3 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Bot className="size-6" aria-hidden="true" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Bot className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold text-foreground sm:text-2xl">AquaAssistant</h1>
-                <Badge className="bg-primary text-primary-foreground hover:bg-primary">{unitProfile.label}</Badge>
-              </div>
-              <p className="mt-1 text-sm font-medium text-foreground/80">{unitLabel} · {unitProfile.role}</p>
+              <h1 className="text-lg font-bold text-foreground sm:text-xl">AquaAssistant</h1>
+              <p className="truncate text-xs text-muted-foreground">{unitProfile.label} · {unitLabel}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-end lg:self-auto">
+          <div className="flex shrink-0 items-center gap-1">
             <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
@@ -564,7 +416,7 @@ const AquaAssistantModule = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t px-3 py-3 sm:px-5">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 px-1 pb-3 sm:px-0">
           <div className="relative min-w-0 flex-1 sm:max-w-sm">
             <Button variant="outline" onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }} className="w-full justify-between bg-background">
               <span className="flex min-w-0 items-center gap-2"><Building2 className="size-4 shrink-0" /><span className="truncate">{unitLabel}</span></span>
@@ -590,59 +442,49 @@ const AquaAssistantModule = () => {
         </div>
       </header>
 
-      <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5' : 'space-y-4'}>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5' : 'space-y-3'}>
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {[
-            { label: 'Chiffre d’affaires du mois', value: isDemoMode ? 'Donnée réelle indisponible' : formatMoney(monthlyRevenue), detail: isDemoMode ? 'Le mode démonstration n’est pas comptabilisé.' : `${scopedSales.filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending').length} vente(s) enregistrée(s)`, icon: WalletCards },
-            { label: 'Cycles actifs', value: activeCycles.length.toLocaleString('fr-FR'), detail: cycles.length ? `${cycles.length} cycle(s) au total` : 'Aucun cycle enregistré', icon: Activity },
-            { label: lowStocks.length ? 'Stocks à surveiller' : stockLabel, value: lowStocks.length ? lowStocks.length.toLocaleString('fr-FR') : unitStocks.length.toLocaleString('fr-FR'), detail: lowStocks.length ? lowStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', ') : 'Aucun seuil bas détecté', icon: PackageCheck },
-            { label: 'Dernier contrôle', value: latestControlLabel, detail: latestHealth ? `pH ${latestHealth.ph ?? 'non renseigné'} · ${latestHealth.temperature ?? '—'} °C` : 'Aucun contrôle enregistré', icon: HeartPulse },
+            { label: 'CA du mois', value: isDemoMode ? 'Indisponible' : formatMoney(monthlyRevenue), detail: isDemoMode ? 'Données réelles uniquement' : `${scopedSales.filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending').length} vente(s)`, icon: WalletCards },
+            { label: 'Ruptures', value: outOfStocks.length.toLocaleString('fr-FR'), detail: outOfStocks.length ? outOfStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', ') : 'Aucune rupture', icon: PackageX },
+            { label: 'Stocks faibles', value: lowStocks.length.toLocaleString('fr-FR'), detail: lowStocks.length ? lowStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', ') : 'Aucun stock faible', icon: PackageSearch },
+            { label: 'Produit star', value: isDemoMode ? 'Indisponible' : (starProduct?.[0] || 'Non renseigné'), detail: !isDemoMode && starProduct ? formatMoney(starProduct[1]) : 'Aucune vente exploitable', icon: Trophy },
           ].map((item) => (
-            <div key={item.label} className="min-h-28 rounded-md border bg-card p-4">
-              <div className="flex items-start justify-between gap-3"><p className="text-sm font-medium text-muted-foreground">{item.label}</p><item.icon className="size-5 shrink-0 text-primary" /></div>
-              <p className="mt-3 break-words text-xl font-bold leading-tight">{item.value}</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
+            <div key={item.label} className="min-h-24 rounded-md border bg-card p-3 sm:p-4">
+              <div className="flex items-center gap-2"><item.icon className="size-4 shrink-0 text-primary" /><p className="text-xs font-medium text-muted-foreground sm:text-sm">{item.label}</p></div>
+              <p className="mt-2 break-words text-base font-bold leading-tight sm:text-xl">{item.value}</p>
+              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
             </div>
           ))}
         </div>
 
-        <div className="rounded-md border bg-card p-4">
-          <h2 className="text-base font-semibold text-foreground">Propositions · {unitProfile.label}</h2>
-          <p className="text-sm text-muted-foreground">Touchez une proposition : la réponse utilise les données enregistrées de {unitLabel}.</p>
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {unitProfile.suggestions.map((suggestion) => (
-              <button
+        <div className="py-1">
+          <p className="text-sm font-semibold text-foreground">Que souhaitez-vous savoir sur votre unité ?</p>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {quickQuestions.map((suggestion) => (
+              <Button
                 key={suggestion.title}
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={isLoading}
                 onClick={() => sendMessage(suggestion.question, { retry: false })}
-                className="flex min-h-16 items-start gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-60"
+                className="h-9 shrink-0 bg-card px-3 text-xs"
               >
-                <TrendingUp className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-foreground">{suggestion.title}</span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{suggestion.question}</span>
-                </span>
-              </button>
+                {suggestion.title}
+              </Button>
             ))}
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <div className={isFullscreen ? 'flex min-h-[32rem] flex-col overflow-hidden rounded-md border bg-card' : 'flex h-[min(660px,calc(100dvh-10rem))] min-h-[500px] flex-col overflow-hidden rounded-md border bg-card'}>
+        <div>
+          <div className={isFullscreen ? 'flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-md border bg-card' : 'flex h-[min(560px,calc(100dvh-15rem))] min-h-[360px] flex-col overflow-hidden rounded-md border bg-card'}>
           <div className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
             <div className="flex min-w-0 items-center gap-2.5">
               <Bot className="size-5 shrink-0 text-primary" aria-hidden="true" />
-              <div className="min-w-0"><p className="truncate text-sm font-semibold">Assistant de gestion</p><p className="truncate text-xs text-muted-foreground">Analyse {cultureLabel} · {unitLabel}</p></div>
+              <div className="min-w-0"><p className="truncate text-sm font-semibold">Poser une question</p><p className="truncate text-xs text-muted-foreground">Réponses basées sur {unitLabel}</p></div>
             </div>
             <Button type="button" variant="ghost" size="icon" onClick={() => { startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined); }} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
-          </div>
-
-          <div className="shrink-0 border-b px-3 py-2 sm:px-4">
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {categoryConfigs.map((category) => <Button key={category.id} type="button" variant={selectedCategory === category.id ? 'default' : 'outline'} size="sm" className="shrink-0" onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}>{category.icon}{getCategoryLabel(langKey, category.id)}</Button>)}
-            </div>
-            {currentCategorySuggestions.length > 0 && <div className="mt-2 flex gap-2 overflow-x-auto pb-1">{currentCategorySuggestions.slice(0, 3).map((suggestion) => <Button key={suggestion} type="button" variant="secondary" size="sm" className="h-auto max-w-64 shrink-0 whitespace-normal py-2 text-left text-xs" onClick={() => handleSuggestionClick(suggestion)}>{suggestion}</Button>)}</div>}
           </div>
 
           <Conversation className="min-h-0">
@@ -665,7 +507,7 @@ const AquaAssistantModule = () => {
               <div className="flex gap-2"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-destructive">{CHAT_ERROR_LABEL[chatError.cause]}</p><p className="text-xs text-muted-foreground">{chatError.message}</p><div className="mt-2 flex flex-wrap gap-2">{chatError.retryable && lastAttempt && <Button size="sm" variant="outline" disabled={isLoading || !canRetryNow} onClick={() => sendMessage(lastAttempt)}><RefreshCw className="size-3.5" />{canRetryNow ? 'Réessayer' : `Dans ${retryIn}s`}</Button>}<Button size="sm" variant="ghost" onClick={clearChatError}>Fermer</Button></div></div></div>
             </div>}
             <PromptInput onSubmit={(message) => sendMessage(message.text, { retry: false })} className="rounded-md bg-card">
-              <PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Posez une question sur ${unitLabel}…`} className="min-h-20 text-base" data-chat-input />
+              <PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Posez une question sur ${unitLabel}…`} className="min-h-14 text-base" data-chat-input />
               <PromptInputFooter>
                 <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton><span className="hidden text-xs text-muted-foreground sm:inline">Entrée pour envoyer</span></PromptInputTools>
                 <PromptInputSubmit status={chatStatus} disabled={!input.trim() && !isLoading} aria-label={isLoading ? 'Arrêter' : 'Envoyer la question'} />
@@ -675,22 +517,6 @@ const AquaAssistantModule = () => {
           </div>
           </div>
 
-          <aside className="space-y-4">
-            <div className="rounded-md border bg-card p-4">
-              <div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">Progression des cycles</h2><span className="text-xs text-muted-foreground">{activeCycles.length} actif(s)</span></div>
-              <div className="mt-3 space-y-4">
-                {activeCycles.length === 0 && <p className="text-sm text-muted-foreground">Aucun cycle actif enregistré.</p>}
-                {activeCycles.slice(0, 4).map((cycle) => {
-                  const progress = cycle.target_quantity > 0 ? Math.min(100, Math.max(0, (cycle.current_quantity / cycle.target_quantity) * 100)) : 0;
-                  return <div key={cycle.id}><div className="flex justify-between gap-3 text-xs"><p className="truncate font-medium">{cycle.name}</p><span className="shrink-0 font-semibold">{cycle.target_quantity > 0 ? `${progress.toFixed(0)} %` : 'Objectif absent'}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div></div>;
-                })}
-              </div>
-            </div>
-            <div className="rounded-md border bg-card p-4">
-              <h2 className="text-sm font-semibold">À retenir</h2>
-              <div className="mt-3 space-y-3">{operationalAdvice.map((advice) => <div key={`${advice.title}-${advice.detail}`} className="flex gap-2.5">{advice.tone === 'warning' ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /> : advice.tone === 'ok' ? <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" /> : <Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}<div><p className="text-xs font-semibold">{advice.title}</p><p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{advice.detail}</p></div></div>)}</div>
-            </div>
-          </aside>
         </div>
       </div>
 
