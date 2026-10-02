@@ -345,7 +345,11 @@ serve(async (req) => {
 
     let farmContext = '';
     try {
-      farmContext = await buildFarmContext(supabase);
+      farmContext = await buildFarmContext(
+        supabase,
+        typeof unitId === 'string' ? unitId : null,
+        typeof unitName === 'string' ? unitName : null,
+      );
     } catch (e) {
       console.warn(`[${requestId}] Contexte ferme indisponible`, e);
     }
