@@ -117,7 +117,18 @@ DONNÉES DE LA FERME :
 - Utilise TOUJOURS ces chiffres pour répondre (effectifs, mortalités, aliment, ventes, stocks).
 - Ne jamais inventer un chiffre. Si l'information n'est pas dans le bloc, dis simplement :
   "Je n'ai pas encore cette information enregistrée."
-- Cite le nom de l'unité ou du bassin concerné quand c'est utile.`;
+- Cite le nom de l'unité ou du bassin concerné quand c'est utile.
+
+CALCULS FINANCIERS :
+- Quand on te demande le chiffre d'affaires, la rentabilité, les dépenses ou la marge, donne le chiffre exact du bloc FINANCES,
+  puis explique le calcul simplement (ex : "CA 500 000 − coûts 320 000 = bénéfice 180 000").
+- Compare avec le mois précédent quand c'est utile.
+- Termine par 1 ou 2 conseils concrets pour améliorer la situation.
+- Pour les questions financières, tu peux utiliser des listes courtes et du gras pour les chiffres clés.
+
+DONNÉES EXTERNES :
+- Tu peux compléter avec tes connaissances générales (prix de marché habituels, bonnes pratiques aquacoles, saisons),
+  mais commence alors la phrase par "Information générale :" et ne les présente jamais comme les chiffres de la ferme.`;
 
 const num = (v: unknown) => Number(v) || 0;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
@@ -396,45 +407,81 @@ serve(async (req) => {
       systemPrompt + languageInstruction + (farmContext ? `\n\n${farmContext}` : '');
 
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Lovable-API-Key": LOVABLE_API_KEY,
+        "X-Lovable-AIG-SDK": "fetch",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: fullSystemPrompt },
-          ...cleanedMessages,
-        ],
+        model: "openai/gpt-6-astra",
+        instructions: fullSystemPrompt,
+        input: cleanedMessages
+          .filter((m: any) => m.role !== 'system')
+          .map((m: any) => ({ role: m.role, content: m.content })),
+        reasoning: { effort: "low" },
+        store: false,
         stream: true,
       }),
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Trop de demandes. Réessaie dans un moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Crédits épuisés. Contacte l'administrateur." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: `Erreur assistant (${response.status}): ${errorText.slice(0, 200)}` }), {
-        status: 500,
+    if (!response.ok || !response.body) {
+      const errorText = await response.text().catch(() => '');
+      console.error(`[${requestId}] AI gateway error:`, response.status, errorText);
+      const message = response.status === 429
+        ? "Trop de demandes. Réessaie dans un moment."
+        : response.status === 402
+          ? "Crédits IA épuisés. Ajoutez des crédits dans les paramètres de l'espace de travail."
+          : `Erreur assistant (${response.status})`;
+      const status = [400, 401, 402, 403, 404, 429].includes(response.status) ? response.status : 500;
+      return new Response(JSON.stringify({ error: message, request_id: requestId }), {
+        status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    // Traduit le flux Responses en format SSE "choices/delta" attendu par le client.
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const upstream = response.body.getReader();
+    const stream = new ReadableStream({
+      async start(controller) {
+        let buffer = '';
+        try {
+          while (true) {
+            const { done, value } = await upstream.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let idx;
+            while ((idx = buffer.indexOf('\n')) >= 0) {
+              const line = buffer.slice(0, idx).trim();
+              buffer = buffer.slice(idx + 1);
+              if (!line.startsWith('data:')) continue;
+              const payload = line.slice(5).trim();
+              if (!payload || payload === '[DONE]') continue;
+              try {
+                const evt = JSON.parse(payload);
+                if (evt.type === 'response.output_text.delta' && evt.delta) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: evt.delta } }] })}\n\n`));
+                } else if (evt.type === 'response.failed' || evt.type === 'error') {
+                  console.error(`[${requestId}] stream error`, payload.slice(0, 300));
+                }
+              } catch { /* ligne partielle */ }
+            }
+          }
+        } finally {
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        }
+      },
+    });
+
+    const aigHeaders: Record<string, string> = {};
+    response.headers.forEach((v, k) => { if (k.toLowerCase().startsWith('x-lovable-aig-')) aigHeaders[k] = v; });
+    return new Response(stream, {
+      headers: { ...corsHeaders, ...aigHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {
     console.error(`[${requestId}] Aqua assistant error:`, error);
