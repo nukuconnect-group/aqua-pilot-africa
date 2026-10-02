@@ -190,12 +190,14 @@ const AquaAssistantModule = () => {
   useEffect(() => {
     if (activeConversation?.messages?.length) {
       setMessages(
-        activeConversation.messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-          category: m.category,
-          unitId: m.unitId,
-        })),
+        activeConversation.messages.map((m, index) => {
+          // Anciennes conversations : retirer l'ancien nom de l'assistant.
+          const legacy = /aqua\s*brain/i.test(m.content || '');
+          const content = legacy && index === 0 && m.role === 'assistant'
+            ? greeting
+            : (m.content || '').replace(/aqua\s*brain/gi, 'AquaAssistant');
+          return { role: m.role, content, category: m.category, unitId: m.unitId };
+        }),
       );
     } else if (!convsLoading && !activeConversation) {
       setMessages([{ role: 'assistant', content: greeting }]);
@@ -536,18 +538,18 @@ const AquaAssistantModule = () => {
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className="relative shrink-0 overflow-visible border-b bg-background">
+      <header className="relative shrink-0 overflow-visible rounded-md border bg-card text-card-foreground shadow-sm">
         <div className="flex flex-col gap-4 px-3 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Bot className="size-5" aria-hidden="true" />
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Bot className="size-6" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold sm:text-2xl">AquaAssistant</h1>
-                <Badge variant="outline">Données AquaPilote</Badge>
+                <h1 className="text-xl font-bold text-foreground sm:text-2xl">AquaAssistant</h1>
+                <Badge className="bg-primary text-primary-foreground hover:bg-primary">{unitProfile.label}</Badge>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">Analyse de {unitLabel}</p>
+              <p className="mt-1 text-sm font-medium text-foreground/80">{unitLabel} · {unitProfile.role}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-end lg:self-auto">
