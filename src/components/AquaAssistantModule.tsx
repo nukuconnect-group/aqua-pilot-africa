@@ -311,9 +311,9 @@ const AquaAssistantModule = () => {
     setInput(suggestion);
   };
 
-  const sendMessage = async (messageText?: string) => {
-    const isRetry = Boolean(messageText);
-    const textToSend = messageText || input.trim();
+  const sendMessage = async (messageText?: string, options?: { retry?: boolean }) => {
+    const isRetry = Boolean(messageText) && options?.retry !== false;
+    const textToSend = (messageText || input).trim();
     if (isLoading) return;
     const ctx = beginAttempt(textToSend, isRetry);
     if (!ctx) return;
