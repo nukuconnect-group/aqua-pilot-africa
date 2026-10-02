@@ -22,6 +22,7 @@ import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea,
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 import { formatMoney } from '@/lib/currency';
+import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -468,6 +469,7 @@ const AquaAssistantModule = () => {
   const currentUnit = units.find((unit) => unit.id === selectedUnitId);
   const terms = getUnitTerms(currentUnit?.type);
   const isAlgae = isAlgaeUnitType(currentUnit?.type);
+  const unitProfile = getAssistantUnitProfile(currentUnit?.type);
   const activeCycles = cycles.filter((cycle) => cycle.status === 'active');
   const unitStocks = feedStocks;
   const lowStocks = unitStocks.filter(
@@ -604,6 +606,28 @@ const AquaAssistantModule = () => {
           ))}
         </div>
 
+        <div className="rounded-md border bg-card p-4">
+          <h2 className="text-base font-semibold text-foreground">Propositions · {unitProfile.label}</h2>
+          <p className="text-sm text-muted-foreground">Touchez une proposition : la réponse utilise les données enregistrées de {unitLabel}.</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {unitProfile.suggestions.map((suggestion) => (
+              <button
+                key={suggestion.title}
+                type="button"
+                disabled={isLoading}
+                onClick={() => sendMessage(suggestion.question, { retry: false })}
+                className="flex min-h-16 items-start gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-60"
+              >
+                <TrendingUp className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-foreground">{suggestion.title}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{suggestion.question}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <div className={isFullscreen ? 'flex min-h-[32rem] flex-col overflow-hidden rounded-md border bg-card' : 'flex h-[min(660px,calc(100dvh-10rem))] min-h-[500px] flex-col overflow-hidden rounded-md border bg-card'}>
           <div className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
@@ -640,7 +664,7 @@ const AquaAssistantModule = () => {
             {chatError && <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 p-3" data-chat-error={chatError.cause}>
               <div className="flex gap-2"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-destructive">{CHAT_ERROR_LABEL[chatError.cause]}</p><p className="text-xs text-muted-foreground">{chatError.message}</p><div className="mt-2 flex flex-wrap gap-2">{chatError.retryable && lastAttempt && <Button size="sm" variant="outline" disabled={isLoading || !canRetryNow} onClick={() => sendMessage(lastAttempt)}><RefreshCw className="size-3.5" />{canRetryNow ? 'Réessayer' : `Dans ${retryIn}s`}</Button>}<Button size="sm" variant="ghost" onClick={clearChatError}>Fermer</Button></div></div></div>
             </div>}
-            <PromptInput onSubmit={(message) => sendMessage(message.text)} className="rounded-md bg-card">
+            <PromptInput onSubmit={(message) => sendMessage(message.text, { retry: false })} className="rounded-md bg-card">
               <PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Posez une question sur ${unitLabel}…`} className="min-h-20 text-base" data-chat-input />
               <PromptInputFooter>
                 <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton><span className="hidden text-xs text-muted-foreground sm:inline">Entrée pour envoyer</span></PromptInputTools>
