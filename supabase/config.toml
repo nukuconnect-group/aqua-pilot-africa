@@ -5,3 +5,5 @@ project_id = "drzybwlvbaqrtrpshaue"
     verify_jwt = false
   [functions.translate-ui]
     verify_jwt = false
+  [functions.aqua-assistant]
+    verify_jwt = false

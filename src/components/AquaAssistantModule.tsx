@@ -1,4 +1,4 @@
-import { SUPABASE_URL } from '@/integrations/supabase/env';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MessageCircle, Mic, MicOff, Volume2, Building2, Fish, Utensils, HeartPulse, TrendingUp, Settings, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Activity, Layers3, PackageCheck, Gauge, CircleCheck, Clock3 } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
@@ -385,6 +385,7 @@ const AquaAssistantModule = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
           'x-request-id': ctx.requestId,
         },
         body: JSON.stringify({ 
