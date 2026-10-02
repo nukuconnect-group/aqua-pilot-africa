@@ -1,13 +1,11 @@
 import { SUPABASE_URL } from '@/integrations/supabase/env';
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, Mic, MicOff, Volume2, Loader2, Building2, Fish, Utensils, HeartPulse, TrendingUp, Settings, Sparkles, ChevronDown, Globe, Crown, Lock, Calculator, BarChart3, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { MessageCircle, Mic, MicOff, Volume2, Building2, Fish, Utensils, HeartPulse, TrendingUp, Settings, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Activity, Layers3, PackageCheck, Gauge, CircleCheck, Clock3 } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
@@ -18,8 +16,12 @@ import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useFeedingRecords } from '@/hooks/useFeedingRecords';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAquaAssistantConversations, AquaMessage } from '@/hooks/useAquaAssistantConversations';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
+import { Message as AIMessage, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
+import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
+import { Shimmer } from '@/components/ai-elements/shimmer';
+import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
+import aquaBrainMark from '@/assets/aquabrain-mark.png';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -157,7 +159,6 @@ const AquaAssistantModule = () => {
     clearAll,
     loading: convsLoading,
   } = useAquaAssistantConversations(greeting);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: greeting }]);
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState('');
@@ -224,10 +225,10 @@ const AquaAssistantModule = () => {
 
   // Données réelles
   const { batches } = useLivestockBatches(selectedUnitId || undefined);
-  const { stocks: feedStocks } = useFeedStocks();
+  const { stocks: feedStocks } = useFeedStocks(selectedUnitId || undefined);
   const { cycles } = useProductionCycles(selectedUnitId || undefined);
   const { records: healthRecords } = useHealthRecords(undefined, selectedUnitId || undefined);
-  const { records: feedingRecords } = useFeedingRecords();
+  const { records: feedingRecords } = useFeedingRecords(undefined, selectedUnitId || undefined);
 
   // Auto-scroll robuste : cible le viewport interne de Radix ScrollArea
   // ET utilise scrollIntoView sur une ancre en bas pour couvrir tous les cas
@@ -347,8 +348,6 @@ const AquaAssistantModule = () => {
     const contextPrefix = selectedUnitId && selectedUnitName 
       ? `[Contexte: Unité "${selectedUnitName}"] ` 
       : '';
-
-    const dataContext = generateDataContext();
 
     const userMessage: Message = { 
       role: 'user', 
@@ -496,543 +495,224 @@ const AquaAssistantModule = () => {
   };
 
   const langKey = selectedLanguage === 'en' ? 'en' : 'fr';
-  const currentCategoryConfig = categoryConfigs.find(c => c.id === selectedCategory);
   const currentCategorySuggestions = selectedCategory ? getCategorySuggestions(langKey, selectedCategory) : [];
-  const currentUnit = units.find(u => u.id === selectedUnitId);
+  const currentUnit = units.find((unit) => unit.id === selectedUnitId);
+  const terms = getUnitTerms(currentUnit?.type);
+  const isAlgae = isAlgaeUnitType(currentUnit?.type);
+  const activeCycles = cycles.filter((cycle) => cycle.status === 'active');
+  const totalBiomass = batches.reduce((sum, batch) => sum + (Number(batch.total_weight) || 0), 0);
+  const totalPopulation = batches.reduce((sum, batch) => sum + (Number(batch.quantity) || 0), 0);
+  const unitStocks = feedStocks;
+  const lowStocks = unitStocks.filter(
+    (stock) => Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
+  );
+  const latestHealth = healthRecords[0];
+  const totalInputs = feedingRecords.reduce((sum, record) => sum + (Number(record.quantity) || 0), 0);
+  const unitLabel = currentUnit?.name || 'Toutes les unités';
+  const cultureLabel = isAlgae ? 'cultures' : 'élevages';
+  const stockLabel = isAlgae ? 'Intrants disponibles' : 'Stock alimentaire';
+  const quantityLabel = isAlgae ? 'Biomasse suivie' : 'Population suivie';
+  const quantityValue = isAlgae
+    ? `${totalBiomass.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg`
+    : totalPopulation.toLocaleString('fr-FR');
+
+  const operationalAdvice = useMemo(() => {
+    const advice: Array<{ tone: 'warning' | 'ok' | 'info'; title: string; detail: string }> = [];
+    if (lowStocks.length > 0) {
+      advice.push({
+        tone: 'warning',
+        title: `${lowStocks.length} stock${lowStocks.length > 1 ? 's' : ''} sous le seuil`,
+        detail: lowStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', '),
+      });
+    }
+    const lateCycles = activeCycles.filter((cycle) => {
+      if (!cycle.end_date) return false;
+      return new Date(cycle.end_date).getTime() < Date.now();
+    });
+    if (lateCycles.length > 0) {
+      advice.push({
+        tone: 'warning',
+        title: `${lateCycles.length} cycle${lateCycles.length > 1 ? 's' : ''} à revoir`,
+        detail: 'La date de fin enregistrée est dépassée.',
+      });
+    }
+    if (latestHealth) {
+      advice.push({
+        tone: 'ok',
+        title: 'Dernier contrôle disponible',
+        detail: `${latestHealth.date} · pH ${latestHealth.ph ?? 'non renseigné'} · ${latestHealth.temperature ?? '—'} °C`,
+      });
+    }
+    if (advice.length === 0) {
+      advice.push({
+        tone: 'info',
+        title: 'Analyse en attente de données',
+        detail: `Enregistrez un cycle, un stock ou un contrôle pour obtenir des conseils sur ${unitLabel}.`,
+      });
+    }
+    return advice.slice(0, 3);
+  }, [activeCycles, latestHealth, lowStocks, unitLabel]);
+
+  const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
 
   return (
-    <div
-      className={
-        isFullscreen
-          ? 'fixed inset-0 z-[80] flex flex-col gap-3 bg-background p-3 sm:p-4 overflow-hidden'
-          : 'space-y-4'
-      }
-      style={
-        isFullscreen
-          ? {
-              paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
-              paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)',
-            }
-          : undefined
-      }
+    <section
+      aria-label="AquaBrain, assistant de gestion aquacole"
+      className={isFullscreen
+        ? 'fixed inset-0 z-[10000] flex min-h-0 flex-col overflow-hidden bg-background'
+        : 'min-w-0 space-y-4'}
+      style={isFullscreen ? {
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      } : undefined}
     >
-      {/* Header */}
-      <Card className="shrink-0">
-        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4 sm:p-6 text-white rounded-t-xl">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="font-bold text-xl sm:text-2xl">AquaAssistant Pro</h1>
-                <p className="text-sm text-white/80">Expert aquacole IA - Données en temps réel</p>
-              </div>
+      <header className="relative shrink-0 overflow-visible bg-sidebar-background text-sidebar-foreground shadow-lg">
+        <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-sidebar-foreground/10 ring-1 ring-sidebar-foreground/20 sm:size-14">
+              <img src={aquaBrainMark} alt="" width={512} height={512} className="size-11 object-contain sm:size-12" />
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsFullscreen((v) => !v)}
-                className="flex items-center gap-2"
-                title={isFullscreen ? 'Réduire' : 'Agrandir'}
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                <span className="hidden sm:inline">{isFullscreen ? 'Réduire' : 'Agrandir'}</span>
-              </Button>
-              <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowPremiumModal(true)}
-              className="hidden sm:flex items-center gap-2"
-            >
-              <Crown className="w-4 h-4" />
-              Premium
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowHistory(true)}
-              className="flex items-center gap-2"
-              title="Historique des conversations"
-            >
-              <History className="w-4 h-4" />
-              <span className="hidden sm:inline">Historique</span>
-              {conversations.length > 0 && (
-                <Badge variant="outline" className="ml-1 bg-white/20 text-white border-white/30">
-                  {conversations.length}
-                </Badge>
-              )}
-            </Button>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-bold sm:text-2xl">AquaBrain</h1>
+                <Badge className="border-sidebar-primary/40 bg-sidebar-primary/20 text-sidebar-foreground">Données réelles</Badge>
+              </div>
+              <p className="mt-1 text-sm text-sidebar-foreground/75">Pilotage, progression et conseils pour {unitLabel}</p>
             </div>
           </div>
-
-          {/* Selectors */}
-          <div className="flex gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[150px]">
-              <button
-                onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }}
-                className="w-full flex items-center justify-between px-3 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4" />
-                  <span className="truncate">{currentUnit?.name || 'Toutes unités'}</span>
-                </div>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showUnitSelector ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showUnitSelector && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground rounded-lg shadow-xl z-[90] max-h-60 overflow-y-auto border">
-                  <button
-                    onClick={() => { setSelectedUnitId(null); setShowUnitSelector(false); }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors ${!selectedUnitId ? 'bg-primary/10 text-primary' : 'text-foreground'}`}
-                  >
-                    Toutes les unités
-                  </button>
-                  {units.map(unit => (
-                    <button
-                      key={unit.id}
-                      onClick={() => { setSelectedUnitId(unit.id); setShowUnitSelector(false); }}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors ${selectedUnitId === unit.id ? 'bg-primary/10 text-primary' : 'text-foreground'}`}
-                    >
-                      {unit.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="relative">
-              <button
-                onClick={() => { setShowLanguageSelector(!showLanguageSelector); setShowUnitSelector(false); }}
-                className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-colors"
-              >
-                <Globe className="w-4 h-4" />
-                <span>{currentLang?.flag}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${showLanguageSelector ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showLanguageSelector && (
-                <div className="absolute top-full right-0 mt-1 bg-popover text-popover-foreground rounded-lg shadow-xl z-[90] min-w-[180px] max-h-72 overflow-y-auto border">
-                  {languages.map(lang => (
-                    <button
-                      key={lang.id}
-                      onClick={() => { setSelectedLanguage(lang.id); setShowLanguageSelector(false); }}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2 ${selectedLanguage === lang.id ? 'bg-primary/10 text-primary' : 'text-foreground'}`}
-                    >
-                      <span>{lang.flag}</span>
-                      <span>{lang.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-2 self-end lg:self-auto">
+            <Button variant="secondary" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
+              <History className="size-4" />
+            </Button>
+            <Button variant="secondary" size="icon" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaBrain' : 'Afficher AquaBrain en plein écran'} title={isFullscreen ? 'Réduire' : 'Plein écran'}>
+              {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+            </Button>
           </div>
         </div>
-      </Card>
 
-      {/* Categories */}
-      <Card>
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {categoryConfigs.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === cat.id 
-                    ? `${cat.color} text-white shadow-md` 
-                    : 'bg-muted hover:bg-muted/80 border border-border'
-                }`}
-              >
-                {cat.icon}
-                <span className="inline">{getCategoryLabel(langKey, cat.id)}</span>
-              </button>
-            ))}
+        <div className="flex flex-wrap gap-2 border-t border-sidebar-border px-4 py-3 sm:px-5">
+          <div className="relative min-w-0 flex-1 sm:max-w-sm">
+            <Button variant="ghost" onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }} className="w-full justify-between bg-sidebar-foreground/10 text-sidebar-foreground hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground">
+              <span className="flex min-w-0 items-center gap-2"><Building2 className="size-4 shrink-0" /><span className="truncate">{unitLabel}</span></span>
+              <ChevronDown className="size-4 shrink-0" />
+            </Button>
+            {showUnitSelector && (
+              <div className="absolute left-0 top-full z-[10030] mt-1 max-h-64 w-full min-w-56 overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-xl">
+                <Button variant="ghost" className="w-full justify-start" onClick={() => { setSelectedUnitId(null); setShowUnitSelector(false); }}>Toutes les unités</Button>
+                {units.map((unit) => <Button key={unit.id} variant={selectedUnitId === unit.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => { setSelectedUnitId(unit.id); setShowUnitSelector(false); }}>{unit.name}</Button>)}
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+          <div className="relative">
+            <Button variant="ghost" onClick={() => { setShowLanguageSelector(!showLanguageSelector); setShowUnitSelector(false); }} className="bg-sidebar-foreground/10 text-sidebar-foreground hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground" aria-label="Choisir la langue">
+              <Globe className="size-4" /><span>{currentLang?.flag} {currentLang?.label}</span><ChevronDown className="size-4" />
+            </Button>
+            {showLanguageSelector && (
+              <div className="absolute right-0 top-full z-[10030] mt-1 min-w-48 rounded-md border bg-popover p-1 text-popover-foreground shadow-xl">
+                {languages.map((language) => <Button key={language.id} variant={selectedLanguage === language.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => { setSelectedLanguage(language.id); setShowLanguageSelector(false); }}>{language.flag} {language.label}</Button>)}
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
 
-      {/* Suggestions */}
-      {currentCategoryConfig && currentCategorySuggestions.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              {currentCategoryConfig.icon}
-              {langKey === 'en' ? 'Suggested questions' : 'Questions suggérées'} - {getCategoryLabel(langKey, currentCategoryConfig.id)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {currentCategorySuggestions.map((suggestion, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="text-left p-3 bg-muted/50 hover:bg-muted rounded-lg text-sm transition-colors"
-                >
-                  {suggestion}
-                </button>
+      <div className={isFullscreen ? 'grid min-h-0 flex-1 gap-0 lg:grid-cols-[22rem_minmax(0,1fr)]' : 'grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]'}>
+        <aside className={isFullscreen ? 'hidden min-h-0 overflow-y-auto border-r bg-muted/30 p-4 lg:block' : 'space-y-4'}>
+          <div>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Synthèse opérationnelle</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {[
+                { label: 'Cycles actifs', value: activeCycles.length.toLocaleString('fr-FR'), icon: Activity },
+                { label: quantityLabel, value: quantityValue, icon: Layers3 },
+                { label: stockLabel, value: unitStocks.length ? `${unitStocks.reduce((sum, stock) => sum + Number(stock.quantity || 0), 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}` : 'Non renseigné', icon: PackageCheck },
+                { label: isAlgae ? 'Intrants utilisés' : 'Aliment distribué', value: feedingRecords.length ? `${totalInputs.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg` : 'Non renseigné', icon: Gauge },
+              ].map((item) => (
+                <div key={item.label} className="min-h-24 rounded-md border bg-card p-3 shadow-sm">
+                  <item.icon className="size-4 text-primary" />
+                  <p className="mt-3 break-words text-base font-bold leading-tight">{item.value}</p>
+                  <p className="mt-1 text-xs leading-tight text-muted-foreground">{item.label}</p>
+                </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Chat area */}
-      <Card
-        className={
-          isFullscreen
-            ? 'flex flex-col flex-1 min-h-0'
-            : 'flex flex-col h-[70vh] min-h-[500px] md:min-h-[600px]'
-        }
-      >
-        <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <MessageCircle className="w-4 h-4 text-primary" />
-            <span>Conversation</span>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setIsFullscreen((v) => !v)}
-            title={isFullscreen ? 'Réduire' : 'Agrandir'}
-            aria-label={isFullscreen ? 'Réduire la fenêtre du chat' : 'Agrandir la fenêtre du chat'}
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </Button>
-        </div>
-        <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-          <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
-            <div className="space-y-4">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
-                        : 'bg-muted rounded-bl-md'
-                    }`}
-                  >
-                    {message.role === 'assistant' ? (
-                      <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-pre:my-2 prose-pre:bg-background/60 prose-code:before:hidden prose-code:after:hidden break-words">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content || ''}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed break-words">{message.content}</p>
-                    )}
-                    {message.role === 'assistant' && message.content && (
-                      <button
-                        onClick={() => speakText(message.content)}
-                        className="mt-2 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                      >
-                        <Volume2 className="w-3 h-3" />
-                        Écouter
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {isLoading && messages[messages.length - 1]?.content === '' && (
-                <div className="flex justify-start">
-                  <div className="px-4 py-3 rounded-2xl bg-muted rounded-bl-md">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Réflexion en cours...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* Ancre pour l'auto-scroll : toujours en bas */}
+
+          <div className="rounded-md border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">Progression des cycles</h2><span className="text-xs text-muted-foreground">{activeCycles.length} actif(s)</span></div>
+            <div className="mt-3 space-y-4">
+              {activeCycles.length === 0 && <p className="text-sm text-muted-foreground">Aucun cycle actif enregistré pour cette unité.</p>}
+              {activeCycles.slice(0, 4).map((cycle) => {
+                const progress = cycle.target_quantity > 0 ? Math.min(100, Math.max(0, (cycle.current_quantity / cycle.target_quantity) * 100)) : 0;
+                return <div key={cycle.id}>
+                  <div className="flex items-start justify-between gap-3 text-xs"><div className="min-w-0"><p className="truncate font-medium">{cycle.name}</p><p className="truncate text-muted-foreground">{cycle.species || 'Espèce non renseignée'}</p></div><span className="shrink-0 font-semibold">{cycle.target_quantity > 0 ? `${progress.toFixed(0)} %` : 'Objectif absent'}</span></div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div>
+                </div>;
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-md border bg-card p-4 shadow-sm">
+            <h2 className="text-sm font-semibold">Points d’attention</h2>
+            <div className="mt-3 space-y-3">
+              {operationalAdvice.map((advice) => <div key={`${advice.title}-${advice.detail}`} className="flex gap-2.5">
+                {advice.tone === 'warning' ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /> : advice.tone === 'ok' ? <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" /> : <Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
+                <div><p className="text-xs font-semibold">{advice.title}</p><p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{advice.detail}</p></div>
+              </div>)}
+            </div>
+          </div>
+        </aside>
+
+        <div className={isFullscreen ? 'flex min-h-0 flex-col bg-background' : 'flex h-[min(720px,calc(100dvh-8rem))] min-h-[460px] flex-col overflow-hidden rounded-md border bg-card shadow-sm'}>
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <img src={aquaBrainMark} alt="" width={512} height={512} className="size-8 shrink-0 object-contain" />
+              <div className="min-w-0"><p className="truncate text-sm font-semibold">Conseiller AquaBrain</p><p className="truncate text-xs text-muted-foreground">Analyse {cultureLabel} · {unitLabel}</p></div>
+            </div>
+            <Button type="button" variant="ghost" size="icon" onClick={() => { startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined); }} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
+          </div>
+
+          <div className="shrink-0 border-b px-3 py-2 sm:px-4">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {categoryConfigs.map((category) => <Button key={category.id} type="button" variant={selectedCategory === category.id ? 'default' : 'outline'} size="sm" className="shrink-0" onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}>{category.icon}{getCategoryLabel(langKey, category.id)}</Button>)}
+            </div>
+            {currentCategorySuggestions.length > 0 && <div className="mt-2 flex gap-2 overflow-x-auto pb-1">{currentCategorySuggestions.slice(0, 3).map((suggestion) => <Button key={suggestion} type="button" variant="secondary" size="sm" className="h-auto max-w-64 shrink-0 whitespace-normal py-2 text-left text-xs" onClick={() => handleSuggestionClick(suggestion)}>{suggestion}</Button>)}</div>}
+          </div>
+
+          <Conversation className="min-h-0">
+            <ConversationContent className="gap-5 p-3 sm:p-5">
+              {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
+                {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><img src={aquaBrainMark} alt="" width={512} height={512} className="size-6 object-contain" />AquaBrain</div>}
+                <MessageContent className={message.role === 'user' ? 'bg-sidebar-background text-sidebar-foreground' : undefined}>
+                  {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
+                </MessageContent>
+                {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}
+              </AIMessage>)}
+              {isLoading && messages[messages.length - 1]?.content === '' && <div className="flex items-center gap-2 text-sm text-muted-foreground"><img src={aquaBrainMark} alt="" width={512} height={512} className="size-6 object-contain" /><Shimmer>Analyse des données de l’unité…</Shimmer></div>}
               <div ref={messagesEndRef} aria-hidden="true" />
-            </div>
-          </ScrollArea>
+            </ConversationContent>
+            <ConversationScrollButton aria-label="Voir le dernier message" />
+          </Conversation>
 
-          {/* Input area */}
-          <div className="p-4 border-t bg-background sticky bottom-0">
-            {chatError && (
-              <div
-                className="mb-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3"
-                data-chat-error={chatError.cause}
-              >
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-destructive">
-                      {CHAT_ERROR_LABEL[chatError.cause]}
-                      {chatError.attempt ? (
-                        <span className="ml-1 text-xs font-normal text-muted-foreground">
-                          (tentative {chatError.attempt}/{maxAttempts})
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="text-xs text-muted-foreground break-words">{chatError.message}</p>
-                    <dl className="mt-2 space-y-0.5 text-[11px] font-mono text-muted-foreground/90 break-all">
-                      {chatError.requestId && (
-                        <div className="flex gap-1">
-                          <dt className="shrink-0">request_id:</dt>
-                          <dd data-chat-request-id>{chatError.requestId}</dd>
-                        </div>
-                      )}
-                      {chatError.route && (
-                        <div className="flex gap-1">
-                          <dt className="shrink-0">route:</dt>
-                          <dd data-chat-route>{chatError.route}</dd>
-                        </div>
-                      )}
-                    </dl>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {chatError.retryable && lastAttempt && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={isLoading || !canRetryNow}
-                          onClick={() => sendMessage(lastAttempt)}
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                          {canRetryNow ? 'Réessayer' : `Réessayer dans ${retryIn}s`}
-                        </Button>
-                      )}
-                      {chatError.requestId && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            navigator.clipboard?.writeText(
-                              `request_id=${chatError.requestId} route=${chatError.route} cause=${chatError.cause} message=${chatError.message}`,
-                            )
-                          }
-                        >
-                          Copier le diagnostic
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={clearChatError}>
-                        Fermer
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <Button
-                variant={isListening ? 'destructive' : 'outline'}
-                size="icon"
-                onClick={toggleListening}
-                className="shrink-0"
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </Button>
-              <Input
-                value={input}
-                onChange={(e) => { setInput(e.target.value); if (chatError) clearChatError(); }}
-                onKeyDown={handleKeyPress}
-                placeholder="Posez votre question..."
-                className="flex-1"
-                disabled={isLoading}
-                data-chat-input
-              />
-              <Button
-                onClick={() => sendMessage()}
-                disabled={isLoading}
-                className="shrink-0 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
-                aria-label="Envoyer le message"
-                data-chat-send
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </Button>
-            </div>
-            {isListening && (
-              <p className="text-xs text-center text-muted-foreground mt-2 animate-pulse">
-                🎤 Écoute en cours... Parlez maintenant
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* History Drawer */}
-      {showHistory && (
-        <div className="fixed inset-0 z-[70] flex" onClick={() => setShowHistory(false)}>
-          <div className="absolute inset-0 bg-black/40" />
-          <div
-            className="relative ml-auto h-full w-full sm:w-[380px] bg-background shadow-2xl flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-border p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <History className="h-4 w-4 text-primary" />
-                <span>Historique des conversations</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={async () => {
-                    await startNew(activeUnit ? { id: activeUnit.id, name: activeUnit.name } : undefined);
-                    setShowHistory(false);
-                  }}
-                  title="Nouvelle conversation"
-                >
-                  <MessageSquarePlus className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={async () => {
-                    if (window.confirm('Effacer tout l’historique ?')) {
-                      await clearAll();
-                    }
-                  }}
-                  title="Effacer l’historique"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <ScrollArea className="flex-1">
-              <div className="space-y-2 p-3">
-                {conversations.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Aucune conversation enregistrée.
-                  </p>
-                )}
-                {conversations.map((conv) => {
-                  const isActive = conv.id === activeId;
-                  const date = new Intl.DateTimeFormat('fr-FR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }).format(new Date(conv.updated_at));
-                  return (
-                    <div
-                      key={conv.id}
-                      className={`group rounded-lg border p-3 transition-colors ${
-                        isActive ? 'border-primary bg-primary/10' : 'border-border bg-background hover:bg-muted/60'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveId(conv.id);
-                          setShowHistory(false);
-                        }}
-                        className="w-full text-left"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="flex-1 truncate text-sm font-medium">{conv.title}</p>
-                          <Badge variant="secondary" className="shrink-0 text-[10px]">
-                            {conv.messages.length}
-                          </Badge>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{date}</p>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {conv.unit_name && (
-                            <Badge variant="outline" className="max-w-full truncate text-[10px]">
-                              {conv.unit_name}
-                            </Badge>
-                          )}
-                          {conv.last_category && (
-                            <Badge variant="outline" className="text-[10px] capitalize">
-                              {conv.last_category}
-                            </Badge>
-                          )}
-                        </div>
-                      </button>
-                      <div className="mt-2 flex justify-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteConversation(conv.id)}
-                          className="h-7 text-xs text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" /> Supprimer
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
+          <div className="shrink-0 border-t bg-background p-3 sm:p-4">
+            {chatError && <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 p-3" data-chat-error={chatError.cause}>
+              <div className="flex gap-2"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-destructive">{CHAT_ERROR_LABEL[chatError.cause]}</p><p className="text-xs text-muted-foreground">{chatError.message}</p><div className="mt-2 flex flex-wrap gap-2">{chatError.retryable && lastAttempt && <Button size="sm" variant="outline" disabled={isLoading || !canRetryNow} onClick={() => sendMessage(lastAttempt)}><RefreshCw className="size-3.5" />{canRetryNow ? 'Réessayer' : `Dans ${retryIn}s`}</Button>}<Button size="sm" variant="ghost" onClick={clearChatError}>Fermer</Button></div></div></div>
+            </div>}
+            <PromptInput onSubmit={(message) => sendMessage(message.text)} className="rounded-md bg-card shadow-sm">
+              <PromptInputBody><PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Demandez une analyse sur ${unitLabel}…`} className="min-h-20 text-base" data-chat-input /></PromptInputBody>
+              <PromptInputFooter>
+                <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton><span className="hidden text-xs text-muted-foreground sm:inline">Entrée pour envoyer</span></PromptInputTools>
+                <PromptInputSubmit status={chatStatus} disabled={!input.trim() && !isLoading} aria-label={isLoading ? 'Arrêter' : 'Envoyer la question'} />
+              </PromptInputFooter>
+            </PromptInput>
+            {isListening && <p className="mt-2 text-center text-xs text-primary">Écoute en cours…</p>}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Premium Modal */}
-      {showPremiumModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <Crown className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">AquaAssistant Premium</h3>
-                  <p className="text-xs text-white/80">Fonctionnalités avancées</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                  <Calculator className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm font-medium">Calculs de production</p>
-                    <p className="text-xs text-muted-foreground">Estimations précises de rendement</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium">Analyse de rentabilité</p>
-                    <p className="text-xs text-muted-foreground">ROI et marges détaillées</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <p className="text-sm font-medium">Prévisions avancées</p>
-                    <p className="text-xs text-muted-foreground">Planification et scénarios</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="border-t pt-3 space-y-2">
-                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Crown className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-medium text-amber-700 dark:text-amber-400">En cours de développement</span>
-                  </div>
-                  <p className="text-xs text-amber-600 dark:text-amber-400/80">
-                    Cette fonctionnalité premium sera bientôt disponible. Restez connecté pour les mises à jour !
-                  </p>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  className="w-full text-sm"
-                  onClick={() => setShowPremiumModal(false)}
-                >
-                  Fermer
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {showHistory && <div className="fixed inset-0 z-[10020] flex" onClick={() => setShowHistory(false)}><div className="absolute inset-0 bg-foreground/40" /><div className="relative ml-auto flex h-full w-full flex-col bg-background shadow-2xl sm:w-96" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-center justify-between border-b p-4"><div className="flex items-center gap-2 text-sm font-semibold"><History className="size-4 text-primary" />Historique</div><div className="flex gap-1"><Button variant="outline" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button><Button variant="outline" size="icon" onClick={() => { if (window.confirm('Effacer tout l’historique ?')) clearAll(); }} aria-label="Effacer l’historique"><Trash2 className="size-4" /></Button><Button variant="ghost" size="icon" onClick={() => setShowHistory(false)} aria-label="Fermer"><X className="size-4" /></Button></div></div>
+        <ScrollArea className="flex-1"><div className="space-y-2 p-3">{conversations.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Aucune conversation enregistrée.</p>}{conversations.map((conversation) => <div key={conversation.id} className={conversation.id === activeId ? 'rounded-md border border-primary bg-primary/5 p-3' : 'rounded-md border p-3'}><Button variant="ghost" className="h-auto w-full justify-start whitespace-normal p-0 text-left" onClick={() => { setActiveId(conversation.id); setShowHistory(false); }}><span className="min-w-0"><span className="block truncate text-sm font-medium">{conversation.title}</span><span className="mt-1 block text-xs text-muted-foreground">{conversation.messages.length} message(s) · {conversation.unit_name || 'Toutes unités'}</span></span></Button><div className="mt-2 flex justify-end"><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteConversation(conversation.id)}><Trash2 className="size-3" />Supprimer</Button></div></div>)}</div></ScrollArea>
+      </div></div>}
+    </section>
   );
 };
 
