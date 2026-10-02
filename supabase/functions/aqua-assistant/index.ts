@@ -123,17 +123,30 @@ const num = (v: unknown) => Number(v) || 0;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
 /** Construit un résumé factuel des données réelles de l'utilisateur (RLS appliquée). */
-const buildFarmContext = async (supabase: any): Promise<string> => {
+const buildFarmContext = async (supabase: any, unitId?: string | null, unitName?: string | null): Promise<string> => {
   const since = new Date();
   since.setDate(since.getDate() - 30);
   const from = isoDay(since);
   const today = isoDay(new Date());
 
+  let unitsQ = supabase.from('production_units').select('id,name,type,capacity,current_stock,is_active');
+  let infraQ = supabase.from('unit_infrastructures').select('id,name,type,status,capacity,unit_id');
+  let batchesQ = supabase.from('livestock_batches').select('species,quantity,average_weight,total_weight,status,unit_name');
+  let cyclesQ = supabase.from('production_cycles').select('name,species,status,current_quantity,unit_name,start_date');
+  if (unitId) {
+    unitsQ = unitsQ.eq('id', unitId);
+    infraQ = infraQ.eq('unit_id', unitId);
+  }
+  if (unitName) {
+    batchesQ = batchesQ.eq('unit_name', unitName);
+    cyclesQ = cyclesQ.eq('unit_name', unitName);
+  }
+
   const [units, infra, batches, cycles, stocks, health, feeding, sales] = await Promise.all([
-    supabase.from('production_units').select('id,name,type,capacity,current_stock,is_active'),
-    supabase.from('unit_infrastructures').select('id,name,type,status,capacity,unit_id'),
-    supabase.from('livestock_batches').select('species,quantity,average_weight,total_weight,status,unit_name'),
-    supabase.from('production_cycles').select('name,species,status,current_quantity,unit_name,start_date'),
+    unitsQ,
+    infraQ,
+    batchesQ,
+    cyclesQ,
     supabase.from('feed_stocks').select('feed_type,quantity,unit,min_threshold'),
     supabase.from('health_records').select('date,mortality,temperature,ph,oxygen,average_weight').gte('date', from).order('date', { ascending: false }).limit(200),
     supabase.from('feeding_records').select('date,quantity,feed_type,mortality').gte('date', from).order('date', { ascending: false }).limit(200),
@@ -243,7 +256,7 @@ serve(async (req) => {
       );
     }
 
-    const { messages, language } = await req.json();
+    const { messages, language, unitId, unitName } = await req.json();
 
     // Input validation for messages array
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -332,7 +345,11 @@ serve(async (req) => {
 
     let farmContext = '';
     try {
-      farmContext = await buildFarmContext(supabase);
+      farmContext = await buildFarmContext(
+        supabase,
+        typeof unitId === 'string' ? unitId : null,
+        typeof unitName === 'string' ? unitName : null,
+      );
     } catch (e) {
       console.warn(`[${requestId}] Contexte ferme indisponible`, e);
     }

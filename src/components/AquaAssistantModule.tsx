@@ -376,7 +376,7 @@ const AquaAssistantModule = () => {
       const enrichedMessages = newMessages.map(m => ({
         role: m.role,
         content: m.role === 'user' && m === userMessage 
-          ? `${contextPrefix}${m.content}${dataContext}`
+          ? `${contextPrefix}${m.content}`
           : m.content
       }));
 
@@ -391,6 +391,7 @@ const AquaAssistantModule = () => {
           messages: enrichedMessages,
           category: selectedCategory,
           unitId: selectedUnitId,
+          unitName: selectedUnitName,
           language: currentLang?.label || 'Français'
         }),
       });
