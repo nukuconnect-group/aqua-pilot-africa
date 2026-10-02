@@ -391,6 +391,7 @@ const AquaAssistantModule = () => {
           messages: enrichedMessages,
           category: selectedCategory,
           unitId: selectedUnitId,
+          unitName: selectedUnitName,
           language: currentLang?.label || 'Français'
         }),
       });
