@@ -1,17 +1,14 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, PackageX, PackageSearch, Trophy, WalletCards, Bot } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
-import { useProductionCycles } from '@/hooks/useProductionCycles';
-import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useSales } from '@/hooks/useSales';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -130,8 +127,6 @@ const AquaAssistantModule = () => {
 
   // Données réelles
   const { stocks: feedStocks } = useFeedStocks(selectedUnitId || undefined);
-  const { cycles } = useProductionCycles(selectedUnitId || undefined);
-  const { records: healthRecords } = useHealthRecords(undefined, selectedUnitId || undefined);
   const { allSales } = useSales();
 
   // Auto-scroll robuste : cible le viewport interne de Radix ScrollArea
@@ -207,10 +202,6 @@ const AquaAssistantModule = () => {
       utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion);
   };
 
   const sendMessage = async (messageText?: string, options?: { retry?: boolean }) => {
@@ -371,7 +362,7 @@ const AquaAssistantModule = () => {
   const outOfStocks = unitStocks.filter((stock) => Number(stock.quantity) <= 0);
   const lowStocks = unitStocks.filter(
     (stock) => Number(stock.quantity) > 0 &&
-    (stock) => Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
+      Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
   );
   const unitLabel = currentUnit?.name || 'Toutes les unités';
   const monthStart = new Date();
