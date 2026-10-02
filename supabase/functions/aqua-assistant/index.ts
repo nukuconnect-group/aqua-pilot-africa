@@ -256,7 +256,7 @@ serve(async (req) => {
       );
     }
 
-    const { messages, language } = await req.json();
+    const { messages, language, unitId, unitName } = await req.json();
 
     // Input validation for messages array
     if (!Array.isArray(messages) || messages.length === 0) {
