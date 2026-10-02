@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { MessageCircle, Mic, MicOff, Volume2, Building2, Fish, Utensils, HeartPulse, TrendingUp, Settings, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Activity, Layers3, PackageCheck, Gauge, CircleCheck, Clock3 } from 'lucide-react';
+import { Mic, MicOff, Volume2, Building2, Fish, Utensils, HeartPulse, TrendingUp, Settings, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Activity, PackageCheck, CircleCheck, Clock3, WalletCards, Bot } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
@@ -9,19 +9,19 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
-import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useHealthRecords } from '@/hooks/useHealthRecords';
-import { useFeedingRecords } from '@/hooks/useFeedingRecords';
+import { useSales } from '@/hooks/useSales';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAquaAssistantConversations, AquaMessage } from '@/hooks/useAquaAssistantConversations';
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Message as AIMessage, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
-import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
+import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
-import aquaBrainMark from '@/assets/aquabrain-mark.png';
+import { formatMoney } from '@/lib/currency';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -137,17 +137,18 @@ const getCategorySuggestions = (lang: string, key: string): string[] => {
 };
 
 const categoryConfigs = [
-  { id: 'production', icon: <Fish className="w-4 h-4" />, color: 'bg-blue-500' },
-  { id: 'feeding', icon: <Utensils className="w-4 h-4" />, color: 'bg-orange-500' },
-  { id: 'health', icon: <HeartPulse className="w-4 h-4" />, color: 'bg-red-500' },
-  { id: 'economics', icon: <TrendingUp className="w-4 h-4" />, color: 'bg-green-500' },
-  { id: 'general', icon: <Settings className="w-4 h-4" />, color: 'bg-purple-500' }
+  { id: 'production', icon: <Fish className="w-4 h-4" /> },
+  { id: 'feeding', icon: <Utensils className="w-4 h-4" /> },
+  { id: 'health', icon: <HeartPulse className="w-4 h-4" /> },
+  { id: 'economics', icon: <TrendingUp className="w-4 h-4" /> },
+  { id: 'general', icon: <Settings className="w-4 h-4" /> }
 ];
 
 const AquaAssistantModule = () => {
   const { units, activeUnit } = useProductionUnits();
+  const { isDemoMode } = useAuth();
   const { t } = useSettings();
-  const greeting = "Bonjour ! Je suis AquaAssistant, votre expert aquacole IA. Sélectionnez une catégorie ou posez-moi directement votre question. Je peux vous donner des informations précises sur vos cycles, stocks, et lots de poissons.";
+  const greeting = "Bonjour. Posez-moi une question sur votre chiffre d’affaires, vos cycles, vos stocks, votre alimentation, vos contrôles ou vos priorités. Mes réponses utilisent les données enregistrées dans AquaPilote.";
   const {
     conversations,
     activeConversation,
@@ -224,11 +225,10 @@ const AquaAssistantModule = () => {
   }, [activeUnit?.id]);
 
   // Données réelles
-  const { batches } = useLivestockBatches(selectedUnitId || undefined);
   const { stocks: feedStocks } = useFeedStocks(selectedUnitId || undefined);
   const { cycles } = useProductionCycles(selectedUnitId || undefined);
   const { records: healthRecords } = useHealthRecords(undefined, selectedUnitId || undefined);
-  const { records: feedingRecords } = useFeedingRecords(undefined, selectedUnitId || undefined);
+  const { allSales } = useSales();
 
   // Auto-scroll robuste : cible le viewport interne de Radix ScrollArea
   // ET utilise scrollIntoView sur une ancre en bas pour couvrir tous les cas
@@ -307,34 +307,6 @@ const AquaAssistantModule = () => {
 
   const handleSuggestionClick = (suggestion: string) => {
     setInput(suggestion);
-  };
-
-  const generateDataContext = () => {
-    const unitName = units.find(u => u.id === selectedUnitId)?.name || 'toutes les unités';
-    let context = `\n\n[DONNÉES RÉELLES DE L'UTILISATEUR - ${unitName}]\n`;
-
-    if (cycles.length > 0) {
-      const activeCycles = cycles.filter(c => c.status === 'active');
-      context += `\n📊 CYCLES DE PRODUCTION:\n`;
-      context += `- ${activeCycles.length} cycle(s) actif(s) sur ${cycles.length} total\n`;
-      activeCycles.forEach(cycle => {
-        const progress = cycle.target_quantity > 0 ? ((cycle.current_quantity / cycle.target_quantity) * 100).toFixed(1) : 0;
-        context += `  • ${cycle.name}: ${cycle.species || 'N/A'}, ${cycle.current_quantity?.toLocaleString() || 0} poissons, progression ${progress}%\n`;
-      });
-    }
-
-    if (batches.length > 0) {
-      const totalQuantity = batches.reduce((sum, b) => sum + (b.quantity || 0), 0);
-      context += `\n🐟 CHEPTEL: ${batches.length} lot(s), ${totalQuantity.toLocaleString()} individus\n`;
-    }
-
-    const unitStocks = selectedUnitId ? feedStocks.filter(s => s.unit_id === selectedUnitId) : feedStocks;
-    if (unitStocks.length > 0) {
-      const totalStock = unitStocks.reduce((sum, s) => sum + (s.quantity || 0), 0);
-      context += `\n🌾 STOCK D'ALIMENTS: ${totalStock.toFixed(1)} kg\n`;
-    }
-
-    return context;
   };
 
   const sendMessage = async (messageText?: string) => {
@@ -489,34 +461,30 @@ const AquaAssistantModule = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
   const langKey = selectedLanguage === 'en' ? 'en' : 'fr';
   const currentCategorySuggestions = selectedCategory ? getCategorySuggestions(langKey, selectedCategory) : [];
   const currentUnit = units.find((unit) => unit.id === selectedUnitId);
   const terms = getUnitTerms(currentUnit?.type);
   const isAlgae = isAlgaeUnitType(currentUnit?.type);
   const activeCycles = cycles.filter((cycle) => cycle.status === 'active');
-  const totalBiomass = batches.reduce((sum, batch) => sum + (Number(batch.total_weight) || 0), 0);
-  const totalPopulation = batches.reduce((sum, batch) => sum + (Number(batch.quantity) || 0), 0);
   const unitStocks = feedStocks;
   const lowStocks = unitStocks.filter(
     (stock) => Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
   );
   const latestHealth = healthRecords[0];
-  const totalInputs = feedingRecords.reduce((sum, record) => sum + (Number(record.quantity) || 0), 0);
   const unitLabel = currentUnit?.name || 'Toutes les unités';
   const cultureLabel = isAlgae ? 'cultures' : 'élevages';
   const stockLabel = isAlgae ? 'Intrants disponibles' : 'Stock alimentaire';
-  const quantityLabel = isAlgae ? 'Biomasse suivie' : 'Population suivie';
-  const quantityValue = isAlgae
-    ? `${totalBiomass.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg`
-    : totalPopulation.toLocaleString('fr-FR');
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const scopedSales = allSales.filter((sale) => !selectedUnitId || sale.unitId === selectedUnitId);
+  const monthlyRevenue = scopedSales
+    .filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending')
+    .reduce((sum, sale) => sum + Number(sale.totalAmount || 0), 0);
+  const latestControlLabel = latestHealth
+    ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(latestHealth.date))
+    : 'Non renseigné';
 
   const operationalAdvice = useMemo(() => {
     const advice: Array<{ tone: 'warning' | 'ok' | 'info'; title: string; detail: string }> = [];
@@ -559,7 +527,7 @@ const AquaAssistantModule = () => {
 
   return (
     <section
-      aria-label="AquaBrain, assistant de gestion aquacole"
+      aria-label="AquaAssistant, assistant de gestion aquacole"
       className={isFullscreen
         ? 'fixed inset-0 z-[10000] flex min-h-0 flex-col overflow-hidden bg-background'
         : 'min-w-0 space-y-4'}
@@ -568,33 +536,33 @@ const AquaAssistantModule = () => {
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className="relative shrink-0 overflow-visible bg-sidebar-background text-sidebar-foreground shadow-lg">
-        <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+      <header className="relative shrink-0 overflow-visible border-b bg-background">
+        <div className="flex flex-col gap-4 px-3 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-sidebar-foreground/10 ring-1 ring-sidebar-foreground/20 sm:size-14">
-              <img src={aquaBrainMark} alt="" width={512} height={512} className="size-11 object-contain sm:size-12" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Bot className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold sm:text-2xl">AquaBrain</h1>
-                <Badge className="border-sidebar-primary/40 bg-sidebar-primary/20 text-sidebar-foreground">Données réelles</Badge>
+                <h1 className="text-xl font-bold sm:text-2xl">AquaAssistant</h1>
+                <Badge variant="outline">Données AquaPilote</Badge>
               </div>
-              <p className="mt-1 text-sm text-sidebar-foreground/75">Pilotage, progression et conseils pour {unitLabel}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Analyse de {unitLabel}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-end lg:self-auto">
-            <Button variant="secondary" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
+            <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
-            <Button variant="secondary" size="icon" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaBrain' : 'Afficher AquaBrain en plein écran'} title={isFullscreen ? 'Réduire' : 'Plein écran'}>
+            <Button variant="outline" size="icon" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Afficher AquaAssistant en plein écran'} title={isFullscreen ? 'Réduire' : 'Plein écran'}>
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t border-sidebar-border px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap gap-2 border-t px-3 py-3 sm:px-5">
           <div className="relative min-w-0 flex-1 sm:max-w-sm">
-            <Button variant="ghost" onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }} className="w-full justify-between bg-sidebar-foreground/10 text-sidebar-foreground hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground">
+            <Button variant="outline" onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }} className="w-full justify-between bg-background">
               <span className="flex min-w-0 items-center gap-2"><Building2 className="size-4 shrink-0" /><span className="truncate">{unitLabel}</span></span>
               <ChevronDown className="size-4 shrink-0" />
             </Button>
@@ -606,7 +574,7 @@ const AquaAssistantModule = () => {
             )}
           </div>
           <div className="relative">
-            <Button variant="ghost" onClick={() => { setShowLanguageSelector(!showLanguageSelector); setShowUnitSelector(false); }} className="bg-sidebar-foreground/10 text-sidebar-foreground hover:bg-sidebar-foreground/15 hover:text-sidebar-foreground" aria-label="Choisir la langue">
+            <Button variant="outline" onClick={() => { setShowLanguageSelector(!showLanguageSelector); setShowUnitSelector(false); }} className="bg-background" aria-label="Choisir la langue">
               <Globe className="size-4" /><span>{currentLang?.flag} {currentLang?.label}</span><ChevronDown className="size-4" />
             </Button>
             {showLanguageSelector && (
@@ -618,56 +586,28 @@ const AquaAssistantModule = () => {
         </div>
       </header>
 
-      <div className={isFullscreen ? 'grid min-h-0 flex-1 gap-0 lg:grid-cols-[22rem_minmax(0,1fr)]' : 'grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]'}>
-        <aside className={isFullscreen ? 'hidden min-h-0 overflow-y-auto border-r bg-muted/30 p-4 lg:block' : 'space-y-4'}>
-          <div>
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Synthèse opérationnelle</p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {[
-                { label: 'Cycles actifs', value: activeCycles.length.toLocaleString('fr-FR'), icon: Activity },
-                { label: quantityLabel, value: quantityValue, icon: Layers3 },
-                { label: stockLabel, value: unitStocks.length ? `${unitStocks.reduce((sum, stock) => sum + Number(stock.quantity || 0), 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}` : 'Non renseigné', icon: PackageCheck },
-                { label: isAlgae ? 'Intrants utilisés' : 'Aliment distribué', value: feedingRecords.length ? `${totalInputs.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg` : 'Non renseigné', icon: Gauge },
-              ].map((item) => (
-                <div key={item.label} className="min-h-24 rounded-md border bg-card p-3 shadow-sm">
-                  <item.icon className="size-4 text-primary" />
-                  <p className="mt-3 break-words text-base font-bold leading-tight">{item.value}</p>
-                  <p className="mt-1 text-xs leading-tight text-muted-foreground">{item.label}</p>
-                </div>
-              ))}
+      <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5' : 'space-y-4'}>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: 'Chiffre d’affaires du mois', value: isDemoMode ? 'Donnée réelle indisponible' : formatMoney(monthlyRevenue), detail: isDemoMode ? 'Le mode démonstration n’est pas comptabilisé.' : `${scopedSales.filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending').length} vente(s) enregistrée(s)`, icon: WalletCards },
+            { label: 'Cycles actifs', value: activeCycles.length.toLocaleString('fr-FR'), detail: cycles.length ? `${cycles.length} cycle(s) au total` : 'Aucun cycle enregistré', icon: Activity },
+            { label: lowStocks.length ? 'Stocks à surveiller' : stockLabel, value: lowStocks.length ? lowStocks.length.toLocaleString('fr-FR') : unitStocks.length.toLocaleString('fr-FR'), detail: lowStocks.length ? lowStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', ') : 'Aucun seuil bas détecté', icon: PackageCheck },
+            { label: 'Dernier contrôle', value: latestControlLabel, detail: latestHealth ? `pH ${latestHealth.ph ?? 'non renseigné'} · ${latestHealth.temperature ?? '—'} °C` : 'Aucun contrôle enregistré', icon: HeartPulse },
+          ].map((item) => (
+            <div key={item.label} className="min-h-28 rounded-md border bg-card p-4">
+              <div className="flex items-start justify-between gap-3"><p className="text-sm font-medium text-muted-foreground">{item.label}</p><item.icon className="size-5 shrink-0 text-primary" /></div>
+              <p className="mt-3 break-words text-xl font-bold leading-tight">{item.value}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div className="rounded-md border bg-card p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">Progression des cycles</h2><span className="text-xs text-muted-foreground">{activeCycles.length} actif(s)</span></div>
-            <div className="mt-3 space-y-4">
-              {activeCycles.length === 0 && <p className="text-sm text-muted-foreground">Aucun cycle actif enregistré pour cette unité.</p>}
-              {activeCycles.slice(0, 4).map((cycle) => {
-                const progress = cycle.target_quantity > 0 ? Math.min(100, Math.max(0, (cycle.current_quantity / cycle.target_quantity) * 100)) : 0;
-                return <div key={cycle.id}>
-                  <div className="flex items-start justify-between gap-3 text-xs"><div className="min-w-0"><p className="truncate font-medium">{cycle.name}</p><p className="truncate text-muted-foreground">{cycle.species || 'Espèce non renseignée'}</p></div><span className="shrink-0 font-semibold">{cycle.target_quantity > 0 ? `${progress.toFixed(0)} %` : 'Objectif absent'}</span></div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div>
-                </div>;
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-md border bg-card p-4 shadow-sm">
-            <h2 className="text-sm font-semibold">Points d’attention</h2>
-            <div className="mt-3 space-y-3">
-              {operationalAdvice.map((advice) => <div key={`${advice.title}-${advice.detail}`} className="flex gap-2.5">
-                {advice.tone === 'warning' ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /> : advice.tone === 'ok' ? <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" /> : <Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
-                <div><p className="text-xs font-semibold">{advice.title}</p><p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{advice.detail}</p></div>
-              </div>)}
-            </div>
-          </div>
-        </aside>
-
-        <div className={isFullscreen ? 'flex min-h-0 flex-col bg-background' : 'flex h-[min(720px,calc(100dvh-8rem))] min-h-[460px] flex-col overflow-hidden rounded-md border bg-card shadow-sm'}>
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className={isFullscreen ? 'flex min-h-[32rem] flex-col overflow-hidden rounded-md border bg-card' : 'flex h-[min(660px,calc(100dvh-10rem))] min-h-[500px] flex-col overflow-hidden rounded-md border bg-card'}>
           <div className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
             <div className="flex min-w-0 items-center gap-2.5">
-              <img src={aquaBrainMark} alt="" width={512} height={512} className="size-8 shrink-0 object-contain" />
-              <div className="min-w-0"><p className="truncate text-sm font-semibold">Conseiller AquaBrain</p><p className="truncate text-xs text-muted-foreground">Analyse {cultureLabel} · {unitLabel}</p></div>
+              <Bot className="size-5 shrink-0 text-primary" aria-hidden="true" />
+              <div className="min-w-0"><p className="truncate text-sm font-semibold">Assistant de gestion</p><p className="truncate text-xs text-muted-foreground">Analyse {cultureLabel} · {unitLabel}</p></div>
             </div>
             <Button type="button" variant="ghost" size="icon" onClick={() => { startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined); }} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
           </div>
@@ -682,13 +622,13 @@ const AquaAssistantModule = () => {
           <Conversation className="min-h-0">
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
-                {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><img src={aquaBrainMark} alt="" width={512} height={512} className="size-6 object-contain" />AquaBrain</div>}
+                {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Bot className="size-4 text-primary" />AquaAssistant</div>}
                 <MessageContent className={message.role === 'user' ? 'bg-sidebar-background text-sidebar-foreground' : undefined}>
                   {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}
               </AIMessage>)}
-              {isLoading && messages[messages.length - 1]?.content === '' && <div className="flex items-center gap-2 text-sm text-muted-foreground"><img src={aquaBrainMark} alt="" width={512} height={512} className="size-6 object-contain" /><Shimmer>Analyse des données de l’unité…</Shimmer></div>}
+              {isLoading && messages[messages.length - 1]?.content === '' && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Bot className="size-4 text-primary" /><Shimmer>Analyse des données de l’unité…</Shimmer></div>}
               <div ref={messagesEndRef} aria-hidden="true" />
             </ConversationContent>
             <ConversationScrollButton aria-label="Voir le dernier message" />
@@ -698,8 +638,8 @@ const AquaAssistantModule = () => {
             {chatError && <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 p-3" data-chat-error={chatError.cause}>
               <div className="flex gap-2"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-destructive">{CHAT_ERROR_LABEL[chatError.cause]}</p><p className="text-xs text-muted-foreground">{chatError.message}</p><div className="mt-2 flex flex-wrap gap-2">{chatError.retryable && lastAttempt && <Button size="sm" variant="outline" disabled={isLoading || !canRetryNow} onClick={() => sendMessage(lastAttempt)}><RefreshCw className="size-3.5" />{canRetryNow ? 'Réessayer' : `Dans ${retryIn}s`}</Button>}<Button size="sm" variant="ghost" onClick={clearChatError}>Fermer</Button></div></div></div>
             </div>}
-            <PromptInput onSubmit={(message) => sendMessage(message.text)} className="rounded-md bg-card shadow-sm">
-              <PromptInputBody><PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Demandez une analyse sur ${unitLabel}…`} className="min-h-20 text-base" data-chat-input /></PromptInputBody>
+            <PromptInput onSubmit={(message) => sendMessage(message.text)} className="rounded-md bg-card">
+              <PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Posez une question sur ${unitLabel}…`} className="min-h-20 text-base" data-chat-input />
               <PromptInputFooter>
                 <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton><span className="hidden text-xs text-muted-foreground sm:inline">Entrée pour envoyer</span></PromptInputTools>
                 <PromptInputSubmit status={chatStatus} disabled={!input.trim() && !isLoading} aria-label={isLoading ? 'Arrêter' : 'Envoyer la question'} />
@@ -707,6 +647,24 @@ const AquaAssistantModule = () => {
             </PromptInput>
             {isListening && <p className="mt-2 text-center text-xs text-primary">Écoute en cours…</p>}
           </div>
+          </div>
+
+          <aside className="space-y-4">
+            <div className="rounded-md border bg-card p-4">
+              <div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">Progression des cycles</h2><span className="text-xs text-muted-foreground">{activeCycles.length} actif(s)</span></div>
+              <div className="mt-3 space-y-4">
+                {activeCycles.length === 0 && <p className="text-sm text-muted-foreground">Aucun cycle actif enregistré.</p>}
+                {activeCycles.slice(0, 4).map((cycle) => {
+                  const progress = cycle.target_quantity > 0 ? Math.min(100, Math.max(0, (cycle.current_quantity / cycle.target_quantity) * 100)) : 0;
+                  return <div key={cycle.id}><div className="flex justify-between gap-3 text-xs"><p className="truncate font-medium">{cycle.name}</p><span className="shrink-0 font-semibold">{cycle.target_quantity > 0 ? `${progress.toFixed(0)} %` : 'Objectif absent'}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div></div>;
+                })}
+              </div>
+            </div>
+            <div className="rounded-md border bg-card p-4">
+              <h2 className="text-sm font-semibold">À retenir</h2>
+              <div className="mt-3 space-y-3">{operationalAdvice.map((advice) => <div key={`${advice.title}-${advice.detail}`} className="flex gap-2.5">{advice.tone === 'warning' ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /> : advice.tone === 'ok' ? <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" /> : <Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}<div><p className="text-xs font-semibold">{advice.title}</p><p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{advice.detail}</p></div></div>)}</div>
+            </div>
+          </aside>
         </div>
       </div>
 
