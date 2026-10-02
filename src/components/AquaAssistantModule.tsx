@@ -9,11 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
-import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useHealthRecords } from '@/hooks/useHealthRecords';
-import { useFeedingRecords } from '@/hooks/useFeedingRecords';
 import { useSales } from '@/hooks/useSales';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -227,11 +225,9 @@ const AquaAssistantModule = () => {
   }, [activeUnit?.id]);
 
   // Données réelles
-  const { batches } = useLivestockBatches(selectedUnitId || undefined);
   const { stocks: feedStocks } = useFeedStocks(selectedUnitId || undefined);
   const { cycles } = useProductionCycles(selectedUnitId || undefined);
   const { records: healthRecords } = useHealthRecords(undefined, selectedUnitId || undefined);
-  const { records: feedingRecords } = useFeedingRecords(undefined, selectedUnitId || undefined);
   const { allSales } = useSales();
 
   // Auto-scroll robuste : cible le viewport interne de Radix ScrollArea
