@@ -20,7 +20,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useAquaAssistantConversations, AquaMessage } from '@/hooks/useAquaAssistantConversations';
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Message as AIMessage, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
-import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
+import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 import { formatMoney } from '@/lib/currency';
@@ -471,21 +471,14 @@ const AquaAssistantModule = () => {
   const terms = getUnitTerms(currentUnit?.type);
   const isAlgae = isAlgaeUnitType(currentUnit?.type);
   const activeCycles = cycles.filter((cycle) => cycle.status === 'active');
-  const totalBiomass = batches.reduce((sum, batch) => sum + (Number(batch.total_weight) || 0), 0);
-  const totalPopulation = batches.reduce((sum, batch) => sum + (Number(batch.quantity) || 0), 0);
   const unitStocks = feedStocks;
   const lowStocks = unitStocks.filter(
     (stock) => Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
   );
   const latestHealth = healthRecords[0];
-  const totalInputs = feedingRecords.reduce((sum, record) => sum + (Number(record.quantity) || 0), 0);
   const unitLabel = currentUnit?.name || 'Toutes les unités';
   const cultureLabel = isAlgae ? 'cultures' : 'élevages';
   const stockLabel = isAlgae ? 'Intrants disponibles' : 'Stock alimentaire';
-  const quantityLabel = isAlgae ? 'Biomasse suivie' : 'Population suivie';
-  const quantityValue = isAlgae
-    ? `${totalBiomass.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg`
-    : totalPopulation.toLocaleString('fr-FR');
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -562,9 +555,6 @@ const AquaAssistantModule = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 self-end lg:self-auto">
-            <Button variant="secondary" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
-              <History className="size-4" />
-            </Button>
             <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
