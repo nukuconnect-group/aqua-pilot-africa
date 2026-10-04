@@ -401,7 +401,7 @@ const AquaAssistantModule = () => {
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className={isFullscreen ? "relative shrink-0 overflow-visible border-b bg-background px-3 pt-3 sm:px-5" : "sticky top-0 z-30 shrink-0 overflow-visible border-b bg-background pt-2"}>
+      <header className={isFullscreen ? "relative shrink-0 overflow-visible border-b bg-background px-3 pt-3 sm:px-5" : "relative z-10 shrink-0 overflow-visible border-b bg-background pt-2"}>
         <div className="flex items-center justify-between gap-3 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
