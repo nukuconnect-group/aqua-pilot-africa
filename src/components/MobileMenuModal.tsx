@@ -30,6 +30,7 @@ import {
   Sparkles,
   BookOpen,
   Stethoscope,
+  Brain,
 } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';

@@ -380,7 +380,13 @@ const AquaAssistantModule = () => {
       return totals;
     }, {});
   const starProduct = Object.entries(monthlyProductTotals).sort(([, first], [, second]) => second - first)[0];
-  const quickQuestions = unitProfile.suggestions.slice(0, 3);
+  const quickQuestions = [
+    { title: 'Mon chiffre d’affaires du mois', question: 'Quel est mon chiffre d’affaires ce mois ? Compare avec le mois dernier.' },
+    { title: 'Mon unité est-elle rentable ?', question: 'Mon unité est-elle rentable ce mois ? Montre-moi le calcul.' },
+    { title: 'Mes dépenses du mois', question: 'Quelles sont mes dépenses du mois, par catégorie ?' },
+    { title: 'Améliorer ma marge', question: 'Donne-moi des conseils concrets pour améliorer ma marge.' },
+    ...unitProfile.suggestions.slice(0, 1),
+  ];
 
   const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
 
@@ -395,7 +401,7 @@ const AquaAssistantModule = () => {
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className="relative shrink-0 overflow-visible border-b bg-background">
+      <header className={isFullscreen ? "relative shrink-0 overflow-visible border-b bg-background px-3 pt-3 sm:px-5" : "sticky top-0 z-30 shrink-0 overflow-visible border-b bg-background pt-2"}>
         <div className="flex items-center justify-between gap-3 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -410,7 +416,7 @@ const AquaAssistantModule = () => {
             <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Afficher AquaAssistant en plein écran'} title={isFullscreen ? 'Réduire' : 'Plein écran'}>
+            <Button variant={isFullscreen ? 'outline' : 'default'} size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Afficher AquaAssistant en plein écran'} title={isFullscreen ? 'Réduire' : 'Plein écran'}>
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>
           </div>
@@ -459,8 +465,9 @@ const AquaAssistantModule = () => {
         </div>
 
         <div className="py-1">
-          <p className="text-sm font-semibold text-foreground">Que souhaitez-vous savoir sur votre unité ?</p>
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          <p className="text-sm font-semibold text-foreground">Que voulez-vous savoir ?</p>
+          <p className="text-xs text-muted-foreground">Je peux calculer votre chiffre d’affaires, vos dépenses et votre rentabilité, et vous donner des conseils.</p>
+          <div className="mt-2 flex flex-wrap gap-2 pb-1">
             {quickQuestions.map((suggestion) => (
               <Button
                 key={suggestion.title}
@@ -469,7 +476,7 @@ const AquaAssistantModule = () => {
                 size="sm"
                 disabled={isLoading}
                 onClick={() => sendMessage(suggestion.question, { retry: false })}
-                className="h-9 shrink-0 bg-card px-3 text-xs"
+                className="h-auto min-h-9 whitespace-normal bg-card px-3 py-1.5 text-left text-xs"
               >
                 {suggestion.title}
               </Button>
@@ -477,8 +484,8 @@ const AquaAssistantModule = () => {
           </div>
         </div>
 
-        <div>
-          <div className={isFullscreen ? 'flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-md border bg-card' : 'flex h-[min(560px,calc(100dvh-15rem))] min-h-[360px] flex-col overflow-hidden rounded-md border bg-card'}>
+        <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col' : undefined}>
+          <div className={isFullscreen ? 'flex min-h-[70dvh] flex-1 flex-col overflow-hidden rounded-md border bg-card' : 'flex h-[min(560px,calc(100dvh-15rem))] min-h-[360px] flex-col overflow-hidden rounded-md border bg-card'}>
           <div className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
             <div className="flex min-w-0 items-center gap-2.5">
               <Bot className="size-5 shrink-0 text-primary" aria-hidden="true" />
