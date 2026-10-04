@@ -103,6 +103,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
     {
       category: t('category_planning'),
       items: [
+        { id: 'business-intelligence', label: 'Intelligence & Analyse', icon: Brain },
         { id: 'analytics', label: t('analytics'), icon: BarChart3 },
         { id: 'planning', label: t('planning'), icon: Calendar },
         { id: 'reports', label: t('reports'), icon: FileText }

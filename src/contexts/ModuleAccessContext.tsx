@@ -20,7 +20,7 @@ import {
   type UnitModuleRules,
   type UserModuleOverrides,
 } from '@/lib/planModules';
-import { tabToModuleId } from '@/lib/moduleAccess';
+import { tabToModuleId, ALWAYS_OPEN_MODULES } from '@/lib/moduleAccess';
 
 interface ModuleAccessValue {
   isLoading: boolean;
@@ -117,6 +117,7 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
     (moduleOrTabId: string) => {
       const moduleId = tabToModuleId(moduleOrTabId);
       if (moduleId === 'admin') return user?.role === 'admin';
+      if (ALWAYS_OPEN_MODULES.includes(moduleId)) return true;
        if (isUnrestricted) return allowed.has(moduleId);
       if (!allowed.has(moduleId)) return false;
       // Le rôle d'équipe restreint en plus l'abonnement.
