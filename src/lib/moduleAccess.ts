@@ -27,6 +27,7 @@ export const APP_MODULE_PERMISSIONS: AppModulePermission[] = [
   { id: 'reports', label: 'Rapports', description: 'Rapports et exports', tabIds: ['reports'] },
   { id: 'analytics', label: 'Analyses', description: 'Analyses et indicateurs avancés', tabIds: ['analytics'] },
   { id: 'library', label: 'Bibliothèque Premium', description: 'Documents, vidéos et formations Premium', tabIds: ['library'] },
+  { id: 'business-intelligence', label: 'Intelligence & Analyse', description: 'Tableau de bord BI et prévisions IA', tabIds: ['business-intelligence'] },
   { id: 'aqua-assistant', label: 'AquaAssistant', description: 'Assistant IA et recommandations', tabIds: ['aqua-assistant'] },
   { id: 'support', label: 'Support', description: 'Assistance et tickets', tabIds: ['support'] },
   { id: 'offline', label: 'Mode hors ligne', description: 'Synchronisation et cache local', tabIds: ['offline'] },
@@ -53,7 +54,10 @@ export const moduleParamToTabId = (value: string | null | undefined): string => 
 export const hasAssignedModule = (
   tabOrModuleId: string,
   hasAccessToModule: (moduleId: string) => boolean,
-): boolean => hasAccessToModule(tabToModuleId(tabOrModuleId));
+): boolean => ALWAYS_OPEN_MODULES.includes(tabToModuleId(tabOrModuleId)) || hasAccessToModule(tabToModuleId(tabOrModuleId));
+
+/** Modules accessibles à tous les utilisateurs, quel que soit l'abonnement ou le rôle d'équipe. */
+export const ALWAYS_OPEN_MODULES = ['business-intelligence'];
 
 export const sanitizeModulePermissions = (permissions: Record<string, boolean> = {}) =>
   APP_MODULE_PERMISSIONS.reduce<Record<string, boolean>>((acc, module) => {

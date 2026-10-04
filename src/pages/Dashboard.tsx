@@ -36,6 +36,7 @@ import WeatherDashboard from '@/components/WeatherDashboard';
 import TeamManagement from '@/components/TeamManagement';
 import ReportsManagement from '@/components/ReportsManagement';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
+import BusinessIntelligenceModule from '@/components/analytics/BusinessIntelligenceModule';
 import PerformanceAlertsPanel from '@/components/alerts/PerformanceAlertsPanel';
 import PerformanceAlertsConfig from '@/components/alerts/PerformanceAlertsConfig';
 import SettingsManagement from '@/components/SettingsManagement';
@@ -303,6 +304,8 @@ const Dashboard: React.FC = () => {
         return <TeamManagement />;
       case 'reports':
         return <ReportsManagement />;
+      case 'business-intelligence':
+        return <BusinessIntelligenceModule />;
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'performance-alerts':
