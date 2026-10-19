@@ -23,6 +23,7 @@ import PayslipEditor from './PayslipEditor';
 import EmploymentContractsManager from './hr/EmploymentContractsManager';
 import LeaveManagement from './hr/LeaveManagement';
 import LoansManagement from './hr/LoansManagement';
+import AttendanceManager from './hr/AttendanceManager';
 import { useHrOperations } from '@/hooks/useHrOperations';
 
 const HRManagement = () => {
@@ -399,10 +400,11 @@ const HRManagement = () => {
       {/* Tabs */}
       <Tabs defaultValue="employees" className="space-y-3 md:space-y-4">
         <div className="overflow-x-auto">
-          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full text-xs md:text-sm">
+          <TabsList className="grid grid-cols-4 md:grid-cols-7 w-full h-auto rounded-xl text-xs md:text-sm">
             <TabsTrigger value="employees">Employés</TabsTrigger>
             <TabsTrigger value="contracts">Contrats</TabsTrigger>
             <TabsTrigger value="payroll">Bulletins</TabsTrigger>
+            <TabsTrigger value="attendance">Pointage</TabsTrigger>
             <TabsTrigger value="leaves">Congés</TabsTrigger>
             <TabsTrigger value="loans">Prêts</TabsTrigger>
             <TabsTrigger value="reports">Rapports</TabsTrigger>
@@ -583,6 +585,10 @@ const HRManagement = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="attendance">
+          <AttendanceManager />
         </TabsContent>
 
         <TabsContent value="leaves">
