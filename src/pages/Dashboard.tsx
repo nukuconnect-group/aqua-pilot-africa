@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import Header from '@/components/Header';
+import AssistantFloatingBubble from '@/components/AssistantFloatingBubble';
 import MobileNavigation from '@/components/MobileNavigation';
 import MobileMenuModal from '@/components/MobileMenuModal';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
@@ -398,6 +399,10 @@ const Dashboard: React.FC = () => {
 
         {/* Navigation mobile en bas */}
         <MobileNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+
+        {canAccessTab('aqua-assistant') && (
+          <AssistantFloatingBubble activeTab={activeTab} onOpen={() => handleTabChange('aqua-assistant')} />
+        )}
         
         {/* Modal menu mobile */}
         <MobileMenuModal 
