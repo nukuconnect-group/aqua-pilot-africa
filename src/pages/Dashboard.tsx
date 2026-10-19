@@ -234,6 +234,12 @@ const Dashboard: React.FC = () => {
 
   // Detecter le changement d'onglet vers aqua-assistant
   useEffect(() => {
+    const onNav = (e: Event) => { const t = (e as CustomEvent<string>).detail; if (t) handleTabChange(t); };
+    window.addEventListener('aquapilote:navigate', onNav);
+    return () => window.removeEventListener('aquapilote:navigate', onNav);
+  });
+
+  useEffect(() => {
     if (activeTab === 'aqua-assistant') {
       setShowAquaAssistantModule(true);
     } else {
