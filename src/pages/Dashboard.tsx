@@ -398,6 +398,10 @@ const Dashboard: React.FC = () => {
 
         {/* Navigation mobile en bas */}
         <MobileNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+
+        {canAccessTab('aqua-assistant') && (
+          <AssistantFloatingBubble activeTab={activeTab} onOpen={() => handleTabChange('aqua-assistant')} />
+        )}
         
         {/* Modal menu mobile */}
         <MobileMenuModal 
