@@ -2,6 +2,9 @@
 
 export const CHART: Record<string, string> = {
   '101': 'Capital social', '121': 'Report à nouveau', '131': 'Résultat net',
+  '162': 'Emprunts auprès des établissements de crédit', '231': 'Bâtiments, installations (bassins, étangs)',
+  '241': 'Matériel et outillage', '245': 'Matériel de transport', '281': 'Amortissements des immobilisations',
+  '311': 'Stocks de marchandises', '321': 'Stocks de matières premières (aliments, alevins)',
   '401': 'Fournisseurs', '411': 'Clients', '421': 'Personnel, rémunérations dues',
   '521': 'Banques', '5212': 'Mobile Money', '571': 'Caisse',
   '601': 'Achats de marchandises', '602': 'Achats de matières premières (alevins, aliments)',
