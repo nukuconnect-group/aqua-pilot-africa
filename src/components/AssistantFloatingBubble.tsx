@@ -15,7 +15,7 @@ const AssistantFloatingBubble: React.FC<Props> = ({ activeTab, onOpen }) => {
   useEffect(() => {
     if (!user) return;
     const dismissed = Number(sessionStorage.getItem(KEY) || 0);
-    const firstName = (user.user_metadata?.full_name || '').split(' ')[0];
+    const firstName = (user.name?.includes('@') ? '' : user.name || '').split(' ')[0];
     const show = () => setMessage(
       dismissed
         ? 'Je peux vous aider à utiliser l\'application ou à gérer votre ferme.'
