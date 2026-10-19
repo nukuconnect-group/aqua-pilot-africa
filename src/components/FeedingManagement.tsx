@@ -14,8 +14,6 @@ import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useSettings } from '@/contexts/SettingsContext';
 import SimpleFeedingForm from './feeding/SimpleFeedingForm';
 import DailyFeedingSummary from './feeding/DailyFeedingSummary';
-import FeedStockManager from './feeding/FeedStockManager';
-import StockMovementsPanel from './feeding/StockMovementsPanel';
 import FeedingChart from './feeding/FeedingChart';
 import FeedingPlanScheduler from './feeding/FeedingPlanScheduler';
 import FeedingAnalyticsDashboard from './feeding/FeedingAnalyticsDashboard';
@@ -187,6 +185,11 @@ const FeedingManagement = () => {
             .from('feed_stocks')
             .update({ quantity: newQuantity })
             .eq('id', matchingStock.id);
+          await (supabase as any).from('stock_movements').insert({
+            user_id: (matchingStock as any).user_id, unit_id: activeUnit?.id, stock_id: matchingStock.id,
+            type: 'out', quantity: quantityUsed, quantity_after: newQuantity,
+            reason: `Nourrissage du ${record.date || new Date().toISOString().slice(0, 10)}`,
+          });
           
           // Créer une alerte de sortie d'aliment
           const { data: { user } } = await supabase.auth.getUser();
@@ -382,11 +385,6 @@ const FeedingManagement = () => {
                 <span className="sm:hidden">Plan.</span>
               </TabsTrigger>
             )}
-            <TabsTrigger value="stock" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
-              <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">{isAlgae ? 'Inventaire des intrants' : 'Stock aliment'}</span>
-              <span className="sm:hidden">{isAlgae ? 'Intrants' : 'Stock'}</span>
-            </TabsTrigger>
             <TabsTrigger value="alerts" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <Bell className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Alertes</span>
@@ -456,13 +454,6 @@ const FeedingManagement = () => {
           />
         </TabsContent>
 
-        <TabsContent value="stock" className="space-y-4">
-          <FeedStockManager
-            unitId={activeUnit.id}
-            onStockUpdate={handleStockUpdate}
-          />
-          <StockMovementsPanel unitId={activeUnit.id} />
-        </TabsContent>
 
         <TabsContent value="alerts" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -477,7 +468,7 @@ const FeedingManagement = () => {
                     <p className="text-xs text-muted-foreground truncate">{lowStockItems.length} {isAlgae ? 'intrant(s)' : 'aliment(s)'} sous seuil</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => setFeedingTab('stock')}>Stock</Button>
+                <Button size="sm" variant="outline" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>Stock</Button>
               </CardContent>
             </Card>
             <Card>
