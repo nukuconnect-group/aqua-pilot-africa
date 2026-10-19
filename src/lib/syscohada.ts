@@ -14,10 +14,33 @@ export const CHART: Record<string, string> = {
   '707': 'Produits accessoires', '758': 'Produits divers',
 };
 
-export type JournalCode = 'VT' | 'AC' | 'CA' | 'BQ' | 'OD';
+export type JournalCode = 'VT' | 'AC' | 'CA' | 'BQ' | 'OD' | 'AN' | 'CL';
 export const JOURNALS: Record<JournalCode, string> = {
   VT: 'Journal des ventes', AC: 'Journal des achats', CA: 'Journal de caisse', BQ: 'Journal de banque', OD: 'Opérations diverses',
+  AN: 'À-nouveaux (ouverture)', CL: 'Clôture d’exercice',
 };
+
+export const isBalanced = (lines: EntryLine[]) => {
+  const d = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+  const c = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
+  return d > 0 && Math.abs(d - c) < 0.005;
+};
+
+/** Écriture de clôture : solde les comptes 6 et 7 vers 131 (Résultat net). */
+export function closingEntry(rows: { account: string; debit: number; credit: number }[], date: string): Entry | null {
+  const lines: EntryLine[] = [];
+  let res = 0;
+  for (const r of rows) {
+    if (!/^[67]/.test(r.account)) continue;
+    const s = r.debit - r.credit;
+    if (Math.abs(s) < 0.005) continue;
+    lines.push(s > 0 ? { account: r.account, debit: 0, credit: s } : { account: r.account, debit: -s, credit: 0 });
+    res -= s;
+  }
+  if (!lines.length) return null;
+  lines.push(res >= 0 ? { account: '131', debit: 0, credit: res } : { account: '131', debit: -res, credit: 0 });
+  return { id: `cl-${date}`, date, journal: 'CL', label: `Clôture — résultat ${res >= 0 ? 'bénéficiaire' : 'déficitaire'}`, lines };
+}
 
 export interface EntryLine { account: string; debit: number; credit: number }
 export interface Entry { id: string; date: string; journal: JournalCode; label: string; ref?: string; lines: EntryLine[] }
