@@ -76,6 +76,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
         { id: 'infrastructures', label: t('infrastructures'), icon: Building },
         { id: 'livestock', label: t('livestock'), icon: Beef },
         { id: 'feeding', label: t('feeding'), icon: Utensils },
+        { id: 'stock', label: 'Stock', icon: Boxes },
         { id: 'aquafeed', label: 'AquaFeed AI', icon: Sparkles },
         { id: 'health', label: t('health'), icon: Heart },
         { id: 'aquahealth', label: 'AquaHealth AI', icon: Stethoscope },

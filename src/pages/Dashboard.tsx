@@ -275,6 +275,8 @@ const Dashboard: React.FC = () => {
         return <LivestockManagement />;
       case 'feeding':
         return <FeedingManagement />;
+      case 'stock':
+        return <StockManagement />;
       case 'aquafeed':
         return <AquaFeedAI />;
       case 'library':
