@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -174,32 +175,48 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     }
   };
 
-  const validateDistribution = async (s: FeedingSheet) => {
-    if (!user) return;
+  const [feeding, setFeeding] = useState<FeedingSheet | null>(null);
+  const [feedForm, setFeedForm] = useState({ applied: '', remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '' });
+  const { stocks } = useFeedStocks(unitId);
+  const stockNames = useMemo(() => Array.from(new Set((stocks || []).map((x: any) => x.custom_name || x.feed_type).filter(Boolean))), [stocks]);
+
+  const validateDistribution = (s: FeedingSheet) => {
+    setFeedForm({ applied: String(s.quantity || ''), remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '' });
+    setFeeding(s);
+  };
+
+  const confirmFeeding = async () => {
+    const s = feeding;
+    if (!user || !s) return;
+    const applied = Number(feedForm.applied) || 0;
+    const remaining = Number(feedForm.remaining) || 0;
+    if (applied <= 0) { toast({ title: 'Dose appliquée requise', variant: 'destructive' }); return; }
+    if ((remaining > 0 || feedForm.behavior !== 'normal') && !feedForm.reason.trim()) {
+      toast({ title: 'Précisez la raison', description: 'Indiquez pourquoi l’aliment n’a pas été entièrement consommé.', variant: 'destructive' });
+      return;
+    }
     try {
-      const today = new Date();
-      const record: any = {
-        user_id: user.id,
-        unit_id: unitId,
-        infrastructure_id: s.infrastructure_id || null,
-        date: today.toISOString().split('T')[0],
-        time: s.time,
-        feed_type: s.feed_type,
-        quantity: s.quantity,
-        session_type: s.period,
-        feeder_name: s.responsible_name || null,
-        prescribed_quantity: s.quantity,
-        actual_quantity: s.quantity,
-        notes: `Distribution validée depuis la fiche: ${s.title}`,
-      };
-      const { error } = await (supabase as any).from('feeding_records').insert([record]);
+      const today = new Date().toISOString().split('T')[0];
+      const notes = [
+        `Fiche : ${s.title}`,
+        feedForm.reason && `Raison non-consommation : ${feedForm.reason}`,
+        feedForm.notes,
+      ].filter(Boolean).join(' · ');
+      const { error } = await (supabase as any).from('feeding_records').insert([{
+        user_id: user.id, unit_id: unitId, infrastructure_id: s.infrastructure_id || null,
+        date: today, time: s.time, feed_type: s.feed_type, quantity: applied,
+        session_type: s.period, feeder_name: s.responsible_name || null,
+        prescribed_quantity: s.quantity, actual_quantity: applied, remaining_quantity: remaining,
+        mortality: Number(feedForm.mortality) || 0, behavior: feedForm.behavior, notes,
+      }]);
       if (error) throw error;
       const { deductFeedStock } = await import('@/lib/feedStockDeduction');
-      const r = await deductFeedStock(unitId, s.feed_type, Number(s.quantity) || 0, `Nourrissage — fiche ${s.title}`);
+      const r = await deductFeedStock(unitId, s.feed_type, applied, `Nourrissage — fiche ${s.title}`);
       const extra = r.status === 'ok' ? ` · Stock restant : ${r.after.toFixed(1)}`
         : r.status === 'insufficient' ? ' · Stock insuffisant, non déduit'
         : r.status === 'not_found' ? ' · Aucun article de stock portant ce nom' : '';
-      toast({ title: 'Distribution validée', description: `Enregistré dans l'historique${extra}` });
+      toast({ title: 'Nourrissage enregistré', description: `Dose prévue ${s.quantity} ${s.unit}, appliquée ${applied} ${s.unit}${extra}` });
+      setFeeding(null);
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
     }

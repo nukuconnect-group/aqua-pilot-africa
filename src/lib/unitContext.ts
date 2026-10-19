@@ -209,7 +209,7 @@ const DEFAULT_TERMS: UnitContextTerms = {
     { name: 'Columnariose', symptoms: ['Taches blanches/grises', 'Érosion des nageoires', 'Mucus excessif'], treatment: 'Bain de permanganate de potassium' },
     { name: 'Saprolegniose', symptoms: ['Masses cotonneuses blanches', 'Érosion de la peau'], treatment: 'Bain de vert de malachite ou permanganate' },
   ],
-  features: { feedingSheets: true, feedingPlanning: true, sampling: true },
+  features: { feedingSheets: true, feedingPlanning: false, sampling: true },
 };
 
 
@@ -391,7 +391,7 @@ export const ALGAE_TERMS: UnitContextTerms = {
     { name: 'Contamination bactérienne / fongique', symptoms: ['Odeur anormale', 'Mousse et biofilm', 'Milieu trouble'], treatment: 'Désinfection du bassin (hypochlorite puis neutralisation), stérilisation de l’eau d’appoint, redémarrage d’inoculum' },
     { name: 'Dérive des paramètres (pH, salinité, nutriments)', symptoms: ['Décoloration jaune/verte pâle', 'Arrêt de croissance', 'Sédimentation de la biomasse'], treatment: 'Correction du pH (bicarbonate), réajustement des nitrates/phosphates, contrôle de la température et de l’ombrage' },
   ],
-  features: { feedingSheets: false, feedingPlanning: false, sampling: true },
+  features: { feedingSheets: true, feedingPlanning: false, sampling: true },
 };
 
 

@@ -32,7 +32,7 @@ const FeedingManagement = () => {
   const { activeUnit } = useProductionUnits();
   const { t } = useSettings();
   const { toast } = useToast();
-  const [feedingTab, setFeedingTab] = useState('history');
+  const [feedingTab, setFeedingTab] = useState('sheets');
   const unitTerms = getUnitTerms(activeUnit?.type);
   const isAlgae = activeUnit?.type === 'algoculture';
   
@@ -364,7 +364,7 @@ const FeedingManagement = () => {
 
       {/* Onglets pour les détails */}
       <Tabs value={feedingTab} onValueChange={setFeedingTab} className="space-y-4">
-        <div className="overflow-x-auto -mx-2 px-2">
+        <div className="overflow-x-auto -mx-2 px-2 flex items-center gap-2">
           <TabsList className="w-full grid grid-cols-2 sm:inline-flex sm:w-auto gap-1">
             <TabsTrigger value="history" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <History className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -396,6 +396,9 @@ const FeedingManagement = () => {
               <span className="sm:hidden">Graph.</span>
             </TabsTrigger>
           </TabsList>
+          <Button size="sm" variant="outline" className="shrink-0 rounded-full" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>
+            <Package className="w-4 h-4 mr-1" /> Module Stock
+          </Button>
         </div>
 
         <TabsContent value="sheets" className="space-y-4">
