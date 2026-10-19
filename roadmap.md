@@ -9,9 +9,10 @@
 - [x] Bulle d'aide flottante AquaAssistant
 - [x] Barres de navigation arrondies (mobile et ordinateur)
 - [x] Comptabilité SYSCOHADA (plan de comptes, journaux, grand livre, balance, états)
-- [ ] Gestionnaire de stock (création de produits, mouvements)
+- [x] Gestionnaire de stock + historique des mouvements (installer docs/sql/stock_movements.sql)
 - [ ] Analyse photo : écran existant, service IA à installer sur le serveur de l'application (bloqué : serveur de l'utilisateur)
 - [ ] Installer docs/sql/hr_attendance.sql sur le serveur (bloqué : action de l'utilisateur)
 - [x] RH : pointage GPS/photo hors ligne, retards, heures sup, avances
 - [x] Mois gratuit à l'inscription
 - [ ] Plus tard : tontine, boutique WooCommerce, CRM WhatsApp
+- [x] Relances clients WhatsApp ; avances sur salaire sorties de la caisse
