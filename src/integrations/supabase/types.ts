@@ -389,6 +389,152 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance_records: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          distance_m: number | null
+          employee_id: string
+          id: string
+          inside_zone: boolean | null
+          kind: string
+          latitude: number | null
+          longitude: number | null
+          photo_path: string | null
+          recorded_at: string
+          unit_id: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          distance_m?: number | null
+          employee_id: string
+          id?: string
+          inside_zone?: boolean | null
+          kind: string
+          latitude?: number | null
+          longitude?: number | null
+          photo_path?: string | null
+          recorded_at: string
+          unit_id?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          distance_m?: number | null
+          employee_id?: string
+          id?: string
+          inside_zone?: boolean | null
+          kind?: string
+          latitude?: number | null
+          longitude?: number | null
+          photo_path?: string | null
+          recorded_at?: string
+          unit_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cash_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          id: string
+          label: string | null
+          payment_method: string
+          sale_id: string | null
+          session_id: string
+          type: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string | null
+          payment_method?: string
+          sale_id?: string | null
+          session_id: string
+          type: string
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string | null
+          payment_method?: string
+          sale_id?: string | null
+          session_id?: string
+          type?: string
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_sessions: {
+        Row: {
+          closed_at: string | null
+          counted_amount: number | null
+          created_at: string
+          difference: number | null
+          expected_amount: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string
+          opening_amount: number
+          status: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          counted_amount?: number | null
+          created_at?: string
+          difference?: number | null
+          expected_amount?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string
+          opening_amount?: number
+          status?: string
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          counted_amount?: number | null
+          created_at?: string
+          difference?: number | null
+          expected_amount?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string
+          opening_amount?: number
+          status?: string
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cycle_budgets: {
         Row: {
           created_at: string
@@ -2988,6 +3134,137 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_agents: {
+        Row: {
+          active: boolean
+          commission_rate: number
+          created_at: string
+          id: string
+          name: string
+          phone: string | null
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          name: string
+          phone?: string | null
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      savings_members: {
+        Row: {
+          agent_id: string | null
+          book_number: string
+          created_at: string
+          daily_amount: number
+          full_name: string
+          id: string
+          phone: string | null
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          book_number: string
+          created_at?: string
+          daily_amount?: number
+          full_name: string
+          id?: string
+          phone?: string | null
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          book_number?: string
+          created_at?: string
+          daily_amount?: number
+          full_name?: string
+          id?: string
+          phone?: string | null
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_members_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "savings_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      savings_transactions: {
+        Row: {
+          agent_id: string | null
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          member_id: string
+          note: string | null
+          type: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          amount: number
+          created_at?: string
+          date?: string
+          id?: string
+          member_id: string
+          note?: string | null
+          type: string
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          member_id?: string
+          note?: string | null
+          type?: string
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_transactions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "savings_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "savings_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_findings: {
         Row: {
           created_at: string
@@ -3036,6 +3313,156 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      shop_orders: {
+        Row: {
+          created_at: string
+          customer_address: string | null
+          customer_name: string
+          customer_phone: string
+          id: string
+          items: Json
+          note: string | null
+          sale_id: string | null
+          status: string
+          total: number
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_address?: string | null
+          customer_name: string
+          customer_phone: string
+          id?: string
+          items?: Json
+          note?: string | null
+          sale_id?: string | null
+          status?: string
+          total?: number
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_address?: string | null
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          items?: Json
+          note?: string | null
+          sale_id?: string | null
+          status?: string
+          total?: number
+          unit_id?: string
+        }
+        Relationships: []
+      }
+      shop_products: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          stock: number
+          unit_id: string
+          unit_label: string
+          user_id: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price?: number
+          stock?: number
+          unit_id: string
+          unit_label?: string
+          user_id: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          stock?: number
+          unit_id?: string
+          unit_label?: string
+          user_id?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
+      shop_settings: {
+        Row: {
+          banner: string | null
+          enabled: boolean
+          shop_name: string
+          unit_id: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          banner?: string | null
+          enabled?: boolean
+          shop_name: string
+          unit_id: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          banner?: string | null
+          enabled?: boolean
+          shop_name?: string
+          unit_id?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          quantity: number
+          quantity_after: number
+          reason: string | null
+          stock_id: string
+          type: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          quantity: number
+          quantity_after: number
+          reason?: string | null
+          stock_id: string
+          type: string
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          quantity?: number
+          quantity_after?: number
+          reason?: string | null
+          stock_id?: string
+          type?: string
+          unit_id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -3776,6 +4203,7 @@ export type Database = {
       }
       is_active_team_member: { Args: { user_uuid: string }; Returns: boolean }
       is_team_member_of: { Args: { owner_user_id: string }; Returns: boolean }
+      owns_unit: { Args: { _unit: string }; Returns: boolean }
       team_member_has_unit_access: {
         Args: { _owner_id: string; _unit_id: string }
         Returns: boolean
