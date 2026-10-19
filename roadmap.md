@@ -14,5 +14,6 @@
 - [ ] Installer docs/sql/hr_attendance.sql sur le serveur (bloqué : action de l'utilisateur)
 - [x] RH : pointage GPS/photo hors ligne, retards, heures sup, avances
 - [x] Mois gratuit à l'inscription
-- [ ] Plus tard : tontine, boutique WooCommerce, CRM WhatsApp
+- [x] Caisse d'épargne (adhérents, carnets, agents, commissions) et boutique intégrée
+- [ ] Installer docs/sql/savings_shop.sql sur le serveur (bloqué : action de l'utilisateur)
 - [x] Relances clients WhatsApp ; avances sur salaire sorties de la caisse

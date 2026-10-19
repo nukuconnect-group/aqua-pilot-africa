@@ -13,6 +13,7 @@ import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import PublicShop from '@/pages/PublicShop';
 import Welcome from '@/pages/Welcome';
 import OnboardingFlow from '@/pages/OnboardingFlow';
 import Auth from '@/pages/Auth';
@@ -48,6 +49,7 @@ const AppContent: React.FC = () => {
         
         {/* Page d'authentification */}
         <Route path="/auth" element={<Auth />} />
+        <Route path="/boutique/:unitId" element={<PublicShop />} />
         <Route path="/login" element={<Navigate to="/auth" replace />} />
         <Route path="/connexion" element={<Navigate to="/auth" replace />} />
         <Route path="/inscription" element={<Navigate to="/auth?mode=register" replace />} />
