@@ -15,6 +15,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import SimpleFeedingForm from './feeding/SimpleFeedingForm';
 import DailyFeedingSummary from './feeding/DailyFeedingSummary';
 import FeedStockManager from './feeding/FeedStockManager';
+import StockMovementsPanel from './feeding/StockMovementsPanel';
 import FeedingChart from './feeding/FeedingChart';
 import FeedingPlanScheduler from './feeding/FeedingPlanScheduler';
 import FeedingAnalyticsDashboard from './feeding/FeedingAnalyticsDashboard';
@@ -460,6 +461,7 @@ const FeedingManagement = () => {
             unitId={activeUnit.id}
             onStockUpdate={handleStockUpdate}
           />
+          <StockMovementsPanel unitId={activeUnit.id} />
         </TabsContent>
 
         <TabsContent value="alerts" className="space-y-4">
