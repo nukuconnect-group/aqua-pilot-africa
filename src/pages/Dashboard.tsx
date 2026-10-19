@@ -18,6 +18,7 @@ import ProductionUnitsManagement from '@/components/ProductionUnitsManagement';
 import InfrastructureManagement from '@/components/InfrastructureManagement';
 import LivestockManagement from '@/components/LivestockManagement';
 import FeedingManagement from '@/components/FeedingManagement';
+import StockManagement from '@/components/StockManagement';
 import AquaFeedAI from '@/components/aquafeed/AquaFeedAI';
 import PremiumLibrary from '@/components/library/PremiumLibrary';
 import ProphylaxieManagement from '@/components/ProphylaxieManagement';

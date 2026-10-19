@@ -31,6 +31,7 @@ import {
   BookOpen,
   Stethoscope,
   Brain,
+  Boxes,
 } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';

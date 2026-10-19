@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Home, Building2, Wrench, Utensils, Heart, Package, Calendar, Users, FileText, Settings, Beef, Calculator, UserCheck, ShoppingCart, Wifi, ShoppingBag, Truck, UserCog, Database, Shield, MessageCircle, Headphones, BarChart3, Bell, ArrowLeft, UserPlus, ClipboardList, CreditCard, Activity, Eye, AlertTriangle, Mail } from 'lucide-react';
-import { Sparkles, BookOpen, Stethoscope, Layers, Brain } from 'lucide-react';
+import { Boxes, Sparkles, BookOpen, Stethoscope, Layers, Brain } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
