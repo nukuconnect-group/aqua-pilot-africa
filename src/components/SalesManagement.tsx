@@ -20,6 +20,7 @@ import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
 import CashRegisterPOS from './sales/CashRegisterPOS';
 import CustomerReminders from './sales/CustomerReminders';
+import OnlineShopManager from './sales/OnlineShopManager';
 import BarcodeLabelGenerator from './sales/BarcodeLabelGenerator';
 import { useSales, Sale, SaleItem } from '@/hooks/useSales';
 import { useToast } from '@/hooks/use-toast';
@@ -942,6 +943,9 @@ const SalesManagement = () => {
               <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Caisse
             </TabsTrigger>
+            <TabsTrigger value="shop" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
+              Boutique
+            </TabsTrigger>
             <TabsTrigger value="reminders" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               Relances
             </TabsTrigger>
@@ -990,6 +994,10 @@ const SalesManagement = () => {
 
         <TabsContent value="pos" className="space-y-3 sm:space-y-4">
           <CashRegisterPOS />
+        </TabsContent>
+
+        <TabsContent value="shop" className="space-y-3 sm:space-y-4">
+          <OnlineShopManager />
         </TabsContent>
 
         <TabsContent value="reminders" className="space-y-3 sm:space-y-4">
