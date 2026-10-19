@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_closures: {
+        Row: {
+          closed_at: string
+          fiscal_year: number
+          id: string
+          result: number
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string
+          fiscal_year: number
+          id?: string
+          result: number
+          unit_id: string
+          user_id?: string
+        }
+        Update: {
+          closed_at?: string
+          fiscal_year?: number
+          id?: string
+          result?: number
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      accounting_entry_marks: {
+        Row: {
+          account: string
+          code: string | null
+          created_at: string
+          entry_id: string
+          id: string
+          kind: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          account: string
+          code?: string | null
+          created_at?: string
+          entry_id: string
+          id?: string
+          kind: string
+          unit_id: string
+          user_id?: string
+        }
+        Update: {
+          account?: string
+          code?: string | null
+          created_at?: string
+          entry_id?: string
+          id?: string
+          kind?: string
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      accounting_manual_entries: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          journal: string
+          label: string
+          lines: Json
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          journal?: string
+          label: string
+          lines?: Json
+          unit_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          journal?: string
+          label?: string
+          lines?: Json
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       accounting_transactions: {
         Row: {
           amount: number
