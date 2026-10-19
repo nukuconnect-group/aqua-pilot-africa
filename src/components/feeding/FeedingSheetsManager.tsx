@@ -194,7 +194,12 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       };
       const { error } = await (supabase as any).from('feeding_records').insert([record]);
       if (error) throw error;
-      toast({ title: 'Distribution validée', description: `Enregistré dans l'historique` });
+      const { deductFeedStock } = await import('@/lib/feedStockDeduction');
+      const r = await deductFeedStock(unitId, s.feed_type, Number(s.quantity) || 0, `Nourrissage — fiche ${s.title}`);
+      const extra = r.status === 'ok' ? ` · Stock restant : ${r.after.toFixed(1)}`
+        : r.status === 'insufficient' ? ' · Stock insuffisant, non déduit'
+        : r.status === 'not_found' ? ' · Aucun article de stock portant ce nom' : '';
+      toast({ title: 'Distribution validée', description: `Enregistré dans l'historique${extra}` });
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
     }
