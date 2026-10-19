@@ -357,7 +357,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 </SelectContent>
               </Select>
               <Button size="sm" onClick={openCreate}>
-                <Plus className="w-4 h-4 mr-1" /> Nouvelle fiche
+                <Plus className="w-4 h-4 mr-1" /> Créer une fiche d’alimentation
               </Button>
             </div>
           </div>
@@ -470,10 +470,12 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             </div>
             <div>
               <Label>Type d'aliment *</Label>
-              <Input value={form.feed_type || ''} onChange={e => setForm({ ...form, feed_type: e.target.value })} placeholder="Ex: Granulés 2mm" />
+              <Input list="sheet-stock-names" value={form.feed_type || ''} onChange={e => setForm({ ...form, feed_type: e.target.value })} placeholder="Choisir un article du stock" />
+              <datalist id="sheet-stock-names">{stockNames.map((n) => <option key={n as string} value={n as string} />)}</datalist>
+              <p className="text-[11px] text-muted-foreground mt-1">Utilisez le nom de l’article du module Stock pour qu’il soit déduit automatiquement.</p>
             </div>
             <div>
-              <Label>Quantité</Label>
+              <Label>Dose prévue</Label>
               <Input type="number" step="0.01" value={form.quantity || 0} onChange={e => setForm({ ...form, quantity: parseFloat(e.target.value) })} />
             </div>
             <div>
@@ -530,6 +532,50 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             <Button variant="outline" onClick={() => setOpenForm(false)}>Annuler</Button>
             <Button onClick={submit}>{editing ? 'Enregistrer' : 'Créer la fiche'}</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!feeding} onOpenChange={(o) => !o && setFeeding(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Nourrir aujourd’hui — {feeding?.title}</DialogTitle></DialogHeader>
+          {feeding && (
+            <div className="space-y-3">
+              <div className="rounded-xl bg-muted p-3 text-sm grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Aliment :</span> <strong>{feeding.feed_type}</strong></div>
+                <div><span className="text-muted-foreground">Heure :</span> <strong>{feeding.time}</strong></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Dose prévue :</span> <strong>{feeding.quantity} {feeding.unit}</strong></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Dose appliquée ({feeding.unit}) *</Label><Input type="number" step="0.01" value={feedForm.applied} onChange={(e) => setFeedForm({ ...feedForm, applied: e.target.value })} /></div>
+                <div><Label>Reste non consommé ({feeding.unit})</Label><Input type="number" step="0.01" value={feedForm.remaining} onChange={(e) => setFeedForm({ ...feedForm, remaining: e.target.value })} /></div>
+                <div><Label>Mortalité constatée</Label><Input type="number" min="0" value={feedForm.mortality} onChange={(e) => setFeedForm({ ...feedForm, mortality: e.target.value })} /></div>
+                <div><Label>Appétit</Label>
+                  <Select value={feedForm.behavior} onValueChange={(v) => setFeedForm({ ...feedForm, behavior: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Bon appétit</SelectItem>
+                      <SelectItem value="faible">Appétit faible</SelectItem>
+                      <SelectItem value="refus">Refus de manger</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {(Number(feedForm.remaining) > 0 || feedForm.behavior !== 'normal') && (
+                <div><Label>Pourquoi l’aliment n’a pas été consommé ? *</Label>
+                  <Input list="feed-refusal-reasons" value={feedForm.reason} onChange={(e) => setFeedForm({ ...feedForm, reason: e.target.value })} placeholder="Ex : eau trouble, température basse…" />
+                  <datalist id="feed-refusal-reasons">
+                    {['Eau trouble ou de mauvaise qualité', 'Température trop basse', 'Manque d’oxygène', 'Poissons malades', 'Stress (manipulation, pêche)', 'Aliment inadapté ou avarié', 'Suralimentation'].map((r) => <option key={r} value={r} />)}
+                  </datalist>
+                </div>
+              )}
+              <div><Label>Observations</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
+              <p className="text-xs text-muted-foreground">La dose appliquée sera retirée du stock et une sortie sera ajoutée à l’historique du stock.</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setFeeding(null)}>Annuler</Button>
+                <Button onClick={confirmFeeding}><CheckCircle2 className="w-4 h-4 mr-1" />Enregistrer le nourrissage</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
