@@ -13,7 +13,7 @@ export const APP_MODULE_PERMISSIONS: AppModulePermission[] = [
   { id: 'units', label: 'Unités', description: 'Gestion des unités de production', tabIds: ['units'] },
   { id: 'infrastructure', label: 'Infrastructures', description: 'Bassins, équipements et installations', tabIds: ['infrastructures'] },
   { id: 'livestock', label: 'Cheptel / lots', description: 'Lots, biomasse et pêche', tabIds: ['livestock'] },
-  { id: 'feeding', label: 'Alimentation', description: 'Nourrissage, fiches, stock et alertes aliment', tabIds: ['feeding'] },
+  { id: 'feeding', label: 'Alimentation & stock', description: 'Planification du nourrissage, alertes, suivi et module Stock', tabIds: ['feeding', 'stock'] },
   { id: 'aquafeed', label: 'AquaFeed AI', description: 'Calcul intelligent de la ration alimentaire', tabIds: ['aquafeed'] },
   { id: 'health', label: 'Prophylaxie', description: 'Prévention et interventions sanitaires', tabIds: ['health', 'prophylaxis'] },
   { id: 'aquahealth', label: 'AquaHealth AI', description: 'Diagnostic intelligent et recommandations sanitaires', tabIds: ['aquahealth'] },

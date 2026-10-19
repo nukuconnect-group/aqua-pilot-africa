@@ -18,6 +18,7 @@ import ProductionUnitsManagement from '@/components/ProductionUnitsManagement';
 import InfrastructureManagement from '@/components/InfrastructureManagement';
 import LivestockManagement from '@/components/LivestockManagement';
 import FeedingManagement from '@/components/FeedingManagement';
+import StockManagement from '@/components/StockManagement';
 import AquaFeedAI from '@/components/aquafeed/AquaFeedAI';
 import PremiumLibrary from '@/components/library/PremiumLibrary';
 import ProphylaxieManagement from '@/components/ProphylaxieManagement';
@@ -233,6 +234,12 @@ const Dashboard: React.FC = () => {
 
   // Detecter le changement d'onglet vers aqua-assistant
   useEffect(() => {
+    const onNav = (e: Event) => { const t = (e as CustomEvent<string>).detail; if (t) handleTabChange(t); };
+    window.addEventListener('aquapilote:navigate', onNav);
+    return () => window.removeEventListener('aquapilote:navigate', onNav);
+  });
+
+  useEffect(() => {
     if (activeTab === 'aqua-assistant') {
       setShowAquaAssistantModule(true);
     } else {
@@ -275,6 +282,8 @@ const Dashboard: React.FC = () => {
         return <LivestockManagement />;
       case 'feeding':
         return <FeedingManagement />;
+      case 'stock':
+        return <StockManagement />;
       case 'aquafeed':
         return <AquaFeedAI />;
       case 'library':
