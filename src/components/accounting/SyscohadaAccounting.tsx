@@ -8,6 +8,8 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSales } from '@/hooks/useSales';
 import { useSettings } from '@/contexts/SettingsContext';
 import { buildEntries, trialBalance, incomeStatement, CHART, JOURNALS, JournalCode } from '@/lib/syscohada';
+import { useAccountingLedger } from '@/hooks/useAccountingLedger';
+import { ManualEntryForm, MarkingPanel, ClosingPanel } from './SyscohadaAdvanced';
 
 const downloadCsv = (name: string, rows: (string | number)[][]) => {
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
@@ -26,15 +28,16 @@ const SyscohadaAccounting: React.FC = () => {
   const [account, setAccount] = useState('571');
   const [journal, setJournal] = useState<JournalCode>('VT');
 
+  const ledgerData = useAccountingLedger(activeUnit?.id);
   const entries = useMemo(() => {
     const inRange = (d: string) => d >= from && d <= to;
     const u = activeUnit?.id;
-    return buildEntries(
+    return [...buildEntries(
       sales.filter((s) => inRange(s.date)),
       (purchases as any[]).filter((p) => (!u || p.unitId === u) && inRange(p.date)),
       (transactions as any[]).filter((t) => (!u || t.unitId === u) && inRange(t.date)),
-    );
-  }, [sales, purchases, transactions, activeUnit?.id, from, to]);
+    ), ...ledgerData.manual.filter((e) => inRange(e.date))].sort((a, b) => a.date.localeCompare(b.date));
+  }, [sales, purchases, transactions, activeUnit?.id, from, to, ledgerData.manual]);
 
   const balance = useMemo(() => trialBalance(entries), [entries]);
   const cr = incomeStatement(balance);
@@ -62,7 +65,15 @@ const SyscohadaAccounting: React.FC = () => {
           <TabsTrigger value="balance">Balance</TabsTrigger>
           <TabsTrigger value="etats">États financiers</TabsTrigger>
           <TabsTrigger value="plan">Plan de comptes</TabsTrigger>
+          <TabsTrigger value="saisie">Saisie & ouverture</TabsTrigger>
+          <TabsTrigger value="lettrage">Lettrage & banque</TabsTrigger>
+          <TabsTrigger value="cloture">Clôture</TabsTrigger>
         </TabsList>
+        {ledgerData.error && <p className="text-xs text-destructive">{ledgerData.error}</p>}
+        <TabsContent value="saisie"><ManualEntryForm ledger={ledgerData} f={f} /></TabsContent>
+        <TabsContent value="lettrage"><MarkingPanel ledger={ledgerData} entries={entries} f={f} /></TabsContent>
+        <TabsContent value="cloture"><ClosingPanel ledger={ledgerData} balance={balance} to={to} f={f} /></TabsContent>
+
 
         <TabsContent value="journaux">
           <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
