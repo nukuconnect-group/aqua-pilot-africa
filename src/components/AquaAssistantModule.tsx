@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, PackageX, PackageSearch, Trophy, WalletCards, Bot } from 'lucide-react';
+import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, PackageX, PackageSearch, Trophy, WalletCards, Bot, Fish, Wheat, TrendingUp } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
@@ -82,7 +82,20 @@ const AquaAssistantModule = () => {
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
+
+  // Changer d'unité ouvre une nouvelle conversation propre à cette unité (historique séparé).
+  const switchUnit = async (unitId: string | null) => {
+    setShowUnitSelector(false);
+    if (unitId === selectedUnitId) return;
+    setSelectedUnitId(unitId);
+    const target = units.find((u) => u.id === unitId);
+    await startNew(target ? { id: target.id, name: target.name } : undefined);
+    const otherThanActive = target && activeUnit && target.id !== activeUnit.id;
+    setMessages([{ role: 'assistant', content: target
+      ? `Vous posez maintenant vos questions sur l’unité « ${target.name} ».${otherThanActive ? ` Attention : votre unité active dans l’application est « ${activeUnit!.name} ». Mes réponses porteront uniquement sur « ${target.name} ».` : ''} Que voulez-vous savoir ?`
+      : 'Vous posez maintenant vos questions sur l’ensemble de vos unités.' }]);
+  };
   const recognitionRef = useRef<any>(null);
 
   // Charge les messages de la conversation active depuis Supabase
@@ -381,11 +394,10 @@ const AquaAssistantModule = () => {
     }, {});
   const starProduct = Object.entries(monthlyProductTotals).sort(([, first], [, second]) => second - first)[0];
   const quickQuestions = [
-    { title: 'Mon chiffre d’affaires du mois', question: 'Quel est mon chiffre d’affaires ce mois ? Compare avec le mois dernier.' },
-    { title: 'Mon unité est-elle rentable ?', question: 'Mon unité est-elle rentable ce mois ? Montre-moi le calcul.' },
-    { title: 'Mes dépenses du mois', question: 'Quelles sont mes dépenses du mois, par catégorie ?' },
-    { title: 'Améliorer ma marge', question: 'Donne-moi des conseils concrets pour améliorer ma marge.' },
-    ...unitProfile.suggestions.slice(0, 1),
+    { title: 'État de mon élevage', question: 'Quel est l’état de mon élevage dans cette unité : biomasse, mortalité, croissance et cycles en cours ?', icon: Fish },
+    { title: 'Alimentation & stock', question: 'Mon alimentation est-elle bien suivie ? Combien de jours de stock d’aliment me reste-t-il ?', icon: Wheat },
+    { title: 'Chiffre d’affaires', question: 'Quel est mon chiffre d’affaires ce mois dans cette unité ? Compare avec le mois dernier.', icon: WalletCards },
+    { title: 'Rentabilité', question: 'Mon unité est-elle rentable ce mois ? Montre-moi le calcul (ventes, aliment, charges).', icon: TrendingUp },
   ];
 
   const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
@@ -416,8 +428,11 @@ const AquaAssistantModule = () => {
             <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
-            <Button variant={isFullscreen ? 'outline' : 'default'} size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Afficher AquaAssistant en plein écran'} title={isFullscreen ? 'Réduire' : 'Plein écran'}>
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+            </Button>
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => { setIsFullscreen(false); window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
+              <X className="size-4" />
             </Button>
           </div>
         </div>
@@ -430,8 +445,8 @@ const AquaAssistantModule = () => {
             </Button>
             {showUnitSelector && (
               <div className="absolute left-0 top-full z-[10030] mt-1 max-h-64 w-full min-w-56 overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-xl">
-                <Button variant="ghost" className="w-full justify-start" onClick={() => { setSelectedUnitId(null); setShowUnitSelector(false); }}>Toutes les unités</Button>
-                {units.map((unit) => <Button key={unit.id} variant={selectedUnitId === unit.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => { setSelectedUnitId(unit.id); setShowUnitSelector(false); }}>{unit.name}</Button>)}
+                <Button variant="ghost" className="w-full justify-start" onClick={() => switchUnit(null)}>Toutes les unités</Button>
+                {units.map((unit) => <Button key={unit.id} variant={selectedUnitId === unit.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => switchUnit(unit.id)}>{unit.name}</Button>)}
               </div>
             )}
           </div>
@@ -467,19 +482,18 @@ const AquaAssistantModule = () => {
         <div className="py-1">
           <p className="text-sm font-semibold text-foreground">Que voulez-vous savoir ?</p>
           <p className="text-xs text-muted-foreground">Je peux calculer votre chiffre d’affaires, vos dépenses et votre rentabilité, et vous donner des conseils.</p>
-          <div className="mt-2 flex flex-wrap gap-2 pb-1">
+          <div className="mt-2 grid grid-cols-2 gap-2 pb-1 lg:grid-cols-4">
             {quickQuestions.map((suggestion) => (
-              <Button
+              <button
                 key={suggestion.title}
                 type="button"
-                variant="outline"
-                size="sm"
                 disabled={isLoading}
                 onClick={() => sendMessage(suggestion.question, { retry: false })}
-                className="h-auto min-h-9 whitespace-normal bg-card px-3 py-1.5 text-left text-xs"
+                className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl border bg-card p-3 text-center text-xs font-medium shadow-sm transition hover:border-primary hover:bg-primary/5 disabled:opacity-50"
               >
+                <span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary"><suggestion.icon className="size-5" /></span>
                 {suggestion.title}
-              </Button>
+              </button>
             ))}
           </div>
         </div>

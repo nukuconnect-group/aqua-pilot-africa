@@ -406,7 +406,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                       </div>
                       <div className="flex gap-2 pt-2 border-t">
                         <Button size="sm" variant="outline" className="flex-1" onClick={() => validateDistribution(s)}>
-                          <CheckCircle2 className="w-4 h-4 mr-1" /> Valider distribution
+                          <CheckCircle2 className="w-4 h-4 mr-1" /> Nourrir aujourd’hui
                         </Button>
                       </div>
                     </CardContent>
