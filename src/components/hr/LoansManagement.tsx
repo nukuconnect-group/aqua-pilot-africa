@@ -1,3 +1,4 @@
+import { useCashSession } from '@/hooks/useCashSession';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ const LoansManagement = ({ employees, unitId }: Props) => {
   const { toast } = useToast();
   const { formatCurrency } = useSettings();
   const { loans, addLoan, addRepayment, loanDetails } = useHrOperations(unitId);
+  const cash = useCashSession(unitId);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     employeeId: '',
@@ -49,8 +51,13 @@ const LoansManagement = ({ employees, unitId }: Props) => {
       startDate: form.startDate,
       reason: form.reason,
     });
+    let cashNote = ' — caisse fermée : sortie d\'espèces non enregistrée';
+    if (cash.session) {
+      const r = await cash.addMovement({ type: 'cash_out', amount: form.amount, label: `Avance ${employee.firstName} ${employee.lastName}` });
+      cashNote = r.error ? ' — sortie de caisse non enregistrée' : ' — sortie de caisse enregistrée';
+    }
     toast({
-      title: 'Prêt enregistré',
+      title: 'Prêt enregistré' + cashNote,
       description: `${formatCurrency(form.amount)} pour ${employee.firstName} ${employee.lastName} — ${formatCurrency(form.monthlyAmount)}/mois déduits de la paie`,
     });
     setForm({ employeeId: '', amount: 0, monthlyAmount: 0, months: 0, startDate: new Date().toISOString().split('T')[0], reason: '' });
