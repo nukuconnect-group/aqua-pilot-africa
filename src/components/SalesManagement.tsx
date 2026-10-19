@@ -18,6 +18,7 @@ import InvoiceManager from './economics/InvoiceManager';
 import DocumentTemplateManager from './economics/DocumentTemplateManager';
 import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
+import CashRegisterPOS from './sales/CashRegisterPOS';
 import BarcodeLabelGenerator from './sales/BarcodeLabelGenerator';
 import { useSales, Sale, SaleItem } from '@/hooks/useSales';
 import { useToast } from '@/hooks/use-toast';
@@ -933,9 +934,13 @@ const SalesManagement = () => {
       </div>
 
       {/* Tabs pour les différentes fonctionnalités */}
-      <Tabs defaultValue="history" className="space-y-3 sm:space-y-4">
+      <Tabs defaultValue="pos" className="space-y-3 sm:space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className="inline-flex w-full sm:w-auto min-w-full bg-muted">
+          <TabsList className="inline-flex w-full sm:w-auto min-w-full bg-muted rounded-xl">
+            <TabsTrigger value="pos" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
+              <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              Caisse
+            </TabsTrigger>
             <TabsTrigger value="history" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Historique</span>
@@ -978,6 +983,10 @@ const SalesManagement = () => {
             </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="pos" className="space-y-3 sm:space-y-4">
+          <CashRegisterPOS />
+        </TabsContent>
 
         <TabsContent value="history" className="space-y-3 sm:space-y-4">
           <Card>
