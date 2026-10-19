@@ -105,6 +105,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
   onSwitchToLogin,
   selectedPlan = null
 }) => {
+  const [chosenPlan, setChosenPlan] = useState<string>(selectedPlan || 'standard');
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -278,7 +279,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
         fullName,
         formData.email.trim().toLowerCase(),
         formData.password,
-        selectedPlan || 'trial',
+        chosenPlan || 'trial',
         {
           exploitation_type: formData.exploitationType || undefined,
           needs_sensors: formData.needsSensors,
@@ -552,6 +553,21 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                       </div>
                     </div>
                   </label>
+                </div>
+
+                {/* Choix de l'abonnement — 1er mois offert */}
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-800">Choisissez votre abonnement</p>
+                  <p className="text-[11px] text-slate-500">Le premier mois est offert en mode essai, sans paiement. Vous pourrez changer d'offre à tout moment.</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[{ id: 'standard', label: 'Standard' }, { id: 'premium', label: 'Premium' }, { id: 'enterprise', label: 'Entreprise' }].map((p) => (
+                      <button type="button" key={p.id} onClick={() => setChosenPlan(p.id)}
+                        className={`rounded-xl border-2 p-2 text-center text-sm font-semibold transition-colors ${chosenPlan === p.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-700'}`}>
+                        {p.label}
+                        <span className="block text-[10px] font-normal text-green-700">1 mois gratuit</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Bouton Valider */}

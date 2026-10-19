@@ -12,6 +12,7 @@ import TransactionManager from './accounting/TransactionManager';
 import CashFlowManager from './accounting/CashFlowManager';
 import ReportsGenerator from './accounting/ReportsGenerator';
 import DepreciationManager from './accounting/DepreciationManager';
+import SyscohadaAccounting from './accounting/SyscohadaAccounting';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -138,11 +139,15 @@ const AccountingManagement = () => {
 
       {/* Onglets principaux */}
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 overflow-x-auto">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto rounded-xl">
           <TabsTrigger value="dashboard" className="text-xs sm:text-sm whitespace-nowrap">
             <TrendingUp className="icon-responsive mr-1" />
             <span className="hidden sm:inline">{t('dashboard')}</span>
             <span className="sm:hidden">{t('dashboard')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="syscohada" className="text-xs sm:text-sm whitespace-nowrap">
+            <FileText className="icon-responsive mr-1" />
+            SYSCOHADA
           </TabsTrigger>
           <TabsTrigger value="transactions" className="text-xs sm:text-sm whitespace-nowrap">
             <Plus className="icon-responsive mr-1" />
@@ -168,6 +173,10 @@ const AccountingManagement = () => {
 
         <TabsContent value="dashboard">
           <AccountingDashboard />
+        </TabsContent>
+
+        <TabsContent value="syscohada">
+          <SyscohadaAccounting />
         </TabsContent>
 
         <TabsContent value="transactions">
