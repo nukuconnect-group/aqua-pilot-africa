@@ -62,3 +62,5 @@
 ## Vérification des actions du stock
 - [x] Essais isolés correction, suppression individuelle/groupée et réinitialisation ; champs effacés, seuil nul, quantité zéro et formulaire conservé corrigés
 - [ ] Vérifier ces actions avec le stock réel : écran de connexion, aucune session disponible pour le compte existant
+- [ ] Installer sur la base réelle les 30 tables manquantes (caisse, mouvements de stock, trésorerie, RH, plans…) — bloqué : adresse de connexion PostgreSQL valide requise
+- [x] Messages de caisse sans référence à la connexion/base
