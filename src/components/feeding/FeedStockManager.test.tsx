@@ -18,7 +18,7 @@ import FeedStockManager from './FeedStockManager';
 let root: Root;
 let container: HTMLDivElement;
 const button = (name: string) => {
-  const found = [...document.querySelectorAll<HTMLButtonElement>('button')].find(b => b.getAttribute('aria-label') === name || b.textContent?.trim() === name);
+  const found = [...document.querySelectorAll<HTMLButtonElement>('button')].find(b => b.getAttribute('aria-label') === name || b.textContent?.trim() === name || (name === 'Ajouter stock' && b.textContent?.includes('Ajouter stock')));
   if (!found) throw new Error(`Bouton absent : ${name}`);
   return found;
 };
