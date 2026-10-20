@@ -47,3 +47,11 @@
 - [x] Retirer le bandeau et les indicateurs Fournisseurs ; conserver les créations et les données réelles
 - [x] Ajouter les icônes WhatsApp, SMS, email et appel aux clients et fournisseurs
 - [ ] Vérifier la présentation et les contacts avec un compte réel : session indisponible ; compilation réussie et 6 tests existants réussis
+
+## Ventes et caisses : recherche et encaissement
+- [x] Rechercher les articles réels de l'unité, ajouter des lignes libres et modifier prix/quantités dans le panier
+- [x] Ajouter l'ouverture de plusieurs caisses et l'historique par caisse, avec détails, filtre date/recherche et CSV, y compris après clôture
+- [x] Conserver la vente et sa caisse lors d'une reprise d'encaissement dans la page, sans recréer la vente
+- [x] Tester les règles : 12 tests réussis et compilation réussie
+- [ ] Vérifier un encaissement réel de bout en bout : accès au compte de l'application indisponible, redirection vers /auth sans écran exploitable
+- [ ] Garantir l'atomicité vente/encaissement et transferts côté serveur : accès à la base historique indisponible ; opérations toujours distinctes

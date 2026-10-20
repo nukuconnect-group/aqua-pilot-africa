@@ -6,3 +6,6 @@
 - Business sale cancellation preserves the sale and its previous status; journal generation retains original entries and adds dated reversals, while linked POS cash refunds are atomic with cancellation.
 - Accounting and treasury use the same application client as sales; deployment must target the application's actual backend, never silently switch existing users to another database.
 - CRM contact shortcuts share ContactActions and open the user's messaging applications; they do not send messages automatically.
+- POS uses the active unit's real stock and sale items through posCatalog; purchase cost is never used as a selling price.
+- Cash sale history is linked through cash_movements.sale_id and session_id, including closed sessions, to avoid duplicating sales records.
+- POS retains the sale and its original cash session when a cash posting fails; retry the posting rather than create a second sale.
