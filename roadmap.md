@@ -3,6 +3,11 @@
 - [ ] Générer et vérifier un PDF complet en anglais
 - [ ] Tester le parcours anglais puis français
 
+## Trésorerie et ventes du 20/10/2026
+- [ ] Enregistrer les comptes caisse et banque par unité, leurs fonds initiaux et les mouvements avec écritures équilibrées
+- [ ] Permettre l’annulation des ventes avec historique et contre-écritures
+- [ ] Tester les règles comptables et vérifier le parcours connecté (selon disponibilité de la session)
+
 ## Corrections du 20/10/2026
 - [x] Rétablir l’accès au Stock depuis les menus et l’Alimentation (tests de résolution des liens réussis)
 - [x] Adapter les dispositions Stock et Alimentation aux écrans étroits (vérification visuelle connectée encore bloquée)
