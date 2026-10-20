@@ -24,6 +24,7 @@ import AccountingManagement from './AccountingManagement';
 import SuppliersManagement from './SuppliersManagement';
 import HRManagement from './HRManagement';
 import SalesManagement from './SalesManagement';
+import CrmManagement from './CrmManagement';
 import PurchasesManagement from './PurchasesManagement';
 import PlanningManagement from './PlanningManagement';
 import WeatherDashboard from './WeatherDashboard';
@@ -121,6 +122,8 @@ const MainLayout = () => {
         return <PurchasesManagement />;
       case 'sales':
         return <SalesManagement />;
+      case 'crm':
+        return <CrmManagement />;
       case 'suppliers':
         return <SuppliersManagement />;
       case 'planning':
