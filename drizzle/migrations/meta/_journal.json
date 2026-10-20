@@ -22,6 +22,13 @@
       "when": 1792469502690,
       "tag": "0002_treasury_accounts_movements_sale_cancellation",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792469704489,
+      "tag": "0003_treasury_lock_security",
+      "breakpoints": true
     }
   ]
 }
