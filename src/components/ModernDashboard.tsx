@@ -82,12 +82,12 @@ const QuickAction: React.FC<{
 }> = ({ icon: Icon, label, onClick, tone = 'bg-primary/10 text-primary' }) => (
   <button
     onClick={onClick}
-    className="group flex flex-col items-center justify-center gap-2 p-3 sm:p-4 rounded-xl border border-border/60 bg-card hover:bg-accent hover:border-primary/40 transition-all text-center"
+    className="group flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 min-h-[72px] rounded-xl border border-border/60 bg-card hover:bg-accent hover:border-primary/40 transition-all text-center"
   >
-    <div className={`p-2.5 rounded-lg ${tone} group-hover:scale-110 transition-transform`}>
-      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+    <div className={`p-1.5 rounded-lg ${tone}`}>
+      <Icon className="w-4 h-4" />
     </div>
-    <span className="text-[11px] sm:text-xs font-medium leading-tight">{label}</span>
+    <span className="text-[10px] sm:text-[11px] font-medium leading-tight line-clamp-2">{label}</span>
   </button>
 );
 
@@ -467,7 +467,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {quickActions.map((action) => (
               <QuickAction key={action.id} icon={action.icon} label={action.label} onClick={() => go(action.id)} tone={action.tone} />
             ))}
