@@ -42,3 +42,8 @@
 - [x] Boutique publique : les produits en rupture affichent déjà « Rupture » (vérifié, rien à changer)
 - [x] Alimentation : choix du stock à prélever au nourrissage, sortie de stock + écriture comptable automatique (602/321)
 - [x] Vente sans caisse : l'écran demande déjà d'ouvrir une caisse (vérifié)
+
+## CRM : présentation et contacts
+- [x] Retirer le bandeau et les indicateurs Fournisseurs ; conserver les créations et les données réelles
+- [x] Ajouter les icônes WhatsApp, SMS, email et appel aux clients et fournisseurs
+- [ ] Vérifier la présentation et les contacts avec un compte réel : session indisponible ; compilation réussie et 6 tests existants réussis

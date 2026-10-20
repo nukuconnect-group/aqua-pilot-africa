@@ -5,3 +5,4 @@
 - Treasury uses append-only unit-scoped movements with server-side account locking and balanced journal lines; account opening is atomic to prevent partial initialization.
 - Business sale cancellation preserves the sale and its previous status; journal generation retains original entries and adds dated reversals, while linked POS cash refunds are atomic with cancellation.
 - Accounting and treasury use the same application client as sales; deployment must target the application's actual backend, never silently switch existing users to another database.
+- CRM contact shortcuts share ContactActions and open the user's messaging applications; they do not send messages automatically.
