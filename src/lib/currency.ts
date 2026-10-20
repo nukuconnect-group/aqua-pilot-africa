@@ -65,9 +65,13 @@ export const defaultCurrencyForLanguage = (language: string): CurrencyCode => {
 export const currencySymbol = (code: CurrencyCode = currentCurrency): string =>
   SUPPORTED_CURRENCIES.find(c => c.code === code)?.symbol ?? code;
 
-/** Formatage unique des montants pour toute l'application. */
+/**
+ * Formatage unique des montants pour toute l'application.
+ * Les montants sont enregistrés en F CFA (XOF) : ils sont convertis
+ * dans la devise d'affichage choisie avant formatage.
+ */
 export const formatMoney = (amount: number, code: CurrencyCode = currentCurrency): string => {
-  const value = Number.isFinite(amount) ? amount : 0;
+  const value = Number.isFinite(amount) ? convertAmount(amount, 'XOF', code) : 0;
   const decimals = code === 'XOF' ? 0 : 2;
   const formatted = new Intl.NumberFormat(code === 'USD' ? 'en-US' : 'fr-FR', {
     minimumFractionDigits: decimals,
