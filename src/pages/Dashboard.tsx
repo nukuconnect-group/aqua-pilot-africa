@@ -30,6 +30,7 @@ import TransformationManagement from '@/components/TransformationManagement';
 import ProductionManagement from '@/components/ProductionManagement';
 import AccountingManagement from '@/components/AccountingManagement';
 import SuppliersManagement from '@/components/SuppliersManagement';
+import CrmManagement from '@/components/CrmManagement';
 import HRManagement from '@/components/HRManagement';
 import SalesManagement from '@/components/SalesManagement';
 import PurchasesManagement from '@/components/PurchasesManagement';
@@ -306,6 +307,8 @@ const Dashboard: React.FC = () => {
         return <SalesManagement />;
       case 'suppliers':
         return <SuppliersManagement />;
+      case 'crm':
+        return <CrmManagement />;
       case 'planning':
         return <PlanningManagement />;
       case 'weather':
