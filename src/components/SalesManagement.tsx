@@ -16,6 +16,7 @@ import ProductionUnitSelector from './ProductionUnitSelector';
 import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
 import CashRegisterPOS from './sales/CashRegisterPOS';
+import CashClosures from './sales/CashClosures';
 import { useSales, Sale, SaleItem } from '@/hooks/useSales';
 import { useToast } from '@/hooks/use-toast';
 import { createNotification } from '@/lib/notificationService';
@@ -954,12 +955,11 @@ const SalesManagement = () => {
             </TabsTrigger>
             <TabsTrigger value="history" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Ventes
+              Historique
             </TabsTrigger>
             <TabsTrigger value="overview" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Vue</span>
-              <span className="sm:hidden">Vue</span>
+              Analyses
             </TabsTrigger>
             <TabsTrigger value="products" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -971,11 +971,19 @@ const SalesManagement = () => {
               <span className="hidden sm:inline">Échéances</span>
               <span className="sm:hidden">Éch.</span>
             </TabsTrigger>
+            <TabsTrigger value="closures" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              Clôtures
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="pos" className="space-y-3 sm:space-y-4">
           <CashRegisterPOS />
+        </TabsContent>
+
+        <TabsContent value="closures" className="space-y-3 sm:space-y-4">
+          <CashClosures />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-3 sm:space-y-4">
