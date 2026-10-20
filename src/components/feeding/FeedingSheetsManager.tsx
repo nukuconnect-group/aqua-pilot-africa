@@ -1,3 +1,4 @@
+import { isCommercialStock } from '@/lib/stockPurpose';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -177,7 +178,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   const [feeding, setFeeding] = useState<FeedingSheet | null>(null);
   const [feedForm, setFeedForm] = useState({ applied: '', remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '', stockId: '' });
-  const { stocks } = useFeedStocks(unitId);
+  const { stocks: allUnitStocks } = useFeedStocks(unitId);
+  const stocks = useMemo(() => allUnitStocks.filter(s => !isCommercialStock(s)), [allUnitStocks]);
   const stockNames = useMemo(() => Array.from(new Set((stocks || []).map((x: any) => x.custom_name || x.feed_type).filter(Boolean))), [stocks]);
 
   const validateDistribution = (s: FeedingSheet) => {

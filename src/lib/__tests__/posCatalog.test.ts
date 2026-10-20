@@ -9,11 +9,20 @@ const sale = (unitId: string, price: number): Sale => ({
   totalAmount: price, status: 'paid', paymentMethod: 'Espèces', notes: '',
 });
 const stock: FeedStock = { id: '12345678-1234-1234-1234-123456789012', user_id: 'owner',
-  unit_id: 'unit-a', custom_name: 'Poisson', feed_type: 'article', quantity: 20, unit: 'kg', cost: 500 };
+  unit_id: 'unit-a', custom_name: 'Poisson', feed_type: 'article', quantity: 20, unit: 'kg', cost: 500, stock_purpose: 'commercial' };
 
 describe('vente en caisse', () => {
   it('recherche les articles du stock avant la première vente sans confondre coût et prix de vente', () => {
     expect(buildPosCatalog('unit-a', [], [stock])[0]).toMatchObject({ name: 'Poisson', price: 0, quantity: 20 });
+  });
+  it('n’affiche jamais un stock de production en caisse', () => {
+    expect(buildPosCatalog('unit-a', [], [{ ...stock, stock_purpose: 'production' }])).toEqual([]);
+  });
+  it('n’affiche pas un article commercial épuisé', () => {
+    expect(buildPosCatalog('unit-a', [], [{ ...stock, quantity: 0 }])).toEqual([]);
+  });
+  it('utilise le prix de vente défini sur le stock commercial', () => {
+    expect(buildPosCatalog('unit-a', [sale('unit-a', 2000)], [{ ...stock, sale_price: 3000 }])[0].price).toBe(3000);
   });
   it('ne mélange pas les produits entre unités', () => {
     expect(buildPosCatalog('unit-b', [sale('unit-a', 2000)], [stock])).toEqual([]);
