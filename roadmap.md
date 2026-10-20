@@ -47,3 +47,9 @@
 - [x] Retirer le bandeau et les indicateurs Fournisseurs ; conserver les créations et les données réelles
 - [x] Ajouter les icônes WhatsApp, SMS, email et appel aux clients et fournisseurs
 - [ ] Vérifier la présentation et les contacts avec un compte réel : session indisponible ; compilation réussie et 6 tests existants réussis
+
+## Ventes et caisses : recherche et encaissement
+- [ ] Rechercher les articles réels, ajouter des lignes libres et modifier prix/quantités dans le panier
+- [ ] Ouvrir plusieurs caisses et consulter les ventes de chaque caisse, y compris après clôture
+- [ ] Sécuriser la reprise d'un encaissement dont la vente est déjà enregistrée
+- [ ] Tester les règles et vérifier le parcours disponible
