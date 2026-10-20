@@ -15,6 +15,7 @@ import ProductionUnitsManagement from './ProductionUnitsManagement';
 import InfrastructureManagement from './InfrastructureManagement';
 import LivestockManagement from './LivestockManagement';
 import FeedingManagement from './FeedingManagement';
+import StockManagement from './StockManagement';
 import ProphylaxieManagement from './ProphylaxieManagement';
 import AquaHealthAI from './prophylaxie/AquaHealthAI';
 import TransformationManagement from './TransformationManagement';
@@ -102,6 +103,8 @@ const MainLayout = () => {
         return <LivestockManagement />;
       case 'feeding':
         return <FeedingManagement />;
+      case 'stock':
+        return <StockManagement />;
       case 'health':
         return <ProphylaxieManagement />;
       case 'aquahealth':
