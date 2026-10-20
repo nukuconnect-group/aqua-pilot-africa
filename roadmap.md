@@ -49,9 +49,10 @@
 - [ ] Vérifier la présentation et les contacts avec un compte réel : session indisponible ; compilation réussie et 6 tests existants réussis
 
 ## Ventes et caisses : recherche et encaissement
+- [x] Tests isolés de l'écran de caisse : deux articles, quantités décimales, total 6500, rattachement à la caisse et reprise sans seconde vente ; fermeture et exception reproduites puis corrigées (13 tests réussis)
 - [x] Rechercher les articles réels de l'unité, ajouter des lignes libres et modifier prix/quantités dans le panier
 - [x] Ajouter l'ouverture de plusieurs caisses et l'historique par caisse, avec détails, filtre date/recherche et CSV, y compris après clôture
 - [x] Conserver la vente et sa caisse lors d'une reprise d'encaissement dans la page, sans recréer la vente
 - [x] Tester les règles : 12 tests réussis et compilation réussie
-- [ ] Vérifier un encaissement réel de bout en bout : accès au compte de l'application indisponible, redirection vers /auth sans écran exploitable
+- [ ] Vérifier un encaissement réel de bout en bout : accès au compte de l'application indisponible ; navigateur redirigé vers /auth, écran de connexion confirmé, aucune vente réelle effectuée
 - [ ] Garantir l'atomicité vente/encaissement et transferts côté serveur : accès à la base historique indisponible ; opérations toujours distinctes
