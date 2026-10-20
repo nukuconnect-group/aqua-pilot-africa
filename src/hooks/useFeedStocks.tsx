@@ -11,15 +11,15 @@ export interface FeedStock {
   feed_type: string;
   quantity: number;
   unit: string;
-  expiration_date?: string;
-  supplier?: string;
-  cost?: number;
-  protein_content?: number;
-  fat_content?: number;
-  notes?: string;
+  expiration_date?: string | null;
+  supplier?: string | null;
+  cost?: number | null;
+  protein_content?: number | null;
+  fat_content?: number | null;
+  notes?: string | null;
   min_threshold?: number;
-  bag_count?: number;
-  kg_per_bag?: number;
+  bag_count?: number | null;
+  kg_per_bag?: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -121,7 +121,7 @@ export const useFeedStocks = (unitId?: string) => {
       const { error } = await supabase
         .from('feed_stocks')
         .update(updates)
-        .eq('id', id).eq('unit_id', unitId);
+        .eq('id', id).eq('unit_id', unitId).select('id').single();
 
       if (error) throw error;
 
