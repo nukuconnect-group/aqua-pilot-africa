@@ -36,6 +36,13 @@
       "when": 1792470908530,
       "tag": "0004_multicaisse_cash_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792528101600,
+      "tag": "0005_stock_purpose",
+      "breakpoints": true
     }
   ]
 }

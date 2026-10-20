@@ -1560,6 +1560,8 @@ export type Database = {
           notes: string | null
           protein_content: number | null
           quantity: number
+          sale_price: number | null
+          stock_purpose: string
           supplier: string | null
           unit: string
           unit_id: string
@@ -1580,6 +1582,8 @@ export type Database = {
           notes?: string | null
           protein_content?: number | null
           quantity?: number
+          sale_price?: number | null
+          stock_purpose?: string
           supplier?: string | null
           unit?: string
           unit_id: string
@@ -1600,6 +1604,8 @@ export type Database = {
           notes?: string | null
           protein_content?: number | null
           quantity?: number
+          sale_price?: number | null
+          stock_purpose?: string
           supplier?: string | null
           unit?: string
           unit_id?: string
