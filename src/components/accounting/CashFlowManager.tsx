@@ -26,7 +26,7 @@ const CashFlowManager = () => {
   const [busy, setBusy] = useState(false);
   const [account, setAccount] = useState({ name: '', kind: 'cash' as 'cash' | 'bank', code: '', opening: '', counterpart: '', date: today() });
   const [movement, setMovement] = useState({ requestId: '', kind: 'receipt' as MovementKind, sourceId: '', destinationId: '', amount: '', date: today(), label: '', counterpart: '' });
-  const money = (amount: number, code = currency) => formatMoney(amount, code as CurrencyCode);
+  const money = (amount: number, code: string = currency) => formatMoney(amount, code as CurrencyCode);
   const openMovement = (kind: MovementKind) => {
     setMovement({ requestId: crypto.randomUUID(), kind, sourceId: '', destinationId: '', amount: '', date: today(), label: '', counterpart: '' });
     setMovementOpen(true);
