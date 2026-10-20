@@ -1,12 +1,18 @@
 import React from 'react';
-import { Boxes } from 'lucide-react';
+import { Boxes, Upload, Tag, History } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { useFeedStocks } from '@/hooks/useFeedStocks';
 import FeedStockManager from './feeding/FeedStockManager';
 import StockMovementsPanel from './feeding/StockMovementsPanel';
+import StockCsvImport from './stock/StockCsvImport';
+import StockBarcodeLabels from './stock/StockBarcodeLabels';
 import ProductionUnitSelector from './ProductionUnitSelector';
 
 const StockManagement: React.FC = () => {
   const { activeUnit } = useProductionUnits();
+  const { stocks, refetch } = useFeedStocks(activeUnit?.id);
+
   if (!activeUnit) {
     return <div className="min-w-0 space-y-4"><ProductionUnitSelector /><p className="p-6 text-center text-muted-foreground">Sélectionnez une unité de production pour gérer son stock.</p></div>;
   }
@@ -20,8 +26,34 @@ const StockManagement: React.FC = () => {
         </div>
       </div>
       <ProductionUnitSelector />
-      <FeedStockManager key={activeUnit.id} unitId={activeUnit.id} onStockUpdate={() => undefined} />
-      <StockMovementsPanel key={`movements-${activeUnit.id}`} unitId={activeUnit.id} />
+      <Tabs defaultValue="stocks" className="space-y-4">
+        <TabsList className="rounded-xl flex-wrap h-auto">
+          <TabsTrigger value="stocks" className="text-xs sm:text-sm">
+            <Boxes className="w-4 h-4 mr-1" /> Articles
+          </TabsTrigger>
+          <TabsTrigger value="import" className="text-xs sm:text-sm">
+            <Upload className="w-4 h-4 mr-1" /> Import CSV
+          </TabsTrigger>
+          <TabsTrigger value="labels" className="text-xs sm:text-sm">
+            <Tag className="w-4 h-4 mr-1" /> Codes-barres
+          </TabsTrigger>
+          <TabsTrigger value="movements" className="text-xs sm:text-sm">
+            <History className="w-4 h-4 mr-1" /> Mouvements
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="stocks">
+          <FeedStockManager key={activeUnit.id} unitId={activeUnit.id} onStockUpdate={() => refetch()} />
+        </TabsContent>
+        <TabsContent value="import">
+          <StockCsvImport unitId={activeUnit.id} onDone={() => refetch()} />
+        </TabsContent>
+        <TabsContent value="labels">
+          <StockBarcodeLabels stocks={stocks} />
+        </TabsContent>
+        <TabsContent value="movements">
+          <StockMovementsPanel key={`movements-${activeUnit.id}`} unitId={activeUnit.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

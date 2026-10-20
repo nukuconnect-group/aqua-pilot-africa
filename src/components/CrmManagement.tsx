@@ -43,7 +43,7 @@ const CrmManagement: React.FC = () => {
           <ClientManager />
         </TabsContent>
         <TabsContent value="suppliers">
-          <SuppliersManagement embedded />
+          <SuppliersManagement />
         </TabsContent>
       </Tabs>
     </div>
