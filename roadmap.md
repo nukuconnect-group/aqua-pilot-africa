@@ -49,6 +49,7 @@
 - [ ] Vérifier la présentation et les contacts avec un compte réel : session indisponible ; compilation réussie et 6 tests existants réussis
 
 ## Ventes et caisses : recherche et encaissement
+- [ ] Tester plusieurs articles, quantités, prix et reprise après erreur dans l'écran de caisse ; corriger les blocages reproduits
 - [x] Rechercher les articles réels de l'unité, ajouter des lignes libres et modifier prix/quantités dans le panier
 - [x] Ajouter l'ouverture de plusieurs caisses et l'historique par caisse, avec détails, filtre date/recherche et CSV, y compris après clôture
 - [x] Conserver la vente et sa caisse lors d'une reprise d'encaissement dans la page, sans recréer la vente
