@@ -110,17 +110,25 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
     return {};
   };
 
-  const addMovement = async (m: { type: CashMovement['type']; amount: number; payment_method?: string; label?: string; sale_id?: string }, sessionId = session?.id) => {
+  const validateSession = async (sessionId = session?.id) => {
     if (!sessionId || !owner || !unitId) return { error: 'Caisse fermée' };
     const { data: current, error: checkError } = await db.from('cash_sessions').select('id, status')
       .eq('id', sessionId).eq('unit_id', unitId).single();
     if (checkError || current?.status !== 'open') return { error: 'Cette caisse est fermée ou indisponible' };
+    return {};
+  };
+
+  const addMovement = async (m: { type: CashMovement['type']; amount: number; payment_method?: string; label?: string; sale_id?: string }, sessionId = session?.id) => {
+    if (!sessionId || !owner || !unitId) return { error: 'Caisse fermée' };
+    if (!Number.isFinite(m.amount) || m.amount <= 0) return { error: 'Montant invalide' };
     if (m.sale_id) {
       const { data: existing, error: lookupError } = await db.from('cash_movements').select('id')
         .eq('sale_id', m.sale_id).eq('type', 'sale').eq('unit_id', unitId).limit(1);
       if (lookupError) return { error: lookupError.message };
       if (existing?.length) { await load(); return {}; }
     }
+    const availability = await validateSession(sessionId);
+    if (availability.error) return availability;
     const { error } = await db.from('cash_movements').insert({
       session_id: sessionId, user_id: owner, unit_id: unitId,
       type: m.type, amount: m.amount, payment_method: m.payment_method || 'Espèces',
@@ -176,6 +184,6 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
     session, sessions: loadedUnitId === unitId ? sessions : [], movements: sessionMovements,
     allMovements: loadedUnitId === unitId ? movements : [], history: loadedUnitId === unitId ? history : [],
     loading, notInstalled, error, expected,
-    openSession, addMovement, transferTo, closeSession, setActiveSession: setActiveSessionId, reload: load,
+    openSession, validateSession, addMovement, transferTo, closeSession, setActiveSession: setActiveSessionId, reload: load,
   };
 };

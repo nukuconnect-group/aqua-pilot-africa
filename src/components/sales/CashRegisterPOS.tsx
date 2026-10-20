@@ -114,6 +114,13 @@ const CashRegisterPOS: React.FC = () => {
     const sessionId = pendingPayment?.sessionId || cash.session.id;
     requestKey.current ||= crypto.randomUUID();
     try {
+    if (!pendingPayment) {
+      const availability = await cash.validateSession(sessionId);
+      if (availability.error) {
+        toast({ title: 'Encaissement impossible', description: availability.error, variant: 'destructive' });
+        return;
+      }
+    }
     const sale = pendingPayment?.sale || await addSale({
       clientRequestId: requestKey.current,
       date: new Date().toISOString().split('T')[0],
@@ -142,6 +149,8 @@ const CashRegisterPOS: React.FC = () => {
     toast({ title: 'Vente encaissée', description: `${formatCurrency(sale.totalAmount)} — ${sale.documentNumber || ''}` });
     setPendingPayment(null); requestKey.current = undefined;
     setCart([]); setClient(''); setContact('');
+    } catch (error) {
+      toast({ title: 'Encaissement interrompu', description: error instanceof Error ? error.message : 'Réessayez sans fermer cette page.', variant: 'destructive' });
     } finally { setBusy(false); paymentLock.current = false; }
   };
 
