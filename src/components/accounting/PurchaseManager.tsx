@@ -18,6 +18,8 @@ import { createNotification } from '@/lib/notificationService';
 import { supabase } from '@/integrations/supabase/appClient';
 import PurchaseInvoice from './PurchaseInvoice';
 import { useSuppliers, Supplier } from '@/hooks/useSuppliers';
+import { useTreasury } from '@/hooks/useTreasury';
+import { expenseAccount } from '@/lib/syscohada';
 import { getUnitTerms } from '@/lib/unitContext';
 
 
@@ -37,6 +39,8 @@ const PurchaseManager = () => {
   } = useProductionUnits();
   
   const { suppliers, addSupplier, refetch: refetchSuppliers } = useSuppliers();
+  const treasury = useTreasury(activeUnit?.id);
+  const [treasuryAccountId, setTreasuryAccountId] = useState('');
 
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
@@ -146,6 +150,25 @@ const PurchaseManager = () => {
       dueDate: newPurchase.isCredit ? newPurchase.dueDate : undefined,
       paymentTerms: newPurchase.isCredit ? newPurchase.paymentTerms : undefined
     });
+
+    // Prélèvement dans la caisse / le compte choisi (achat payé comptant)
+    if (treasuryAccountId && !newPurchase.isCredit) {
+      try {
+        await treasury.recordMovement({
+          requestId: `purchase-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          kind: 'payment',
+          sourceId: treasuryAccountId,
+          destinationId: '',
+          amount: Number(newPurchase.amount),
+          date: new Date().toISOString().split('T')[0],
+          label: `Achat — ${newPurchase.description || newPurchase.category}`,
+          counterpart: expenseAccount(newPurchase.category),
+        });
+      } catch (e: any) {
+        toast({ title: 'Achat enregistré, caisse non mise à jour', description: e.message, variant: 'destructive' });
+      }
+    }
+
     
     addLog('Achat enregistré', 'Achats', `${newPurchase.category}: ${newPurchase.description} - ${newPurchase.amount} ${newPurchase.currency}`, 'success');
     
@@ -1145,6 +1168,30 @@ const PurchaseManager = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Caisse / compte de prélèvement</Label>
+                <Select
+                  value={treasuryAccountId}
+                  onValueChange={setTreasuryAccountId}
+                  disabled={newPurchase.isCredit}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={newPurchase.isCredit ? 'Aucun (achat à crédit)' : 'Choisir la caisse…'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {treasury.accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} ({a.kind === 'cash' ? 'Caisse' : 'Banque'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!newPurchase.isCredit && treasury.accounts.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aucune caisse créée. Créez d'abord un compte dans Comptabilité → Trésorerie.
+                  </p>
+                )}
               </div>
             </div>
 

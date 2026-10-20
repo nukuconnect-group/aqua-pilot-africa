@@ -176,12 +176,13 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   const [feeding, setFeeding] = useState<FeedingSheet | null>(null);
-  const [feedForm, setFeedForm] = useState({ applied: '', remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '' });
+  const [feedForm, setFeedForm] = useState({ applied: '', remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '', stockId: '' });
   const { stocks } = useFeedStocks(unitId);
   const stockNames = useMemo(() => Array.from(new Set((stocks || []).map((x: any) => x.custom_name || x.feed_type).filter(Boolean))), [stocks]);
 
   const validateDistribution = (s: FeedingSheet) => {
-    setFeedForm({ applied: String(s.quantity || ''), remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '' });
+    const match = (stocks || []).find((x: any) => [x.feed_type, x.custom_name].some((v: string) => (v || '').trim().toLowerCase() === (s.feed_type || '').trim().toLowerCase()));
+    setFeedForm({ applied: String(s.quantity || ''), remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '', stockId: match?.id || '' });
     setFeeding(s);
   };
 
@@ -211,8 +212,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       }]);
       if (error) throw error;
       const { deductFeedStock } = await import('@/lib/feedStockDeduction');
-      const r = await deductFeedStock(unitId, s.feed_type, applied, `Nourrissage — fiche ${s.title}`);
-      const extra = r.status === 'ok' ? ` · Stock restant : ${r.after.toFixed(1)}`
+      const r = await deductFeedStock(unitId, s.feed_type, applied, `Nourrissage — fiche ${s.title}`, feedForm.stockId || undefined);
+      const extra = r.status === 'ok'
+        ? ` · Stock restant : ${r.after.toFixed(1)}${r.amount ? ` · Écriture comptable de ${r.amount.toLocaleString('fr-FR')} créée` : ''}`
         : r.status === 'insufficient' ? ' · Stock insuffisant, non déduit'
         : r.status === 'not_found' ? ' · Aucun article de stock portant ce nom' : '';
       toast({ title: 'Nourrissage enregistré', description: `Dose prévue ${s.quantity} ${s.unit}, appliquée ${applied} ${s.unit}${extra}` });
@@ -569,7 +571,20 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 </div>
               )}
               <div><Label>Observations</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
-              <p className="text-xs text-muted-foreground">La dose appliquée sera retirée du stock et une sortie sera ajoutée à l’historique du stock.</p>
+              <div>
+                <Label>Stock à prélever *</Label>
+                <Select value={feedForm.stockId} onValueChange={(v) => setFeedForm({ ...feedForm, stockId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Choisir l'article du stock…" /></SelectTrigger>
+                  <SelectContent>
+                    {(stocks || []).map((x: any) => (
+                      <SelectItem key={x.id} value={x.id}>
+                        {x.custom_name || x.feed_type} — {Number(x.quantity)} {x.unit} dispo.
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">La dose appliquée sera retirée du stock choisi, une sortie sera ajoutée à l’historique du stock et l’écriture comptable correspondante sera créée.</p>
               <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="outline" onClick={() => setFeeding(null)}>Annuler</Button>
                 <Button className="h-auto min-h-10 whitespace-normal" onClick={confirmFeeding}><CheckCircle2 className="w-4 h-4 mr-1" />Enregistrer le nourrissage</Button>
