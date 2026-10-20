@@ -74,23 +74,30 @@ export const expenseAccount = (category?: string) => {
 
 const jFor = (acc: string): JournalCode => (acc === '571' ? 'CA' : 'BQ');
 
-interface SaleIn { id: string; date: string; clientName: string; totalAmount: number; paidAmount?: number; isCredit?: boolean; paymentMethod?: string; status: string; documentNumber?: string }
+interface SaleIn { id: string; date: string; clientName: string; totalAmount: number; paidAmount?: number; isCredit?: boolean; paymentMethod?: string; status: string; documentNumber?: string; cancelledAt?: string; cancellationReason?: string; statusBeforeCancellation?: string }
 interface PurchaseIn { id: string; date: string; category: string; description: string; supplier: string; amount: number; paymentMethod: string; status?: string }
-interface TxIn { id: string; date: string; type: 'revenue' | 'expense'; category: string; description: string; amount: number; paymentMethod: string; status: string }
+interface TxIn { id: string; date: string; type: 'revenue' | 'expense'; category: string; description: string; amount: number; paymentMethod: string; status: string; purchaseId?: string }
 
 export const SALE_TX_CATEGORY = 'Vente de poissons';
 
 export function buildEntries(sales: SaleIn[], purchases: PurchaseIn[], transactions: TxIn[]): Entry[] {
   const out: Entry[] = [];
   for (const s of sales) {
-    if (!(s.status === 'confirmed' || s.status === 'paid' || s.status === 'delivered') || !(s.totalAmount > 0)) continue;
+    const status = s.status === 'cancelled' ? s.statusBeforeCancellation : s.status;
+    if (!(status === 'confirmed' || status === 'paid' || status === 'delivered') || !(s.totalAmount > 0)) continue;
+    const start = out.length;
     out.push({ id: `vt-${s.id}`, date: s.date, journal: 'VT', label: `Vente ${s.clientName}`, ref: s.documentNumber,
       lines: [{ account: '411', debit: s.totalAmount, credit: 0 }, { account: '702', debit: 0, credit: s.totalAmount }] });
-    const paid = s.isCredit ? (s.paidAmount || 0) : s.totalAmount;
+    const paid = status === 'paid' ? s.totalAmount : s.isCredit ? (s.paidAmount || 0) : s.totalAmount;
     if (paid > 0) {
       const t = treasuryAccount(s.paymentMethod);
       out.push({ id: `rg-${s.id}`, date: s.date, journal: jFor(t), label: `Règlement ${s.clientName}`, ref: s.documentNumber,
         lines: [{ account: t, debit: paid, credit: 0 }, { account: '411', debit: 0, credit: paid }] });
+    }
+    if (s.status === 'cancelled' && s.cancelledAt) {
+      out.push(...out.slice(start).map(e => ({ ...e, id: `ann-${e.id}`, date: s.cancelledAt?.slice(0, 10) || s.date,
+        label: `Annulation — ${e.label} · ${s.cancellationReason || ''}`,
+        lines: e.lines.map(l => ({ ...l, debit: l.credit, credit: l.debit })) })));
     }
   }
   for (const p of purchases) {
@@ -105,7 +112,7 @@ export function buildEntries(sales: SaleIn[], purchases: PurchaseIn[], transacti
     }
   }
   for (const tx of transactions) {
-    if (tx.status === 'cancelled' || !(tx.amount > 0) || tx.category === SALE_TX_CATEGORY) continue;
+    if (tx.status === 'cancelled' || !(tx.amount > 0) || tx.category === SALE_TX_CATEGORY || (tx.purchaseId && purchases.some(p => p.id === tx.purchaseId))) continue;
     const t = treasuryAccount(tx.paymentMethod);
     const lines: EntryLine[] = tx.type === 'revenue'
       ? [{ account: t, debit: tx.amount, credit: 0 }, { account: '758', debit: 0, credit: tx.amount }]

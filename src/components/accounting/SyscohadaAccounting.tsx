@@ -33,10 +33,10 @@ const SyscohadaAccounting: React.FC = () => {
     const inRange = (d: string) => d >= from && d <= to;
     const u = activeUnit?.id;
     return [...buildEntries(
-      sales.filter((s) => inRange(s.date)),
+      sales.filter((s) => !u || s.unitId === u),
       (purchases as any[]).filter((p) => (!u || p.unitId === u) && inRange(p.date)),
       (transactions as any[]).filter((t) => (!u || t.unitId === u) && inRange(t.date)),
-    ), ...ledgerData.manual.filter((e) => inRange(e.date))].sort((a, b) => a.date.localeCompare(b.date));
+    ).filter((e) => inRange(e.date)), ...ledgerData.manual.filter((e) => inRange(e.date))].sort((a, b) => a.date.localeCompare(b.date));
   }, [sales, purchases, transactions, activeUnit?.id, from, to, ledgerData.manual]);
 
   const balance = useMemo(() => trialBalance(entries), [entries]);

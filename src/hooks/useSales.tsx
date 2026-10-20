@@ -26,7 +26,10 @@ export interface Sale {
   unitId: string;
   products: SaleItem[];
   totalAmount: number;
-  status: 'pending' | 'confirmed' | 'delivered' | 'paid';
+  status: 'pending' | 'confirmed' | 'delivered' | 'paid' | 'cancelled';
+  cancelledAt?: string;
+  cancellationReason?: string;
+  statusBeforeCancellation?: string;
   paymentMethod: string;
   notes: string;
   dueDate?: string;
@@ -64,6 +67,9 @@ const mapSaleRow = (s: any, fallbackProducts: SaleItem[] = []): Sale => ({
   documentType: (s.document_type as 'receipt' | 'invoice' | 'proforma') || 'receipt',
   documentNumber: s.document_number || undefined,
   taxRate: Number(s.tax_rate) || 0,
+  cancelledAt: s.cancelled_at || undefined,
+  cancellationReason: s.cancellation_reason || undefined,
+  statusBeforeCancellation: s.status_before_cancellation || undefined,
 });
 
 export const useSales = () => {
@@ -229,7 +235,7 @@ export const useSales = () => {
 
   const updateSale = async (id: string, updates: Partial<Sale>) => {
     const sale = sales.find(s => s.id === id);
-    if (!sale) return null;
+    if (!sale || sale.status === 'cancelled' || updates.status === 'cancelled') return null;
 
     if (isDemoMode) {
       const updatedSale = { ...sale, ...updates };
@@ -312,38 +318,19 @@ export const useSales = () => {
     }
   };
 
-  const deleteSale = async (id: string) => {
-    if (isDemoMode) {
-      setSales(prev => prev.filter(s => s.id !== id));
-      emitDataMutation({ table: 'sales', action: 'delete', id, module: 'sales' });
-      return true;
-    }
-    if (!user?.id) return false;
-
-    try {
-      // Delete sale items first
-      const { error: itemsError } = await supabase
-        .from('sale_items')
-        .delete()
-        .eq('sale_id', id);
-
-      if (itemsError) throw itemsError;
-
-      // Delete the sale
-      const { error } = await supabase
-        .from('sales')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setSales(prev => prev.filter(s => s.id !== id));
-      return true;
-    } catch (err) {
-      console.error('Error deleting sale:', err);
-      return false;
-    }
+  const cancelSale = async (id: string, reason: string) => {
+    if (!user?.id || isDemoMode || !activeUnit?.id) throw new Error('Connectez-vous et sélectionnez une unité.');
+    const sale = sales.find(s => s.id === id && s.unitId === activeUnit.id);
+    if (!sale) throw new Error('Vente inaccessible pour cette unité.');
+    if (!reason.trim()) throw new Error('Indiquez le motif de l’annulation.');
+    const { error } = await (supabase as any).rpc('cancel_sale', { _sale_id: id, _reason: reason.trim() });
+    if (error) throw error;
+    await fetchSales();
+    emitDataMutation({ table: 'sales', action: 'update', id, module: 'sales' });
+    return true;
   };
+  // Compatibility: old callers cannot erase posted business history.
+  const deleteSale = async (_id: string) => { throw new Error('Utilisez Annuler la vente et indiquez un motif.'); };
 
   return {
     sales: filteredSales,
@@ -352,6 +339,7 @@ export const useSales = () => {
     addSale,
     updateSale,
     deleteSale,
+    cancelSale,
     refetch: fetchSales
   };
 };

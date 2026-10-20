@@ -4,6 +4,9 @@ vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({}) }));
 import { computeExpectedCash } from '@/hooks/useCashSession';
 
 describe('caisse', () => {
+  it('un remboursement Mobile Money ne diminue pas les espèces du tiroir', () => {
+    expect(computeExpectedCash(10000, [{ type: 'cash_out', amount: 3000, payment_method: 'Mobile Money' }])).toBe(10000);
+  });
   it('espèces attendues = fond + ventes espèces + entrées - sorties', () => {
     expect(computeExpectedCash(10000, [
       { type: 'sale', amount: 5000, payment_method: 'Espèces' },

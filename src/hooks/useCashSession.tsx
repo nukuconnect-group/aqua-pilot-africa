@@ -32,7 +32,7 @@ const isMissingTable = (err: any) =>
 /** Calcule le montant d'espèces attendu dans le tiroir. */
 export const computeExpectedCash = (opening: number, movements: Pick<CashMovement, 'type' | 'amount' | 'payment_method'>[]) =>
   movements.reduce((sum, m) => {
-    if (m.type === 'cash_out') return sum - m.amount;
+    if (m.type === 'cash_out') return m.payment_method === 'Espèces' ? sum - m.amount : sum;
     if (m.type === 'sale' && m.payment_method !== 'Espèces') return sum;
     return sum + m.amount;
   }, opening);

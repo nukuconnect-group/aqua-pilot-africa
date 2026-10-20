@@ -3,6 +3,13 @@
 - [ ] Générer et vérifier un PDF complet en anglais
 - [ ] Tester le parcours anglais puis français
 
+## Trésorerie et ventes du 20/10/2026
+- [x] Préparer les comptes caisse/banque, fonds initiaux et mouvements avec écritures équilibrées ; changement appliqué dans Lovable Cloud
+- [x] Ajouter l’annulation des ventes avec motif, historique et contre-écritures datées
+- [x] Tester les règles comptables : 20 tests réussis
+- [ ] Activer ces changements sur la base historique utilisée par l’application : accès indisponible ici ; script conservé dans docs/sql/treasury_accounts.sql
+- [ ] Vérifier création, transfert et annulation avec les données réelles : aucune session disponible, parcours redirigé vers /auth
+
 ## Corrections du 20/10/2026
 - [x] Rétablir l’accès au Stock depuis les menus et l’Alimentation (tests de résolution des liens réussis)
 - [x] Adapter les dispositions Stock et Alimentation aux écrans étroits (vérification visuelle connectée encore bloquée)
