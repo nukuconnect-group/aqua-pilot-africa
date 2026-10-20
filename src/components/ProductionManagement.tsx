@@ -10,6 +10,7 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import ProductionUnitSelector from './ProductionUnitSelector';
 import ProductionCycleForm from './production/ProductionCycleForm';
 import ProductionCycleDetails from './production/ProductionCycleDetails';
+import HarvestTransferDialog from './production/HarvestTransferDialog';
 import { useProductionCycles } from '@/hooks/useProductionCycles';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
@@ -110,6 +111,7 @@ const ProductionManagement = () => {
         initialWeight: totalWeight,
         currentAverageWeight,
         notes: cycle.notes,
+        species: cycle.species,
         species: cycle.species,
         duration_months: cycle.duration_months,
         stockingDate: cycle.stocking_date,
@@ -460,6 +462,9 @@ const ProductionManagement = () => {
                       >
                         {cycle.status}
                       </Badge>
+                      {activeUnit?.id && (cycle.status === 'completed' || cycle.timeProgress >= 100) && (
+                        <HarvestTransferDialog cycleId={cycle.id} cycleName={cycle.name} species={cycle.species} unitId={activeUnit.id} />
+                      )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button size="icon" variant="outline" className="h-8 w-8 text-destructive">
