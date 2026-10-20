@@ -117,10 +117,11 @@ export const useFeedStocks = (unitId?: string) => {
 
   const updateStock = async (id: string, updates: Partial<FeedStock>) => {
     try {
+      if (!unitId) throw new Error('Sélectionnez une unité de production.');
       const { error } = await supabase
         .from('feed_stocks')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id).eq('unit_id', unitId);
 
       if (error) throw error;
 
@@ -141,26 +142,32 @@ export const useFeedStocks = (unitId?: string) => {
     }
   };
 
-  const deleteStock = async (id: string) => {
+  const deleteStocks = async (ids: string[]) => {
     try {
-      const { error } = await supabase
+      if (!unitId) throw new Error('Sélectionnez une unité de production.');
+      const selectedIds = [...new Set(ids)].filter(Boolean);
+      if (!selectedIds.length) return [];
+      const { data, error } = await supabase
         .from('feed_stocks')
         .delete()
-        .eq('id', id);
+        .eq('unit_id', unitId).in('id', selectedIds).select('id');
 
       if (error) throw error;
 
       toast({
         title: 'Succès',
-        description: 'Stock d\'aliment supprimé',
+        description: `${data?.length || 0} article(s) retiré(s) du stock`,
       });
 
       await fetchStocks();
+      return (data || []).map(stock => stock.id);
     } catch (error: any) {
       console.error('Error deleting feed stock:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de supprimer le stock',
+        description: error?.code === '23503'
+          ? 'Un article est lié à une opération existante. Corrigez-le plutôt que le supprimer ; aucun article de cette sélection n’a été supprimé.'
+          : 'Suppression non confirmée. Vérifiez votre connexion et votre accès à cette unité, puis rechargez la liste.',
         variant: 'destructive',
       });
       throw error;
@@ -173,7 +180,8 @@ export const useFeedStocks = (unitId?: string) => {
     error,
     createStock,
     updateStock,
-    deleteStock,
+    deleteStock: (id: string) => deleteStocks([id]),
+    deleteStocks,
     refetch: fetchStocks,
   };
 };

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,8 @@ import AlertHistory from '@/components/alerts/AlertHistory';
 import { notificationHelpers } from '@/lib/notificationService';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { getUnitTerms } from '@/lib/unitContext';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 
 
 interface FeedStockManagerProps {
@@ -42,7 +44,13 @@ interface FeedStockManagerProps {
 const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   const { activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
-  const { stocks, loading, error, refetch, createStock, updateStock, deleteStock } = useFeedStocks(unitId);
+  const { stocks, loading, error, refetch, createStock, updateStock, deleteStocks } = useFeedStocks(unitId);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deletion, setDeletion] = useState<{ ids: string[]; reset: boolean } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  useEffect(() => {
+    setSelectedIds(ids => ids.filter(id => stocks.some(stock => stock.id === id)));
+  }, [stocks]);
 
   const { toast } = useToast();
   const [sendingAlerts, setSendingAlerts] = useState(false);
@@ -239,26 +247,20 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   };
 
   const handleDeleteStock = async (stockId: string) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce stock ?')) return;
-    
+    setDeletion({ ids: [stockId], reset: false });
+  };
+
+  const confirmDeletion = async () => {
+    if (!deletion || deleting) return;
+    setDeleting(true);
     try {
-      const stockToDelete = stocks.find(s => s.id === stockId);
-      await deleteStock(stockId);
-      
-      if (stockToDelete) {
-        toast({
-          title: 'Stock supprimé',
-          description: `${stockToDelete.custom_name || stockToDelete.feed_type} retiré du stock`,
-          variant: 'destructive'
-        });
-      }
-      
-      if (onStockUpdate) {
-        onStockUpdate(stocks);
-      }
+      const removed = await deleteStocks(deletion.ids);
+      setSelectedIds(ids => ids.filter(id => !removed.includes(id)));
+      setDeletion(null);
+      onStockUpdate?.(stocks.filter(stock => !removed.includes(stock.id)));
     } catch (error) {
       console.error('Error deleting stock:', error);
-    }
+    } finally { setDeleting(false); }
   };
 
   const getLowStockItems = () => stocks.filter(stock => stock.quantity <= (stock.min_threshold || 50));
@@ -366,6 +368,15 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
 
   return (
     <div className="min-w-0 space-y-4">
+      <AlertDialog open={!!deletion} onOpenChange={open => { if (!open && !deleting) setDeletion(null); }}>
+        <AlertDialogContent><AlertDialogHeader>
+          <AlertDialogTitle>{deletion?.reset ? 'Réinitialiser le stock de cette unité ?' : 'Supprimer les articles sélectionnés ?'}</AlertDialogTitle>
+          <AlertDialogDescription>{deletion?.ids.length || 0} article(s) seront retirés de {activeUnit?.name}. Leurs quantités ne seront pas simplement mises à zéro. Cette suppression est définitive ; les ventes et les écritures comptables ne seront pas effacées.</AlertDialogDescription>
+        </AlertDialogHeader><AlertDialogFooter>
+          <Button variant="outline" disabled={deleting} onClick={() => setDeletion(null)}>Annuler</Button>
+          <Button variant="destructive" disabled={deleting} onClick={confirmDeletion}>{deleting ? 'Suppression…' : 'Confirmer la suppression'}</Button>
+        </AlertDialogFooter></AlertDialogContent>
+      </AlertDialog>
       {error && <div role="alert" className="rounded-md border border-destructive/40 p-4 text-sm"><p>Impossible de charger les articles de cette unité.</p><Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Réessayer</Button></div>}
       {!error && stocks.length === 0 && <p className="text-sm text-muted-foreground">Aucun article enregistré dans cette unité.</p>}
       {/* Carte récapitulative du stock */}
@@ -775,6 +786,12 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         </TabsList>
         
         <TabsContent value="stocks" className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm"><Checkbox aria-label="Sélectionner tous les articles affichés" disabled={!filteredStocks.length || deleting} checked={filteredStocks.length > 0 && filteredStocks.every(stock => selectedIds.includes(stock.id))} onCheckedChange={checked => setSelectedIds(ids => checked ? [...new Set([...ids, ...filteredStocks.map(stock => stock.id)])] : ids.filter(id => !filteredStocks.some(stock => stock.id === id)))} />Tout sélectionner{stockSearch ? ' (résultats)' : ''}</label>
+            <span className="text-sm text-muted-foreground">{selectedIds.length} sélectionné(s)</span>
+            <Button variant="outline" size="sm" disabled={!selectedIds.length || deleting} onClick={() => setDeletion({ ids: selectedIds, reset: false })}><Trash2 className="mr-2 h-4 w-4" />Supprimer la sélection</Button>
+            <Button variant="destructive" size="sm" disabled={!stocks.length || deleting} onClick={() => setDeletion({ ids: stocks.map(stock => stock.id), reset: true })}>Réinitialiser le stock</Button>
+          </div>
           {/* Alertes */}
           {(getLowStockItems().length > 0 || getExpiringItems().length > 0) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -885,10 +902,11 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditStock(stock)}>
+                        <Checkbox aria-label={`Sélectionner ${stock.custom_name || stock.feed_type}`} checked={selectedIds.includes(stock.id)} onCheckedChange={checked => setSelectedIds(ids => checked ? [...new Set([...ids, stock.id])] : ids.filter(id => id !== stock.id))} />
+                        <Button variant="ghost" size="sm" aria-label={`Modifier ${stock.custom_name || stock.feed_type}`} title="Modifier l’article" onClick={() => handleEditStock(stock)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteStock(stock.id)} className="text-red-600">
+                        <Button variant="ghost" size="sm" aria-label={`Supprimer ${stock.custom_name || stock.feed_type}`} title="Supprimer l’article" onClick={() => handleDeleteStock(stock.id)} className="text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

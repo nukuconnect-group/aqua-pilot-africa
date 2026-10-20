@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Boxes, Upload, Tag, History } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
@@ -12,6 +12,7 @@ import ProductionUnitSelector from './ProductionUnitSelector';
 const StockManagement: React.FC = () => {
   const { activeUnit } = useProductionUnits();
   const { stocks, refetch } = useFeedStocks(activeUnit?.id);
+  const [tab, setTab] = useState('stocks');
 
   if (!activeUnit) {
     return <div className="min-w-0 space-y-4"><ProductionUnitSelector /><p className="p-6 text-center text-muted-foreground">Sélectionnez une unité de production pour gérer son stock.</p></div>;
@@ -26,7 +27,7 @@ const StockManagement: React.FC = () => {
         </div>
       </div>
       <ProductionUnitSelector />
-      <Tabs defaultValue="stocks" className="space-y-4">
+      <Tabs key={activeUnit.id} value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="rounded-xl flex-wrap h-auto">
           <TabsTrigger value="stocks" className="text-xs sm:text-sm">
             <Boxes className="w-4 h-4 mr-1" /> Articles
@@ -45,7 +46,7 @@ const StockManagement: React.FC = () => {
           <FeedStockManager key={activeUnit.id} unitId={activeUnit.id} onStockUpdate={() => refetch()} />
         </TabsContent>
         <TabsContent value="import">
-          <StockCsvImport unitId={activeUnit.id} onDone={() => refetch()} />
+          <StockCsvImport key={activeUnit.id} unitId={activeUnit.id} onDone={() => refetch()} onViewStocks={() => setTab('stocks')} />
         </TabsContent>
         <TabsContent value="labels">
           <StockBarcodeLabels stocks={stocks} />
