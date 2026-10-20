@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Mail, Phone, ShoppingCart } from 'lucide-react';
+import { Users, Mail, Phone, ShoppingCart, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useSales } from '@/hooks/useSales';
 
@@ -51,6 +52,21 @@ const ClientManager = () => {
 
     return Array.from(map.values()).sort((a, b) => b.totalRevenue - a.totalRevenue);
   }, [sales, t]);
+
+  // Numéro WhatsApp exploitable : chiffres uniquement, au moins 8 chiffres.
+  const whatsappNumber = (contact: string) => {
+    const digits = contact.replace(/[^\d]/g, '');
+    return digits.length >= 8 ? digits : null;
+  };
+
+  const openWhatsApp = (client: ClientRow) => {
+    const number = whatsappNumber(client.contact);
+    if (!number) return;
+    const message = encodeURIComponent(
+      `Bonjour ${client.name}, nous espérons que vous allez bien. N'hésitez pas à passer votre prochaine commande.`,
+    );
+    window.open(`https://wa.me/${number}?text=${message}`, '_blank', 'noopener');
+  };
 
   const getStatusColor = (status: ClientStatus) => {
     switch (status) {
