@@ -17,7 +17,7 @@ export function useTreasury(unitId?: string) {
       db.from('treasury_movements').select('*').eq('unit_id', unitId).order('date', { ascending: false }).order('created_at', { ascending: false }),
     ]);
     const failure = a.error || m.error;
-    setError(failure ? (/schema cache|does not exist/i.test(failure.message) ? 'La trésorerie doit être activée sur la base actuellement utilisée par votre application.' : failure.message) : null);
+    setError(failure ? 'Impossible de charger la trésorerie pour le moment. Réessayez dans un instant.' : null);
     setState({ unitId, accounts: a.data || [], movements: (m.data || []).map((r: TreasuryMovement) => ({ ...r, amount: Number(r.amount) })) });
     setLoading(false);
   }, [unitId]);
