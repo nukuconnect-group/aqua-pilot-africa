@@ -33,6 +33,7 @@ import { notificationHelpers } from '@/lib/notificationService';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { getUnitTerms } from '@/lib/unitContext';
 import { Checkbox } from '@/components/ui/checkbox';
+import { getStockPurpose, getSalePrice, cleanStockNotes, STOCK_PURPOSE_LABELS, type StockPurpose } from '@/lib/stockPurpose';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 
 
@@ -75,7 +76,9 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
     notes: '',
     min_threshold: 50,
     bag_count: 0,
-    kg_per_bag: 0
+    kg_per_bag: 0,
+    stock_purpose: '' as StockPurpose | '',
+    sale_price: 0
   });
 
   const predefinedFeedTypes = [
@@ -112,7 +115,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
     setEditingStock(null);
     setShowCustomTypeInput(false);
     setCustomFeedTypeName('');
-    setNewStock({ custom_name: '', feed_type: '', quantity: 0, unit: 'kg', expiration_date: '', supplier: '', cost: 0, protein_content: 0, fat_content: 0, notes: '', min_threshold: 50, bag_count: 0, kg_per_bag: 0 });
+    setNewStock({ custom_name: '', feed_type: '', quantity: 0, unit: 'kg', expiration_date: '', supplier: '', cost: 0, protein_content: 0, fat_content: 0, notes: '', min_threshold: 50, bag_count: 0, kg_per_bag: 0, stock_purpose: '', sale_price: 0 });
   };
 
   const handleSaveStock = async () => {
@@ -131,6 +134,10 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
           description: 'Choisissez un type d\'aliment ou saisissez un nom personnalisé.',
           variant: 'destructive',
         });
+        return;
+      }
+      if (!newStock.stock_purpose) {
+        toast({ title: 'Destination du stock requise', description: 'Indiquez s’il s’agit d’un stock commercial (à vendre) ou d’un stock de production.', variant: 'destructive' });
         return;
       }
       // Validation cohérence sacs ↔ kg
@@ -178,7 +185,9 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         notes: newStock.notes.trim() || null,
         min_threshold: newStock.min_threshold ?? 50,
         bag_count: newStock.bag_count || null,
-        kg_per_bag: newStock.kg_per_bag || null
+        kg_per_bag: newStock.kg_per_bag || null,
+        stock_purpose: newStock.stock_purpose as StockPurpose,
+        sale_price: newStock.stock_purpose === 'commercial' ? (newStock.sale_price || null) : null
       };
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -224,7 +233,9 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         notes: '',
         min_threshold: 50,
         bag_count: 0,
-        kg_per_bag: 0
+        kg_per_bag: 0,
+        stock_purpose: '',
+        sale_price: 0
       });
       setEditingStock(null);
       setShowDialog(false);
@@ -245,7 +256,9 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
       cost: stock.cost || 0,
       protein_content: stock.protein_content || 0,
       fat_content: stock.fat_content || 0,
-      notes: stock.notes || '',
+      notes: cleanStockNotes(stock.notes),
+      stock_purpose: getStockPurpose(stock),
+      sale_price: getSalePrice(stock),
       min_threshold: stock.min_threshold ?? 50,
       bag_count: stock.bag_count || 0,
       kg_per_bag: stock.kg_per_bag || 0
@@ -505,6 +518,23 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
             
             {/* Formulaire simplifié - champs essentiels uniquement */}
             <div className="space-y-4">
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <Label className="text-sm">Ce stock est destiné à… *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(['production', 'commercial'] as StockPurpose[]).map(p => (
+                    <Button key={p} type="button" variant={newStock.stock_purpose === p ? 'default' : 'outline'} className="h-auto py-2 flex-col items-start text-left whitespace-normal" onClick={() => setNewStock(prev => ({ ...prev, stock_purpose: p }))}>
+                      <span className="font-medium">{STOCK_PURPOSE_LABELS[p]}</span>
+                      <span className="text-xs opacity-80">{p === 'production' ? 'Aliments et intrants pour nourrir mes poissons. Non vendu en caisse.' : 'Poissons, alevins, aliments ou produits à vendre en caisse.'}</span>
+                    </Button>
+                  ))}
+                </div>
+                {newStock.stock_purpose === 'commercial' && (
+                  <div>
+                    <Label className="text-sm">Prix de vente unitaire</Label>
+                    <Input type="number" min="0" value={newStock.sale_price || ''} onChange={e => setNewStock(prev => ({ ...prev, sale_price: parseFloat(e.target.value) || 0 }))} className="text-sm" placeholder="Prix proposé en caisse" />
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm">Nom de l’article *</Label>
@@ -728,7 +758,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                 <Button 
                   onClick={handleSaveStock} 
                   className="flex-1 min-h-[44px]"
-                  disabled={!(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
+                  disabled={!newStock.stock_purpose || !(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
                 >
                   {editingStock ? 'Modifier' : 'Ajouter'} le stock
                 </Button>
@@ -736,7 +766,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                   <Button
                     variant="secondary"
                     className="min-h-[44px]"
-                    disabled={!(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
+                    disabled={!newStock.stock_purpose || !(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
                     onClick={async () => {
                       await handleSaveStock();
                       // handleSaveStock closes the dialog ; rouvre immédiatement
@@ -898,6 +928,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                           <Badge variant="outline" className="text-xs">
                             {predefinedFeedTypes.find(t => t.value === stock.feed_type)?.label || stock.feed_type}
                           </Badge>
+                          <Badge variant={getStockPurpose(stock) === 'commercial' ? 'default' : 'secondary'} className="text-xs">{STOCK_PURPOSE_LABELS[getStockPurpose(stock)]}</Badge>
                           <Badge className={isLow ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
                             Stock: {stock.quantity} {stock.unit}
                           </Badge>
