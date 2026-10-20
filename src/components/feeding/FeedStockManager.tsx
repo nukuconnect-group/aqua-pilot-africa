@@ -42,7 +42,7 @@ interface FeedStockManagerProps {
 const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   const { activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
-  const { stocks, loading, createStock, updateStock, deleteStock } = useFeedStocks(unitId);
+  const { stocks, loading, error, refetch, createStock, updateStock, deleteStock } = useFeedStocks(unitId);
 
   const { toast } = useToast();
   const [sendingAlerts, setSendingAlerts] = useState(false);
@@ -79,7 +79,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   const allFeedTypes = [
     ...predefinedFeedTypes.filter(t => t.value !== 'custom'),
     ...customFeedTypes.map(type => ({ value: type, label: type })),
-    predefinedFeedTypes.find(t => t.value === 'custom')!
+    { value: 'custom', label: 'Type personnalisé...' }
   ];
 
   const handleSaveCustomFeedType = () => {
@@ -365,7 +365,9 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
+      {error && <div role="alert" className="rounded-md border border-destructive/40 p-4 text-sm"><p>Impossible de charger les articles de cette unité.</p><Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Réessayer</Button></div>}
+      {!error && stocks.length === 0 && <p className="text-sm text-muted-foreground">Aucun article enregistré dans cette unité.</p>}
       {/* Carte récapitulative du stock */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-primary/20 bg-primary/5">
@@ -374,7 +376,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
               <Package className="w-4 h-4 text-primary" />
               <span className="text-xs text-muted-foreground">Stock total</span>
             </div>
-            <p className="text-xl font-bold text-primary">{getTotalQuantity().toLocaleString('fr-FR')} kg</p>
+            <p className="break-words text-xl font-bold text-primary">{getTotalQuantity().toLocaleString('fr-FR')} kg</p>
           </CardContent>
         </Card>
         
@@ -384,7 +386,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
               <TrendingDown className="w-4 h-4 text-green-600" />
               <span className="text-xs text-muted-foreground">Valeur totale</span>
             </div>
-            <p className="text-xl font-bold text-green-600">{getTotalValue().toLocaleString('fr-FR')} F</p>
+            <p className="break-words text-xl font-bold text-green-600">{getTotalValue().toLocaleString('fr-FR')} F</p>
           </CardContent>
         </Card>
         
@@ -394,7 +396,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
               <BarChart3 className="w-4 h-4 text-blue-600" />
               <span className="text-xs text-muted-foreground">Types {unitTerms.feedLabel.toLowerCase()}s</span>
             </div>
-            <p className="text-xl font-bold text-blue-600">{getTotalStocks()}</p>
+            <p className="break-words text-xl font-bold text-blue-600">{getTotalStocks()}</p>
           </CardContent>
         </Card>
         
@@ -404,41 +406,41 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
               <AlertTriangle className="w-4 h-4 text-orange-600" />
               <span className="text-xs text-muted-foreground">Coût moyen/kg</span>
             </div>
-            <p className="text-xl font-bold text-orange-600">{getAverageCost().toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</p>
+            <p className="break-words text-xl font-bold text-orange-600">{getAverageCost().toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</p>
           </CardContent>
         </Card>
       </div>
       
-      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4 items-start">
-        <Card className="border-border/60">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-4 items-start">
+        <Card className="min-w-0 border-border/60">
           <CardContent className="p-4 space-y-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold">Gestion des Stocks {unitTerms.feedLabel.toLowerCase()}s</h3>
-                <p className="text-sm text-muted-foreground">Interface avancée type gestion de stock avec recherche, couverture et alertes.</p>
+                <h3 className="text-lg font-semibold">Articles en stock</h3>
+                <p className="text-sm text-muted-foreground">{activeUnit?.name}</p>
               </div>
-              <div className="relative w-full md:w-[280px]">
+              <div className="relative min-w-0 w-full md:max-w-[280px]">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input value={stockSearch} onChange={(e) => setStockSearch(e.target.value)} placeholder="Rechercher un aliment, fournisseur..." className="pl-9" />
+                <Input value={stockSearch} onChange={(e) => setStockSearch(e.target.value)} placeholder="Rechercher un article, fournisseur…" className="pl-9" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="rounded-lg border bg-muted/20 p-3">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Boxes className="w-4 h-4" /> Références</div>
-                <p className="text-xl font-bold">{stocks.length}</p>
+                <p className="break-words text-xl font-bold">{stocks.length}</p>
               </div>
               <div className="rounded-lg border bg-muted/20 p-3">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Package className="w-4 h-4" /> Couverture</div>
-                <p className="text-xl font-bold">{getTotalQuantity().toLocaleString('fr-FR')} kg</p>
+                <p className="break-words text-xl font-bold">{getTotalQuantity().toLocaleString('fr-FR')} kg</p>
               </div>
               <div className="rounded-lg border bg-muted/20 p-3">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><ShieldCheck className="w-4 h-4" /> Santé stock</div>
-                <p className="text-xl font-bold">{stockHealthRate}%</p>
+                <p className="break-words text-xl font-bold">{stockHealthRate}%</p>
               </div>
               <div className="rounded-lg border bg-muted/20 p-3">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><AlertTriangle className="w-4 h-4" /> À traiter</div>
-                <p className="text-xl font-bold">{getLowStockItems().length + getExpiringItems().length}</p>
+                <p className="break-words text-xl font-bold">{getLowStockItems().length + getExpiringItems().length}</p>
               </div>
             </div>
           </CardContent>
@@ -455,7 +457,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline" 
             size="sm"
@@ -480,14 +482,14 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
             </DialogTrigger>
           <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
-              <DialogTitle>{editingStock ? 'Modifier le stock' : 'Ajouter un stock d\'aliment'}</DialogTitle>
+              <DialogTitle>{editingStock ? 'Modifier le stock' : 'Ajouter un article'}</DialogTitle>
             </DialogHeader>
             
             {/* Formulaire simplifié - champs essentiels uniquement */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm">Nom de l'aliment *</Label>
+                  <Label className="text-sm">Nom de l’article *</Label>
                   <Input 
                     value={newStock.custom_name}
                     onChange={(e) => setNewStock(prev => ({ ...prev, custom_name: e.target.value }))}
@@ -704,7 +706,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
               </details>
               
               {/* Boutons toujours visibles */}
-              <div className="flex gap-2 pt-4 border-t">
+              <div className="flex flex-col gap-2 pt-4 border-t sm:flex-row sm:flex-wrap">
                 <Button 
                   onClick={handleSaveStock} 
                   className="flex-1 min-h-[44px]"
@@ -757,7 +759,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
 
       {/* Tabs for Stocks, Movement History, and Alert History */}
       <Tabs defaultValue="stocks" className="space-y-4">
-        <TabsList className="w-full sm:w-auto">
+        <TabsList className="grid h-auto w-full grid-cols-3 sm:w-auto">
           <TabsTrigger value="stocks" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
             Stocks
@@ -867,7 +869,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                   <CardHeader className="pb-2">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div>
-                        <CardTitle className="text-base">{stock.custom_name || stock.feed_type}</CardTitle>
+                        <CardTitle className="break-words text-base">{stock.custom_name || stock.feed_type}</CardTitle>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <Badge variant="outline" className="text-xs">
                             {predefinedFeedTypes.find(t => t.value === stock.feed_type)?.label || stock.feed_type}
@@ -893,7 +895,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs sm:text-sm">
+                    <div className="grid grid-cols-2 gap-2 break-words text-xs sm:grid-cols-3 sm:text-sm xl:grid-cols-5">
                       <div className="p-2 bg-primary/5 rounded">
                         <span className="text-muted-foreground block text-xs">Stock restant</span>
                         <span className="font-bold text-primary text-lg">{stock.quantity} {stock.unit}</span>
@@ -951,7 +953,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
               ) : (
                 <div className="space-y-4">
                   {/* Tableau récapitulatif des stocks par type */}
-                  <div className="overflow-x-auto">
+                  <div className="min-w-0 max-w-full overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b">

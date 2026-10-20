@@ -3,25 +3,25 @@ import { Boxes } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import FeedStockManager from './feeding/FeedStockManager';
 import StockMovementsPanel from './feeding/StockMovementsPanel';
+import ProductionUnitSelector from './ProductionUnitSelector';
 
 const StockManagement: React.FC = () => {
   const { activeUnit } = useProductionUnits();
   if (!activeUnit) {
-    return <p className="p-6 text-center text-muted-foreground">Sélectionnez une unité de production pour gérer son stock.</p>;
+    return <div className="min-w-0 space-y-4"><ProductionUnitSelector /><p className="p-6 text-center text-muted-foreground">Sélectionnez une unité de production pour gérer son stock.</p></div>;
   }
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="flex items-center gap-2">
         <Boxes className="h-6 w-6 text-primary" />
         <div>
           <h1 className="text-xl font-bold">Stock</h1>
-          <p className="text-xs text-muted-foreground">
-            {activeUnit.name} · Créez vos articles (aliments, intrants, matériel…), suivez les entrées, sorties et inventaires. Chaque nourrissage diminue automatiquement le stock.
-          </p>
+          <p className="break-words text-sm text-muted-foreground">{activeUnit.name}</p>
         </div>
       </div>
-      <FeedStockManager unitId={activeUnit.id} onStockUpdate={() => undefined} />
-      <StockMovementsPanel unitId={activeUnit.id} />
+      <ProductionUnitSelector />
+      <FeedStockManager key={activeUnit.id} unitId={activeUnit.id} onStockUpdate={() => undefined} />
+      <StockMovementsPanel key={`movements-${activeUnit.id}`} unitId={activeUnit.id} />
     </div>
   );
 };

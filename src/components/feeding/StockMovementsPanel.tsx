@@ -49,15 +49,15 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
   if (notInstalled) return <Alert><AlertDescription>L'historique des mouvements n'est pas encore activé sur votre serveur : le fichier « stock_movements.sql » doit y être exécuté une fois.</AlertDescription></Alert>;
 
   return (
-    <Card className="rounded-2xl">
+    <Card className="min-w-0 rounded-lg">
       <CardHeader className="pb-2"><CardTitle className="text-base">Mouvements de stock</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid gap-2 md:grid-cols-[2fr_1fr_1fr_2fr_auto]">
-          <select className="border border-input bg-background rounded-md h-10 px-2 text-sm" value={stockId} onChange={(e) => setStockId(e.target.value)}>
+        <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_auto]">
+          <select aria-label="Produit du mouvement" className="min-w-0 w-full border border-input bg-background rounded-md h-10 px-2 text-sm" value={stockId} onChange={(e) => setStockId(e.target.value)}>
             <option value="">Produit…</option>
             {stocks.map((s) => <option key={s.id} value={s.id}>{s.custom_name || s.feed_type} ({s.quantity} {s.unit})</option>)}
           </select>
-          <select className="border border-input bg-background rounded-md h-10 px-2 text-sm" value={type} onChange={(e) => setType(e.target.value as any)}>
+          <select aria-label="Type de mouvement" className="min-w-0 w-full border border-input bg-background rounded-md h-10 px-2 text-sm" value={type} onChange={(e) => setType(e.target.value as any)}>
             <option value="in">Entrée</option><option value="out">Sortie</option><option value="adjust">Inventaire (quantité comptée)</option>
           </select>
           <Input type="number" min="0" placeholder="Quantité" value={qty} onChange={(e) => setQty(e.target.value)} />
@@ -65,7 +65,7 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
           <Button onClick={submit}>Valider</Button>
         </div>
         {rows.length === 0 ? <p className="text-sm text-muted-foreground">Aucun mouvement enregistré.</p> : (
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="max-w-full overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
             <thead><tr className="text-left text-muted-foreground border-b border-border"><th className="py-1">Date</th><th>Produit</th><th>Type</th><th className="text-right">Qté</th><th className="text-right">Stock après</th><th>Motif</th></tr></thead>
             <tbody>{rows.map((r) => (
               <tr key={r.id} className="border-b border-border/50"><td className="py-1">{new Date(r.created_at).toLocaleString('fr-FR')}</td><td>{name(r.stock_id)}</td><td>{LABEL[r.type]}</td>
