@@ -130,7 +130,7 @@ const AquaHealthAI: React.FC = () => {
             />
             <Button onClick={handleSpeciesSearch} disabled={speciesLoading} className="sm:w-auto">
               {speciesLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
-              Rechercher
+              <span>Rechercher</span>
             </Button>
           </div>
           {speciesResult && <VisionResultView result={speciesResult} />}
@@ -161,7 +161,7 @@ const AquaHealthAI: React.FC = () => {
               <Textarea rows={2} value={otherSymptoms} onChange={e => setOtherSymptoms(e.target.value)} placeholder="Précisez si nécessaire..." />
             </div>
             <Button onClick={handleRun} disabled={running} className="w-full">
-              <Brain className="w-4 h-4 mr-2" />{running ? 'Analyse...' : 'Lancer le diagnostic'}
+              <Brain className="w-4 h-4 mr-2" /><span key={running ? 'run' : 'idle'}>{running ? 'Analyse...' : 'Lancer le diagnostic'}</span>
             </Button>
           </CardContent>
         </Card>

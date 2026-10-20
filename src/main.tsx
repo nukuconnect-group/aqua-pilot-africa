@@ -4,6 +4,9 @@ import App from './App.tsx';
 import './index.css';
 import { OfflineProvider } from './contexts/OfflineContext';
 import { installDiagnostics } from './lib/appRecovery';
+import { installDomMutationGuard } from './lib/domPatch';
+
+installDomMutationGuard();
 
 console.log('🚀 AQUA PILOT - Application complète restaurée');
 installDiagnostics();
