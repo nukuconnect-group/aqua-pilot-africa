@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { useReproductionRecords, ReproductionRecord } from '@/hooks/useReproductionRecords';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import HarvestTransferDialog from '@/components/production/HarvestTransferDialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -729,6 +730,9 @@ const ReproductionManagement: React.FC<ReproductionManagementProps> = ({ selecte
                       >
                         <Edit className="w-4 h-4 text-blue-500" />
                       </Button>
+                      {record.status === 'terminé' && (record.fry_count || 0) > 0 && record.unit_id && (
+                        <HarvestTransferDialog kind="fry" cycleId={record.id} cycleName="" species={record.species} unitId={record.unit_id} defaultQuantity={record.fry_count || undefined} />
+                      )}
                       {record.status === 'en_cours' && (
                         <Button 
                           variant="ghost" 
