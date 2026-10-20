@@ -51,6 +51,9 @@ const CashRegisterPOS: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [moveAmount, setMoveAmount] = useState('');
   const [moveLabel, setMoveLabel] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferTarget, setTransferTarget] = useState('');
 
   // Catalogue réel : produits déjà vendus dans cette unité, au dernier prix pratiqué.
   const catalog = useMemo(() => {
