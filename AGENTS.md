@@ -11,3 +11,4 @@
 - POS retains the sale and its original cash session when a cash posting fails; retry the posting rather than create a second sale.
 - POS checks that the selected cash session is still open before recording a sale and reports unexpected failures; this client check does not replace server-side atomic posting.
 - Stock removals use one unit-scoped selected-ID delete and a confirmation; reset snapshots the unit's displayed IDs rather than issuing an unbounded delete, preserving existing movement and financial history.
+- Stock items carry an explicit purpose (production or commercial, src/lib/stockPurpose.ts); only commercial, in-stock items reach the POS and only production items feed fish, so inputs are never sold by name or category.
