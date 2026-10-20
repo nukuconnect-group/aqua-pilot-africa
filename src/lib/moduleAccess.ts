@@ -21,6 +21,7 @@ export const APP_MODULE_PERMISSIONS: AppModulePermission[] = [
   { id: 'accounting', label: 'Comptabilité', description: 'Transactions et suivi comptable', tabIds: ['accounting'] },
   { id: 'purchases', label: 'Achats', description: 'Achats et dépenses fournisseurs', tabIds: ['purchases'] },
   { id: 'sales', label: 'Ventes', description: 'Ventes, reçus et factures', tabIds: ['sales'] },
+  { id: 'crm', label: 'Clients & Fournisseurs', description: 'Clients et fournisseurs rattachés à chaque unité', tabIds: ['crm'] },
   { id: 'suppliers', label: 'Fournisseurs', description: 'Carnet fournisseurs et commandes', tabIds: ['suppliers'] },
   { id: 'hr', label: 'Ressources humaines', description: 'Employés, salaires et paie', tabIds: ['hr'] },
   { id: 'planning', label: 'Planification', description: 'Tâches et calendrier opérationnel', tabIds: ['planning'] },
