@@ -12,6 +12,7 @@ import { useSales } from '@/hooks/useSales';
 import { useCashSession } from '@/hooks/useCashSession';
 import BarcodeScanner from './BarcodeScanner';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
+import { deductSoldStock, findStockShortage } from '@/lib/posStock';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
 import CashSalesHistory from './CashSalesHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,7 +62,7 @@ const CashRegisterPOS: React.FC = () => {
   const { activeUnit } = useProductionUnits();
   const { sales, addSale } = useSales();
   const cash = useCashSession(activeUnit?.id);
-  const { stocks } = useFeedStocks(activeUnit?.id);
+  const { stocks, refetch: refetchStocks } = useFeedStocks(activeUnit?.id);
   const [opening, setOpening] = useState('');
   const [counted, setCounted] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -139,6 +140,8 @@ const CashRegisterPOS: React.FC = () => {
     requestKey.current ||= crypto.randomUUID();
     try {
     if (!pendingPayment) {
+      const shortage = findStockShortage(cart, catalog);
+      if (shortage) { const f = { title: 'Stock insuffisant', description: `${shortage} Réduisez la quantité dans le panier.` }; setCheckoutError(f); toast({ ...f, variant: 'destructive' }); return; }
       const availability = await cash.validateSession(sessionId);
       if (availability.error) {
         reportFailure('Encaissement impossible', availability.error);
@@ -170,6 +173,12 @@ const CashRegisterPOS: React.FC = () => {
     if (res.error) {
       reportFailure('Vente enregistrée, encaissement à reprendre', res.error);
       return;
+    }
+    try {
+      await deductSoldStock(activeUnit.id, sale.id, cart);
+      refetchStocks?.();
+    } catch {
+      toast({ title: 'Vente encaissée, stock à corriger', description: 'La sortie de stock n’a pas pu être enregistrée. Corrigez la quantité dans Stock.', variant: 'destructive' });
     }
     toast({ title: 'Vente encaissée', description: `${formatCurrency(sale.totalAmount)} — ${sale.documentNumber || ''}` });
     setPendingPayment(null); requestKey.current = undefined;
