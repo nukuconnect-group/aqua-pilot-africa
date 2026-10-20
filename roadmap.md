@@ -50,7 +50,6 @@
 
 ## Ventes et caisses : recherche et encaissement
 - [x] Stock : correction existante conservée, suppression confirmée individuelle/groupée et réinitialisation par unité ; aperçu CSV modifiable, arrêt de l’import et résultats par produit ; 10 tests réussis et compilation réussie
-\ No newline at end of file
 - [x] Clarifier les échecs d’encaissement : consignes visibles pour connexion, caisse fermée, accès refusé et reprise ; référence de la vente conservée affichée ; 11 tests existants réussis, compilation réussie (parcours réel toujours bloqué par l’accès au compte)
 - [x] Tests isolés de l'écran de caisse : deux articles, quantités décimales, total 6500, rattachement à la caisse et reprise sans seconde vente ; fermeture et exception reproduites puis corrigées (13 tests réussis)
 - [x] Rechercher les articles réels de l'unité, ajouter des lignes libres et modifier prix/quantités dans le panier
