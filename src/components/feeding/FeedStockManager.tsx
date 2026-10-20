@@ -108,6 +108,13 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
     }
   };
 
+  const resetStockForm = () => {
+    setEditingStock(null);
+    setShowCustomTypeInput(false);
+    setCustomFeedTypeName('');
+    setNewStock({ custom_name: '', feed_type: '', quantity: 0, unit: 'kg', expiration_date: '', supplier: '', cost: 0, protein_content: 0, fat_content: 0, notes: '', min_threshold: 50, bag_count: 0, kg_per_bag: 0 });
+  };
+
   const handleSaveStock = async () => {
     try {
       if (!unitId) {
@@ -148,10 +155,10 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
           return;
         }
       }
-      if ((newStock.quantity || 0) <= 0) {
+      if (!Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)) {
         toast({
           title: 'Quantité requise',
-          description: 'La quantité doit être strictement positive.',
+          description: editingStock ? 'La quantité doit être un nombre positif ou nul.' : 'La quantité doit être strictement positive.',
           variant: 'destructive',
         });
         return;
@@ -163,15 +170,15 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         feed_type: newStock.feed_type || newStock.custom_name || 'autre',
         quantity: newStock.quantity,
         unit: newStock.unit,
-        expiration_date: newStock.expiration_date || undefined,
-        supplier: newStock.supplier || undefined,
-        cost: newStock.cost || undefined,
-        protein_content: newStock.protein_content || undefined,
-        fat_content: newStock.fat_content || undefined,
-        notes: newStock.notes || undefined,
-        min_threshold: newStock.min_threshold || 50,
-        bag_count: newStock.bag_count || undefined,
-        kg_per_bag: newStock.kg_per_bag || undefined
+        expiration_date: newStock.expiration_date || null,
+        supplier: newStock.supplier.trim() || null,
+        cost: newStock.cost,
+        protein_content: newStock.protein_content,
+        fat_content: newStock.fat_content,
+        notes: newStock.notes.trim() || null,
+        min_threshold: newStock.min_threshold ?? 50,
+        bag_count: newStock.bag_count || null,
+        kg_per_bag: newStock.kg_per_bag || null
       };
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -239,7 +246,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
       protein_content: stock.protein_content || 0,
       fat_content: stock.fat_content || 0,
       notes: stock.notes || '',
-      min_threshold: stock.min_threshold || 50,
+      min_threshold: stock.min_threshold ?? 50,
       bag_count: stock.bag_count || 0,
       kg_per_bag: stock.kg_per_bag || 0
     });
@@ -483,7 +490,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
             )}
             Vérifier alertes
           </Button>
-          <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <Dialog open={showDialog} onOpenChange={open => { setShowDialog(open); if (!open) resetStockForm(); }}>
             <DialogTrigger asChild>
               <Button className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
                 <Plus className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
@@ -721,7 +728,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                 <Button 
                   onClick={handleSaveStock} 
                   className="flex-1 min-h-[44px]"
-                  disabled={!newStock.feed_type || newStock.quantity <= 0}
+                  disabled={!(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
                 >
                   {editingStock ? 'Modifier' : 'Ajouter'} le stock
                 </Button>
@@ -729,7 +736,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                   <Button
                     variant="secondary"
                     className="min-h-[44px]"
-                    disabled={!newStock.feed_type || newStock.quantity <= 0}
+                    disabled={!(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
                     onClick={async () => {
                       await handleSaveStock();
                       // handleSaveStock closes the dialog ; rouvre immédiatement

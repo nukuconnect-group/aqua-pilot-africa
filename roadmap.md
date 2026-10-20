@@ -58,3 +58,7 @@
 - [x] Tester les règles : 12 tests réussis et compilation réussie
 - [ ] Vérifier un encaissement réel de bout en bout : accès au compte de l'application indisponible ; navigateur redirigé vers /auth, écran de connexion confirmé, aucune vente réelle effectuée
 - [ ] Garantir l'atomicité vente/encaissement et transferts côté serveur : accès à la base historique indisponible ; opérations toujours distinctes
+
+## Vérification des actions du stock
+- [x] Essais isolés correction, suppression individuelle/groupée et réinitialisation ; champs effacés, seuil nul, quantité zéro et formulaire conservé corrigés
+- [ ] Vérifier ces actions avec le stock réel : écran de connexion, aucune session disponible pour le compte existant

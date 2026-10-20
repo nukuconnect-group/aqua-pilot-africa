@@ -51,3 +51,37 @@ describe('retrait de produits du stock', () => {
     expect(mocks.toast).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'Succès' }));
   });
 });
+
+describe('correction et retrait individuel par unité', () => {
+  it('confirme la correction du produit dans la seule unité active', async () => {
+    const single = vi.fn().mockResolvedValue({ data: { id: 'a' }, error: null });
+    const select = vi.fn(() => ({ single }));
+    const eq = vi.fn().mockReturnValueOnce({ eq: vi.fn(() => ({ select })) });
+    const update = vi.fn(() => ({ eq }));
+    mocks.from.mockReturnValue({ update });
+    const hook = await mount('unit-a');
+    await hook.updateStock('a', { quantity: 0, cost: 0, supplier: null });
+    expect(update).toHaveBeenCalledWith({ quantity: 0, cost: 0, supplier: null });
+    expect(eq).toHaveBeenCalledWith('id', 'a');
+    expect(eq.mock.results[0].value.eq).toHaveBeenCalledWith('unit_id', 'unit-a');
+    expect(single).toHaveBeenCalledTimes(1);
+  });
+  it('ne corrige rien sans unité active', async () => {
+    const hook = await mount();
+    await expect(hook.updateStock('a', { quantity: 0 })).rejects.toThrow();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+  it('ne présente pas une correction sans ligne accessible comme réussie', async () => {
+    mocks.from.mockReturnValue({ update: () => ({ eq: () => ({ eq: () => ({ select: () => ({ single: async () => ({ error: { code: 'PGRST116' } }) }) }) }) }) });
+    const hook = await mount('unit-a');
+    await expect(hook.updateStock('a', { quantity: 15 })).rejects.toEqual({ code: 'PGRST116' });
+    expect(mocks.toast).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'Succès' }));
+  });
+  it('retire uniquement le produit demandé individuellement', async () => {
+    const filter = vi.fn(() => ({ select: async () => ({ data: [{ id: 'a' }], error: null }) }));
+    mocks.from.mockReturnValue({ delete: () => ({ eq: () => ({ in: filter }) }) });
+    const hook = await mount('unit-a');
+    expect(await hook.deleteStock('a')).toEqual(['a']);
+    expect(filter).toHaveBeenCalledWith('id', ['a']);
+  });
+});
