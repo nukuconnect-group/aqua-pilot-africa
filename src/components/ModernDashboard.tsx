@@ -82,12 +82,12 @@ const QuickAction: React.FC<{
 }> = ({ icon: Icon, label, onClick, tone = 'bg-primary/10 text-primary' }) => (
   <button
     onClick={onClick}
-    className="group flex flex-col items-center justify-center gap-2 p-3 sm:p-4 rounded-xl border border-border/60 bg-card hover:bg-accent hover:border-primary/40 transition-all text-center"
+    className="group flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 min-h-[72px] rounded-xl border border-border/60 bg-card hover:bg-accent hover:border-primary/40 transition-all text-center"
   >
-    <div className={`p-2.5 rounded-lg ${tone} group-hover:scale-110 transition-transform`}>
-      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+    <div className={`p-1.5 rounded-lg ${tone}`}>
+      <Icon className="w-4 h-4" />
     </div>
-    <span className="text-[11px] sm:text-xs font-medium leading-tight">{label}</span>
+    <span className="text-[10px] sm:text-[11px] font-medium leading-tight line-clamp-2">{label}</span>
   </button>
 );
 
@@ -330,13 +330,13 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
 
           <div className="flex items-center gap-2 shrink-0">
             {/* Sélecteur de période façon segment Jour / Mois / Année */}
-            <div className="flex items-center rounded-none bg-white/15 p-0.5">
+            <div className="flex items-center rounded-full bg-white/15 p-0.5">
               {([['7', 'Jour'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setSelectedPeriodFilter(value as any)}
-                  className={`px-2 sm:px-3 py-1 rounded-none text-[10px] sm:text-xs font-semibold transition-colors ${
+                  className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold transition-colors ${
                     selectedPeriodFilter === value ? 'bg-white text-slate-900' : 'text-white/80 hover:text-white'
                   }`}
                 >
@@ -356,7 +356,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
             >
               <SelectTrigger
                 aria-label="Choisir l'unité de production"
-                className="h-8 w-8 p-0 justify-center rounded-none bg-white/15 border-white/25 text-white [&>svg:last-child]:hidden"
+                className="h-8 w-8 p-0 justify-center rounded-full bg-white/15 border-white/25 text-white [&>svg:last-child]:hidden"
               >
                 <Building2 className="w-4 h-4" />
               </SelectTrigger>
@@ -467,7 +467,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {quickActions.map((action) => (
               <QuickAction key={action.id} icon={action.icon} label={action.label} onClick={() => go(action.id)} tone={action.tone} />
             ))}

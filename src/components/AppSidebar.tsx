@@ -76,7 +76,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
 
   if (isAdminView) {
     return (
-      <Sidebar collapsible="icon" variant="floating" className="[&>div>div]:rounded-2xl [&_button]:rounded-xl">
+      <Sidebar collapsible="icon" variant="sidebar" className="[&>div>div]:rounded-r-2xl [&_button]:rounded-xl">
         <SidebarContent className="overflow-y-auto">
           <SidebarGroup>
             <SidebarGroupContent>
@@ -223,7 +223,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   })).filter(group => group.items.length > 0);
 
   return (
-    <Sidebar collapsible="icon" variant="floating" className="[&>div>div]:rounded-2xl [&_button]:rounded-xl">
+    <Sidebar collapsible="icon" variant="sidebar" className="[&>div>div]:rounded-r-2xl [&_button]:rounded-xl">
       <SidebarContent className="overflow-y-auto">
         {/* Indicateur membre d'equipe */}
         {isTeamMember && teamMemberInfo && open && (
