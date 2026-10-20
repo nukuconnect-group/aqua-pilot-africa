@@ -11,8 +11,8 @@ vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ formatCurre
 vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ activeUnit: { id: 'unit-a', name: 'Unité A' } }) }));
 vi.mock('@/hooks/useSales', () => ({ useSales: () => ({ sales: [], addSale: state.addSale }) }));
 vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [
-  { id: 'stock-a', unit_id: 'unit-a', custom_name: 'Poisson', quantity: 20, unit: 'kg' },
-  { id: 'stock-b', unit_id: 'unit-a', custom_name: 'Aliment', quantity: 30, unit: 'kg' },
+  { id: 'stock-a', unit_id: 'unit-a', custom_name: 'Poisson', quantity: 20, unit: 'kg', stock_purpose: 'commercial' },
+  { id: 'stock-b', unit_id: 'unit-a', custom_name: 'Aliment', quantity: 30, unit: 'kg', stock_purpose: 'commercial' },
 ] }) }));
 vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({
   session: state.session, sessions: [state.session], movements: [], history: [], allMovements: [],
