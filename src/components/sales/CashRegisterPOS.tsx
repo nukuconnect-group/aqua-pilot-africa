@@ -191,8 +191,11 @@ const CashRegisterPOS: React.FC = () => {
   if (!activeUnit) return <Alert><AlertDescription>Sélectionnez une unité de production pour ouvrir la caisse.</AlertDescription></Alert>;
 
   if (cash.loading && !cash.session) return <p className="text-sm text-muted-foreground">Chargement des caisses…</p>;
-  if (cash.error || cash.notInstalled) return (
-    <Alert><AlertDescription>Impossible de charger les caisses pour le moment. Vérifiez votre connexion Internet, puis cliquez sur « Réessayer ». Si le problème persiste, demandez au responsable de vérifier votre accès aux caisses de cette unité.<Button variant="outline" className="ml-2" onClick={() => cash.reload()}>Réessayer</Button></AlertDescription></Alert>
+  if (cash.notInstalled) return (
+    <Alert><AlertDescription>La caisse se prépare pour votre compte. Revenez dans quelques instants.<Button variant="outline" className="ml-2" onClick={() => cash.reload()}>Actualiser</Button></AlertDescription></Alert>
+  );
+  if (cash.error) return (
+    <Alert><AlertDescription>Les caisses n’ont pas pu s’afficher. Cliquez sur « Réessayer ».<Button variant="outline" className="ml-2" onClick={() => cash.reload()}>Réessayer</Button></AlertDescription></Alert>
   );
 
   const openingForm = <div className="space-y-3">
