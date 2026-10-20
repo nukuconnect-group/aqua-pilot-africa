@@ -3160,6 +3160,8 @@ export type Database = {
       }
       sales: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
           client_contact: string | null
           client_name: string
           client_request_id: string | null
@@ -3175,6 +3177,7 @@ export type Database = {
           payment_method: string | null
           payment_terms: string | null
           status: string
+          status_before_cancellation: string | null
           tax_rate: number
           total_amount: number
           unit_id: string
@@ -3182,6 +3185,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           client_contact?: string | null
           client_name: string
           client_request_id?: string | null
@@ -3197,6 +3202,7 @@ export type Database = {
           payment_method?: string | null
           payment_terms?: string | null
           status?: string
+          status_before_cancellation?: string | null
           tax_rate?: number
           total_amount?: number
           unit_id: string
@@ -3204,6 +3210,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           client_contact?: string | null
           client_name?: string
           client_request_id?: string | null
@@ -3219,6 +3227,7 @@ export type Database = {
           payment_method?: string | null
           payment_terms?: string | null
           status?: string
+          status_before_cancellation?: string | null
           tax_rate?: number
           total_amount?: number
           unit_id?: string
@@ -3955,6 +3964,102 @@ export type Database = {
         }
         Relationships: []
       }
+      treasury_accounts: {
+        Row: {
+          account_code: string
+          created_at: string
+          currency: string
+          id: string
+          kind: string
+          name: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          account_code: string
+          created_at?: string
+          currency?: string
+          id?: string
+          kind: string
+          name: string
+          unit_id: string
+          user_id?: string
+        }
+        Update: {
+          account_code?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          kind?: string
+          name?: string
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      treasury_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          destination_id: string | null
+          id: string
+          journal: string
+          kind: string
+          label: string
+          lines: Json
+          request_id: string
+          source_id: string | null
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date: string
+          destination_id?: string | null
+          id?: string
+          journal: string
+          kind: string
+          label: string
+          lines: Json
+          request_id: string
+          source_id?: string | null
+          unit_id: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          destination_id?: string | null
+          id?: string
+          journal?: string
+          kind?: string
+          label?: string
+          lines?: Json
+          request_id?: string
+          source_id?: string | null
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_movements_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_movements_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unit_equipment: {
         Row: {
           created_at: string | null
@@ -4218,6 +4323,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_sale: {
+        Args: { _reason: string; _sale_id: string }
+        Returns: undefined
+      }
       create_sale_idempotent: {
         Args: {
           _client_contact: string
@@ -4260,6 +4369,19 @@ export type Database = {
           updated_at: string
           user_id: string
         }[]
+      }
+      create_treasury_account: {
+        Args: {
+          _code: string
+          _counterpart: string
+          _currency: string
+          _date: string
+          _kind: string
+          _name: string
+          _opening: number
+          _unit_id: string
+        }
+        Returns: string
       }
       expire_outdated_subscriptions: {
         Args: never

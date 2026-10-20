@@ -15,6 +15,13 @@
       "when": 1792442787315,
       "tag": "0001_accounting_manual_entries_and_marks",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792469502690,
+      "tag": "0002_treasury_accounts_movements_sale_cancellation",
+      "breakpoints": true
     }
   ]
 }
