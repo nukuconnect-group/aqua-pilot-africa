@@ -64,6 +64,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
     if (importing.current || !unitId || !rows.length) return;
     importing.current = true;
     setRunning(true);
+    setProgress(0);
     stopRequested.current = false;
     setResults([]);
     let ok = 0;
@@ -71,7 +72,6 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
     try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Connectez-vous avant de téléverser les produits.');
-    setProgress(0);
     for (let i = 0; i < rows.length; i++) {
       if (stopRequested.current) break;
       const r = rows[i];
