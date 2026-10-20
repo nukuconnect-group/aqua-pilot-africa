@@ -778,22 +778,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                 )}
                 <Button variant="outline" className="min-h-[44px]" onClick={() => {
                   setShowDialog(false);
-                  setEditingStock(null);
-                  setNewStock({
-                    custom_name: '',
-                    feed_type: '',
-                    quantity: 0,
-                    unit: 'kg',
-                    expiration_date: '',
-                    supplier: '',
-                    cost: 0,
-                    protein_content: 0,
-                    fat_content: 0,
-                    notes: '',
-                    min_threshold: 50,
-                    bag_count: 0,
-                    kg_per_bag: 0
-                  });
+                  resetStockForm();
                 }}>
                   Annuler
                 </Button>
