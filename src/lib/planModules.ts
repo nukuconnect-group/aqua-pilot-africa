@@ -280,7 +280,15 @@ export interface PlansLoadResult {
 const mergeWithDefaults = (plans: PlanConfig[]): PlanConfig[] => {
   const byKey = new Map(plans.map((plan) => [plan.key, plan]));
   DEFAULT_PLANS.forEach((plan) => {
-    if (!byKey.has(plan.key)) byKey.set(plan.key, plan);
+    const existing = byKey.get(plan.key);
+    if (!existing) {
+      byKey.set(plan.key, plan);
+      return;
+    }
+    // Les modules ajoutés après coup (ex. CRM) doivent apparaître même si
+    // une ancienne configuration du plan était déjà enregistrée en local.
+    const mergedModules = Array.from(new Set([...existing.modules, ...plan.modules]));
+    byKey.set(plan.key, { ...existing, modules: mergedModules });
   });
   return Array.from(byKey.values()).sort((a, b) => a.sortOrder - b.sortOrder);
 };
