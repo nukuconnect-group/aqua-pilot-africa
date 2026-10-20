@@ -32,7 +32,7 @@
 - [x] Relances clients WhatsApp ; avances sur salaire sorties de la caisse
 
 ## Demandes du 20/10/2026 (trésorerie, stock, ventes, CRM)
-- [ ] Trésorerie : enlever le message « doit être activée sur la base » et fiabiliser création de comptes, encaissement, décaissement, transfert
-- [ ] Stock : import CSV avec progression, génération automatique de codes-barres/QR, impression d'étiquettes
-- [ ] Ventes : retirer boutique, relances, historique, clients, factures, modèles ; multicaisse avec transfert de fonds entre caisses
-- [ ] CRM : module clients et fournisseurs rattachés par unité
+- [x] Trésorerie : message « doit être activée » remplacé par un message générique ; création de comptes, encaissement, décaissement, transfert déjà en place
+- [x] Stock : import CSV avec progression, codes-barres automatiques et impression d'étiquettes
+- [x] Ventes : onglets boutique, relances, clients, factures, modèles, étiquettes retirés ; multicaisse avec nom et transfert de fonds entre caisses
+- [x] CRM : module Clients & Fournisseurs par unité ajouté au menu
