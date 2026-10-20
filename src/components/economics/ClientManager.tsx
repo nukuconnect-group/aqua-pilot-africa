@@ -148,6 +148,17 @@ const ClientManager = () => {
                           </span>
                         </div>
                       </div>
+                      {whatsappNumber(client.contact) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0"
+                          onClick={() => openWhatsApp(client)}
+                        >
+                          <MessageCircle className="w-4 h-4 mr-1" />
+                          Relancer
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
