@@ -1,0 +1,97 @@
+import React, { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const state = vi.hoisted(() => ({
+  addSale: vi.fn(), addMovement: vi.fn(), validateSession: vi.fn(), toast: vi.fn(),
+  session: { id: 'register-a', name: 'Caisse A', opened_at: '2026-10-20T00:00:00Z' },
+}));
+vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
+vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ formatCurrency: (n: number) => `${n} F CFA` }) }));
+vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ activeUnit: { id: 'unit-a', name: 'Unité A' } }) }));
+vi.mock('@/hooks/useSales', () => ({ useSales: () => ({ sales: [], addSale: state.addSale }) }));
+vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [
+  { id: 'stock-a', unit_id: 'unit-a', custom_name: 'Poisson', quantity: 20, unit: 'kg' },
+  { id: 'stock-b', unit_id: 'unit-a', custom_name: 'Aliment', quantity: 30, unit: 'kg' },
+] }) }));
+vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({
+  session: state.session, sessions: [state.session], movements: [], history: [], allMovements: [],
+  expected: 10000, loading: false, validateSession: state.validateSession, addMovement: state.addMovement,
+}) }));
+vi.mock('./BarcodeScanner', () => ({ default: () => null }));
+vi.mock('./CashSalesHistory', () => ({ default: () => null }));
+import CashRegisterPOS from './CashRegisterPOS';
+
+let container: HTMLDivElement;
+let root: Root;
+const click = async (button: HTMLButtonElement) => { await act(async () => button.click()); };
+const button = (text: string) => {
+  const match = [...container.querySelectorAll('button')].find(b => b.textContent?.includes(text));
+  if (!match) throw new Error(`Missing button: ${text}`);
+  return match;
+};
+const input = async (label: string, value: string) => {
+  const element = container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
+  if (!element) throw new Error(`Missing input: ${label}`);
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  await act(async () => {
+    setter?.call(element, value);
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+};
+const fillCart = async () => {
+  await click(button('Poisson'));
+  await click(button('Aliment'));
+  await input('Quantité 1', '2.5');
+  await input('Prix unitaire 1', '2000');
+  await input('Quantité 2', '3');
+  await input('Prix unitaire 2', '500');
+};
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  state.validateSession.mockResolvedValue({});
+  state.addMovement.mockResolvedValue({});
+  state.addSale.mockImplementation(async sale => ({ ...sale, id: 'saved-sale' }));
+  container = document.createElement('div'); document.body.appendChild(container);
+  root = createRoot(container);
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  await act(async () => root.render(<CashRegisterPOS />));
+});
+afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
+
+describe('parcours encaissement — tests isolés sans écriture réelle', () => {
+  it('enregistre plusieurs articles, quantités décimales et prix puis rattache 6500 à la caisse choisie', async () => {
+    await fillCart();
+    expect(button('Encaisser').textContent).toContain('6500 F CFA');
+    await click(button('Encaisser'));
+    expect(state.addSale).toHaveBeenCalledWith(expect.objectContaining({
+      unitId: 'unit-a', totalAmount: 6500, paidAmount: 6500,
+      products: [
+        { name: 'Poisson', quantity: 2.5, unitPrice: 2000, total: 5000 },
+        { name: 'Aliment', quantity: 3, unitPrice: 500, total: 1500 },
+      ],
+    }));
+    expect(state.addMovement).toHaveBeenCalledWith(expect.objectContaining({ sale_id: 'saved-sale', amount: 6500, payment_method: 'Espèces' }), 'register-a');
+  });
+  it('reprend un mouvement refusé sans créer une deuxième vente', async () => {
+    state.addMovement.mockResolvedValueOnce({ error: 'Connexion interrompue' });
+    await fillCart(); await click(button('Encaisser'));
+    expect(state.addSale).toHaveBeenCalledTimes(1);
+    await click(button('Reprendre l’encaissement'));
+    expect(state.addSale).toHaveBeenCalledTimes(1);
+    expect(state.addMovement).toHaveBeenCalledTimes(2);
+  });
+  it('ne crée pas une vente payée si la caisse a été fermée entretemps', async () => {
+    state.validateSession.mockResolvedValue({ error: 'Cette caisse est fermée' });
+    await fillCart(); await click(button('Encaisser'));
+    expect(state.addSale).not.toHaveBeenCalled();
+    expect(state.toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Encaissement impossible' }));
+  });
+  it('signale une erreur inattendue et garde les articles pour reprendre', async () => {
+    state.addMovement.mockRejectedValueOnce(new Error('Connexion interrompue'));
+    await fillCart(); await click(button('Encaisser'));
+    expect(state.toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Encaissement interrompu', variant: 'destructive' }));
+    expect(button('Reprendre l’encaissement').disabled).toBe(false);
+  });
+});
