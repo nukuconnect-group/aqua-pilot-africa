@@ -21,6 +21,9 @@ describe('vente en caisse', () => {
   it('conserve le dernier prix réellement vendu', () => {
     expect(buildPosCatalog('unit-a', [sale('unit-a', 2500), sale('unit-a', 2000)], [stock])[0].price).toBe(2500);
   });
+  it('reconnaît le code-barres imprimé sur les étiquettes du stock', () => {
+    expect(buildPosCatalog('unit-a', [], [stock])[0].codes).toContain('AQP-1234567812');
+  });
   it('calcule le total de plusieurs produits avec prix et quantités modifiés', () => {
     expect(calculatePosTotal([{ name: 'Poisson', quantity: 2.5, unitPrice: 2000 }, { name: 'Aliment', quantity: 3, unitPrice: 500 }])).toBe(6500);
   });

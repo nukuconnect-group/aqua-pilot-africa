@@ -30,7 +30,7 @@ export function buildPosCatalog(unitId: string, sales: Sale[], stocks: FeedStock
     products.set(key, {
       key, name, price: existing?.price ?? 0, unit: s.unit,
       quantity: (existing?.quantity ?? 0) + Number(s.quantity),
-      codes: [...(existing?.codes ?? []), s.id, s.id.replace(/-/g, '').slice(0, 16).toUpperCase()],
+      codes: [...(existing?.codes ?? []), s.id, `AQP-${s.id.replace(/-/g, '').slice(0, 10).toUpperCase()}`],
     });
   });
   return [...products.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'));

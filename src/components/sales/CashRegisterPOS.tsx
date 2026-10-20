@@ -86,7 +86,7 @@ const CashRegisterPOS: React.FC = () => {
   });
 
   const updateLine = (i: number, patch: Partial<CartLine>) =>
-    setCart((prev) => prev.map((l, j) => (j === i ? { ...l, ...patch } : l)).filter((l) => l.quantity > 0));
+    setCart((prev) => prev.map((l, j) => (j === i ? { ...l, ...patch } : l)));
 
   const handleScan = (code: string) => {
     setScanOpen(false);
@@ -261,10 +261,10 @@ const CashRegisterPOS: React.FC = () => {
                   <Input aria-label={`Produit ${i + 1}`} className="h-8" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
                   <label className="block text-xs text-muted-foreground mt-2">Prix unitaire<Input aria-label={`Prix unitaire ${i + 1}`} min="0" step="any" type="number" className="h-8 mt-1" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} /></label>
                 </div>
-                <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateLine(i, { quantity: l.quantity - 1 })}><Minus className="w-3 h-3" /></Button>
+                <Button size="icon" variant="outline" aria-label={`Diminuer la quantité ${i + 1}`} className="h-7 w-7" disabled={l.quantity <= 1} onClick={() => updateLine(i, { quantity: l.quantity - 1 })}><Minus className="w-3 h-3" /></Button>
                 <Input aria-label={`Quantité ${i + 1}`} min="0" step="any" type="number" className="h-7 w-16 text-center text-xs" value={l.quantity} onChange={(e) => updateLine(i, { quantity: Number(e.target.value) || 0 })} />
-                <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateLine(i, { quantity: l.quantity + 1 })}><Plus className="w-3 h-3" /></Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateLine(i, { quantity: 0 })}><Trash2 className="w-3 h-3" /></Button>
+                <Button size="icon" variant="outline" aria-label={`Augmenter la quantité ${i + 1}`} className="h-7 w-7" onClick={() => updateLine(i, { quantity: l.quantity + 1 })}><Plus className="w-3 h-3" /></Button>
+                <Button size="icon" variant="ghost" aria-label={`Retirer le produit ${i + 1}`} className="h-7 w-7" onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
               </div>
             ))}
             <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => setClient(e.target.value)} />
