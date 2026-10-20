@@ -2,12 +2,12 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({ updateStock: vi.fn(), deleteStocks: vi.fn(), createStock: vi.fn(), toast: vi.fn() }));
+const state = vi.hoisted(() => ({ updateStock: vi.fn(), deleteStocks: vi.fn(), createStock: vi.fn(), toast: vi.fn(), stocks: [
+  { id: 'a', unit_id: 'unit-a', custom_name: 'Article A', feed_type: 'autre', quantity: 10, unit: 'kg', supplier: 'Fournisseur A', cost: 100, min_threshold: 0 },
+  { id: 'b', unit_id: 'unit-a', custom_name: 'Article B', feed_type: 'autre', quantity: 20, unit: 'kg', min_threshold: 0 },
+] }));
 vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({
-  stocks: [
-    { id: 'a', unit_id: 'unit-a', custom_name: 'Article A', feed_type: 'autre', quantity: 10, unit: 'kg', supplier: 'Fournisseur A', cost: 100, min_threshold: 0 },
-    { id: 'b', unit_id: 'unit-a', custom_name: 'Article B', feed_type: 'autre', quantity: 20, unit: 'kg', min_threshold: 0 },
-  ], loading: false, error: null, refetch: vi.fn(), ...state,
+  stocks: state.stocks, loading: false, error: null, refetch: vi.fn(), ...state,
 }) }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
 vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ activeUnit: { id: 'unit-a', name: 'Unité A', type: 'fish_farming' } }) }));
