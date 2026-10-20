@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import ProductionUnitSelector from './ProductionUnitSelector';
+import ContactActions from './crm/ContactActions';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSuppliers, Supplier, SupplierOrder } from '@/hooks/useSuppliers';
 import { 
@@ -251,15 +251,7 @@ const SuppliersManagement = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* En-tête */}
-      <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-4 sm:p-6 rounded-xl text-white">
-        <div className="flex flex-col gap-3 sm:gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2 truncate">Gestion des Fournisseurs</h2>
-              <p className="text-sm sm:text-base text-blue-100">Base de données et historique des commandes</p>
-            </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      <div className="flex flex-wrap gap-2">
             <Dialog open={showSupplierDialog} onOpenChange={(open) => {
               setShowSupplierDialog(open);
               if (!open) {
@@ -279,10 +271,9 @@ const SuppliersManagement = () => {
               }
             }}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30 w-full sm:w-auto text-sm sm:text-base">
-                  <Plus className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Nouveau fournisseur</span>
-                  <span className="sm:hidden">Nouveau</span>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouveau fournisseur
                 </Button>
               </DialogTrigger>
               <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
@@ -323,7 +314,7 @@ const SuppliersManagement = () => {
                       placeholder="+228 XX XX XX XX"
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <Label>Adresse</Label>
                     <Input 
                       value={newSupplier.address}
@@ -358,7 +349,7 @@ const SuppliersManagement = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <Label>Catalogue de produits</Label>
                     <Textarea 
                       value={newSupplier.products}
@@ -368,7 +359,7 @@ const SuppliersManagement = () => {
                     />
                     <p className="text-xs text-muted-foreground mt-1">Séparez les produits par des virgules</p>
                   </div>
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <Label>Notes</Label>
                     <Textarea 
                       value={newSupplier.notes}
@@ -388,10 +379,9 @@ const SuppliersManagement = () => {
 
             <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30 w-full sm:w-auto text-sm sm:text-base">
-                  <Package className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Nouvelle commande</span>
-                  <span className="sm:hidden">Commande</span>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  <Package className="w-4 h-4 mr-2" />
+                  Nouvelle commande
                 </Button>
               </DialogTrigger>
               <DialogContent className="w-[95vw] max-w-xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
@@ -452,79 +442,6 @@ const SuppliersManagement = () => {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
-          </div>
-          <ProductionUnitSelector />
-        </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card>
-          <CardHeader className="pb-2 p-3 sm:p-4">
-            <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-              <span className="truncate">Total fournisseurs</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
-            <p className="text-xl sm:text-3xl font-bold">{suppliers.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {suppliers.filter(s => s.status === 'active').length} actifs
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2 p-3 sm:p-4">
-            <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-              <Package className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600 flex-shrink-0" />
-              <span className="truncate">Commandes en cours</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
-            <p className="text-xl sm:text-3xl font-bold text-orange-600">
-              {orders.filter(o => o.status === 'pending').length}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              À réceptionner
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2 p-3 sm:p-4">
-            <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-              <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
-              <span className="truncate">Livraisons</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
-            <p className="text-xl sm:text-3xl font-bold text-green-600">
-              {orders.filter(o => o.status === 'delivered').length}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Ce mois
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2 p-3 sm:p-4">
-            <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
-              <span className="truncate">Montant total</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
-            <p className="text-xl sm:text-3xl font-bold text-purple-600">
-              {(orders.reduce((sum, o) => sum + o.amount, 0) / 1000).toFixed(0)}k
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              FCFA ce mois
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filtres et recherche */}
@@ -636,6 +553,10 @@ const SuppliersManagement = () => {
                     </div>
                   )}
 
+                  <div className="mb-3">
+                    <ContactActions name={supplier.name} phone={supplier.phone} email={supplier.email}
+                      message={`Bonjour ${supplier.name}, nous souhaitons faire le point sur nos commandes et vos services. Merci de nous recontacter.`} />
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"

@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Mail, Phone, ShoppingCart, MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Users, Mail, Phone, ShoppingCart } from 'lucide-react';
+import ContactActions from '@/components/crm/ContactActions';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useSales } from '@/hooks/useSales';
 
@@ -53,25 +53,10 @@ const ClientManager = () => {
     return Array.from(map.values()).sort((a, b) => b.totalRevenue - a.totalRevenue);
   }, [sales, t]);
 
-  // Numéro WhatsApp exploitable : chiffres uniquement, au moins 8 chiffres.
-  const whatsappNumber = (contact: string) => {
-    const digits = contact.replace(/[^\d]/g, '');
-    return digits.length >= 8 ? digits : null;
-  };
-
-  const openWhatsApp = (client: ClientRow) => {
-    const number = whatsappNumber(client.contact);
-    if (!number) return;
-    const message = encodeURIComponent(
-      `Bonjour ${client.name}, nous espérons que vous allez bien. N'hésitez pas à passer votre prochaine commande.`,
-    );
-    window.open(`https://wa.me/${number}?text=${message}`, '_blank', 'noopener');
-  };
-
   const getStatusColor = (status: ClientStatus) => {
     switch (status) {
       case 'active':
-        return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200';
+        return 'bg-primary/10 text-primary';
       case 'inactive':
       default:
         return 'bg-muted text-muted-foreground';
@@ -118,25 +103,19 @@ const ClientManager = () => {
               {clients.map((client) => (
                 <Card key={client.id}>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <h4 className="font-semibold truncate">{client.name}</h4>
                           <Badge className={getStatusColor(client.status)}>{getStatusLabel(client.status)}</Badge>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <span className="truncate">{client.contact || t('notProvided') || '—'}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4" />
-                            <span className="truncate">{client.contact || t('notProvided') || '—'}</span>
-                          </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {client.contact.includes('@') ? <Mail className="w-4 h-4 shrink-0" /> : <Phone className="w-4 h-4 shrink-0" />}
+                          <span className="break-all">{client.contact || t('notProvided') || '—'}</span>
                         </div>
 
-                        <div className="flex gap-4 mt-2 text-sm">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
                           <span>
                             {t('orders') || 'Commandes'}: <strong>{client.totalOrders}</strong>
                           </span>
@@ -148,17 +127,12 @@ const ClientManager = () => {
                           </span>
                         </div>
                       </div>
-                      {whatsappNumber(client.contact) && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="shrink-0"
-                          onClick={() => openWhatsApp(client)}
-                        >
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          Relancer
-                        </Button>
-                      )}
+                      <ContactActions
+                        name={client.name}
+                        phone={client.contact.includes('@') ? '' : client.contact}
+                        email={client.contact.includes('@') ? client.contact : ''}
+                        message={`Bonjour ${client.name}, nous souhaitons faire le point avec vous sur vos commandes. Merci de nous recontacter.`}
+                      />
                     </div>
                   </CardContent>
                 </Card>
