@@ -112,7 +112,6 @@ const ProductionManagement = () => {
         currentAverageWeight,
         notes: cycle.notes,
         species: cycle.species,
-        species: cycle.species,
         duration_months: cycle.duration_months,
         stockingDate: cycle.stocking_date,
         fingerlingsCount: cycle.fingerlings_count,
