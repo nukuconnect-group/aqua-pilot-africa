@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthReady } from '@/hooks/useAuthReady';
+import { isMissingColumnError, toLegacyStockRow, type StockPurpose } from '@/lib/stockPurpose';
 
 export interface FeedStock {
   id: string;
@@ -20,6 +21,8 @@ export interface FeedStock {
   min_threshold?: number;
   bag_count?: number | null;
   kg_per_bag?: number | null;
+  stock_purpose?: StockPurpose | null;
+  sale_price?: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -89,11 +92,11 @@ export const useFeedStocks = (unitId?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { data, error } = await supabase
-        .from('feed_stocks')
-        .insert([{ ...stock, user_id: user.id }])
-        .select()
-        .single();
+      const row: any = { ...stock, user_id: user.id };
+      let { data, error } = await (supabase as any).from('feed_stocks').insert([row]).select().single();
+      if (isMissingColumnError(error)) {
+        ({ data, error } = await (supabase as any).from('feed_stocks').insert([toLegacyStockRow(row)]).select().single());
+      }
 
       if (error) throw error;
 
@@ -118,10 +121,12 @@ export const useFeedStocks = (unitId?: string) => {
   const updateStock = async (id: string, updates: Partial<FeedStock>) => {
     try {
       if (!unitId) throw new Error('Sélectionnez une unité de production.');
-      const { error } = await supabase
-        .from('feed_stocks')
-        .update(updates)
-        .eq('id', id).eq('unit_id', unitId).select('id').single();
+      let { error } = await (supabase as any).from('feed_stocks')
+        .update(updates).eq('id', id).eq('unit_id', unitId).select('id').single();
+      if (isMissingColumnError(error)) {
+        ({ error } = await (supabase as any).from('feed_stocks')
+          .update(toLegacyStockRow(updates as any)).eq('id', id).eq('unit_id', unitId).select('id').single());
+      }
 
       if (error) throw error;
 
