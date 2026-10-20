@@ -46,7 +46,7 @@ const FeedingManagement = () => {
 
   if (!activeUnit) {
     return (
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 sm:p-6 rounded-xl text-white">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -120,7 +120,7 @@ const FeedingManagement = () => {
 
   if (!['ecloserie', 'grossissement', 'fabrication_aliment', 'algoculture'].includes(activeUnit.type)) {
     return (
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 sm:p-6 rounded-xl text-white">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -292,7 +292,7 @@ const FeedingManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       {/* En-tête avec sélecteur d'unité */}
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 sm:p-6 rounded-xl text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
@@ -364,8 +364,8 @@ const FeedingManagement = () => {
 
       {/* Onglets pour les détails */}
       <Tabs value={feedingTab} onValueChange={setFeedingTab} className="space-y-4">
-        <div className="overflow-x-auto -mx-2 px-2 flex items-center gap-2">
-          <TabsList className="w-full grid grid-cols-2 sm:inline-flex sm:w-auto gap-1">
+        <div className="flex min-w-0 flex-col gap-3">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 lg:grid-cols-5">
             <TabsTrigger value="history" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <History className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Historique</span>
@@ -396,12 +396,12 @@ const FeedingManagement = () => {
               <span className="sm:hidden">Graph.</span>
             </TabsTrigger>
           </TabsList>
-          <Button size="sm" variant="outline" className="shrink-0 rounded-full" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>
+          <Button size="sm" variant="outline" className="w-full shrink-0 sm:w-auto sm:self-end" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>
             <Package className="w-4 h-4 mr-1" /> Module Stock
           </Button>
         </div>
 
-        <TabsContent value="sheets" className="space-y-4">
+        <TabsContent value="sheets" className="min-w-0 space-y-4">
           <FeedingSheetsManager unitId={activeUnit.id} unitName={activeUnit.name} />
         </TabsContent>
 

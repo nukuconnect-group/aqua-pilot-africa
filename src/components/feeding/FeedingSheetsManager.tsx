@@ -335,12 +335,12 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <CardTitle className="text-base sm:text-lg flex items-start gap-2 break-words">
                 <ClipboardList className="w-5 h-5 text-primary" />
                 Fiches d'alimentation — {unitName}
               </CardTitle>
@@ -348,7 +348,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 Planifiez, imprimez et suivez la distribution d'aliment par infrastructure.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap">
               <Select value={filterInfra} onValueChange={setFilterInfra}>
                 <SelectTrigger className="w-full sm:w-52 text-xs"><SelectValue placeholder="Toutes infrastructures" /></SelectTrigger>
                 <SelectContent>
@@ -356,7 +356,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                   {unitInfras.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Button size="sm" onClick={openCreate}>
+              <Button size="sm" className="h-auto min-h-9 whitespace-normal text-left" onClick={openCreate}>
                 <Plus className="w-4 h-4 mr-1" /> Créer une fiche d’alimentation
               </Button>
             </div>
@@ -413,7 +413,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                           <Button size="icon" variant="ghost" onClick={() => setDeleteId(s.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-2 gap-2 break-words text-xs">
                         <div><span className="text-muted-foreground">Heure:</span> <strong>{s.time}</strong></div>
                         <div><span className="text-muted-foreground">Quantité:</span> <strong>{s.quantity} {s.unit}</strong></div>
                         <div className="col-span-2"><span className="text-muted-foreground">Aliment:</span> <strong>{s.feed_type}</strong></div>
@@ -436,7 +436,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       </Card>
 
       <Dialog open={openForm} onOpenChange={setOpenForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-2xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Modifier la fiche' : 'Nouvelle fiche d\'alimentation'}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
@@ -536,7 +536,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       </Dialog>
 
       <Dialog open={!!feeding} onOpenChange={(o) => !o && setFeeding(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nourrir aujourd’hui — {feeding?.title}</DialogTitle></DialogHeader>
           {feeding && (
             <div className="space-y-3">
@@ -570,9 +570,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
               )}
               <div><Label>Observations</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
               <p className="text-xs text-muted-foreground">La dose appliquée sera retirée du stock et une sortie sera ajoutée à l’historique du stock.</p>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="outline" onClick={() => setFeeding(null)}>Annuler</Button>
-                <Button onClick={confirmFeeding}><CheckCircle2 className="w-4 h-4 mr-1" />Enregistrer le nourrissage</Button>
+                <Button className="h-auto min-h-10 whitespace-normal" onClick={confirmFeeding}><CheckCircle2 className="w-4 h-4 mr-1" />Enregistrer le nourrissage</Button>
               </div>
             </div>
           )}

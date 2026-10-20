@@ -46,7 +46,7 @@ export const moduleParamToTabId = (value: string | null | undefined): string => 
   if (value === 'prophylaxis') return 'health';
   if (value === 'aquahealth') return 'aquahealth';
   const direct = APP_MODULE_PERMISSIONS.find((item) => item.tabIds.includes(value));
-  if (direct) return direct.tabIds[0];
+  if (direct) return value;
   const byModule = APP_MODULE_PERMISSIONS.find((item) => item.id === value);
   return byModule?.tabIds[0] ?? value;
 };

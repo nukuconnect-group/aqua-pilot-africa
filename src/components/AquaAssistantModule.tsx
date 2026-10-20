@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, PackageX, PackageSearch, Trophy, WalletCards, Bot, Fish, Wheat, TrendingUp } from 'lucide-react';
+import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
-import { useFeedStocks } from '@/hooks/useFeedStocks';
-import { useSales } from '@/hooks/useSales';
+import { useHealthRecords } from '@/hooks/useHealthRecords';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAquaAssistantConversations, AquaMessage } from '@/hooks/useAquaAssistantConversations';
@@ -17,7 +16,6 @@ import { Conversation, ConversationContent, ConversationScrollButton } from '@/c
 import { Message as AIMessage, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
 import { Shimmer } from '@/components/ai-elements/shimmer';
-import { formatMoney } from '@/lib/currency';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 
 interface Message {
@@ -47,7 +45,7 @@ const AquaAssistantModule = () => {
   const { units, activeUnit } = useProductionUnits();
   const { isDemoMode } = useAuth();
   const { t } = useSettings();
-  const greeting = "Bonjour. Posez-moi une question sur votre chiffre d’affaires, vos cycles, vos stocks, votre alimentation, vos contrôles ou vos priorités. Mes réponses utilisent les données enregistrées dans AquaPilote.";
+  const greeting = "Bonjour et bienvenue. Comment puis-je vous aider aujourd’hui avec votre ferme ?";
   const {
     conversations,
     activeConversation,
@@ -93,7 +91,7 @@ const AquaAssistantModule = () => {
     await startNew(target ? { id: target.id, name: target.name } : undefined);
     const otherThanActive = target && activeUnit && target.id !== activeUnit.id;
     setMessages([{ role: 'assistant', content: target
-      ? `Vous posez maintenant vos questions sur l’unité « ${target.name} ».${otherThanActive ? ` Attention : votre unité active dans l’application est « ${activeUnit!.name} ». Mes réponses porteront uniquement sur « ${target.name} ».` : ''} Que voulez-vous savoir ?`
+      ? `Vous posez maintenant vos questions sur l’unité « ${target.name} ».${otherThanActive ? ` Attention : votre unité active dans l’application est « ${activeUnit?.name} ». Mes réponses porteront uniquement sur « ${target.name} ».` : ''} Que voulez-vous savoir ?`
       : 'Vous posez maintenant vos questions sur l’ensemble de vos unités.' }]);
   };
   const recognitionRef = useRef<any>(null);
@@ -139,8 +137,7 @@ const AquaAssistantModule = () => {
   }, [activeUnit?.id]);
 
   // Données réelles
-  const { stocks: feedStocks } = useFeedStocks(selectedUnitId || undefined);
-  const { allSales } = useSales();
+  const { records: healthRecords, loading: healthLoading, error: healthError } = useHealthRecords(undefined, selectedUnitId || undefined);
 
   // Auto-scroll robuste : cible le viewport interne de Radix ScrollArea
   // ET utilise scrollIntoView sur une ancre en bas pour couvrir tous les cas
@@ -371,34 +368,16 @@ const AquaAssistantModule = () => {
 
   const currentUnit = units.find((unit) => unit.id === selectedUnitId);
   const unitProfile = getAssistantUnitProfile(currentUnit?.type);
-  const unitStocks = feedStocks;
-  const outOfStocks = unitStocks.filter((stock) => Number(stock.quantity) <= 0);
-  const lowStocks = unitStocks.filter(
-    (stock) => Number(stock.quantity) > 0 &&
-      Number(stock.min_threshold) > 0 && Number(stock.quantity) <= Number(stock.min_threshold),
-  );
   const unitLabel = currentUnit?.name || 'Toutes les unités';
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-  const scopedSales = allSales.filter((sale) => !selectedUnitId || sale.unitId === selectedUnitId);
-  const monthlyRevenue = scopedSales
-    .filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending')
-    .reduce((sum, sale) => sum + Number(sale.totalAmount || 0), 0);
-  const monthlyProductTotals = scopedSales
-    .filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending')
-    .flatMap((sale) => sale.products)
-    .reduce<Record<string, number>>((totals, product) => {
-      totals[product.name] = (totals[product.name] || 0) + Number(product.total || 0);
-      return totals;
-    }, {});
-  const starProduct = Object.entries(monthlyProductTotals).sort(([, first], [, second]) => second - first)[0];
-  const quickQuestions = [
-    { title: 'État de mon élevage', question: 'Quel est l’état de mon élevage dans cette unité : biomasse, mortalité, croissance et cycles en cours ?', icon: Fish },
-    { title: 'Alimentation & stock', question: 'Mon alimentation est-elle bien suivie ? Combien de jours de stock d’aliment me reste-t-il ?', icon: Wheat },
-    { title: 'Chiffre d’affaires', question: 'Quel est mon chiffre d’affaires ce mois dans cette unité ? Compare avec le mois dernier.', icon: WalletCards },
-    { title: 'Rentabilité', question: 'Mon unité est-elle rentable ce mois ? Montre-moi le calcul (ventes, aliment, charges).', icon: TrendingUp },
-  ];
+  const latestControl = !isDemoMode && selectedUnitId && !healthLoading && !healthError
+    ? healthRecords.find((record) => record.unit_id === selectedUnitId &&
+      [record.ph, record.temperature, record.oxygen].some((value) => value != null && Number.isFinite(Number(value))))
+    : undefined;
+  const measuredParameters = latestControl ? [
+    latestControl.ph != null ? `pH : ${Number(latestControl.ph).toLocaleString('fr-FR')}` : null,
+    latestControl.temperature != null ? `Température : ${Number(latestControl.temperature).toLocaleString('fr-FR')} °C` : null,
+    latestControl.oxygen != null ? `Oxygène : ${Number(latestControl.oxygen).toLocaleString('fr-FR')} mg/L` : null,
+  ].filter(Boolean).join(' · ') : '';
 
   const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
 
@@ -463,52 +442,23 @@ const AquaAssistantModule = () => {
         </div>
       </header>
 
-      <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5' : 'space-y-3'}>
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          {[
-            { label: 'CA du mois', value: isDemoMode ? 'Indisponible' : formatMoney(monthlyRevenue), detail: isDemoMode ? 'Données réelles uniquement' : `${scopedSales.filter((sale) => new Date(sale.date).getTime() >= monthStart.getTime() && sale.status !== 'pending').length} vente(s)`, icon: WalletCards },
-            { label: 'Ruptures', value: outOfStocks.length.toLocaleString('fr-FR'), detail: outOfStocks.length ? outOfStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', ') : 'Aucune rupture', icon: PackageX },
-            { label: 'Stocks faibles', value: lowStocks.length.toLocaleString('fr-FR'), detail: lowStocks.length ? lowStocks.slice(0, 2).map((stock) => stock.custom_name || stock.feed_type).join(', ') : 'Aucun stock faible', icon: PackageSearch },
-            { label: 'Produit star', value: isDemoMode ? 'Indisponible' : (starProduct?.[0] || 'Non renseigné'), detail: !isDemoMode && starProduct ? formatMoney(starProduct[1]) : 'Aucune vente exploitable', icon: Trophy },
-          ].map((item) => (
-            <div key={item.label} className="min-h-24 rounded-md border bg-card p-3 sm:p-4">
-              <div className="flex items-center gap-2"><item.icon className="size-4 shrink-0 text-primary" /><p className="text-xs font-medium text-muted-foreground sm:text-sm">{item.label}</p></div>
-              <p className="mt-2 break-words text-base font-bold leading-tight sm:text-xl">{item.value}</p>
-              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
+      <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'flex h-[min(640px,calc(100dvh-12rem))] min-h-[320px] flex-col'}>
+        {messages.length <= 1 && <div className="shrink-0 border-b px-4 py-3 sm:px-6">
+          <p className="text-sm text-muted-foreground">
+            {latestControl
+              ? `Dernier contrôle du ${new Date(`${latestControl.date}T00:00:00`).toLocaleDateString('fr-FR')} : ${measuredParameters}.`
+              : healthLoading ? 'Chargement du dernier contrôle…'
+              : healthError ? 'Le dernier contrôle est indisponible pour le moment.'
+              : 'Aucun contrôle de l’eau disponible pour cette unité.'}
+          </p>
+        </div>}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+            <div className="flex shrink-0 justify-end px-3 pt-2">
+              <Button type="button" variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
             </div>
-          ))}
-        </div>
 
-        <div className="py-1">
-          <p className="text-sm font-semibold text-foreground">Que voulez-vous savoir ?</p>
-          <p className="text-xs text-muted-foreground">Je peux calculer votre chiffre d’affaires, vos dépenses et votre rentabilité, et vous donner des conseils.</p>
-          <div className="mt-2 grid grid-cols-2 gap-2 pb-1 lg:grid-cols-4">
-            {quickQuestions.map((suggestion) => (
-              <button
-                key={suggestion.title}
-                type="button"
-                disabled={isLoading}
-                onClick={() => sendMessage(suggestion.question, { retry: false })}
-                className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl border bg-card p-3 text-center text-xs font-medium shadow-sm transition hover:border-primary hover:bg-primary/5 disabled:opacity-50"
-              >
-                <span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary"><suggestion.icon className="size-5" /></span>
-                {suggestion.title}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col' : undefined}>
-          <div className={isFullscreen ? 'flex min-h-[70dvh] flex-1 flex-col overflow-hidden rounded-md border bg-card' : 'flex h-[min(560px,calc(100dvh-15rem))] min-h-[360px] flex-col overflow-hidden rounded-md border bg-card'}>
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <Bot className="size-5 shrink-0 text-primary" aria-hidden="true" />
-              <div className="min-w-0"><p className="truncate text-sm font-semibold">Poser une question</p><p className="truncate text-xs text-muted-foreground">Réponses basées sur {unitLabel}</p></div>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={() => { startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined); }} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
-          </div>
-
-          <Conversation className="min-h-0">
+          <Conversation className="min-h-0 flex-1">
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
                 {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Bot className="size-4 text-primary" />AquaAssistant</div>}
@@ -530,7 +480,7 @@ const AquaAssistantModule = () => {
             <PromptInput onSubmit={(message) => sendMessage(message.text, { retry: false })} className="rounded-md bg-card">
               <PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Posez une question sur ${unitLabel}…`} className="min-h-14 text-base" data-chat-input />
               <PromptInputFooter>
-                <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton><span className="hidden text-xs text-muted-foreground sm:inline">Entrée pour envoyer</span></PromptInputTools>
+                <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton></PromptInputTools>
                 <PromptInputSubmit status={chatStatus} disabled={!input.trim() && !isLoading} aria-label={isLoading ? 'Arrêter' : 'Envoyer la question'} />
               </PromptInputFooter>
             </PromptInput>
