@@ -60,7 +60,7 @@ export const ManualEntryForm: React.FC<{ ledger: Ledger; f: (n: number) => strin
           {ledger.manual.map((e) => (
             <div key={e.id} className="border rounded-xl p-2 text-sm">
               <div className="flex justify-between items-center"><span className="font-medium">{e.date} · {e.journal} · {e.label}</span>
-                {e.journal !== 'CL' && <Button variant="ghost" size="icon" onClick={() => ledger.deleteEntry(e.id).catch((x) => toast.error(x.message))}><Trash2 className="h-4 w-4" /></Button>}
+                {e.journal !== 'CL' && e.id.startsWith('md-') && <Button variant="ghost" size="icon" onClick={() => ledger.deleteEntry(e.id).catch((x) => toast.error(x.message))}><Trash2 className="h-4 w-4" /></Button>}
               </div>
               {e.lines.map((l, i) => <div key={i} className="flex justify-between text-muted-foreground"><span>{l.account} {CHART[l.account] || ''}</span><span>{l.debit ? f(l.debit) : ''} {l.credit ? f(l.credit) : ''}</span></div>)}
             </div>

@@ -70,7 +70,7 @@ const SalesManagement = () => {
 
   const { formatCurrency, t, currency, companyInfo } = useSettings();
   const { toast } = useToast();
-  const { sales, loading, addSale, updateSale, deleteSale } = useSales();
+  const { sales, loading, addSale, updateSale, cancelSale } = useSales();
   
   const [showSaleDialog, setShowSaleDialog] = useState(false);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
@@ -81,6 +81,9 @@ const SalesManagement = () => {
   const [pdfInitialAction, setPdfInitialAction] = useState<'download' | 'print' | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [isSavingSale, setIsSavingSale] = useState(false);
+  const [cancellingSale, setCancellingSale] = useState<Sale | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const [newSale, setNewSale] = useState<SaleFormState>(createEmptySale(activeUnit?.id || ''));
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -100,6 +103,7 @@ const SalesManagement = () => {
   const settledSales = useMemo(
     () =>
       filteredSales.filter((s) => {
+        if (s.status === 'cancelled') return false;
         const type = s.documentType ?? 'receipt';
         if (type === 'receipt') return true;
         return s.status === 'paid';
@@ -365,6 +369,7 @@ const SalesManagement = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'cancelled': return 'Annulée';
       case 'pending': return t('status_pending');
       case 'confirmed': return t('status_confirmed');
       case 'delivered': return t('status_delivered');
@@ -492,13 +497,16 @@ const SalesManagement = () => {
     }
   };
 
-  const handleDeleteSale = async (sale: Sale) => {
-    if (!confirm(`Supprimer la vente de ${sale.clientName} ?`)) return;
-    const result = await deleteSale(sale.id);
-    if (result) {
-      await auditDocumentAction('Document annulé', `${sale.documentNumber || sale.id} annulé pour ${sale.clientName}`, 'warning');
-      toast({ title: "Vente supprimée", description: `Vente de ${sale.clientName} supprimée` });
-    }
+  const handleCancelSale = async () => {
+    if (!cancellingSale || isCancelling) return;
+    setIsCancelling(true);
+    try {
+      await cancelSale(cancellingSale.id, cancellationReason);
+      await auditDocumentAction('Vente annulée', `${cancellingSale.documentNumber || cancellingSale.id} : ${cancellationReason}`, 'warning');
+      toast({ title: 'Vente annulée', description: 'La vente est conservée et ses écritures sont contrepassées.' });
+      setCancellingSale(null);
+    } catch (e: any) { toast({ title: 'Annulation non enregistrée', description: e.message, variant: 'destructive' }); }
+    finally { setIsCancelling(false); }
   };
 
   const getCurrencySymbol = () => {
@@ -553,6 +561,13 @@ const SalesManagement = () => {
 
   return (
     <div className="space-y-6">
+      <Dialog open={!!cancellingSale} onOpenChange={v => { if (!v && !isCancelling) setCancellingSale(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Annuler la vente · {cancellingSale?.clientName}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{cancellingSale ? formatCurrency(cancellingSale.totalAmount) : ''} · La vente et ses écritures initiales restent dans l’historique. Les encaissements de caisse liés seront remboursés.</p>
+          <Label htmlFor="cancellation-reason">Motif de l’annulation</Label><Textarea id="cancellation-reason" value={cancellationReason} onChange={e => setCancellationReason(e.target.value)} />
+          <Button variant="destructive" disabled={isCancelling || !cancellationReason.trim()} onClick={handleCancelSale}>{isCancelling ? 'Enregistrement…' : 'Confirmer l’annulation'}</Button>
+        </DialogContent>
+      </Dialog>
       {/* En-tête */}
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-4 sm:p-6 rounded-xl text-white">
         <div className="flex flex-col gap-3 sm:gap-4">
@@ -1033,6 +1048,7 @@ const SalesManagement = () => {
                         <div className="flex items-center gap-2 flex-wrap sm:flex-col sm:items-end">
                           <div className="relative z-50">
                             <Select
+                              disabled={sale.status === 'cancelled'}
                               value={sale.status}
                               onValueChange={(value) => handleStatusChange(sale.id, value)}
                             >
@@ -1040,6 +1056,7 @@ const SalesManagement = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent position="popper" className="z-[9999]" sideOffset={4}>
+                                {sale.status === 'cancelled' && <SelectItem value="cancelled">Annulée</SelectItem>}
                                 <SelectItem value="pending">En attente</SelectItem>
                                 <SelectItem value="confirmed">Confirmée</SelectItem>
                                 <SelectItem value="delivered">Livrée</SelectItem>
@@ -1082,6 +1099,7 @@ const SalesManagement = () => {
                         </div>
                       </div>
                       
+                      {sale.cancellationReason && <p className="mt-3 text-sm text-destructive">Annulée le {sale.cancelledAt?.slice(0, 10)} · {sale.cancellationReason}</p>}
                       {sale.notes && (
                         <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs sm:text-sm">
                           <strong>Notes:</strong> {sale.notes}
@@ -1093,6 +1111,7 @@ const SalesManagement = () => {
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={sale.status === 'cancelled'}
                           onClick={() => handleEditSale(sale)}
                           className="text-xs"
                         >
@@ -1136,11 +1155,12 @@ const SalesManagement = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteSale(sale)}
+                          disabled={sale.status === 'cancelled'}
+                          onClick={() => { setCancellationReason(''); setCancellingSale(sale); }}
                           className="text-xs text-destructive hover:text-destructive"
                         >
                           <Trash2 className="w-3 h-3 mr-1" />
-                          Supprimer
+                          Annuler la vente
                         </Button>
                       </div>
                     </div>
@@ -1285,7 +1305,7 @@ const SalesManagement = () => {
             </CardHeader>
             <CardContent className="p-3 sm:p-6">
               {(() => {
-                const creditSales = filteredSales.filter(s => s.isCredit);
+                const creditSales = filteredSales.filter(s => s.isCredit && s.status !== 'cancelled');
                 const today = new Date().toISOString().split('T')[0];
                 const overdueSales = creditSales.filter(s => s.dueDate && s.dueDate < today && s.status !== 'paid');
                 const pendingSales = creditSales.filter(s => !s.dueDate || s.dueDate >= today || s.status === 'paid');

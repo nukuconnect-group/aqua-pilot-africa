@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import type { Entry, EntryLine, JournalCode } from '@/lib/syscohada';
 
 export interface EntryMark { id: string; entry_id: string; account: string; kind: 'lettrage' | 'rapprochement'; code: string | null }
@@ -14,14 +14,18 @@ export function useAccountingLedger(unitId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setManual([]); setMarks([]); setClosures([]);
     if (!unitId) return;
-    const [m, k, c] = await Promise.all([
+    const [m, k, c, t] = await Promise.all([
       db.from('accounting_manual_entries').select('*').eq('unit_id', unitId).order('date'),
       db.from('accounting_entry_marks').select('*').eq('unit_id', unitId),
       db.from('accounting_closures').select('*').eq('unit_id', unitId).order('fiscal_year'),
+      db.from('treasury_movements').select('*').eq('unit_id', unitId).order('date'),
     ]);
-    setError(m.error?.message || k.error?.message || c.error?.message || null);
-    setManual((m.data || []).map((r: any) => ({ id: `md-${r.id}`, date: r.date, journal: r.journal as JournalCode, label: r.label, lines: r.lines as EntryLine[] })));
+    setError(m.error?.message || k.error?.message || c.error?.message || t.error?.message || null);
+    setManual([...((m.data || []).map((r: any) => ({ id: `md-${r.id}`, date: r.date, journal: r.journal as JournalCode, label: r.label, lines: r.lines as EntryLine[] }))),
+      ...((t.data || []).map((r: any) => ({ id: `tr-${r.id}`, date: r.date, journal: r.journal as JournalCode, label: r.label, lines: r.lines as EntryLine[] }))),
+    ]);
     setMarks(k.data || []);
     setClosures(c.data || []);
   }, [unitId]);
@@ -33,6 +37,7 @@ export function useAccountingLedger(unitId?: string) {
     if (error) throw error; await load();
   };
   const deleteEntry = async (id: string) => {
+    if (!id.startsWith('md-')) throw new Error('Une écriture de trésorerie ne peut pas être supprimée.');
     const { error } = await db.from('accounting_manual_entries').delete().eq('id', id.replace(/^md-/, ''));
     if (error) throw error; await load();
   };
