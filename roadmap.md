@@ -36,3 +36,9 @@
 - [x] Stock : import CSV avec progression, codes-barres automatiques et impression d'étiquettes
 - [x] Ventes : onglets boutique, relances, clients, factures, modèles, étiquettes retirés ; multicaisse avec nom et transfert de fonds entre caisses
 - [x] CRM : module Clients & Fournisseurs par unité ajouté au menu
+
+## Demandes du 20/10/2026 (achats, boutique, nourrissage)
+- [x] Achats : choix de la caisse/compte de prélèvement, décaissement automatique à l'achat comptant
+- [x] Boutique publique : les produits en rupture affichent déjà « Rupture » (vérifié, rien à changer)
+- [x] Alimentation : choix du stock à prélever au nourrissage, sortie de stock + écriture comptable automatique (602/321)
+- [x] Vente sans caisse : l'écran demande déjà d'ouvrir une caisse (vérifié)
