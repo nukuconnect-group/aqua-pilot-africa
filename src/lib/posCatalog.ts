@@ -1,5 +1,6 @@
 import type { Sale } from '@/hooks/useSales';
 import type { FeedStock } from '@/hooks/useFeedStocks';
+import { getSalePrice, isCommercialStock } from '@/lib/stockPurpose';
 
 export interface PosProduct {
   key: string;
@@ -13,22 +14,24 @@ export interface PosProduct {
 export const normalizeProductSearch = (value: string) =>
   value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 
+/** Catalogue de caisse : uniquement les stocks commerciaux disponibles de l'unité active. */
 export function buildPosCatalog(unitId: string, sales: Sale[], stocks: FeedStock[]): PosProduct[] {
-  const products = new Map<string, PosProduct>();
-  // Sales are newest first: keep the most recent selling price, never the purchase cost.
+  const lastPrices = new Map<string, number>();
+  // Ventes du plus récent au plus ancien : on garde le dernier prix réellement vendu, jamais le coût d'achat.
   sales.filter(s => s.unitId === unitId && s.status !== 'cancelled').forEach(s => {
     s.products.forEach(p => {
       const key = normalizeProductSearch(p.name);
-      if (key && !products.has(key)) products.set(key, { key, name: p.name, price: p.unitPrice, codes: [] });
+      if (key && !lastPrices.has(key)) lastPrices.set(key, p.unitPrice);
     });
   });
-  stocks.filter(s => s.unit_id === unitId).forEach(s => {
+  const products = new Map<string, PosProduct>();
+  stocks.filter(s => s.unit_id === unitId && isCommercialStock(s) && Number(s.quantity) > 0).forEach(s => {
     const name = s.custom_name || s.feed_type;
     const key = normalizeProductSearch(name);
     if (!key) return;
     const existing = products.get(key);
     products.set(key, {
-      key, name, price: existing?.price ?? 0, unit: s.unit,
+      key, name, price: existing?.price || getSalePrice(s) || lastPrices.get(key) || 0, unit: s.unit,
       quantity: (existing?.quantity ?? 0) + Number(s.quantity),
       codes: [...(existing?.codes ?? []), s.id, `AQP-${s.id.replace(/-/g, '').slice(0, 10).toUpperCase()}`],
     });

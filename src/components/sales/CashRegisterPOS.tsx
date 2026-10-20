@@ -268,7 +268,7 @@ const CashRegisterPOS: React.FC = () => {
               <Button variant="secondary" onClick={handleQuick}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
             </div>
             {catalog.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">Aucun produit dans cette unité.</p>
+              <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
                 {filtered.map((p) => (

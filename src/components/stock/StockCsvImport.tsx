@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Trash2 } from 'lucide-react';
+import { isMissingColumnError, toLegacyStockRow, type StockPurpose } from '@/lib/stockPurpose';
 
 interface CsvRow {
   name: string;
@@ -15,9 +16,10 @@ interface CsvRow {
   cost?: number;
   supplier?: string;
   min_threshold?: number;
+  sale_price?: number;
 }
 
-/** Parse un CSV simple : nom;quantité;unité;prix;fournisseur;seuil (séparateur ; ou ,). */
+/** Parse un CSV simple : nom;quantité;unité;prix;fournisseur;seuil;prix de vente (séparateur ; ou ,). */
 export const parseStockCsv = (text: string): CsvRow[] => {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (!lines.length) return [];
@@ -32,6 +34,7 @@ export const parseStockCsv = (text: string): CsvRow[] => {
     cost: cols[3] ? Number(cols[3].replace(',', '.')) || 0 : undefined,
     supplier: cols[4] || undefined,
     min_threshold: cols[5] ? Number(cols[5].replace(',', '.')) || 0 : undefined,
+    sale_price: cols[6] ? Number(cols[6].replace(',', '.')) || 0 : undefined,
   })).filter((r) => r.name && r.quantity >= 0);
 };
 
@@ -45,6 +48,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
   const [running, setRunning] = useState(false);
   const importing = useRef(false);
   const stopRequested = useRef(false);
+  const [purpose, setPurpose] = useState<StockPurpose | null>(null);
   const [results, setResults] = useState<{ row: CsvRow; success: boolean }[]>([]);
 
   const handleFile = async (file: File) => {
@@ -61,7 +65,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
   };
 
   const runImport = async () => {
-    if (importing.current || !unitId || !rows.length) return;
+    if (importing.current || !unitId || !rows.length || !purpose) return;
     importing.current = true;
     setRunning(true);
     setProgress(0);
@@ -75,8 +79,10 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
     for (let i = 0; i < rows.length; i++) {
       if (stopRequested.current) break;
       const r = rows[i];
-      const { error } = await (supabase as any).from('feed_stocks').insert({
+      const payload: any = {
         user_id: user.id,
+        stock_purpose: purpose,
+        sale_price: purpose === 'commercial' ? r.sale_price ?? null : null,
         unit_id: unitId,
         feed_type: r.name,
         custom_name: r.name,
@@ -85,7 +91,9 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
         cost: r.cost,
         supplier: r.supplier,
         min_threshold: r.min_threshold,
-      });
+      };
+      let { error } = await (supabase as any).from('feed_stocks').insert(payload);
+      if (isMissingColumnError(error)) ({ error } = await (supabase as any).from('feed_stocks').insert(toLegacyStockRow(payload)));
       if (error) ko++; else ok++;
       setResults(previous => [...previous, { row: r, success: !error }]);
       setImported(ok);
@@ -106,7 +114,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
   };
 
   const downloadTemplate = () => {
-    const csv = 'nom;quantité;unité;prix;fournisseur;seuil\n';
+    const csv = 'nom;quantité;unité;prix;fournisseur;seuil;prix de vente\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -125,7 +133,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Le fichier doit contenir une ligne par article : <b>nom; quantité; unité; prix; fournisseur; seuil d'alerte</b>.
+          Le fichier doit contenir une ligne par article : <b>nom; quantité; unité; prix d'achat; fournisseur; seuil d'alerte; prix de vente</b> (prix de vente pour un stock commercial).
           Chaque article importé reçoit automatiquement un code-barres.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -148,6 +156,15 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
         {rows.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">{rows.length} article(s) détecté(s) dans le fichier</p>
+            {progress === null && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <p className="text-sm font-medium">Ce stock est-il destiné à la vente ou à la production ?</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant={purpose === 'production' ? 'default' : 'outline'} onClick={() => setPurpose('production')}>Stock de production (nourrir mes poissons)</Button>
+                  <Button size="sm" variant={purpose === 'commercial' ? 'default' : 'outline'} onClick={() => setPurpose('commercial')}>Stock commercial (à vendre en caisse)</Button>
+                </div>
+              </div>
+            )}
             <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
               <table className="w-full text-xs">
                 <thead className="bg-muted sticky top-0">
@@ -173,7 +190,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
               </table>
             </div>
             {progress === null ? (
-              <div className="flex flex-wrap gap-2"><Button disabled={running || rows.some(row => !row.name.trim() || !Number.isFinite(row.quantity) || row.quantity < 0 || (row.cost !== undefined && (!Number.isFinite(row.cost) || row.cost < 0)))} onClick={runImport}>Lancer l'import ({rows.length} articles)</Button><Button variant="outline" disabled={running} onClick={cancelPreview}>Annuler l’import</Button></div>
+              <div className="flex flex-wrap gap-2"><Button disabled={running || !purpose || rows.some(row => !row.name.trim() || !Number.isFinite(row.quantity) || row.quantity < 0 || (row.cost !== undefined && (!Number.isFinite(row.cost) || row.cost < 0)))} onClick={runImport}>Lancer l'import ({rows.length} articles)</Button><Button variant="outline" disabled={running} onClick={cancelPreview}>Annuler l’import</Button></div>
             ) : (
               <div className="space-y-1">
                 <Progress value={progress} />

@@ -1,3 +1,4 @@
+import { isCommercialStock } from '@/lib/stockPurpose';
 import { SUPABASE_URL } from '@/integrations/supabase/env';
 
 import React, { useMemo, useState } from 'react';
@@ -50,7 +51,8 @@ const createEmptySheetRow = (): FeedingSheetRow => ({
 const FeedingPlanScheduler = ({ unitId, unitName, cycleId, cycleName }: FeedingPlanSchedulerProps) => {
   const { plans, loading, createPlan, updatePlan, deletePlan } = useFeedingPlans(unitId, cycleId);
   const { infrastructures } = useCycleInfrastructures(cycleId || '');
-  const { stocks } = useFeedStocks(unitId);
+  const { stocks: allUnitStocks } = useFeedStocks(unitId);
+  const stocks = useMemo(() => allUnitStocks.filter(s => !isCommercialStock(s)), [allUnitStocks]);
   const { toast } = useToast();
 
   const [isOpen, setIsOpen] = useState(false);
