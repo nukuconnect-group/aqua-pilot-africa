@@ -60,5 +60,5 @@
 - [ ] Garantir l'atomicité vente/encaissement et transferts côté serveur : accès à la base historique indisponible ; opérations toujours distinctes
 
 ## Vérification des actions du stock
-- [ ] Tester correction, suppression individuelle/groupée et réinitialisation ; corriger les blocages reproduits
+- [x] Essais isolés correction, suppression individuelle/groupée et réinitialisation ; champs effacés, seuil nul, quantité zéro et formulaire conservé corrigés
 - [ ] Vérifier ces actions avec le stock réel : écran de connexion, aucune session disponible pour le compte existant
