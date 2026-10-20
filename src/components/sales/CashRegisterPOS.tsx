@@ -62,7 +62,7 @@ const CashRegisterPOS: React.FC = () => {
   const { activeUnit } = useProductionUnits();
   const { sales, addSale } = useSales();
   const cash = useCashSession(activeUnit?.id);
-  const { stocks, refetch: refetchStocks } = useFeedStocks(activeUnit?.id) as any;
+  const { stocks, refetch: refetchStocks } = useFeedStocks(activeUnit?.id);
   const [opening, setOpening] = useState('');
   const [counted, setCounted] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -141,7 +141,7 @@ const CashRegisterPOS: React.FC = () => {
     try {
     if (!pendingPayment) {
       const shortage = findStockShortage(cart, catalog);
-      if (shortage) { reportFailure('Stock insuffisant', shortage); return; }
+      if (shortage) { const f = { title: 'Stock insuffisant', description: `${shortage} Réduisez la quantité dans le panier.` }; setCheckoutError(f); toast({ ...f, variant: 'destructive' }); return; }
       const availability = await cash.validateSession(sessionId);
       if (availability.error) {
         reportFailure('Encaissement impossible', availability.error);
