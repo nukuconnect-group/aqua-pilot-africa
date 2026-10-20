@@ -22,6 +22,21 @@ interface CartLine { name: string; quantity: number; unitPrice: number }
 
 const PAYMENTS = ['Espèces', 'Mobile Money', 'Carte', 'Virement'];
 
+const checkoutRecovery = (error: unknown, saleRecorded: boolean) => {
+  const detail = typeof error === 'string' ? error : error && typeof error === 'object'
+    ? `${'code' in error ? error.code : ''} ${'message' in error ? error.message : ''}` : '';
+  const preserve = saleRecorded
+    ? 'La vente est enregistrée, mais son encaissement n’est pas confirmé. Ne recréez pas la vente et ne demandez pas un second paiement.'
+    : 'L’encaissement n’est pas confirmé. Votre panier est conservé.';
+  if (/fermée|closed/i.test(detail)) return `${preserve} ${saleRecorded
+    ? 'La caisse d’origine est fermée. Demandez au responsable de régulariser cette vente dans cette caisse, puis vérifiez l’historique.'
+    : 'Choisissez une caisse ouverte ou ouvrez une nouvelle caisse, puis réessayez.'}`;
+  if (/42501|permission|not authorized|forbidden|accès|droits/i.test(detail)) return `${preserve} Demandez au responsable de vérifier votre accès à cette caisse avant de réessayer.`;
+  if (/401|jwt|session.*expir|not authenticated/i.test(detail)) return `${preserve} Votre connexion a expiré. Avant de vous reconnecter, notez la caisse et le montant${saleRecorded ? ' ainsi que la référence de vente' : ''}. Après reconnexion, vérifiez l’historique avant toute nouvelle tentative.`;
+  if (/fetch|network|réseau|connexion|timeout|timed out|interromp/i.test(detail)) return `${preserve} Vérifiez votre connexion Internet, gardez cette page ouverte, puis cliquez sur « ${saleRecorded ? 'Reprendre l’encaissement' : 'Encaisser'} ».`;
+  return `${preserve} Gardez cette page ouverte et ${saleRecorded ? 'cliquez sur « Reprendre l’encaissement » pour mettre à jour la caisse d’origine' : 'vérifiez que la caisse est ouverte, puis cliquez sur « Encaisser »'}. Si l’échec persiste, contactez le responsable avec le nom de la caisse et le montant.`;
+};
+
 /** Interprète une saisie libre du type « 20 kg tilapia, 5 silure à Kossi ». */
 export const parseQuickSale = (text: string, catalog: { name: string; price: number }[]) => {
   const lines: CartLine[] = [];
@@ -66,9 +81,11 @@ const CashRegisterPOS: React.FC = () => {
   const paymentLock = useRef(false);
   const requestKey = useRef<string>();
   const [contact, setContact] = useState('');
+  const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
 
   useEffect(() => {
     setCart([]); setClient(''); setContact(''); setPendingPayment(null);
+    setCheckoutError(null);
     setTransferTarget(''); setSearch(''); requestKey.current = undefined;
   }, [activeUnit?.id]);
 
@@ -111,13 +128,20 @@ const CashRegisterPOS: React.FC = () => {
     if (!activeUnit?.id || !cash.session || paymentLock.current || (!pendingPayment && !isValidPosCart(cart))) return;
     paymentLock.current = true;
     setBusy(true);
+    setCheckoutError(null);
     const sessionId = pendingPayment?.sessionId || cash.session.id;
+    let recordedSale = pendingPayment?.sale;
+    const reportFailure = (title: string, error: unknown) => {
+      const failure = { title, description: checkoutRecovery(error, !!recordedSale) };
+      setCheckoutError(failure);
+      toast({ ...failure, variant: 'destructive' });
+    };
     requestKey.current ||= crypto.randomUUID();
     try {
     if (!pendingPayment) {
       const availability = await cash.validateSession(sessionId);
       if (availability.error) {
-        toast({ title: 'Encaissement impossible', description: availability.error, variant: 'destructive' });
+        reportFailure('Encaissement impossible', availability.error);
         return;
       }
     }
@@ -137,20 +161,21 @@ const CashRegisterPOS: React.FC = () => {
       taxRate: 0,
     });
     if (!sale) {
-      toast({ title: 'Vente non enregistrée', variant: 'destructive' });
+      reportFailure('Vente non confirmée', undefined);
       return;
     }
+    recordedSale = sale;
     setPendingPayment({ sale, sessionId });
     const res = await cash.addMovement({ type: 'sale', amount: sale.totalAmount, payment_method: sale.paymentMethod, sale_id: sale.id, label: sale.documentNumber || sale.clientName }, sessionId);
     if (res.error) {
-      toast({ title: 'Vente enregistrée, encaissement à reprendre', description: res.error, variant: 'destructive' });
+      reportFailure('Vente enregistrée, encaissement à reprendre', res.error);
       return;
     }
     toast({ title: 'Vente encaissée', description: `${formatCurrency(sale.totalAmount)} — ${sale.documentNumber || ''}` });
     setPendingPayment(null); requestKey.current = undefined;
     setCart([]); setClient(''); setContact('');
     } catch (error) {
-      toast({ title: 'Encaissement interrompu', description: error instanceof Error ? error.message : 'Réessayez sans fermer cette page.', variant: 'destructive' });
+      reportFailure('Encaissement interrompu', error);
     } finally { setBusy(false); paymentLock.current = false; }
   };
 
@@ -158,7 +183,7 @@ const CashRegisterPOS: React.FC = () => {
 
   if (cash.loading && !cash.session) return <p className="text-sm text-muted-foreground">Chargement des caisses…</p>;
   if (cash.error || cash.notInstalled) return (
-    <Alert><AlertDescription>Impossible de charger les caisses pour le moment.<Button variant="outline" className="ml-2" onClick={() => cash.reload()}>Réessayer</Button></AlertDescription></Alert>
+    <Alert><AlertDescription>Impossible de charger les caisses pour le moment. Vérifiez votre connexion Internet, puis cliquez sur « Réessayer ». Si le problème persiste, demandez au responsable de vérifier votre accès aux caisses de cette unité.<Button variant="outline" className="ml-2" onClick={() => cash.reload()}>Réessayer</Button></AlertDescription></Alert>
   );
 
   const openingForm = <div className="space-y-3">
@@ -227,6 +252,7 @@ const CashRegisterPOS: React.FC = () => {
       <Tabs defaultValue="checkout"><TabsList><TabsTrigger value="checkout">Vendre</TabsTrigger><TabsTrigger value="history">Historique des ventes</TabsTrigger></TabsList>
       <TabsContent value="history"><CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session.id} /></TabsContent>
       <TabsContent value="checkout" className="space-y-3">
+      {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
       {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
       <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
 
