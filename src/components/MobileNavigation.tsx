@@ -39,15 +39,15 @@ const MobileNavigation = ({ activeTab, onTabChange }: MobileNavigationProps) => 
 
   return (
     <>
-      <div className="fixed inset-x-2 z-50 md:hidden bg-card/95 border border-border rounded-2xl shadow-lg backdrop-blur-sm"
-        style={{ bottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
+      <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-50 w-full md:hidden bg-card/95 border-t border-border rounded-t-2xl shadow-[0_-4px_16px_hsl(var(--foreground)/0.08)] backdrop-blur-sm"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex justify-around items-stretch w-full px-1 py-1">
           {mainItems.map((item) => (
             <Button
               key={item.id}
               variant="ghost"
               size="sm"
-              className={`flex flex-col items-center justify-center py-1.5 px-0.5 h-auto text-[11px] min-w-0 flex-1 min-h-[52px] rounded-md ${
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 h-auto text-[11px] min-w-0 flex-1 min-h-[54px] rounded-xl ${
                 activeTab === item.id 
                   ? 'text-primary bg-primary/10' 
                   : 'text-muted-foreground'
@@ -61,7 +61,7 @@ const MobileNavigation = ({ activeTab, onTabChange }: MobileNavigationProps) => 
             </Button>
           ))}
         </div>
-      </div>
+      </nav>
     </>
   );
 };

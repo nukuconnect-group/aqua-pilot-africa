@@ -330,13 +330,13 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
 
           <div className="flex items-center gap-2 shrink-0">
             {/* Sélecteur de période façon segment Jour / Mois / Année */}
-            <div className="flex items-center rounded-none bg-white/15 p-0.5">
+            <div className="flex items-center rounded-full bg-white/15 p-0.5">
               {([['7', 'Jour'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setSelectedPeriodFilter(value as any)}
-                  className={`px-2 sm:px-3 py-1 rounded-none text-[10px] sm:text-xs font-semibold transition-colors ${
+                  className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold transition-colors ${
                     selectedPeriodFilter === value ? 'bg-white text-slate-900' : 'text-white/80 hover:text-white'
                   }`}
                 >
@@ -356,7 +356,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
             >
               <SelectTrigger
                 aria-label="Choisir l'unité de production"
-                className="h-8 w-8 p-0 justify-center rounded-none bg-white/15 border-white/25 text-white [&>svg:last-child]:hidden"
+                className="h-8 w-8 p-0 justify-center rounded-full bg-white/15 border-white/25 text-white [&>svg:last-child]:hidden"
               >
                 <Building2 className="w-4 h-4" />
               </SelectTrigger>
