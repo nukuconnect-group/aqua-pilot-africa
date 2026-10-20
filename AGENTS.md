@@ -12,3 +12,4 @@
 - POS checks that the selected cash session is still open before recording a sale and reports unexpected failures; this client check does not replace server-side atomic posting.
 - Stock removals use one unit-scoped selected-ID delete and a confirmation; reset snapshots the unit's displayed IDs rather than issuing an unbounded delete, preserving existing movement and financial history.
 - Stock items carry an explicit purpose (production or commercial, src/lib/stockPurpose.ts); only commercial, in-stock items reach the POS and only production items feed fish, so inputs are never sold by name or category.
+- A global DOM guard (src/lib/domPatch.ts) tolerates external DOM moves (browser translation) so React no longer crashes on insertBefore/removeChild.
