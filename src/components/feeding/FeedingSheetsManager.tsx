@@ -176,12 +176,13 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   const [feeding, setFeeding] = useState<FeedingSheet | null>(null);
-  const [feedForm, setFeedForm] = useState({ applied: '', remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '' });
+  const [feedForm, setFeedForm] = useState({ applied: '', remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '', stockId: '' });
   const { stocks } = useFeedStocks(unitId);
   const stockNames = useMemo(() => Array.from(new Set((stocks || []).map((x: any) => x.custom_name || x.feed_type).filter(Boolean))), [stocks]);
 
   const validateDistribution = (s: FeedingSheet) => {
-    setFeedForm({ applied: String(s.quantity || ''), remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '' });
+    const match = (stocks || []).find((x: any) => [x.feed_type, x.custom_name].some((v: string) => (v || '').trim().toLowerCase() === (s.feed_type || '').trim().toLowerCase()));
+    setFeedForm({ applied: String(s.quantity || ''), remaining: '', mortality: '', behavior: 'normal', reason: '', notes: '', stockId: match?.id || '' });
     setFeeding(s);
   };
 
@@ -211,8 +212,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       }]);
       if (error) throw error;
       const { deductFeedStock } = await import('@/lib/feedStockDeduction');
-      const r = await deductFeedStock(unitId, s.feed_type, applied, `Nourrissage — fiche ${s.title}`);
-      const extra = r.status === 'ok' ? ` · Stock restant : ${r.after.toFixed(1)}`
+      const r = await deductFeedStock(unitId, s.feed_type, applied, `Nourrissage — fiche ${s.title}`, feedForm.stockId || undefined);
+      const extra = r.status === 'ok'
+        ? ` · Stock restant : ${r.after.toFixed(1)}${r.amount ? ` · Écriture comptable de ${r.amount.toLocaleString('fr-FR')} créée` : ''}`
         : r.status === 'insufficient' ? ' · Stock insuffisant, non déduit'
         : r.status === 'not_found' ? ' · Aucun article de stock portant ce nom' : '';
       toast({ title: 'Nourrissage enregistré', description: `Dose prévue ${s.quantity} ${s.unit}, appliquée ${applied} ${s.unit}${extra}` });
