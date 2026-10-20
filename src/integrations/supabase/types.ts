@@ -588,6 +588,7 @@ export type Database = {
           difference: number | null
           expected_amount: number | null
           id: string
+          name: string | null
           notes: string | null
           opened_at: string
           opened_by: string
@@ -603,6 +604,7 @@ export type Database = {
           difference?: number | null
           expected_amount?: number | null
           id?: string
+          name?: string | null
           notes?: string | null
           opened_at?: string
           opened_by?: string
@@ -618,6 +620,7 @@ export type Database = {
           difference?: number | null
           expected_amount?: number | null
           id?: string
+          name?: string | null
           notes?: string | null
           opened_at?: string
           opened_by?: string

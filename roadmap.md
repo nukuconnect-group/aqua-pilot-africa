@@ -30,3 +30,9 @@
 - [x] Caisse d'épargne (adhérents, carnets, agents, commissions) et boutique intégrée
 - [ ] Installer docs/sql/savings_shop.sql sur le serveur (bloqué : action de l'utilisateur)
 - [x] Relances clients WhatsApp ; avances sur salaire sorties de la caisse
+
+## Demandes du 20/10/2026 (trésorerie, stock, ventes, CRM)
+- [x] Trésorerie : message « doit être activée » remplacé par un message générique ; création de comptes, encaissement, décaissement, transfert déjà en place
+- [x] Stock : import CSV avec progression, codes-barres automatiques et impression d'étiquettes
+- [x] Ventes : onglets boutique, relances, clients, factures, modèles, étiquettes retirés ; multicaisse avec nom et transfert de fonds entre caisses
+- [x] CRM : module Clients & Fournisseurs par unité ajouté au menu

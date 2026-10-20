@@ -13,15 +13,9 @@ import { useLogs } from '@/contexts/LogsContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import ProductionUnitSelector from './ProductionUnitSelector';
-import ClientManager from './economics/ClientManager';
-import InvoiceManager from './economics/InvoiceManager';
-import DocumentTemplateManager from './economics/DocumentTemplateManager';
 import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
 import CashRegisterPOS from './sales/CashRegisterPOS';
-import CustomerReminders from './sales/CustomerReminders';
-import OnlineShopManager from './sales/OnlineShopManager';
-import BarcodeLabelGenerator from './sales/BarcodeLabelGenerator';
 import { useSales, Sale, SaleItem } from '@/hooks/useSales';
 import { useToast } from '@/hooks/use-toast';
 import { createNotification } from '@/lib/notificationService';
@@ -958,36 +952,14 @@ const SalesManagement = () => {
               <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Caisse
             </TabsTrigger>
-            <TabsTrigger value="shop" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              Boutique
-            </TabsTrigger>
-            <TabsTrigger value="reminders" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              Relances
-            </TabsTrigger>
             <TabsTrigger value="history" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Historique</span>
-              <span className="sm:hidden">Hist.</span>
+              Ventes
             </TabsTrigger>
             <TabsTrigger value="overview" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Vue</span>
               <span className="sm:hidden">Vue</span>
-            </TabsTrigger>
-            <TabsTrigger value="clients" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Clients</span>
-              <span className="sm:hidden">Cli.</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Factures</span>
-              <span className="sm:hidden">Fact.</span>
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Modèles</span>
-              <span className="sm:hidden">Mod.</span>
             </TabsTrigger>
             <TabsTrigger value="products" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -999,24 +971,11 @@ const SalesManagement = () => {
               <span className="hidden sm:inline">Échéances</span>
               <span className="sm:hidden">Éch.</span>
             </TabsTrigger>
-            <TabsTrigger value="labels" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              <Tag className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Étiquettes</span>
-              <span className="sm:hidden">Étiq.</span>
-            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="pos" className="space-y-3 sm:space-y-4">
           <CashRegisterPOS />
-        </TabsContent>
-
-        <TabsContent value="shop" className="space-y-3 sm:space-y-4">
-          <OnlineShopManager />
-        </TabsContent>
-
-        <TabsContent value="reminders" className="space-y-3 sm:space-y-4">
-          <CustomerReminders />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-3 sm:space-y-4">
@@ -1241,23 +1200,6 @@ const SalesManagement = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="clients">
-          <ClientManager />
-        </TabsContent>
-
-        <TabsContent value="invoices">
-          <InvoiceManager
-            onCreateDocument={(type) => {
-              applyDocumentType(type);
-              setShowSaleDialog(true);
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="templates">
-          <DocumentTemplateManager />
-        </TabsContent>
-
         <TabsContent value="products" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1398,9 +1340,6 @@ const SalesManagement = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="labels" className="space-y-4">
-          <BarcodeLabelGenerator />
-        </TabsContent>
       </Tabs>
 
       {/* Edit Sale Dialog */}

@@ -170,6 +170,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
         { id: 'accounting', label: t('accounting'), icon: Calculator },
         { id: 'purchases', label: t('purchases'), icon: ShoppingCart },
         { id: 'sales', label: t('sales'), icon: ShoppingBag },
+        { id: 'crm', label: 'Clients & Fournisseurs', icon: Users },
         { id: 'suppliers', label: t('suppliers'), icon: Truck },
       ]
     },

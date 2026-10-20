@@ -6,6 +6,7 @@ export interface CashSession {
   id: string;
   user_id: string;
   unit_id: string;
+  name: string | null;
   opened_at: string;
   opening_amount: number;
   closed_at: string | null;
@@ -39,35 +40,43 @@ export const computeExpectedCash = (opening: number, movements: Pick<CashMovemen
 
 export const useCashSession = (unitId?: string, ownerId?: string) => {
   const { user } = useAuth();
-  const [session, setSession] = useState<CashSession | null>(null);
+  const [sessions, setSessions] = useState<CashSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [movements, setMovements] = useState<CashMovement[]>([]);
   const [history, setHistory] = useState<CashSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [notInstalled, setNotInstalled] = useState(false);
   const db = supabase as any;
 
+  const session = useMemo(
+    () => sessions.find((s) => s.id === activeSessionId) || sessions[0] || null,
+    [sessions, activeSessionId],
+  );
+
   const load = useCallback(async () => {
     if (!user?.id || !unitId) return;
     setLoading(true);
     const { data, error } = await db
       .from('cash_sessions').select('*').eq('unit_id', unitId)
-      .order('opened_at', { ascending: false }).limit(20);
+      .order('opened_at', { ascending: false }).limit(50);
     if (error) {
       setNotInstalled(isMissingTable(error));
       setLoading(false);
       return;
     }
     setNotInstalled(false);
-    const open = (data || []).find((s: CashSession) => s.status === 'open') || null;
-    setSession(open);
+    const open = (data || []).filter((s: CashSession) => s.status === 'open');
+    setSessions(open);
     setHistory((data || []).filter((s: CashSession) => s.status === 'closed'));
-    if (open) {
+    const current = open.find((s: CashSession) => s.id === activeSessionId) || open[0] || null;
+    if (current && current.id !== activeSessionId) setActiveSessionId(current.id);
+    if (current) {
       const { data: mv } = await db.from('cash_movements').select('*')
-        .eq('session_id', open.id).order('created_at', { ascending: false });
+        .eq('session_id', current.id).order('created_at', { ascending: false });
       setMovements((mv || []).map((m: any) => ({ ...m, amount: Number(m.amount) })));
     } else setMovements([]);
     setLoading(false);
-  }, [user?.id, unitId]);
+  }, [user?.id, unitId, activeSessionId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -82,10 +91,13 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
 
   const owner = ownerId || user?.id;
 
-  const openSession = async (openingAmount: number) => {
+  const openSession = async (openingAmount: number, name?: string) => {
     if (!owner || !unitId) return { error: 'Aucune unité active' };
-    const { error } = await db.from('cash_sessions').insert({ user_id: owner, unit_id: unitId, opening_amount: openingAmount });
+    const { data, error } = await db.from('cash_sessions')
+      .insert({ user_id: owner, unit_id: unitId, opening_amount: openingAmount, name: name?.trim() || null })
+      .select().single();
     if (error) return { error: error.message };
+    if (data?.id) setActiveSessionId(data.id);
     await load();
     return {};
   };
@@ -102,6 +114,29 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
     return {};
   };
 
+  /** Transfert d'espèces de la caisse active vers une autre caisse ouverte (partiel ou total). */
+  const transferTo = async (targetSessionId: string, amount: number) => {
+    if (!session || !owner || !unitId) return { error: 'Caisse fermée' };
+    const target = sessions.find((s) => s.id === targetSessionId);
+    if (!target) return { error: 'Caisse de destination introuvable' };
+    if (!Number.isFinite(amount) || amount <= 0) return { error: 'Montant invalide' };
+    if (amount > expected) return { error: 'Montant supérieur aux espèces disponibles' };
+    const label = `Transfert vers ${target.name || 'caisse'}`;
+    const out = await db.from('cash_movements').insert({
+      session_id: session.id, user_id: owner, unit_id: unitId,
+      type: 'cash_out', amount, payment_method: 'Espèces', label,
+    });
+    if (out.error) return { error: out.error.message };
+    const inn = await db.from('cash_movements').insert({
+      session_id: target.id, user_id: owner, unit_id: unitId,
+      type: 'cash_in', amount, payment_method: 'Espèces',
+      label: `Transfert depuis ${session.name || 'caisse'}`,
+    });
+    if (inn.error) return { error: inn.error.message };
+    await load();
+    return {};
+  };
+
   const expected = useMemo(
     () => (session ? computeExpectedCash(Number(session.opening_amount), movements) : 0),
     [session, movements],
@@ -114,9 +149,13 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
       expected_amount: expected, counted_amount: countedAmount, difference: countedAmount - expected,
     }).eq('id', session.id);
     if (error) return { error: error.message };
+    setActiveSessionId(null);
     await load();
     return {};
   };
 
-  return { session, movements, history, loading, notInstalled, expected, openSession, addMovement, closeSession, reload: load };
+  return {
+    session, sessions, movements, history, loading, notInstalled, expected,
+    openSession, addMovement, transferTo, closeSession, setActiveSession: setActiveSessionId, reload: load,
+  };
 };

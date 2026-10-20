@@ -51,6 +51,9 @@ const CashRegisterPOS: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [moveAmount, setMoveAmount] = useState('');
   const [moveLabel, setMoveLabel] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferTarget, setTransferTarget] = useState('');
 
   // Catalogue réel : produits déjà vendus dans cette unité, au dernier prix pratiqué.
   const catalog = useMemo(() => {
@@ -137,14 +140,16 @@ const CashRegisterPOS: React.FC = () => {
 
   if (!cash.session) return (
     <Card className="max-w-md mx-auto rounded-2xl">
-      <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Lock className="w-5 h-5 text-primary" />Caisse fermée — {activeUnit.name}</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Lock className="w-5 h-5 text-primary" />Ouvrir une caisse — {activeUnit.name}</CardTitle></CardHeader>
       <CardContent className="space-y-3">
+        <label className="text-sm text-muted-foreground">Nom de la caisse (ex. Caisse boutique, Caisse quai)</label>
+        <Input value={registerName} onChange={(e) => setRegisterName(e.target.value)} placeholder="Caisse principale" />
         <label className="text-sm text-muted-foreground">Fond de caisse (espèces au départ)</label>
         <Input type="number" min="0" inputMode="decimal" value={opening} onChange={(e) => setOpening(e.target.value)} placeholder="0" />
         <Button className="w-full" onClick={async () => {
-          const r = await cash.openSession(Number(opening) || 0);
+          const r = await cash.openSession(Number(opening) || 0, registerName);
           if (r.error) toast({ title: 'Ouverture impossible', description: r.error, variant: 'destructive' });
-          else { setOpening(''); toast({ title: 'Caisse ouverte' }); }
+          else { setOpening(''); setRegisterName(''); toast({ title: 'Caisse ouverte' }); }
         }}><Unlock className="w-4 h-4 mr-2" />Ouvrir la caisse</Button>
         {cash.history.length > 0 && (
           <div className="pt-2 space-y-1">
@@ -167,6 +172,20 @@ const CashRegisterPOS: React.FC = () => {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
         <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Caisse ouverte</Badge>
+        {cash.sessions.length > 1 ? (
+          <select
+            className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+            value={cash.session.id}
+            onChange={(e) => cash.setActiveSession(e.target.value)}
+            aria-label="Choisir la caisse"
+          >
+            {cash.sessions.map((s) => (
+              <option key={s.id} value={s.id}>{s.name || 'Caisse'} — ouverte {new Date(s.opened_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-sm font-medium">{cash.session.name || 'Caisse principale'}</span>
+        )}
         <span className="text-xs text-muted-foreground">depuis {new Date(cash.session.opened_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
         <span className="text-sm ml-auto">Ventes : <b>{formatCurrency(sessionTotal)}</b> ({sessionSales.length})</span>
         <span className="text-sm">Espèces attendues : <b>{formatCurrency(cash.expected)}</b></span>
@@ -248,6 +267,34 @@ const CashRegisterPOS: React.FC = () => {
                 </Button>
               ))}
             </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Transfert vers une autre caisse</p>
+            {cash.sessions.length < 2 ? (
+              <p className="text-xs text-muted-foreground">Ouvrez une seconde caisse pour pouvoir transférer des espèces entre caisses.</p>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Input type="number" placeholder="Montant" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} />
+                  <select
+                    className="h-10 rounded-md border border-border bg-background px-2 text-sm flex-1"
+                    value={transferTarget}
+                    onChange={(e) => setTransferTarget(e.target.value)}
+                    aria-label="Caisse de destination"
+                  >
+                    <option value="">Caisse de destination…</option>
+                    {cash.sessions.filter((s) => s.id !== cash.session?.id).map((s) => (
+                      <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>
+                    ))}
+                  </select>
+                </div>
+                <Button size="sm" variant="outline" className="w-full" disabled={!transferTarget || !transferAmount} onClick={async () => {
+                  const r = await cash.transferTo(transferTarget, Number(transferAmount) || 0);
+                  if (r.error) toast({ title: 'Transfert impossible', description: r.error, variant: 'destructive' });
+                  else { setTransferAmount(''); setTransferTarget(''); toast({ title: 'Transfert enregistré' }); }
+                }}>Transférer</Button>
+              </>
+            )}
           </div>
           <div className="space-y-2">
             <p className="text-sm font-semibold">Fermer la caisse</p>
