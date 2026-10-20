@@ -18,6 +18,8 @@ import { createNotification } from '@/lib/notificationService';
 import { supabase } from '@/integrations/supabase/appClient';
 import PurchaseInvoice from './PurchaseInvoice';
 import { useSuppliers, Supplier } from '@/hooks/useSuppliers';
+import { useTreasury } from '@/hooks/useTreasury';
+import { expenseAccount } from '@/lib/syscohada';
 import { getUnitTerms } from '@/lib/unitContext';
 
 
@@ -37,6 +39,8 @@ const PurchaseManager = () => {
   } = useProductionUnits();
   
   const { suppliers, addSupplier, refetch: refetchSuppliers } = useSuppliers();
+  const treasury = useTreasury(activeUnit?.id);
+  const [treasuryAccountId, setTreasuryAccountId] = useState('');
 
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
