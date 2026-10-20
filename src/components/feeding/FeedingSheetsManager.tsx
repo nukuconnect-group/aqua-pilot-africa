@@ -571,7 +571,20 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 </div>
               )}
               <div><Label>Observations</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
-              <p className="text-xs text-muted-foreground">La dose appliquée sera retirée du stock et une sortie sera ajoutée à l’historique du stock.</p>
+              <div>
+                <Label>Stock à prélever *</Label>
+                <Select value={feedForm.stockId} onValueChange={(v) => setFeedForm({ ...feedForm, stockId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Choisir l'article du stock…" /></SelectTrigger>
+                  <SelectContent>
+                    {(stocks || []).map((x: any) => (
+                      <SelectItem key={x.id} value={x.id}>
+                        {x.custom_name || x.feed_type} — {Number(x.quantity)} {x.unit} dispo.
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">La dose appliquée sera retirée du stock choisi, une sortie sera ajoutée à l’historique du stock et l’écriture comptable correspondante sera créée.</p>
               <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="outline" onClick={() => setFeeding(null)}>Annuler</Button>
                 <Button className="h-auto min-h-10 whitespace-normal" onClick={confirmFeeding}><CheckCircle2 className="w-4 h-4 mr-1" />Enregistrer le nourrissage</Button>
