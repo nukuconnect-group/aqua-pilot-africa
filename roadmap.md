@@ -23,7 +23,7 @@
 - [x] Barres de navigation arrondies (mobile et ordinateur)
 - [x] Comptabilité SYSCOHADA (plan de comptes, journaux, grand livre, balance, états)
 - [x] Gestionnaire de stock + historique des mouvements (installer docs/sql/stock_movements.sql)
-- [ ] Analyse photo : écran existant, service IA à installer sur le serveur de l'application (bloqué : serveur de l'utilisateur)
+- [x] Analyse photo : service déployé dans Lovable Cloud, appel avec la session existante et validation du compte sur la base de l’application
 - [ ] Installer docs/sql/hr_attendance.sql sur le serveur (bloqué : action de l'utilisateur)
 - [x] RH : pointage GPS/photo hors ligne, retards, heures sup, avances
 - [x] Mois gratuit à l'inscription
@@ -66,3 +66,9 @@
 - [x] Messages de caisse sans référence à la connexion/base
 - [x] 21/10 : retirer des écrans les messages parlant de serveur ou de fichiers d'installation (stock, boutique, épargne, pointage, ventes)
 - [x] Vente assistée par IA dans la caisse (propositions confirmées avant ajout ; non testée connectée)
+
+## AquaHealth : photos du 21/10/2026
+- [x] Corriger le parcours photo et les erreurs lisibles ; fonction déployée, refus des appels anonymes confirmé
+- [x] Refuser les images sans vrais poissons en indiquant leur sujet ; appel IA réel sur texte « POISSON TILAPIA » : refus correct, sans diagnostic
+- [x] Tester les règles et le service : 9 tests réussis, compilation réussie
+- [ ] Vérifier une photo réelle de poisson depuis le compte utilisateur : session de la base historique indisponible, écran redirigé vers /auth ; reconnaissance positive non vérifiée en direct
