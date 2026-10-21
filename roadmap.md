@@ -64,3 +64,4 @@
 - [ ] Vérifier ces actions avec le stock réel : écran de connexion, aucune session disponible pour le compte existant
 - [ ] Installer sur la base réelle les 30 tables manquantes (caisse, mouvements de stock, trésorerie, RH, plans…) — bloqué : adresse de connexion PostgreSQL valide requise
 - [x] Messages de caisse sans référence à la connexion/base
+- [x] 21/10 : retirer des écrans les messages parlant de serveur ou de fichiers d'installation (stock, boutique, épargne, pointage, ventes)

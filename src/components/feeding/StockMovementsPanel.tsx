@@ -46,7 +46,7 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
 
   const name = (id: string) => { const s = stocks.find((x) => x.id === id); return s ? (s.custom_name || s.feed_type) : 'Produit supprimé'; };
 
-  if (notInstalled) return <Alert><AlertDescription>L'historique des mouvements n'est pas encore activé sur votre serveur : le fichier « stock_movements.sql » doit y être exécuté une fois.</AlertDescription></Alert>;
+  if (notInstalled) return <Alert><AlertDescription>Aucun mouvement de stock à afficher pour le moment.</AlertDescription></Alert>;
 
   return (
     <Card className="min-w-0 rounded-lg">

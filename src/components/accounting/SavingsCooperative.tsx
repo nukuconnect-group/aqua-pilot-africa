@@ -70,7 +70,7 @@ const SavingsCooperative: React.FC = () => {
   };
 
   if (!unitId) return <p className="text-sm text-muted-foreground">Sélectionnez une unité.</p>;
-  if (missing) return <Alert><AlertDescription>La caisse d'épargne n'est pas encore installée sur le serveur de l'application (fichier « savings_shop.sql »).</AlertDescription></Alert>;
+  if (missing) return <Alert><AlertDescription>La caisse d'épargne sera disponible très prochainement.</AlertDescription></Alert>;
 
   const sel = 'border border-input bg-background rounded-md h-9 px-2 text-sm w-full';
 
