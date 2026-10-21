@@ -14,3 +14,4 @@
 - Stock items carry an explicit purpose (production or commercial, src/lib/stockPurpose.ts); only commercial, in-stock items reach the POS and only production items feed fish, so inputs are never sold by name or category.
 - A global DOM guard (src/lib/domPatch.ts) tolerates external DOM moves (browser translation) so React no longer crashes on insertBefore/removeChild.
 - Unit = warehouse: a completed production cycle's harvest is transferred once (ref in notes) into the same unit's commercial stock; POS sales check and deduct commercial stock after the sale is recorded (client-side, not atomic).
+- AI POS suggestions run in the pos-ai-suggest function, which verifies the app-backend user and only returns real catalog items; the seller confirms before anything enters the cart.
