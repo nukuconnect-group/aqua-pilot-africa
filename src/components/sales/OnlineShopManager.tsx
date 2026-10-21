@@ -80,7 +80,7 @@ const OnlineShopManager: React.FC = () => {
   };
 
   if (!unitId) return <p className="text-sm text-muted-foreground">Sélectionnez une unité.</p>;
-  if (missing) return <Alert><AlertDescription>La boutique n'est pas encore installée sur le serveur de l'application (fichier « savings_shop.sql »).</AlertDescription></Alert>;
+  if (missing) return <Alert><AlertDescription>La boutique sera disponible très prochainement.</AlertDescription></Alert>;
 
   return (
     <div className="space-y-3">

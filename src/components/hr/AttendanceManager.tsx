@@ -111,7 +111,7 @@ const AttendanceManager: React.FC = () => {
 
   const name = (id: string) => { const e = employees.find((x) => x.id === id); return e ? `${e.firstName} ${e.lastName}` : 'Employé'; };
 
-  if (notInstalled) return <Alert><AlertDescription>Le pointage n'est pas encore activé sur votre serveur : le fichier « hr_attendance.sql » doit y être exécuté une fois.</AlertDescription></Alert>;
+  if (notInstalled) return <Alert><AlertDescription>Aucun pointage à afficher pour le moment.</AlertDescription></Alert>;
 
   return (
     <div className="space-y-3">

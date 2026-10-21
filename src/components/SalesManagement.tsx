@@ -302,7 +302,7 @@ const SalesManagement = () => {
         setShowSaleDialog(false);
         setShowReceiptPreview(false);
       } else {
-        toast({ title: 'Vente non enregistrée', description: 'Veuillez vérifier la connexion puis réessayer.', variant: 'destructive' });
+        toast({ title: 'Vente non enregistrée', description: 'Réessayez dans un instant.', variant: 'destructive' });
       }
     } finally {
       setIsSavingSale(false);
