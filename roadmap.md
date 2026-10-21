@@ -66,3 +66,8 @@
 - [x] Messages de caisse sans référence à la connexion/base
 - [x] 21/10 : retirer des écrans les messages parlant de serveur ou de fichiers d'installation (stock, boutique, épargne, pointage, ventes)
 - [x] Vente assistée par IA dans la caisse (propositions confirmées avant ajout ; non testée connectée)
+
+## AquaHealth : photos du 21/10/2026
+- [ ] Corriger le parcours photo et les erreurs lisibles
+- [ ] Refuser les images sans vrais poissons en indiquant leur sujet
+- [ ] Tester les règles et le service ; signaler toute limitation d’accès réel
