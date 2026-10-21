@@ -1,5 +1,5 @@
 import { getRuntimeLanguage } from '@/i18n/runtime';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/components/ui/use-toast';
 import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
+import { compressImage } from '@/lib/imageCompression';
 
 export interface VisionDisease {
   name: string;
@@ -30,6 +31,10 @@ export interface VisionDisease {
 }
 
 export interface VisionResult {
+  subject?: string | null;
+  isFishPhoto?: boolean;
+  analysisAllowed?: boolean;
+  rejectionReason?: string | null;
   species?: string | null;
   averageWeight?: number | null;
   observations?: string[];
@@ -49,6 +54,12 @@ export const severityLabel = (severity: string) =>
   severity === 'high' ? 'Sévère' : severity === 'medium' ? 'Modéré' : 'Léger';
 
 export const VisionResultView: React.FC<{ result: VisionResult }> = ({ result }) => (
+  result.analysisAllowed === false ? (
+    <div role="status" className="border rounded-lg p-4 space-y-2">
+      <p className="font-semibold">Sujet reconnu : {result.subject || 'Non identifiable'}</p>
+      <p className="text-sm text-muted-foreground">{result.rejectionReason || 'Cette image ne montre pas de vrais poissons. Analyse sanitaire impossible.'}</p>
+    </div>
+  ) : (
   <div className="space-y-3">
     {(result.species || result.averageWeight) && (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -81,12 +92,12 @@ export const VisionResultView: React.FC<{ result: VisionResult }> = ({ result })
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-orange-600" />Maladies détectées
+          <AlertCircle className="w-4 h-4 text-primary" />Hypothèses sanitaires
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {result.diseases.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucune maladie identifiée.</p>
+          <p className="text-sm text-muted-foreground">Aucun signe de maladie identifié sur cette photo ; cela ne confirme pas l’absence de maladie.</p>
         ) : result.diseases.map((d, idx) => (
           <div key={idx} className={`p-3 border rounded-lg ${severityColor(d.severity)}`}>
             <div className="flex items-start justify-between gap-2 mb-1">
@@ -127,6 +138,7 @@ export const VisionResultView: React.FC<{ result: VisionResult }> = ({ result })
       </Card>
     )}
   </div>
+  )
 );
 
 export const analyzeWithAI = async (payload: {
@@ -135,12 +147,18 @@ export const analyzeWithAI = async (payload: {
   imageBase64?: string;
   species?: string;
 }): Promise<VisionResult> => {
-  const { data, error } = await supabase.functions.invoke('aqua-health-vision', { body: { ...payload, language: getRuntimeLanguage() } });
-  if (error) {
-    const message = (data as any)?.error || error.message || "L'analyse IA a échoué";
-    throw new Error(message);
-  }
-  if ((data as any)?.error) throw new Error((data as any).error);
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Reconnectez-vous pour analyser une photo.');
+  let response: Response;
+  try {
+    response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aqua-health-vision`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify({ ...payload, language: getRuntimeLanguage() }),
+    });
+  } catch { throw new Error('L’analyse n’a pas pu être jointe. Vérifiez votre connexion avant de réessayer.'); }
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.error) throw new Error(data?.error || (response.status === 401 ? 'Reconnectez-vous pour utiliser AquaHealth IA.' : 'L’analyse est indisponible pour le moment.'));
+  if (!data || !Array.isArray(data.diseases) || !Array.isArray(data.recommendations)) throw new Error('La réponse est incomplète. Aucun diagnostic ne peut être affiché.');
   return data as VisionResult;
 };
 
@@ -154,7 +172,14 @@ const CameraAnalysis = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [result, setResult] = useState<VisionResult | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const requestVersion = useRef(0);
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+  useEffect(() => {
+    requestVersion.current += 1;
+    setSelectedFile(null); setPreviewUrl(''); setResult(null); setSpecies(''); setAnalysisError(null); setAnalyzing(false);
+  }, [activeUnit?.id]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -170,6 +195,8 @@ const CameraAnalysis = () => {
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setResult(null);
+    setAnalysisError(null);
+    requestVersion.current += 1;
   };
 
   const toDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
@@ -182,19 +209,24 @@ const CameraAnalysis = () => {
   const runAnalysis = async () => {
     if (!selectedFile || analyzing) return;
     setAnalyzing(true);
+    setResult(null); setAnalysisError(null);
+    const version = requestVersion.current;
     try {
-      const imageBase64 = await toDataUrl(selectedFile);
-      const res = await analyzeWithAI({ mode: 'image', domain: isAlgae ? 'algae' : 'fish', imageBase64, species: species.trim() || undefined });
+      const converted = await compressImage(selectedFile, { maxWidth: 1600, maxHeight: 1600, maxSizeMB: 2 });
+      const imageBase64 = await toDataUrl(converted.file);
+      if (!/^data:image\/(jpeg|png|webp);base64,/.test(imageBase64)) throw new Error('Format non pris en charge. Utilisez une photo JPG, PNG ou WebP.');
+      const res = await analyzeWithAI({ mode: 'image', domain: 'fish', imageBase64, species: species.trim() || undefined });
+      if (version !== requestVersion.current) return;
       setResult(res);
-      toast({ title: 'Analyse terminée', description: `${res.diseases.length} anomalie(s) évaluée(s).` });
+      if (res.analysisAllowed !== false) toast({ title: 'Analyse terminée', description: `${res.diseases.length} hypothèse(s) évaluée(s).` });
     } catch (e: any) {
-      toast({ title: 'Analyse impossible', description: e?.message ?? 'Erreur inconnue', variant: 'destructive' });
+      if (version === requestVersion.current) setAnalysisError(e?.message ?? 'L’analyse est indisponible pour le moment.');
     } finally {
-      setAnalyzing(false);
+      if (version === requestVersion.current) setAnalyzing(false);
     }
   };
 
-  const reset = () => { setSelectedFile(null); setPreviewUrl(''); setResult(null); };
+  const reset = () => { requestVersion.current += 1; setSelectedFile(null); setPreviewUrl(''); setResult(null); setAnalysisError(null); setAnalyzing(false); if (fileInputRef.current) fileInputRef.current.value = ''; };
 
   return (
     <div className="space-y-4">
@@ -202,7 +234,7 @@ const CameraAnalysis = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Camera className="w-4 h-4 text-primary" />
-             {isAlgae ? 'Analyse visuelle de la culture' : 'Détection de maladie par caméra'}{activeUnit ? ` — ${activeUnit.name}` : ''}
+             Analyse photo des poissons{activeUnit ? ` — ${activeUnit.name}` : ''}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -217,22 +249,22 @@ const CameraAnalysis = () => {
           </div>
 
           {!selectedFile ? (
-            <button
+            <Button
+              variant="outline"
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors"
+              className="w-full h-auto border-dashed rounded-lg p-6 text-center flex flex-col whitespace-normal"
             >
               <Camera className="w-10 h-10 mx-auto mb-2 text-primary" />
               <p className="font-medium">Prendre ou importer une photo</p>
-              <p className="text-sm text-muted-foreground">L'IA identifie les signes cliniques visibles</p>
               <span className="mt-3 inline-flex items-center text-sm text-primary">
                 <Upload className="w-4 h-4 mr-1" />Sélectionner une photo
               </span>
-            </button>
+            </Button>
           ) : (
             <div className="space-y-3">
               <div className="relative rounded-lg overflow-hidden bg-muted">
-                 <img src={previewUrl} alt={isAlgae ? 'Culture d’algues à analyser' : 'Poissons à analyser'} className="w-full max-h-80 object-contain" />
+                  <img src={previewUrl} alt="Photo soumise à AquaHealth" className="w-full max-h-80 object-contain" />
                 <Button size="icon" variant="secondary" className="absolute top-2 right-2" onClick={reset} aria-label="Retirer la photo">
                   <X className="w-4 h-4" />
                 </Button>
@@ -248,14 +280,14 @@ const CameraAnalysis = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/jpeg,image/png,image/webp"
             onChange={handleFileSelect}
             className="hidden"
           />
         </CardContent>
       </Card>
 
+      {analysisError && <p role="alert" className="text-sm text-destructive">{analysisError}</p>}
       {result && <VisionResultView result={result} />}
     </div>
   );
