@@ -15,6 +15,7 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { deductSoldStock, findStockShortage } from '@/lib/posStock';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
 import CashSalesHistory from './CashSalesHistory';
+import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Sale } from '@/hooks/useSales';
@@ -297,6 +298,19 @@ const CashRegisterPOS: React.FC = () => {
             <Button variant="outline" onClick={() => setCart(prev => [...prev, { name: search.trim(), quantity: 1, unitPrice: 0 }])}><Plus className="h-4 w-4 mr-2" />Ajouter un produit</Button>
           </CardContent>
         </Card>
+        <PosAiSuggestions cart={cart} catalog={catalog} formatCurrency={formatCurrency}
+          onConfirm={(lines) => {
+            setCart(prev => {
+              const next = [...prev];
+              lines.forEach(l => {
+                const k = next.findIndex(x => x.name.toLowerCase() === l.name.toLowerCase());
+                if (k >= 0) next[k] = { ...next[k], quantity: Math.max(next[k].quantity, l.quantity) };
+                else next.push({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice });
+              });
+              return next;
+            });
+            toast({ title: 'Propositions ajoutées au panier', description: 'Vérifiez puis encaissez.' });
+          }} />
 
         <Card className="rounded-2xl">
           <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Panier</CardTitle></CardHeader>
