@@ -385,7 +385,28 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                 </DialogDescription>
               </div>
 
-              <form onSubmit={handleSubmit} noValidate className="space-y-3">
+              {/* Étapes */}
+              <ol className="mb-6 grid grid-cols-4 gap-2" aria-label="Étapes de l'inscription">
+                {STEPS.map((s, i) => {
+                  const n = i + 1; const done = currentStep > n; const active = currentStep === n; const Icon = s.icon;
+                  return (
+                    <li key={s.title} className="flex flex-col items-center gap-1.5 text-center">
+                      <span className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${done ? 'border-primary bg-primary text-primary-foreground' : active ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'}`}>
+                        {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                      </span>
+                      <span className={`text-[11px] font-medium leading-tight ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{s.title}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape {currentStep} sur 4</p>
+                <h3 className="text-lg font-semibold text-foreground">{STEPS[currentStep - 1].heading}</h3>
+                <p className="text-sm text-muted-foreground">{STEPS[currentStep - 1].desc}</p>
+              </div>
+
+              <form onSubmit={currentStep === 4 ? handleSubmit : (e) => { e.preventDefault(); goNext(); }} noValidate className="space-y-3">
+                {currentStep === 1 && <>
                 {/* Nom + Prénom */}
                 <div className="grid grid-cols-2 gap-3">
                   <FieldWithIcon icon={<UserIcon className="w-4 h-4" />} required>
@@ -436,29 +457,6 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                   onChange={handleCountryChange}
                   detecting={isDetectingLocation}
                 />
-
-                {/* Nom de la ferme */}
-                <FieldWithIcon icon={<Building2 className="w-4 h-4" />} required>
-                  <Input
-                    placeholder="Nom de la ferme"
-                    value={formData.companyName}
-                    onChange={e => handleInputChange('companyName', e.target.value)}
-                    required
-                    className="border-0 shadow-none pl-7 h-11 rounded-full bg-transparent focus-visible:ring-0"
-                  />
-                </FieldWithIcon>
-
-                {/* Adresse de la ferme */}
-                <FieldWithIcon icon={<MapPin className="w-4 h-4" />} required>
-                  <Input
-                    placeholder="Adresse de la ferme"
-                    value={formData.location}
-                    onChange={e => handleInputChange('location', e.target.value)}
-                    required
-                    className="border-0 shadow-none pl-7 h-11 rounded-full bg-transparent focus-visible:ring-0"
-                  />
-                </FieldWithIcon>
-
                 {/* Mot de passe */}
                 <FieldWithIcon icon={<KeyRound className="w-4 h-4" />} required>
                   <Input
@@ -488,36 +486,29 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                 {formData.confirmPassword && formData.password !== formData.confirmPassword && (
                   <p className="text-xs text-destructive pl-2">Les mots de passe ne correspondent pas</p>
                 )}
+                </>}
+                {currentStep === 2 && <>
+                {/* Nom de la ferme */}
+                <FieldWithIcon icon={<Building2 className="w-4 h-4" />} required>
+                  <Input
+                    placeholder="Nom de la ferme"
+                    value={formData.companyName}
+                    onChange={e => handleInputChange('companyName', e.target.value)}
+                    required
+                    className="border-0 shadow-none pl-7 h-11 rounded-full bg-transparent focus-visible:ring-0"
+                  />
+                </FieldWithIcon>
 
-                {/* Unités à gérer */}
-                <div className="pt-2">
-                  <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <Fish className="w-4 h-4 text-blue-500" />
-                    Que voulez-vous gérer ? <span className="text-pink-500">*</span>
-                  </Label>
-                  <p className="text-xs text-slate-500 mt-1">Choisissez une ou plusieurs unités. Chacune aura ses propres modules.</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                    {SIGNUP_UNIT_OPTIONS.map(opt => {
-                      const active = formData.productionUnits.includes(opt.type);
-                      const Icon = UNIT_ICONS[opt.type] ?? Fish;
-                      return (
-                        <button
-                          key={opt.type}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => toggleBreedingType(opt.type, !active)}
-                          className={`relative text-left rounded-xl border p-3 transition-all ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
-                        >
-                          {active && <Check className="absolute top-2 right-2 w-4 h-4 text-blue-600" />}
-                          <Icon className={`w-6 h-6 mb-2 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
-                          <p className="text-sm font-semibold text-slate-800">{opt.label}</p>
-                          <p className="text-xs text-slate-500">{opt.desc}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
+                {/* Adresse de la ferme */}
+                <FieldWithIcon icon={<MapPin className="w-4 h-4" />} required>
+                  <Input
+                    placeholder="Adresse de la ferme"
+                    value={formData.location}
+                    onChange={e => handleInputChange('location', e.target.value)}
+                    required
+                    className="border-0 shadow-none pl-7 h-11 rounded-full bg-transparent focus-visible:ring-0"
+                  />
+                </FieldWithIcon>
                 {/* Type d'exploitation */}
                 <div className="pt-2">
                   <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
@@ -563,54 +554,85 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                     </div>
                   </label>
                 </div>
-
-                {/* Choix de l'abonnement — 1er mois offert */}
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-800">Choisissez votre abonnement</p>
-                  <p className="text-[11px] text-slate-500">Le premier mois est offert en mode essai, sans paiement. Vous pourrez changer d'offre à tout moment.</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[{ id: 'standard', label: 'Standard' }, { id: 'premium', label: 'Premium' }, { id: 'enterprise', label: 'Entreprise' }].map((p) => (
-                      <button type="button" key={p.id} onClick={() => setChosenPlan(p.id)}
-                        className={`rounded-xl border-2 p-2 text-center text-sm font-semibold transition-colors ${chosenPlan === p.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-700'}`}>
-                        {p.label}
-                        <span className="block text-[10px] font-normal text-green-700">1 mois gratuit</span>
-                      </button>
-                    ))}
+                </>}
+                {currentStep === 3 && <>
+                {/* Unités à gérer */}
+                <div className="pt-2">
+                  <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <Fish className="w-4 h-4 text-blue-500" />
+                    Que voulez-vous gérer ? <span className="text-pink-500">*</span>
+                  </Label>
+                  <p className="text-xs text-slate-500 mt-1">Choisissez une ou plusieurs unités. Chacune aura ses propres modules.</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                    {SIGNUP_UNIT_OPTIONS.map(opt => {
+                      const active = formData.productionUnits.includes(opt.type);
+                      const Icon = UNIT_ICONS[opt.type] ?? Fish;
+                      return (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => toggleBreedingType(opt.type, !active)}
+                          className={`relative text-left rounded-xl border p-3 transition-all ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                        >
+                          {active && <Check className="absolute top-2 right-2 w-4 h-4 text-blue-600" />}
+                          <Icon className={`w-6 h-6 mb-2 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
+                          <p className="text-sm font-semibold text-slate-800">{opt.label}</p>
+                          <p className="text-xs text-slate-500">{opt.desc}</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-
-                {/* Bouton Valider */}
-                {formErrors.length > 0 && (
-                  <div role="alert" aria-live="assertive" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                    <p className="font-semibold">Inscription impossible</p>
-                    <ul className="mt-1 list-disc space-y-1 pl-5">
-                      {formErrors.map((message) => <li key={message}>{message}</li>)}
-                    </ul>
+                </>}
+                {currentStep === 4 && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {SIGNUP_PLANS.map((p) => {
+                      const active = chosenPlan === p.id; const Icon = p.icon;
+                      return (
+                        <button key={p.id} type="button" aria-pressed={active} onClick={() => setChosenPlan(p.id)}
+                          className={`relative flex flex-col rounded-xl border-2 p-4 text-left transition-all ${active ? 'border-primary bg-primary/5 shadow-md' : 'border-border bg-card hover:border-primary/50'} ${p.id === 'trial_discovery' ? 'sm:col-span-2' : ''}`}>
+                          {p.badge && <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">{p.badge}</span>}
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
+                            <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}>{active && <Check className="h-3 w-3" />}</span>
+                          </div>
+                          <p className="mt-3 font-semibold text-foreground">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">{p.desc}</p>
+                          <p className="mt-2 text-lg font-bold text-foreground">{p.price}<span className="ml-1 text-xs font-normal text-muted-foreground">{p.period}</span></p>
+                          <ul className="mt-2 space-y-1">
+                            {p.features.map((f) => <li key={f} className="flex items-start gap-1.5 text-xs text-muted-foreground"><Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />{f}</li>)}
+                          </ul>
+                        </button>
+                      );
+                    })}
+                    <p className="sm:col-span-2 text-xs text-muted-foreground">Chaque compte démarre par 1 mois d’essai gratuit, sans paiement. L’offre choisie est enregistrée et pourra être activée à la fin de l’essai. Pour « Sur mesure », notre équipe vous recontacte.</p>
                   </div>
                 )}
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-12 rounded-full mt-4 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-                  style={{ background: 'linear-gradient(90deg, #a78bfa 0%, #60a5fa 50%, #22d3ee 100%)' }}
-                >
-                  {isLoading ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création…</>
-                  ) : 'Valider'}
-                </Button>
 
-                {/* Demo + lien connexion */}
+                {formErrors.length > 0 && (
+                  <div role="alert" aria-live="assertive" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                    <ul className="list-disc space-y-1 pl-5">{formErrors.map((m) => <li key={m}>{m}</li>)}</ul>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-3">
+                  {currentStep > 1 && (
+                    <Button type="button" variant="outline" className="h-12 flex-1 rounded-full" onClick={() => { setFormErrors([]); setCurrentStep((s) => s - 1); }}>
+                      <ChevronLeft className="mr-1 h-4 w-4" /> Retour
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={isLoading} className="h-12 flex-[2] rounded-full font-semibold">
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Création…</>
+                      : currentStep < 4 ? <>Continuer <ChevronRight className="ml-1 h-4 w-4" /></> : 'Créer mon compte'}
+                  </Button>
+                </div>
+
                 <div className="flex flex-col items-center gap-2 pt-2">
-                  <button type="button" onClick={onSwitchToLogin}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                    J'ai déjà un compte
-                  </button>
-                  <button type="button" onClick={handleDemoMode}
-                    className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                    <Fish className="w-3 h-3" /> Essayer la démo
-                  </button>
+                  <button type="button" onClick={onSwitchToLogin} className="text-sm font-medium text-primary hover:underline">J'ai déjà un compte</button>
                 </div>
               </form>
+
             </div>
           </div>
         </div>
