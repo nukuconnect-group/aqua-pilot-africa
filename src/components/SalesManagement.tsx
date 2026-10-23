@@ -966,11 +966,6 @@ const SalesManagement = () => {
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Analyses
             </TabsTrigger>
-            <TabsTrigger value="products" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Produits</span>
-              <span className="sm:hidden">Prod.</span>
-            </TabsTrigger>
             <TabsTrigger value="credits" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Échéances</span>
