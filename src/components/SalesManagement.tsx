@@ -570,10 +570,10 @@ const SalesManagement = () => {
         </DialogContent>
       </Dialog>
       {/* En-tête compact : titre + unité active */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">
-        <h2 className="text-base font-semibold text-foreground">Ventes &amp; Caisse</h2>
+      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-blue-700 px-3 py-1.5 text-white">
+        <h2 className="text-base font-semibold">Ventes &amp; Caisse</h2>
         <div className="ml-auto flex items-center gap-2 min-w-0">
-          <span className="hidden sm:inline text-xs text-muted-foreground">Unité active</span>
+          <span className="hidden sm:inline text-xs text-blue-100">Unité active</span>
           <Select value={activeUnit?.id} onValueChange={(v) => { const u = units.find(x => x.id === v); if (u) setActiveUnit(u); }}>
             <SelectTrigger className="h-8 w-48 sm:w-64 text-sm" aria-label="Unité de production active"><SelectValue placeholder="Choisir une unité" /></SelectTrigger>
             <SelectContent>{units.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
