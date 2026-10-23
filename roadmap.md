@@ -103,3 +103,9 @@
 - [x] AquaHealth : détection du poisson sur photo + nom direct + analyse
 - [ ] Page Experts (Afrique, Maroc) : photo, titre, numéro, contact WhatsApp / message, notification WhatsApp — fiche prête ; en attente de la photo et d’une connexion WhatsApp Business pour l’envoi automatique
 - [x] Ventes passées non reportées en trésorerie : rattrapage vers caisse (espèces/mobile money) ou banque (carte/virement), invitation à créer les comptes manquants
+
+## Mode hors connexion complet (demandé)
+- [ ] Étape 1 : application installable et ouverture sans internet (version publiée uniquement)
+- [ ] Étape 2 : données de l’unité gardées sur l’appareil, consultables hors ligne
+- [ ] Étape 3 : ventes, achats et stock enregistrés hors ligne puis envoyés au retour d’internet
+- [ ] Limite : la toute première connexion à un compte exige internet
