@@ -1,3 +1,4 @@
+import CounterReceipt, { RECEIPT_PRINT_CSS } from './CounterReceipt';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,7 +69,8 @@ export type PosView = 'registers' | 'checkout' | 'multi' | 'ai';
 
 const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) => void }> = ({ view = 'checkout', onNavigate }) => {
   const { toast } = useToast();
-  const { formatCurrency } = useSettings();
+  const { formatCurrency, companyInfo } = useSettings();
+  const receiptRef = React.useRef<HTMLDivElement>(null);
   const { activeUnit, units = [], setActiveUnit } = useProductionUnits();
   const { sales, addSale } = useSales();
   const { user } = useAuth();
@@ -289,13 +291,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   };
 
   const printReceipt = () => {
-    if (!receipt) return;
-    const w = window.open('', '_blank', 'width=380,height=600');
+    const html = receiptRef.current?.outerHTML;
+    if (!receipt || !html) return;
+    const w = window.open('', '_blank', 'width=320,height=640');
     if (!w) return;
-    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
-    const rows = receipt.lines.map((l) => `<tr><td>${esc(l.name)}</td><td style="text-align:right">${l.quantity}</td><td style="text-align:right">${esc(formatCurrency(l.quantity * l.unitPrice))}</td></tr>`).join('');
-    w.document.write(`<html><head><title>Reçu ${esc(receipt.number)}</title><style>body{font-family:monospace;font-size:12px;padding:8px}table{width:100%;border-collapse:collapse}td{padding:2px 0}h2{text-align:center;margin:4px 0}</style></head><body><h2>${esc(activeUnit?.name || '')}</h2><p>Reçu : ${esc(receipt.number)}<br/>Date : ${esc(receipt.date)}<br/>Caisse : ${esc(receipt.register)}<br/>Client : ${esc(receipt.client)}</p><table>${rows}</table><hr/><p><b>Total : ${esc(formatCurrency(receipt.total))}</b><br/>Paiement : ${esc(receipt.payment)}</p><p style="text-align:center">Merci</p></body></html>`);
-    w.document.close(); w.focus(); w.print();
+    w.document.write(`<html><head><title>Reçu ${receipt.number}</title><style>${RECEIPT_PRINT_CSS}</style></head><body>${html}</body></html>`);
+    w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
 
   const handleQuick = (input?: string) => {
@@ -786,11 +787,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                   const img = productImages.imageFor(p.name);
                   return (
                   <button key={p.key} type="button" onClick={() => openPick(p)}
-                    className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <div className="relative aspect-[4/3] w-full bg-muted">
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-none border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <div className="relative aspect-square w-full bg-muted">
                       {img ? <img src={img} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
                         : <div className="flex h-full items-center justify-center bg-primary/10 text-primary" aria-hidden><span className="text-2xl font-bold">{productImages.generating ? '…' : initials || '?'}</span></div>}
-                      <span className={`absolute bottom-1 right-1 rounded-md px-2 py-0.5 text-xs font-bold shadow ${p.price > 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                      <span className={`absolute bottom-0 right-0 rounded-none px-2 py-0.5 text-xs font-bold shadow ${p.price > 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
                         {p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}
                       </span>
                     </div>
@@ -928,12 +929,9 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       </>)}
 
 
-      <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}><DialogContent className="max-w-sm"><DialogHeader><DialogTitle>Reçu {receipt?.number}</DialogTitle></DialogHeader>
-        {receipt && <div className="space-y-2 text-sm">
-          <p className="text-muted-foreground">{receipt.date} · {receipt.register} · {receipt.client}</p>
-          {receipt.lines.map((l, i) => <div key={i} className="flex justify-between border-b border-border py-1"><span>{l.name} × {l.quantity}</span><span>{formatCurrency(l.quantity * l.unitPrice)}</span></div>)}
-          <div className="flex justify-between font-bold pt-1"><span>Total</span><span>{formatCurrency(receipt.total)}</span></div>
-          <p className="text-muted-foreground">Paiement : {receipt.payment}</p>
+      <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}><DialogContent className="max-w-sm max-h-[92vh] overflow-y-auto"><DialogHeader><DialogTitle>Reçu {receipt?.number}</DialogTitle></DialogHeader>
+        {receipt && <div className="space-y-3">
+          <div className="rounded-none border border-border"><CounterReceipt ref={receiptRef} receipt={receipt} company={companyInfo} unitName={activeUnit?.name} format={formatCurrency} /></div>
           <Button className="w-full" onClick={printReceipt}><Printer className="w-4 h-4 mr-2" />Imprimer le reçu</Button>
         </div>}
       </DialogContent></Dialog>
