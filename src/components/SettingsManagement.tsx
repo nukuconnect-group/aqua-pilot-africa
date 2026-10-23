@@ -780,8 +780,14 @@ const SettingsManagement = () => {
               <Building2 className="w-4 h-4 mr-1" />
               Entreprise
             </TabsTrigger>
+            <TabsTrigger value="devices" className="text-xs px-2.5 py-2 data-[state=active]:bg-background whitespace-nowrap">
+              <Printer className="w-4 h-4 mr-1" />
+              Périphériques
+            </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="devices"><PeripheralsSettings /></TabsContent>
 
         {/* Onglet Entreprise */}
         <TabsContent value="company" className="space-y-4 sm:space-y-6">
