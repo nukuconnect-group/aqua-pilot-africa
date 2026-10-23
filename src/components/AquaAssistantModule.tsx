@@ -401,7 +401,7 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
               <Bot className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h1 className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground sm:text-xl">AquaAssistant<span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary"><span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />Données réelles</span></h1>
+              <h1 className="flex items-center gap-2 text-base font-bold tracking-tight text-foreground sm:text-xl">AquaAssistant<span className="hidden min-[420px]:inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary"><span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />Données réelles</span></h1>
               <p className="truncate text-xs text-muted-foreground">{unitProfile.label} · {unitLabel}</p>
             </div>
           </div>
@@ -432,8 +432,8 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
             )}
           </div>
           <div className="relative">
-            <Button variant="outline" onClick={() => { setShowLanguageSelector(!showLanguageSelector); setShowUnitSelector(false); }} className="bg-background" aria-label="Choisir la langue">
-              <Globe className="size-4" /><span>{currentLang?.flag} {currentLang?.label}</span><ChevronDown className="size-4" />
+            <Button variant="outline" onClick={() => { setShowLanguageSelector(!showLanguageSelector); setShowUnitSelector(false); }} className="bg-background px-2 sm:px-4" aria-label="Choisir la langue">
+              <Globe className="size-4" /><span className="hidden sm:inline">{currentLang?.flag} {currentLang?.label}</span><span className="sm:hidden">{currentLang?.flag}</span><ChevronDown className="size-4" />
             </Button>
             {showLanguageSelector && (
               <div className="absolute right-0 top-full z-[10030] mt-1 min-w-48 rounded-md border bg-popover p-1 text-popover-foreground shadow-xl">
@@ -465,7 +465,7 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
                 {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Bot className="size-4 text-primary" />AquaAssistant</div>}
-                <MessageContent className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'border-l-2 border-primary/50 pl-3 [&_strong]:text-primary [&_strong]:tabular-nums'}>
+                <MessageContent className={message.role === 'user' ? 'bg-primary text-primary-foreground break-words' : 'border-l-2 border-primary/50 pl-3 break-words [&_strong]:text-primary [&_strong]:tabular-nums'}>
                   {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}
