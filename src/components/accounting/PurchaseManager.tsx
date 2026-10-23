@@ -230,7 +230,10 @@ const PurchaseManager = () => {
       try {
         if (targetStock) {
           const after = Number(targetStock.quantity) + qty;
-          await updateStock(targetStock.id, { quantity: after, cost: qty > 0 ? amount / qty : targetStock.cost } as any);
+          const patch: Record<string, unknown> = { quantity: after, cost: qty > 0 ? amount / qty : targetStock.cost };
+          // Prix de vente mis à jour si renseigné pour un produit commercial existant.
+          if (stockTarget.purpose === 'commercial' && stockTarget.salePrice > 0) patch.sale_price = stockTarget.salePrice;
+          await updateStock(targetStock.id, patch as any);
           await (supabase as any).from('stock_movements').insert({
             user_id: targetStock.user_id, unit_id: activeUnit.id, stock_id: targetStock.id, type: 'in',
             quantity: qty, quantity_after: after, reason: `Achat${newPurchase.supplier ? ` — ${newPurchase.supplier}` : ''}`,
@@ -1206,7 +1209,7 @@ const PurchaseManager = () => {
                 />
               </div>
               <div>
-                <Label>Prix unitaire *</Label>
+                <Label>Prix d'achat unitaire *</Label>
                 <Input
                   type="number"
                   min="0"
