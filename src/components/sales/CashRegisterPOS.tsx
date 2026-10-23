@@ -603,7 +603,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
                 {filtered.map((p) => (
                   <Button key={p.key} variant="outline" onClick={() => addToCart(p.name, p.price)}
-                    className="h-auto min-h-20 w-full flex-col items-start rounded-lg p-3 text-left whitespace-normal">
+                    className="h-auto min-h-20 w-full flex-col items-start rounded-lg border-primary/30 p-3 text-left whitespace-normal hover:bg-primary/10 hover:border-primary">
                     <span className="text-sm font-semibold break-words">{p.name}</span>
                     <span className="text-xs text-muted-foreground">{p.price > 0 ? formatCurrency(p.price) : 'Prix à renseigner'}</span>
                     {p.quantity !== undefined && <span className="text-xs text-muted-foreground">Stock : {p.quantity} {p.unit}</span>}
@@ -646,7 +646,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <CardContent className="space-y-3">
             {cart.length === 0 && <p className="text-sm text-muted-foreground">Touchez un produit pour l'ajouter.</p>}
             {cart.map((l, i) => (
-              <div key={i} className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
+              <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border-l-4 border-primary p-2 odd:bg-primary/5 even:bg-accent/40">
                 <div className="flex-1 min-w-0">
                   <Input aria-label={`Produit ${i + 1}`} className="h-8" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
                   <label className="block text-xs text-muted-foreground mt-2">Prix unitaire<Input aria-label={`Prix unitaire ${i + 1}`} min="0" step="any" type="number" className="h-8 mt-1" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} /></label>
