@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, PackagePlus } from 'lucide-react';
+import { AlertTriangle, PackagePlus, Search, Plus, X, Store, Warehouse } from 'lucide-react';
 import type { FeedStock } from '@/hooks/useFeedStocks';
-import { isCommercialStock } from '@/lib/stockPurpose';
+import { getSalePrice, isCommercialStock } from '@/lib/stockPurpose';
+import { normalizeProductSearch } from '@/lib/posCatalog';
 
 export interface PurchaseStockTarget {
   purpose: 'none' | 'commercial' | 'production';
@@ -24,18 +24,89 @@ export const lowStockSuggestions = (stocks: FeedStock[]) =>
 export const suggestedQuantity = (s: FeedStock) =>
   Math.max(1, Math.ceil(Number(s.min_threshold ?? 0) * 2 - Number(s.quantity)));
 
+const stockName = (s: FeedStock) => s.custom_name || s.feed_type;
+
 interface Props {
   stocks: FeedStock[];
   target: PurchaseStockTarget;
   onTarget: (t: PurchaseStockTarget) => void;
+  /** Produit existant choisi (réapprovisionnement) : remplit aussi description, unité, prix. */
   onPickSuggestion: (s: FeedStock) => void;
+  /** Nouveau produit à créer : pré-remplit la description avec le nom recherché. */
+  onCreateNew?: (name: string, purpose: 'commercial' | 'production') => void;
 }
 
-const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPickSuggestion }) => {
+const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPickSuggestion, onCreateNew }) => {
+  const [query, setQuery] = useState('');
   const suggestions = useMemo(() => lowStockSuggestions(stocks).slice(0, 12), [stocks]);
-  const candidates = stocks.filter((s) => target.purpose === 'commercial' ? isCommercialStock(s) : !isCommercialStock(s));
   const selected = stocks.find((s) => s.id === target.stockId);
 
+  const results = useMemo(() => {
+    const q = normalizeProductSearch(query);
+    if (!q) return [];
+    return stocks
+      .filter((s) => normalizeProductSearch(stockName(s)).includes(q) ||
+        ((s as any).barcode && String((s as any).barcode).includes(query.trim())))
+      .slice(0, 8);
+  }, [stocks, query]);
+
+  const pickExisting = (s: FeedStock) => {
+    onTarget({ purpose: isCommercialStock(s) ? 'commercial' : 'production', stockId: s.id, salePrice: getSalePrice(s) || 0 });
+    onPickSuggestion(s);
+    setQuery('');
+  };
+
+  const createNew = (purpose: 'commercial' | 'production') => {
+    onTarget({ purpose, stockId: '', salePrice: 0 });
+    onCreateNew?.(query.trim(), purpose);
+    setQuery('');
+  };
+
+  // État B : un produit (existant ou nouveau) est choisi.
+  if (target.purpose !== 'none') {
+    const isCommercial = target.purpose === 'commercial';
+    return (
+      <div className="space-y-3 rounded-md border border-primary/40 bg-primary/5 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+              {isCommercial ? <Store className="h-4 w-4 shrink-0 text-primary" /> : <Warehouse className="h-4 w-4 shrink-0 text-primary" />}
+              <span className="truncate">{selected ? stockName(selected) : 'Nouveau produit'}</span>
+              <span className="rounded-full border border-primary/40 bg-background px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                {isCommercial ? 'Stock commercial' : 'Stock de production'}
+              </span>
+              {!selected && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">À créer</span>}
+            </p>
+            {selected && (
+              <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                Stock actuel : {Number(selected.quantity)} {selected.unit}
+                {getSalePrice(selected) > 0 && isCommercial ? ` · prix de vente actuel ${getSalePrice(selected).toLocaleString('fr-FR')} F` : ''}
+              </p>
+            )}
+            {!selected && (
+              <p className="mt-1 text-xs text-muted-foreground">Le nom du produit est la description de l’achat.</p>
+            )}
+          </div>
+          <button type="button" onClick={() => onTarget(EMPTY_STOCK_TARGET)}
+            className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:border-primary">
+            <X className="h-3 w-3" /> Changer
+          </button>
+        </div>
+        {isCommercial && (
+          <div className="max-w-xs">
+            <Label>Prix de vente *</Label>
+            <Input type="number" min={0} className="mt-1" value={target.salePrice || ''}
+              onChange={(e) => onTarget({ ...target, salePrice: Number(e.target.value) || 0 })}
+              placeholder="Prix de vente unitaire" />
+            <p className="mt-1 text-xs text-muted-foreground">Ce prix sera proposé à la caisse lors des ventes.</p>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">La quantité entre en stock dès que l’achat est payé, avec un mouvement d’entrée.</p>
+      </div>
+    );
+  }
+
+  // État A : recherche d'un produit à réapprovisionner, ou création.
   return (
     <div className="space-y-3 rounded-md border border-border p-3">
       {suggestions.length > 0 && (
@@ -45,9 +116,9 @@ const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPic
           </p>
           <div className="flex flex-wrap gap-2">
             {suggestions.map((s) => (
-              <button key={s.id} type="button" onClick={() => onPickSuggestion(s)}
+              <button key={s.id} type="button" onClick={() => pickExisting(s)}
                 className="rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-left text-xs hover:border-primary">
-                <span className="block font-medium">{s.custom_name || s.feed_type}</span>
+                <span className="block font-medium">{stockName(s)}</span>
                 <span className="text-muted-foreground tabular-nums">Reste {Number(s.quantity)} {s.unit} · à commander {suggestedQuantity(s)}</span>
               </button>
             ))}
@@ -55,36 +126,56 @@ const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPic
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div>
-          <Label className="flex items-center gap-1"><PackagePlus className="h-4 w-4" /> Cet achat est destiné à *</Label>
-          <select aria-label="Destination du stock" className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
-            value={target.purpose} onChange={(e) => onTarget({ ...EMPTY_STOCK_TARGET, purpose: e.target.value as any })}>
-            <option value="none">Aucun stock (service, frais…)</option>
-            <option value="commercial">Stock commercial — à revendre</option>
-            <option value="production">Stock de production — à utiliser (aliments, intrants…)</option>
-          </select>
+      <div>
+        <Label className="flex items-center gap-1"><PackagePlus className="h-4 w-4" /> Produit à approvisionner</Label>
+        <div className="relative mt-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher un produit par nom ou code-barres…"
+            className="pl-9"
+            aria-label="Rechercher un produit à approvisionner"
+          />
         </div>
-        {target.purpose !== 'none' && (
-          <div>
-            <Label>Produit</Label>
-            <select aria-label="Produit du stock" className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
-              value={target.stockId} onChange={(e) => onTarget({ ...target, stockId: e.target.value })}>
-              <option value="">Nouveau produit (nom = description)</option>
-              {candidates.map((s) => <option key={s.id} value={s.id}>{s.custom_name || s.feed_type} ({Number(s.quantity)} {s.unit})</option>)}
-            </select>
-          </div>
-        )}
-        {target.purpose === 'commercial' && !selected && (
-          <div>
-            <Label>Prix de vente *</Label>
-            <Input type="number" min={0} className="mt-1" value={target.salePrice || ''}
-              onChange={(e) => onTarget({ ...target, salePrice: Number(e.target.value) || 0 })} placeholder="Prix de vente unitaire" />
-          </div>
-        )}
+        <p className="mt-1 text-xs text-muted-foreground">
+          Sans choix de produit, l’achat n’entre dans aucun stock (service, frais…).
+        </p>
       </div>
-      {target.purpose !== 'none' && (
-        <p className="text-xs text-muted-foreground">La quantité entre en stock dès que l’achat est payé, avec un mouvement d’entrée.</p>
+
+      {query.trim() && (
+        <div className="space-y-1.5">
+          {results.map((s) => (
+            <div key={s.id} className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{stockName(s)}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {isCommercialStock(s) ? 'Commercial' : 'Production'} · reste {Number(s.quantity)} {s.unit}
+                  {Number(s.cost) > 0 ? ` · coût ${Number(s.cost).toLocaleString('fr-FR')} F` : ''}
+                </p>
+              </div>
+              <button type="button" onClick={() => pickExisting(s)}
+                className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground">
+                <Plus className="h-3.5 w-3.5" /> Ajouter
+              </button>
+            </div>
+          ))}
+          <div className="rounded-md border border-dashed border-border px-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              {results.length === 0 ? `« ${query.trim()} » n’existe pas encore.` : 'Pas dans la liste ?'}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" onClick={() => createNew('commercial')}
+                className="flex items-center gap-1 rounded-md border border-primary px-2.5 py-1.5 text-xs font-medium text-primary">
+                <Store className="h-3.5 w-3.5" /> Créer en stock commercial
+              </button>
+              <button type="button" onClick={() => createNew('production')}
+                className="flex items-center gap-1 rounded-md border border-primary px-2.5 py-1.5 text-xs font-medium text-primary">
+                <Warehouse className="h-3.5 w-3.5" /> Créer en stock de production
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
