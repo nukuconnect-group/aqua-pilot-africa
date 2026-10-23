@@ -27,6 +27,33 @@ export const planDeduction = (qty: number, rows: { id: string; quantity: number 
   return { plan, missing: left > 0 ? left : 0 };
 };
 
+/** Calcule les articles de stock commercial à retirer pour un panier. */
+export const planSaleStock = async (unitId: string, cart: PosLine[]) => {
+  const { data: stocks, error } = await (supabase as any).from('feed_stocks').select('*').eq('unit_id', unitId);
+  if (error) throw error;
+  const out: { stock_id: string; quantity: number }[] = [];
+  for (const line of cart) {
+    const key = normalizeProductSearch(line.name);
+    const rows = (stocks || []).filter((s: any) => isCommercialStock(s) && normalizeProductSearch(s.custom_name || s.feed_type) === key);
+    for (const p of planDeduction(line.quantity, rows).plan) out.push({ stock_id: p.id, quantity: p.take });
+  }
+  return out;
+};
+
+/**
+ * Encaissement + sortie de stock en une seule opération côté serveur.
+ * Renvoie false si la fonction serveur n'existe pas (ancienne base) pour basculer sur l'ancien parcours.
+ */
+export const postSaleAtomically = async (unitId: string, saleId: string, sessionId: string, cart: PosLine[]) => {
+  const stock = await planSaleStock(unitId, cart);
+  const { error } = await (supabase as any).rpc('pos_post_sale', { _sale_id: saleId, _session_id: sessionId, _stock: stock });
+  if (error) {
+    if (error.code === 'PGRST202' || error.code === '42883') return false;
+    throw new Error(error.message);
+  }
+  return true;
+};
+
 /** Retire du stock commercial les quantités d'une vente en caisse (une seule fois par vente). */
 export const deductSoldStock = async (unitId: string, saleId: string, cart: PosLine[]) => {
   const db = supabase as any;
