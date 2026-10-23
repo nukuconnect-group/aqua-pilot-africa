@@ -139,6 +139,9 @@ html, body {
     --aqua-secondary: 187 60% 75%;
     --ocean-primary: 219 80% 32%;
     --ocean-secondary: 210 60% 55%;
+    --register-action: 0 0% 100%;
+    --register-action-foreground: 219 80% 28%;
+    --register-action-hover: 210 70% 94%;
   }
 
   .dark {

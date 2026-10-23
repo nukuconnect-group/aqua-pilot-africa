@@ -420,9 +420,9 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-semibold text-white">● Ouverte</span>
           <div className="ml-auto flex flex-wrap gap-1">
             {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
-            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4 mr-1" />Opérations</Button>
-            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4 mr-1" />Clôturer</Button>
-            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller : protège la caisse par votre mot de passe pendant une absence"><KeyRound className="h-4 w-4 mr-1" />Verrouiller</Button>
+            <Button variant="registerAction" size="sm" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4" />Opérations</Button>
+            <Button variant="registerAction" size="sm" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4" />Clôturer</Button>
+            <Button variant="registerAction" size="sm" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller : protège la caisse par votre mot de passe pendant une absence"><KeyRound className="h-4 w-4" />Verrouiller</Button>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
