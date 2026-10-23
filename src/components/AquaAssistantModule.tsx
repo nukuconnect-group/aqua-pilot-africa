@@ -41,7 +41,7 @@ const languages: Language[] = [
   { id: 'swahili', label: 'Kiswahili', code: 'sw-KE', flag: '🇰🇪' },
 ];
 
-const AquaAssistantModule = () => {
+const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
   const { units, activeUnit } = useProductionUnits();
   const { isDemoMode } = useAuth();
   const { t } = useSettings();
