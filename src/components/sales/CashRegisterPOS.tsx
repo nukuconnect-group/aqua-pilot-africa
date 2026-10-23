@@ -19,7 +19,7 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
-import { postSaleToTreasury } from '@/lib/posTreasury';
+import { postSaleToTreasury, hasRegisterAccount } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
@@ -209,6 +209,13 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       const availability = await cash.validateSession(sessionId);
       if (availability.error) {
         reportFailure('Encaissement impossible', availability.error);
+        return;
+      }
+    }
+    if (!pendingPayment?.sale && payment === 'Espèces') {
+      const regName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
+      if (!(await hasRegisterAccount(activeUnit.id, regName))) {
+        toast({ title: 'Aucune caisse en trésorerie', description: `Pour encaisser, créez d’abord dans Comptabilité › Trésorerie un compte « Caisse de vente » rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.`, variant: 'destructive' });
         return;
       }
     }

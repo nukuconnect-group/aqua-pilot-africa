@@ -4,10 +4,19 @@ import { movementLines, type TreasuryAccount } from '@/lib/treasury';
 const db = supabase as any;
 const norm = (v?: string | null) => (v || '').trim().toLowerCase();
 
-/** Compte de trésorerie rattaché à une caisse de vente : même nom, sinon un compte caisse dont le nom contient « vente ». */
-export const findRegisterAccount = (accounts: TreasuryAccount[], registerName?: string | null) =>
-  accounts.find(a => a.kind === 'cash' && norm(a.name) === norm(registerName)) ||
-  accounts.find(a => a.kind === 'cash' && norm(a.name).includes('vente')) || null;
+/** Compte de trésorerie rattaché à une caisse de vente : même nom, sinon nom contenant « vente », sinon le seul compte caisse de l'unité. */
+export const findRegisterAccount = (accounts: TreasuryAccount[], registerName?: string | null) => {
+  const cash = accounts.filter(a => a.kind === 'cash' && !(a as any).archived_at);
+  return cash.find(a => norm(a.name) === norm(registerName)) ||
+    cash.find(a => norm(a.name).includes('vente')) ||
+    (cash.length === 1 ? cash[0] : null);
+};
+
+/** Indique si l'unité possède un compte caisse de trésorerie pouvant recevoir les ventes. */
+export async function hasRegisterAccount(unitId: string, registerName?: string | null) {
+  const { data } = await db.from('treasury_accounts').select('*').eq('unit_id', unitId);
+  return !!findRegisterAccount(data || [], registerName);
+}
 
 /**
  * Inscrit l'encaissement espèces d'une vente dans la caisse de trésorerie rattachée.

@@ -100,6 +100,14 @@ export const useFeedStocks = (unitId?: string) => {
 
       if (error) throw error;
 
+      // Stock initial : enregistre l'entrée correspondante dans les mouvements.
+      if (data?.id && Number(data.quantity) > 0 && data.unit_id) {
+        await (supabase as any).from('stock_movements').insert({
+          user_id: user.id, unit_id: data.unit_id, stock_id: data.id, type: 'in',
+          quantity: Number(data.quantity), quantity_after: Number(data.quantity), reason: 'Stock initial',
+        });
+      }
+
       toast({
         title: 'Succès',
         description: 'Stock d\'aliment créé avec succès',

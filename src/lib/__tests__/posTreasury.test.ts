@@ -11,7 +11,11 @@ describe('caisse de trésorerie rattachée à la caisse de vente', () => {
   it('sinon un compte caisse dont le nom contient « vente »', () => {
     expect(findRegisterAccount([acc('a', 'Banque', 'bank'), acc('c', 'Caisse de vente')], 'Comptoir')?.id).toBe('c');
   });
-  it('aucun compte si rien ne correspond', () => {
-    expect(findRegisterAccount([acc('a', 'Coffre')], 'Comptoir')).toBeNull();
+  it('le seul compte caisse de l’unité reçoit les ventes', () => {
+    expect(findRegisterAccount([acc('a', 'Coffre')], 'Comptoir')?.id).toBe('a');
+  });
+  it('aucun compte si plusieurs caisses sans correspondance ou aucune caisse', () => {
+    expect(findRegisterAccount([acc('a', 'Coffre'), acc('b', 'Petite caisse')], 'Comptoir')).toBeNull();
+    expect(findRegisterAccount([acc('a', 'Banque', 'bank')], 'Comptoir')).toBeNull();
   });
 });
