@@ -113,13 +113,16 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const downloadTemplate = () => {
-    const csv = 'nom;quantité;unité;prix;fournisseur;seuil;prix de vente\n';
+  const downloadTemplate = (kind: StockPurpose) => {
+    // Même ordre de colonnes pour les deux modèles ; seule la colonne prix de vente est propre au stock commercial.
+    const csv = kind === 'commercial'
+      ? 'nom;quantité;unité;prix d\'achat;fournisseur;seuil d\'alerte;prix de vente\n'
+      : 'nom;quantité;unité;prix d\'achat;fournisseur;seuil d\'alerte\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'modele_import_stock.csv';
+    a.download = kind === 'commercial' ? 'modele_stock_commercial.csv' : 'modele_stock_production.csv';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -137,8 +140,11 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
           Chaque article importé reçoit automatiquement un code-barres.
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={downloadTemplate}>
-            <FileDown className="w-4 h-4 mr-1" /> Télécharger le modèle
+          <Button variant="outline" size="sm" onClick={() => downloadTemplate('production')}>
+            <FileDown className="w-4 h-4 mr-1" /> Modèle stock de production
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => downloadTemplate('commercial')}>
+            <FileDown className="w-4 h-4 mr-1" /> Modèle stock commercial
           </Button>
           <Button size="sm" disabled={running} onClick={() => fileRef.current?.click()}>
             <Upload className="w-4 h-4 mr-1" /> Choisir un fichier CSV
