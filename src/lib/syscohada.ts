@@ -1,7 +1,7 @@
 // Comptabilité SYSCOHADA révisé (AUDCIF 2017) générée depuis les opérations déjà saisies.
 
 export const CHART: Record<string, string> = {
-  '101': 'Capital social', '121': 'Report à nouveau', '131': 'Résultat net',
+  '101': 'Capital social', '121': 'Report à nouveau', '131': 'Résultat net', '185': 'Comptes de liaison entre unités',
   '162': 'Emprunts auprès des établissements de crédit', '231': 'Bâtiments, installations (bassins, étangs)',
   '241': 'Matériel et outillage', '245': 'Matériel de transport', '281': 'Amortissements des immobilisations',
   '311': 'Stocks de marchandises', '321': 'Stocks de matières premières (aliments, alevins)',
