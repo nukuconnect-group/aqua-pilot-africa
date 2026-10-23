@@ -37,12 +37,12 @@ let container: HTMLDivElement;
 let root: Root;
 const click = async (button: HTMLButtonElement) => { await act(async () => button.click()); };
 const button = (text: string) => {
-  const match = [...container.querySelectorAll('button')].find(b => b.textContent?.includes(text));
+  const match = [...document.querySelectorAll("button")].find(b => b.textContent?.includes(text));
   if (!match) throw new Error(`Missing button: ${text}`);
   return match;
 };
 const input = async (label: string, value: string) => {
-  const element = container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
+  const element = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
   if (!element) throw new Error(`Missing input: ${label}`);
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
   await act(async () => {
