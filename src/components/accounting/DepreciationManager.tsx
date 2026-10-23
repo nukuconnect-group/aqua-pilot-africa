@@ -317,7 +317,7 @@ const DepreciationManager = () => {
                         size="sm"
                         onClick={() => {
                           deleteDepreciableAsset(asset.id);
-                          addLog('Équipement supprimé', 'Amortissements', `Équipement supprimé: ${asset.name}`, 'warning');
+                          addLog('Équipement supprimé', 'Amortissements', `Équipement supprimé: ${asset.name}`, 'info');
                         }}
                       >
                         <Trash2 className="w-4 h-4" />

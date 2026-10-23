@@ -160,7 +160,7 @@ const SuppliersManagement = () => {
 
   const handleDeleteSupplier = async (id: string) => {
     await deleteSupplier(id);
-    addLog('Fournisseur supprimé', 'Fournisseurs', 'Un fournisseur a été retiré', 'warning');
+    addLog('Fournisseur supprimé', 'Fournisseurs', 'Un fournisseur a été retiré', 'info');
     setDeletingSupplier(null);
     toast({ title: "Fournisseur supprimé" });
   };

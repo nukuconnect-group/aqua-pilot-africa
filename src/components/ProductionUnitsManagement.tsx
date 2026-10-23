@@ -200,7 +200,7 @@ const ProductionUnitsManagement = () => {
   const handleDeleteUnit = async (unitId: string, unitName: string) => {
     try {
       await deleteUnit(unitId);
-      addLog('Unité supprimée', 'Infrastructures', `Unité ${unitName} supprimée définitivement`, 'warning');
+      addLog('Unité supprimée', 'Infrastructures', `Unité ${unitName} supprimée définitivement`, 'info');
       toast.success(t('unit_deleted'));
     } catch (error) {
       console.error('Error deleting unit:', error);
