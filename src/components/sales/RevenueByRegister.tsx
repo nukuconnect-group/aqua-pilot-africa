@@ -8,9 +8,11 @@ import { CreditCard } from 'lucide-react';
 type Row = { label: string; amount: number; count: number };
 
 export const groupMovements = (
-  movements: { session_id: string; type: string; amount: number; payment_method: string }[],
+  movements: { session_id: string; type: string; amount: number; payment_method: string; created_by?: string }[],
   names: Record<string, string>,
+  people: Record<string, string> = {},
 ) => {
+  const byCashier: Record<string, Row> = {};
   const byReg: Record<string, Row> = {};
   const byPay: Record<string, Row> = {};
   for (const m of movements) {
@@ -19,15 +21,18 @@ export const groupMovements = (
     r.amount += Number(m.amount) || 0; r.count += 1;
     const p = (byPay[m.payment_method] ||= { label: m.payment_method || 'Autre', amount: 0, count: 0 });
     p.amount += Number(m.amount) || 0; p.count += 1;
+    const who = m.created_by || 'inconnu';
+    const c = (byCashier[who] ||= { label: people[who] || 'Membre de l’équipe', amount: 0, count: 0 });
+    c.amount += Number(m.amount) || 0; c.count += 1;
   }
   const sort = (o: Record<string, Row>) => Object.values(o).sort((a, b) => b.amount - a.amount);
-  return { registers: sort(byReg), payments: sort(byPay) };
+  return { registers: sort(byReg), payments: sort(byPay), cashiers: sort(byCashier) };
 };
 
 export default function RevenueByRegister() {
   const { activeUnit } = useProductionUnits();
   const { formatCurrency } = useSettings();
-  const [data, setData] = useState<{ registers: Row[]; payments: Row[] }>({ registers: [], payments: [] });
+  const [data, setData] = useState<{ registers: Row[]; payments: Row[]; cashiers: Row[] }>({ registers: [], payments: [], cashiers: [] });
 
   useEffect(() => {
     if (!activeUnit?.id) return;
@@ -35,11 +40,17 @@ export default function RevenueByRegister() {
     (async () => {
       const [{ data: sessions }, { data: moves }] = await Promise.all([
         db.from('cash_sessions').select('id, name, opened_at').eq('unit_id', activeUnit.id),
-        db.from('cash_movements').select('session_id, type, amount, payment_method').eq('unit_id', activeUnit.id).eq('type', 'sale'),
+        db.from('cash_movements').select('session_id, type, amount, payment_method, created_by').eq('unit_id', activeUnit.id).eq('type', 'sale'),
       ]);
       const names: Record<string, string> = {};
       for (const s of sessions || []) names[s.id] = s.name || `Caisse du ${new Date(s.opened_at).toLocaleDateString('fr-FR')}`;
-      setData(groupMovements(moves || [], names));
+      const ids = [...new Set((moves || []).map((m: any) => m.created_by).filter(Boolean))];
+      const people: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profs } = await db.from('profiles').select('id, full_name, email').in('id', ids);
+        for (const p of profs || []) people[p.id] = p.full_name || p.email || 'Membre de l’équipe';
+      }
+      setData(groupMovements(moves || [], names, people));
     })();
   }, [activeUnit?.id]);
 
@@ -61,6 +72,7 @@ export default function RevenueByRegister() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
       <List title="Encaissements par caisse" rows={data.registers} />
       <List title="Encaissements par mode de paiement" rows={data.payments} />
+      <List title="Encaissements par caissier" rows={data.cashiers} />
     </div>
   );
 }
