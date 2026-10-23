@@ -87,3 +87,8 @@
 - [x] Transfert total ou partiel : autre caisse, compte de trésorerie, remise à une personne
 - [x] Désactivation des caisses fermées
 - [ ] Tester les 12 scénarios avec un compte connecté (aucune session disponible ici)
+
+## Icônes du 23/10/2026
+- [x] Sortir le bouton AquaAssistant des contraintes d’affichage et le conserver indépendamment des restrictions de module, sans contourner les accès
+- [x] Contraster les icônes et boutons de caisse, éviter la compression des onglets ; compilation et 5 tests existants réussis
+- [ ] Vérifier visuellement sur le compte réel : connexion nécessaire dans l’aperçu, la session automatique n’est pas disponible pour ce compte
