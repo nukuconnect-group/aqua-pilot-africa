@@ -111,6 +111,6 @@
 - [ ] Limite : la toute première connexion à un compte exige internet
 
 ## Stock commercial / production (demandé)
-- [ ] Tableau de bord stock : totaux et valeurs séparés commercial / production
-- [ ] Mouvements : préciser commercial ou production
-- [ ] Écritures : préciser le type de stock ; aliments consommés = charge (coût × quantité)
+- [x] Tableau de bord stock : totaux et valeurs séparés commercial / production
+- [x] Mouvements : préciser commercial ou production
+- [x] Écritures : préciser le type de stock ; aliments consommés = charge (coût × quantité)
