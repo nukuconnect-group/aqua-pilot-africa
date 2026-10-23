@@ -974,6 +974,30 @@ const SalesManagement = () => {
           <CashRegisterPOS view={salesTab === 'pos' ? 'checkout' : salesTab as PosView} onNavigate={(v) => setSalesTab(v === 'checkout' ? 'pos' : v)} />
         )}
 
+        {POS_TABS.includes(salesTab) && filteredSales.length > 0 && (
+          <section className="rounded-lg border border-border bg-card p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Dernières ventes</h3>
+              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setSalesTab('history')}>Tout l’historique</Button>
+            </div>
+            <div className="divide-y divide-border">
+              {[...filteredSales].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5).map((sale) => (
+                <div key={sale.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+                  <span className="text-muted-foreground w-20 shrink-0">{sale.date ? new Date(sale.date).toLocaleDateString('fr-FR') : ''}</span>
+                  <span className="font-medium truncate flex-1 min-w-24">{sale.clientName || 'Client comptoir'}</span>
+                  <b className="text-foreground">{formatCurrency(sale.totalAmount)}</b>
+                  {sale.status === 'cancelled' && <span className="text-xs text-destructive">Annulée</span>}
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => handleViewSaleReceipt(sale)}><Eye className="w-3 h-3 mr-1" />Reçu</Button>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" disabled={sale.status === 'cancelled'} onClick={() => handleEditSale(sale)}>Modifier</Button>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive hover:text-destructive" disabled={sale.status === 'cancelled'} onClick={() => { setCancellationReason(''); setCancellingSale(sale); }}><Trash2 className="w-3 h-3 mr-1" />Annuler</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <TabsContent value="closures" className="space-y-3 sm:space-y-4">
           <div className="flex justify-end"><Button variant="outline" size="sm" onClick={generateSalesReport}><Download className="w-4 h-4 mr-2" />Rapport de caisse et ventes (CSV)</Button></div>
           <CashClosures />
