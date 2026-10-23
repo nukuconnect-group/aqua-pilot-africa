@@ -19,7 +19,7 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
-import { postSaleToTreasury, hasRegisterAccount, paymentDestination } from '@/lib/posTreasury';
+import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
 import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
@@ -126,6 +126,32 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [listening, setListening] = useState(false);
   const [unitConfirmed, setUnitConfirmed] = useState(false);
   const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [clientOpen, setClientOpen] = useState(false);
+  const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
+  const [backfilling, setBackfilling] = useState(false);
+  const checkUnposted = async () => {
+    if (!activeUnit?.id) return;
+    try {
+      const list = await findUnpostedSales(activeUnit.id);
+      const { data: accs } = await (appSupabase as any).from('treasury_accounts').select('kind, archived_at').eq('unit_id', activeUnit.id);
+      const kinds = new Set((accs || []).filter((a: any) => !a.archived_at).map((a: any) => a.kind));
+      const needs = [...new Set(list.map((x: any) => paymentDestination(x.payment_method)))].filter(k => !kinds.has(k)) as ('cash' | 'bank')[];
+      if (!kinds.has('cash')) needs.includes('cash') || needs.push('cash');
+      setUnposted({ count: list.length, amount: list.reduce((t: number, x: any) => t + Number(x.total_amount), 0), needs });
+    } catch { /* indicatif */ }
+  };
+  useEffect(() => { checkUnposted(); }, [activeUnit?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const runBackfill = async () => {
+    if (!activeUnit?.id) return;
+    setBackfilling(true);
+    try {
+      const r = await backfillSalesToTreasury(activeUnit.id);
+      toast({ title: 'Ventes reportées en trésorerie', description: `${r.posted} vente(s) ajoutée(s) à la caisse ou à la banque.${r.missing.length ? ' Certaines attendent un compte à créer.' : ''}` });
+      treasury.reload?.();
+    } catch (e: any) { toast({ title: 'Report interrompu', description: e?.message, variant: 'destructive' }); }
+    finally { setBackfilling(false); checkUnposted(); }
+  };
 
   useEffect(() => {
     setCart([]); setClient(''); setContact(''); setPendingPayment(null);
@@ -150,6 +176,19 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   };
 
   const filtered = catalog.filter((p) => normalizeProductSearch(p.name).includes(normalizeProductSearch(search)) || p.codes.some(c => c.toLowerCase() === search.trim().toLowerCase()));
+  const clientMatches = useMemo(() => {
+    const q = normalizeProductSearch(client);
+    if (!q) return [];
+    const seen = new Map<string, { name: string; contact: string }>();
+    for (const x of sales as any[]) {
+      const n = (x.clientName || '').trim();
+      if (!n || n === 'Client comptoir' || !normalizeProductSearch(n).includes(q)) continue;
+      const k = n.toLowerCase();
+      if (!seen.has(k) || (!seen.get(k)!.contact && x.clientContact)) seen.set(k, { name: n, contact: x.clientContact || '' });
+      if (seen.size >= 8) break;
+    }
+    return [...seen.values()].filter(c => c.name.toLowerCase() !== client.trim().toLowerCase() || !contact);
+  }, [client, contact, sales]);
   const noPrice = catalog.filter(p => !(p.price > 0)).length;
   const photoStatus = (productImages.generating || productImages.error || noPrice > 0) ? (
     <div className="space-y-1 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
@@ -158,19 +197,31 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       {noPrice > 0 && <p className="text-destructive">{noPrice} produit(s) sans prix de vente : touchez-les pour saisir le prix.</p>}
     </div>
   ) : null;
-  const searchResults = search.trim() ? (
+  const toggleSel = (k: string) => setSel(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const addSelected = () => {
+    const chosen = catalog.filter(p => sel.has(p.key));
+    chosen.forEach(p => addToCart(p.name, p.price > 0 ? p.price : 0));
+    if (chosen.length) toast({ title: `${chosen.length} produit(s) ajouté(s) au panier`, description: chosen.some(p => !(p.price > 0)) ? 'Saisissez le prix des produits sans prix dans le panier.' : undefined });
+    setSel(new Set()); setSearch('');
+  };
+  const searchResults = search.trim() || sel.size ? (
+    <div className="space-y-2">
     <div className="divide-y divide-border rounded-lg border border-border">
-      {filtered.slice(0, 12).map(p => {
+      {(search.trim() ? filtered : catalog.filter(p => sel.has(p.key))).slice(0, 15).map(p => {
         const img = productImages.imageFor(p.name);
+        const on = sel.has(p.key);
         return (
-          <button key={p.key} type="button" onClick={() => view === 'ai' ? (addToCart(p.name, p.price), toast({ title: `${p.name} ajouté` })) : openPick(p)} className="flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button key={p.key} type="button" aria-pressed={on} onClick={() => toggleSel(p.key)} className={`flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? 'bg-primary/10' : ''}`}>
+            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${on ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}>{on ? '✓' : ''}</span>
             {img ? <img src={img} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" /> : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">{p.name.slice(0, 2).toUpperCase()}</span>}
             <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
             <span className={`text-sm font-bold ${p.price > 0 ? 'text-primary' : 'text-destructive'}`}>{p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}</span>
           </button>
         );
       })}
-      {!filtered.length && <p className="p-3 text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+      {search.trim() && !filtered.length && <p className="p-3 text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+    </div>
+    {sel.size > 0 && <Button type="button" className="w-full" onClick={addSelected}><ShoppingCart className="h-4 w-4 mr-2" />Ajouter au panier ({sel.size})</Button>}
     </div>
   ) : <p className="text-xs text-muted-foreground">Tapez le nom ou le code d’un produit : il s’affiche aussitôt.</p>;
   const total = calculatePosTotal(cart);
@@ -617,6 +668,18 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <div className="flex gap-2"><Button className="flex-1" onClick={() => { setLockAsk(false); setLocked(true); }}><Lock className="w-4 h-4 mr-2" />Verrouiller</Button><Button variant="outline" className="flex-1" onClick={() => setLockAsk(false)}>Annuler</Button></div>
       </DialogContent></Dialog>
 
+      {(unposted.needs.length > 0 || unposted.count > 0) && (
+        <Alert><AlertDescription className="space-y-2">
+          {unposted.needs.includes('cash') && <p><b>Aucune caisse en trésorerie pour {activeUnit.name}.</b> Créez un compte « Caisse de vente » pour recevoir les ventes en espèces et Mobile Money.</p>}
+          {unposted.needs.includes('bank') && <p><b>Aucun compte bancaire pour {activeUnit.name}.</b> Créez-le pour recevoir les ventes par carte bancaire et virement.</p>}
+          {unposted.count > 0 && <p>{unposted.count} vente(s) ({formatCurrency(unposted.amount)}) sont en comptabilité mais pas encore dans la caisse ou la banque.</p>}
+          <div className="flex flex-wrap gap-2">
+            {unposted.needs.length > 0 && <Button size="sm" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'accounting' }))}>{unposted.needs.includes('cash') ? 'Créer une caisse' : 'Créer un compte bancaire'}</Button>}
+            {unposted.count > 0 && <Button size="sm" variant="outline" disabled={backfilling} onClick={runBackfill}>{backfilling ? 'Report…' : 'Reporter ces ventes'}</Button>}
+            <Button size="sm" variant="ghost" onClick={checkUnposted}>Vérifier à nouveau</Button>
+          </div>
+        </AlertDescription></Alert>
+      )}
       {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
       {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
 
@@ -674,7 +737,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
-            ) : view === 'multi' ? (
+            ) : view === 'multi' || search.trim() || sel.size ? (
               searchResults
             ) : (
               <>
