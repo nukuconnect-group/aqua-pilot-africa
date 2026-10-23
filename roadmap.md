@@ -96,9 +96,9 @@
 - [ ] Vérifier visuellement sur le compte réel : connexion nécessaire dans l’aperçu, la session automatique n’est pas disponible pour ce compte
 
 ## Demande du 23/10/2026
-- [ ] Photos réalistes automatiques des produits (par lots), réutilisées sur les fiches
-- [ ] Import de stock : signaler les produits sans prix
-- [ ] Caisse : afficher les produits avec photos ; Multi-caisses : retirer le catalogue
-- [ ] Recherche produit instantanée dans Caisse, Vente IA, Multi-caisses ; Vente IA fonctionnelle
-- [ ] AquaHealth : détection du poisson sur photo + nom direct + analyse
-- [ ] Page Experts (Afrique, Maroc) : photo, titre, numéro, contact WhatsApp / message, notification WhatsApp — en attente des vraies informations
+- [x] Photos réalistes automatiques des produits (par lots), réutilisées sur les fiches
+- [x] Import de stock : signaler les produits sans prix
+- [x] Caisse : afficher les produits avec photos ; Multi-caisses : retirer le catalogue
+- [x] Recherche produit instantanée dans Caisse, Vente IA, Multi-caisses ; Vente IA fonctionnelle
+- [x] AquaHealth : détection du poisson sur photo + nom direct + analyse
+- [ ] Page Experts (Afrique, Maroc) : photo, titre, numéro, contact WhatsApp / message, notification WhatsApp — fiche prête ; en attente de la photo et d’une connexion WhatsApp Business pour l’envoi automatique
