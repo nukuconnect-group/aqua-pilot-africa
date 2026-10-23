@@ -163,7 +163,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       {filtered.slice(0, 12).map(p => {
         const img = productImages.imageFor(p.name);
         return (
-          <button key={p.key} type="button" onClick={() => openPick(p)} className="flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button key={p.key} type="button" onClick={() => view === 'ai' ? (addToCart(p.name, p.price), toast({ title: `${p.name} ajouté` })) : openPick(p)} className="flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             {img ? <img src={img} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" /> : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">{p.name.slice(0, 2).toUpperCase()}</span>}
             <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
             <span className={`text-sm font-bold ${p.price > 0 ? 'text-primary' : 'text-destructive'}`}>{p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}</span>
