@@ -28,7 +28,7 @@ export default function CashierAssignDialog({ sessionId, current, onSaved }: { s
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}><Users className="h-4 w-4 mr-1" />Caissiers ({current.length})</Button>
+      <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setOpen(true)}><Users className="h-4 w-4 mr-1" />Caissiers ({current.length})</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Caissiers de cette caisse</DialogTitle></DialogHeader>
