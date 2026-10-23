@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle, RotateCcw } from 'lucide-react';
+import { summarizeSession, carriedOverBalance, cashDifference } from '@/lib/cashBalance';
+import { supabase as appSupabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
@@ -79,6 +81,25 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [quick, setQuick] = useState('');
   const [scanOpen, setScanOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlockError, setUnlockError] = useState('');
+  const lastActivity = useRef(Date.now());
+  const LOCK_AFTER_MS = 5 * 60 * 1000;
+  useEffect(() => {
+    const touch = () => { lastActivity.current = Date.now(); };
+    const events = ['pointerdown', 'keydown', 'touchstart'];
+    events.forEach((e) => window.addEventListener(e, touch));
+    const timer = window.setInterval(() => { if (Date.now() - lastActivity.current > LOCK_AFTER_MS) setLocked(true); }, 15000);
+    return () => { events.forEach((e) => window.removeEventListener(e, touch)); window.clearInterval(timer); };
+  }, []);
+  const unlock = async () => {
+    setUnlockError('');
+    if (!user?.email) { setUnlockError('Compte introuvable.'); return; }
+    const { error } = await appSupabase.auth.signInWithPassword({ email: user.email, password: unlockPassword });
+    if (error) { setUnlockError('Mot de passe incorrect.'); return; }
+    setUnlockPassword(''); lastActivity.current = Date.now(); setLocked(false);
+  };
   const [moveAmount, setMoveAmount] = useState('');
   const [moveLabel, setMoveLabel] = useState('');
   const [registerName, setRegisterName] = useState('');
@@ -106,6 +127,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const total = calculatePosTotal(cart);
   const sessionSales = cash.movements.filter((m) => m.type === 'sale');
   const sessionTotal = sessionSales.reduce((s, m) => s + m.amount, 0);
+  const summary = summarizeSession(Number(cash.session?.opening_amount) || 0, cash.movements);
 
   const addToCart = (name: string, price: number, qty = 1) => setCart((prev) => {
     const i = prev.findIndex((l) => l.name.toLowerCase() === name.toLowerCase());
@@ -257,15 +279,37 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <Alert><AlertDescription>Les caisses n’ont pas pu s’afficher. Cliquez sur « Réessayer ».<Button variant="outline" className="ml-2" onClick={() => cash.reload()}>Réessayer</Button></AlertDescription></Alert>
   );
 
+  const carried = carriedOverBalance(cash.history, registerName);
+  const openNames = new Set(cash.sessions.map((x) => (x.name || '').trim().toLowerCase()));
+  const closedRegisters = Array.from(new Map(cash.history.filter((h) => h.name && !openNames.has(h.name.trim().toLowerCase())).map((h) => [h.name!.trim().toLowerCase(), h])).values());
+  const reopen = async (name: string) => {
+    setBusy(true);
+    try {
+      const r = await cash.openSession(carriedOverBalance(cash.history, name) ?? 0, name);
+      if (r.error) toast({ title: 'Ouverture impossible', description: r.error, variant: 'destructive' });
+      else toast({ title: 'Caisse rouverte', description: 'Le solde de la dernière clôture est repris.' });
+    } finally { setBusy(false); }
+  };
+  const reopenList = closedRegisters.length > 0 && <div className="space-y-2">
+    <p className="text-xs font-semibold text-muted-foreground">Caisses fermées — rouvrir avec leur solde</p>
+    {closedRegisters.map((h) => (
+      <div key={h.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2 text-sm">
+        <span className="min-w-0 truncate">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h.name!)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
+      </div>
+    ))}
+  </div>;
+
   const openingForm = <div className="space-y-3">
     <label className="text-sm text-muted-foreground">Nom de la caisse</label>
     <Input aria-label="Nom de la nouvelle caisse" value={registerName} onChange={e => setRegisterName(e.target.value)} />
-    <label className="text-sm text-muted-foreground">Fond de caisse</label>
-    <Input type="number" min="0" aria-label="Fond de caisse" value={opening} onChange={e => setOpening(e.target.value)} placeholder="0" />
+    <label className="text-sm text-muted-foreground">Fond de caisse (facultatif)</label>
+    <Input type="number" min="0" aria-label="Fond de caisse" value={opening} onChange={e => setOpening(e.target.value)} placeholder={carried != null ? String(carried) : '0'} />
+    {carried != null && opening === '' && <p className="text-xs text-muted-foreground">Solde repris de la dernière clôture : {formatCurrency(carried)}</p>}
     <Button className="w-full" disabled={busy || !registerName.trim() || Number(opening) < 0} onClick={async () => {
       setBusy(true);
       try {
-        const r = await cash.openSession(Number(opening) || 0, registerName);
+        const r = await cash.openSession(opening === '' ? (carried ?? 0) : Number(opening) || 0, registerName);
         if (r.error) toast({ title: 'Ouverture impossible', description: r.error, variant: 'destructive' });
         else { setOpening(''); setRegisterName(''); setOpenRegister(false); toast({ title: 'Caisse ouverte' }); }
       } finally { setBusy(false); }
@@ -276,7 +320,8 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <div className="space-y-6"><Card className="max-w-md mx-auto rounded-lg">
       <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Lock className="w-5 h-5 text-primary" />Ouvrir une caisse — {activeUnit.name}</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        {isAdmin ? openingForm : <p className="text-sm text-muted-foreground">Aucune caisse ouverte ne vous est attribuée. Demandez à l’administrateur de vous ajouter comme caissier.</p>}
+        {reopenList}
+        {isAdmin ? openingForm : !closedRegisters.length && <p className="text-sm text-muted-foreground">Aucune caisse ouverte ne vous est attribuée. Demandez à l’administrateur de vous ajouter comme caissier.</p>}
         {cash.history.length > 0 && (
           <div className="pt-2 space-y-1">
             <p className="text-xs font-semibold text-muted-foreground">Dernières clôtures</p>
@@ -320,7 +365,15 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <span className="text-sm">Espèces attendues : <b>{formatCurrency(cash.expected)}</b></span>
         {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
         {isAdmin && <Button variant="outline" size="sm" disabled={busy || !!pendingPayment} onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}
+        <Button variant="secondary" size="sm" onClick={() => setLocked(true)}><Lock className="h-4 w-4 mr-1" />Verrouiller</Button>
       </div>
+      <Dialog open={locked} onOpenChange={() => {}}><DialogContent className="max-w-sm [&>button]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Caisse verrouillée</DialogTitle></DialogHeader>
+        <p className="text-sm text-muted-foreground">Le panier et les ventes enregistrées sont conservés. Saisissez le mot de passe de votre compte pour reprendre.</p>
+        <Input type="password" aria-label="Mot de passe" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && unlock()} />
+        {unlockError && <p className="text-sm text-destructive">{unlockError}</p>}
+        <Button onClick={unlock} disabled={!unlockPassword}><Unlock className="w-4 h-4 mr-2" />Déverrouiller</Button>
+      </DialogContent></Dialog>
 
       {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
       {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
@@ -342,15 +395,29 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               </Card>
             ))}
           </div>
+          {reopenList}
           <Card className="rounded-xl"><CardContent className="p-3 grid gap-3 md:grid-cols-2">
+          <div className="space-y-1 text-sm">
+            <p className="font-semibold">Bilan de la caisse « {cash.session.name || 'Caisse'} »</p>
+            {([['Solde d’ouverture', summary.opening], ['Ventes (tous paiements)', summary.sales],
+              ...Object.entries(summary.salesByPayment).map(([k, v]) => [`  dont ${k}`, v] as [string, number]),
+              ['Entrées d’espèces', summary.cashIn], ['Sorties / dépenses', -summary.cashOut],
+              ['Transferts entrants', summary.transfersIn], ['Transferts sortants', -summary.transfersOut]] as [string, number][]).map(([k, v]) => (
+              <div key={k} className="flex justify-between text-muted-foreground"><span className="whitespace-pre">{k}</span><span>{formatCurrency(v)}</span></div>
+            ))}
+            <div className="flex justify-between font-semibold border-t border-border pt-1"><span>Solde théorique (espèces)</span><span>{formatCurrency(summary.expected)}</span></div>
+          </div>
           <div className="space-y-2">
-            <p className="text-sm font-semibold">Fermer la caisse</p>
-            <Input type="number" placeholder="Espèces comptées" value={counted} onChange={(e) => setCounted(e.target.value)} />
-            {counted !== '' && <p className="text-xs">Écart : <b>{formatCurrency((Number(counted) || 0) - cash.expected)}</b></p>}
+            <p className="text-sm font-semibold">Clôturer la journée</p>
+            <Input type="number" placeholder="Montant physique compté" value={counted} onChange={(e) => setCounted(e.target.value)} />
+            {counted !== '' && (() => { const d = cashDifference(Number(counted) || 0, summary.expected); return (
+              <p className={`text-xs ${d === 0 ? 'text-primary' : 'text-destructive'}`}>{d === 0 ? 'Caisse équilibrée.' : `Écart ${d > 0 ? 'positif' : 'négatif'} : ${formatCurrency(d)} — il sera enregistré et signalé au responsable.`}</p>
+            ); })()}
+            <p className="text-xs text-muted-foreground">Le montant compté reste dans la caisse et sera repris à la prochaine ouverture.</p>
             <Button variant="destructive" size="sm" className="w-full" disabled={counted === '' || busy || !!pendingPayment} onClick={async () => {
-              const r = await cash.closeSession(Number(counted) || 0);
+              const r: any = await cash.closeSession(Number(counted) || 0);
               if (r.error) toast({ title: 'Clôture impossible', description: r.error, variant: 'destructive' });
-              else { setCounted(''); toast({ title: 'Caisse fermée' }); }
+              else { setCounted(''); toast(r.difference ? { title: 'Caisse fermée avec écart', description: `Écart de ${formatCurrency(r.difference)} enregistré et notifié.`, variant: 'destructive' } : { title: 'Clôture équilibrée' }); }
             }}><Lock className="w-4 h-4 mr-1" />Clôturer</Button>
           </div>
           </CardContent></Card>
@@ -412,7 +479,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
 
         </div>
         )}
-        <Card className="rounded-2xl">
+        <Card id="pos-cart" className="rounded-2xl lg:sticky lg:top-4 lg:self-start">
           <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Panier</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {cart.length === 0 && <p className="text-sm text-muted-foreground">Touchez un produit pour l'ajouter.</p>}
@@ -521,6 +588,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <Button className="w-full" onClick={printReceipt}><Printer className="w-4 h-4 mr-2" />Imprimer le reçu</Button>
         </div>}
       </DialogContent></Dialog>
+      {(view === 'checkout' || view === 'ai') && cart.length > 0 && (
+        <Button className="lg:hidden fixed bottom-20 left-4 z-40 h-12 rounded-full shadow-lg" onClick={() => document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth' })}>
+          <ShoppingCart className="w-4 h-4 mr-2" />{cart.reduce((n, l) => n + l.quantity, 0)} article(s) · {formatCurrency(total)}
+        </Button>
+      )}
       <BarcodeScanner open={scanOpen} onClose={() => setScanOpen(false)} onScan={handleScan} />
     </div>
   );
