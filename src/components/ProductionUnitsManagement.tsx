@@ -53,6 +53,29 @@ const ProductionUnitsManagement = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [unitSearch, setUnitSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+
+  // Types d'unités couverts par l'abonnement du compte (profil).
+  // null = pas de restriction (comptes anciens sans liste enregistrée).
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const [allowedTypes, setAllowedTypes] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!user?.id || isAdmin) return;
+    let cancelled = false;
+    supabase
+      .from('profiles')
+      .select('production_units')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setAllowedTypes((data?.production_units as string[] | null) ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id, isAdmin]);
+
+  const isTypeAllowed = (type: string) =>
+    isAdmin || !allowedTypes || allowedTypes.length === 0 || allowedTypes.includes(type);
   
   const [newUnit, setNewUnit] = useState({
     name: '',
