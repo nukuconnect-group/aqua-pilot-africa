@@ -16,7 +16,7 @@ vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [
 ] }) }));
 vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({
   session: state.session, sessions: [state.session], movements: [], history: [], allMovements: [],
-  expected: 10000, loading: false, validateSession: state.validateSession, addMovement: state.addMovement,
+  expected: 10000, loading: false, reload: vi.fn(async () => undefined), validateSession: state.validateSession, addMovement: state.addMovement,
 }) }));
 vi.mock('./BarcodeScanner', () => ({ default: () => null }));
 vi.mock('./CashSalesHistory', () => ({ default: () => null }));
