@@ -37,7 +37,7 @@ const STEPS = [
 const SIGNUP_PLANS = [
   { id: 'trial_discovery', name: 'Essai gratuit — 1 mois', desc: 'Accès complet pendant 30 jours, sans paiement.', price: '0 F CFA', period: '30 jours', icon: Sparkles, badge: 'Pour commencer', features: ['Tous les modules de vos unités', 'Aucune carte bancaire', 'Changement d’offre à tout moment'] },
   { id: 'annual_basic', name: 'Semi-exploitation', desc: 'Petites et moyennes exploitations.', price: '60 000 F CFA', period: '/ an', icon: Star, features: ['Modules principaux', 'Rapports PDF et Excel', 'Support prioritaire'] },
-  { id: 'annual_pro', name: 'Semi-industriel', desc: 'Production organisée à échelle moyenne.', price: '120 000 F CFA', period: '/ an', icon: Rocket, badge: 'Le plus choisi', features: ['Tout Semi-exploitation', 'Multi-unités et équipe', 'Analyse IA des maladies'] },
+  { id: 'annual_pro', name: 'Semi-industriel', desc: 'Production organisée à échelle moyenne.', price: '120 000 F CFA', period: '/ an', icon: Rocket, features: ['Tout Semi-exploitation', 'Multi-unités et équipe', 'Analyse IA des maladies'] },
   { id: 'annual_enterprise', name: 'Industriel', desc: 'Grandes productions intensives.', price: 'Sur devis', period: '', icon: Crown, features: ['Tous les modules', 'Formation sur site', 'Interlocuteur dédié'] },
   { id: 'custom', name: 'Sur mesure', desc: 'Besoins spécifiques : contactez-nous.', price: 'Nous contacter', period: '', icon: Handshake, features: ['Modules et intégrations adaptés', 'Accompagnement personnalisé'] },
 ];
