@@ -78,10 +78,14 @@ const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPic
               {!selected && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">À créer</span>}
             </p>
             {selected && (
-              <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                Stock actuel : {Number(selected.quantity)} {selected.unit}
-                {getSalePrice(selected) > 0 && isCommercial ? ` · prix de vente actuel ${getSalePrice(selected).toLocaleString('fr-FR')} F` : ''}
-              </p>
+              <div className="mt-1 space-y-0.5 text-xs text-muted-foreground tabular-nums">
+                <p>Stock actuel : {Number(selected.quantity)} {selected.unit} · unité de mesure : {selected.unit}</p>
+                <p>
+                  Prix d’achat enregistré : {Number(selected.cost) > 0 ? `${Number(selected.cost).toLocaleString('fr-FR')} F` : 'non renseigné'}
+                  {isCommercial && ` · prix de vente enregistré : ${getSalePrice(selected) > 0 ? `${getSalePrice(selected).toLocaleString('fr-FR')} F` : 'non renseigné'}`}
+                </p>
+                <p>Ces prix sont repris tels quels ci-dessous ; modifiez-les seulement si nécessaire.</p>
+              </div>
             )}
             {!selected && (
               <p className="mt-1 text-xs text-muted-foreground">Le nom du produit est la description de l’achat.</p>
@@ -142,7 +146,8 @@ const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPic
                 <p className="truncate text-sm font-medium">{stockName(s)}</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {isCommercialStock(s) ? 'Commercial' : 'Production'} · reste {Number(s.quantity)} {s.unit}
-                  {Number(s.cost) > 0 ? ` · coût ${Number(s.cost).toLocaleString('fr-FR')} F` : ''}
+                  {Number(s.cost) > 0 ? ` · achat ${Number(s.cost).toLocaleString('fr-FR')} F` : ''}
+                  {isCommercialStock(s) && getSalePrice(s) > 0 ? ` · vente ${getSalePrice(s).toLocaleString('fr-FR')} F` : ''}
                 </p>
               </div>
               <button type="button" onClick={() => pickExisting(s)}
