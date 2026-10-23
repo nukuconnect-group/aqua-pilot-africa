@@ -16,6 +16,7 @@ import { Conversation, ConversationContent, ConversationScrollButton } from '@/c
 import { Message as AIMessage, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea, PromptInputTools, PromptInputButton } from '@/components/ai-elements/prompt-input';
 import { Shimmer } from '@/components/ai-elements/shimmer';
+import AssistantKpis from '@/components/assistant/AssistantKpis';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 
 interface Message {
@@ -393,14 +394,14 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className={isFullscreen ? "relative shrink-0 overflow-visible border-b bg-background px-3 pt-3 sm:px-5" : "relative z-10 shrink-0 overflow-visible border-b bg-background px-3 pt-2"}>
+      <header className={isFullscreen ? "relative shrink-0 overflow-visible border-b bg-gradient-to-b from-primary/10 to-background px-3 pt-3 sm:px-5" : "relative z-10 shrink-0 overflow-visible border-b bg-gradient-to-b from-primary/10 to-background px-3 pt-2"}>
         <div className="flex items-center justify-between gap-3 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-primary/30">
               <Bot className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold text-foreground sm:text-xl">AquaAssistant</h1>
+              <h1 className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground sm:text-xl">AquaAssistant<span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary"><span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />Données réelles</span></h1>
               <p className="truncate text-xs text-muted-foreground">{unitProfile.label} · {unitLabel}</p>
             </div>
           </div>
@@ -444,6 +445,7 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
       </header>
 
       <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'flex h-[min(560px,calc(100dvh-10rem))] min-h-[320px] flex-col'}>
+        <AssistantKpis unitId={selectedUnitId} />
         {messages.length <= 1 && <div className="shrink-0 border-b px-4 py-3 sm:px-6">
           <p className="text-sm text-muted-foreground">
             {latestControl
@@ -463,7 +465,7 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
                 {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Bot className="size-4 text-primary" />AquaAssistant</div>}
-                <MessageContent className={message.role === 'user' ? 'bg-sidebar-background text-sidebar-foreground' : undefined}>
+                <MessageContent className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'border-l-2 border-primary/50 pl-3 [&_strong]:text-primary [&_strong]:tabular-nums'}>
                   {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}

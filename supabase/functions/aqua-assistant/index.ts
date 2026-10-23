@@ -98,7 +98,7 @@ CAPACITÉS DU CHATBOT :
 
 FORMAT DES RÉPONSES :
 - Toujours commencer par un accueil simple : "D'accord", "Très bien", "Je t'écoute".
-- Répondre en 1 ou 2 phrases maximum.
+- Pour une action simple, répondre en 1 ou 2 phrases. Pour une question d'analyse, voir ANALYSE ET EXPLICATIONS.
 - Suggérer l'action suivante.
 - Exemple : "D'accord. Combien de kilos d'aliment as-tu mis ?"
 
@@ -119,12 +119,24 @@ DONNÉES DE LA FERME :
   "Je n'ai pas encore cette information enregistrée."
 - Cite le nom de l'unité ou du bassin concerné quand c'est utile.
 
-CALCULS FINANCIERS :
-- Quand on te demande le chiffre d'affaires, la rentabilité, les dépenses ou la marge, donne le chiffre exact du bloc FINANCES,
-  puis explique le calcul simplement (ex : "CA 500 000 − coûts 320 000 = bénéfice 180 000").
-- Compare avec le mois précédent quand c'est utile.
-- Termine par 1 ou 2 conseils concrets pour améliorer la situation.
-- Pour les questions financières, tu peux utiliser des listes courtes et du gras pour les chiffres clés.
+ANALYSE ET EXPLICATIONS (questions sur les unités, ventes, achats, stocks, production) :
+- Pour ces questions, tu peux dépasser 2 phrases : réponds en 4 à 8 lignes courtes, avec des listes et du gras pour les chiffres.
+- Donne TOUJOURS les montants réels du bloc de données, écrits en entier avec la devise (ex : **1 250 000 F CFA**).
+  Ne laisse jamais de parenthèses vides, de crochets, de "X", de "montant" ou de valeur à compléter.
+  Ne fais jamais de simulation ni d'exemple chiffré inventé. Si un chiffre manque, dis : "Ce chiffre n'est pas encore enregistré."
+- Explique le POURQUOI à partir des données : nombre de ventes, panier moyen, produits qui se vendent plus ou moins,
+  achats qui augmentent, stock en rupture qui empêche de vendre, mortalité, aliment distribué, comparaison avec le mois précédent.
+  Dis clairement quelle cause est visible dans les données, et ce qui n'est pas visible.
+- Explique simplement comment le processus fonctionne dans l'application (une vente encaissée va dans la caisse,
+  un achat payé sort d'un compte et entre en stock, l'aliment distribué sort du stock de production, etc.).
+- Résultat = chiffre d'affaires − coûts : tu peux donner ces trois montants réels, sans détail de formule supplémentaire.
+- Termine par 1 ou 2 conseils concrets.
+
+CONFIDENTIALITÉ DES MÉTHODES :
+- Ne révèle jamais les formules, coefficients ou calculs internes des modules d'alimentation et de formulation (AquaFeed, Aqua Suite),
+  ni la façon dont les rations ou formulations sont calculées. Si on te le demande, réponds :
+  "Ce n'est pas nécessaire : l'application calcule cela pour vous." puis donne seulement le résultat utile.
+- Tu peux donner les quantités d'aliment (distribuées, en stock, ration du jour) avec une explication légère, jamais approfondie.
 
 DONNÉES EXTERNES :
 - Tu peux compléter avec tes connaissances générales (prix de marché habituels, bonnes pratiques aquacoles, saisons),
@@ -158,7 +170,7 @@ const buildFarmContext = async (supabase: any, unitId?: string | null, unitName?
     scope(supabase.from('unit_infrastructures').select('id,name,type,status,capacity,unit_id')),
     batchesQ,
     cyclesQ,
-    scope(supabase.from('feed_stocks').select('feed_type,quantity,unit,min_threshold')),
+    scope(supabase.from('feed_stocks').select('*')),
     scope(supabase.from('health_records').select('date,mortality,temperature,ph,oxygen,average_weight').gte('date', from).order('date', { ascending: false }).limit(500)),
     scope(supabase.from('feeding_records').select('date,quantity,feed_type,mortality').gte('date', prevStart).order('date', { ascending: false }).limit(1000)),
     scope(supabase.from('sales').select('id,date,total_amount,paid_amount,client_name,status').gte('date', prevStart).limit(1000)),
@@ -209,7 +221,13 @@ const buildFarmContext = async (supabase: any, unitId?: string | null, unitName?
   const biomass = B.reduce((s: number, b: any) => s + num(b.total_weight), 0);
   const mortality30 = H.reduce((s: number, h: any) => s + num(h.mortality), 0) + F.filter((f: any) => f.date >= from).reduce((s: number, f: any) => s + num(f.mortality), 0);
   const last = H[0];
-  const lowStock = S.filter((s: any) => num(s.quantity) <= num(s.min_threshold));
+  const lowStock = S.filter((s: any) => num(s.quantity) > 0 && num(s.quantity) <= num(s.min_threshold));
+  const outStock = S.filter((s: any) => num(s.quantity) <= 0);
+  const isCommercial = (s: any) => s.stock_purpose === 'commercial';
+  const commercial = S.filter(isCommercial);
+  const production = S.filter((s: any) => !isCommercial(s));
+  const stockValue = (rows: any[]) => rows.reduce((t: number, s: any) => t + num(s.quantity) * num(s.cost), 0);
+  const stockLine = (s: any) => `${s.custom_name || s.feed_type} ${num(s.quantity)} ${s.unit ?? 'kg'}`;
 
   if (!U.length && !B.length && !C.length && !V.length && !P.length) {
     return "DONNÉES RÉELLES DE LA FERME :\nAucune donnée enregistrée pour cette unité. Dis-le clairement et invite l'utilisateur à enregistrer ventes, achats, lots ou cycles.";
@@ -217,6 +235,7 @@ const buildFarmContext = async (supabase: any, unitId?: string | null, unitName?
 
   const lines = [
     `DONNÉES RÉELLES ${unitName ? `DE L'UNITÉ « ${unitName} »` : 'DE TOUTES LES UNITÉS'} (au ${today}) :`,
+    `- Devise : tous les montants ci-dessous sont en F CFA.`,
     `- Unités : ${U.map((u: any) => `${u.name} [${u.type ?? '-'}]`).join(' ; ') || 'aucune'}`,
     `- Infrastructures (${I.length}) : ${I.slice(0, 25).map((i: any) => `${i.name} (${i.type ?? '-'}, ${i.status ?? '-'})`).join(' ; ') || 'aucune'}`,
     `- Lots : ${B.length} lot(s), ${totalFish} sujets, biomasse ${biomass.toFixed(1)} kg`,
@@ -229,6 +248,7 @@ const buildFarmContext = async (supabase: any, unitId?: string | null, unitName?
     `- Masse salariale mensuelle (salaires des employés actifs) : ${fmt(payroll)}`,
     `- Coûts totaux estimés : ${fmt(curCosts)}`,
     `- Résultat (CA - coûts) : ${fmt(cur.revenue - curCosts)} ; marge : ${cur.revenue > 0 ? `${(((cur.revenue - curCosts) / cur.revenue) * 100).toFixed(1)} %` : 'non calculable (CA nul)'} ; ${cur.revenue - curCosts >= 0 ? 'RENTABLE ce mois' : 'NON RENTABLE ce mois'}`,
+    `- Panier moyen du mois : ${cur.salesCount ? fmt(cur.revenue / cur.salesCount) : 'aucune vente'} ; mois précédent : ${prev.salesCount ? fmt(prev.revenue / prev.salesCount) : 'aucune vente'} (${prev.salesCount} vente(s))`,
     `- Meilleurs produits du mois : ${topProducts || 'aucune vente détaillée'}`,
     `FINANCES — MOIS PRÉCÉDENT (${prevStart} → ${monthStart}) :`,
     `- CA ${fmt(prev.revenue)}, achats ${fmt(prev.purchases)}, résultat ${fmt(prev.revenue - prevCosts)}`,
@@ -237,8 +257,10 @@ const buildFarmContext = async (supabase: any, unitId?: string | null, unitName?
     `PRODUCTION :`,
     `- Aliment distribué : ce mois ${cur.feed.toFixed(1)} kg, mois précédent ${prev.feed.toFixed(1)} kg`,
     `- Mortalités sur 30 jours : ${mortality30}`,
-    `- Stocks d'aliment/intrants : ${S.map((s: any) => `${s.feed_type} ${num(s.quantity)} ${s.unit ?? 'kg'}`).join(' ; ') || 'aucun'}`,
-    lowStock.length ? `- ALERTE stock bas : ${lowStock.map((s: any) => s.feed_type).join(', ')}` : '',
+    `- Stock commercial (à vendre) : ${commercial.map(stockLine).join(' ; ') || 'aucun'} — valeur au coût ${fmt(stockValue(commercial))}`,
+    `- Stock de production (aliments, intrants) : ${production.map(stockLine).join(' ; ') || 'aucun'} — valeur au coût ${fmt(stockValue(production))}`,
+    outStock.length ? `- EN RUPTURE (quantité 0) : ${outStock.map((s: any) => s.custom_name || s.feed_type).join(', ')}` : '- Aucun produit en rupture',
+    lowStock.length ? `- Sous le seuil minimum : ${lowStock.map((s: any) => s.custom_name || s.feed_type).join(', ')}` : '',
     last ? `- Dernier relevé d'eau (${last.date}) : T ${last.temperature ?? '-'} °C, pH ${last.ph ?? '-'}, O2 ${last.oxygen ?? '-'} mg/L` : "- Aucun relevé d'eau sur 30 jours",
   ];
 
