@@ -72,3 +72,15 @@
 - [x] Refuser les images sans vrais poissons en indiquant leur sujet ; appel IA réel sur texte « POISSON TILAPIA » : refus correct, sans diagnostic
 - [x] Tester les règles et le service : 9 tests réussis, compilation réussie
 - [ ] Vérifier une photo réelle de poisson depuis le compte utilisateur : session de la base historique indisponible, écran redirigé vers /auth ; reconnaissance positive non vérifiée en direct
+
+## Caisses, ventes et trésorerie (23/10/2026)
+- [x] Solde permanent : réouverture d'une caisse fermée avec reprise du montant compté (tests réussis)
+- [x] Bilan de clôture : ouverture, ventes par paiement, entrées/sorties, transferts, théorique, écart
+- [x] Écart de clôture enregistré dans les notifications du responsable
+- [x] Bouton Verrouiller + verrouillage auto après 5 min, déverrouillage par mot de passe
+- [x] Panier visible sur ordinateur, bouton panier sur téléphone
+- [ ] Transfert caisse → trésorerie atomique avec écriture comptable (fonction serveur à installer sur la base de l'application)
+- [ ] Écriture comptable serveur à chaque vente (pos_post_sale), sans doublon
+- [ ] Conditionnements (pièce / pack / carton) dans le stock et la caisse
+- [ ] Tableau de suivi des écarts avec mesures correctives ; activation/désactivation des caisses
+- [ ] Tester les 12 scénarios avec un compte connecté (aucune session disponible ici)

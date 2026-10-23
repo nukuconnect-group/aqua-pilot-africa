@@ -176,9 +176,19 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
       expected_amount: expected, counted_amount: countedAmount, difference: countedAmount - expected,
     }).eq('id', session.id);
     if (error) return { error: error.message };
+    const diff = Math.round((countedAmount - expected) * 100) / 100;
+    if (diff !== 0 && owner) {
+      // Anomalie enregistrée dans les notifications existantes du responsable.
+      await db.from('notifications').insert({
+        user_id: owner, module: 'sales', type: 'cash_discrepancy', is_critical: true,
+        title: `Écart de caisse — ${session.name || 'Caisse'}`,
+        message: `${diff > 0 ? 'Excédent' : 'Manquant'} de ${Math.abs(diff)} · théorique ${expected} · déclaré ${countedAmount}`,
+        metadata: { session_id: session.id, unit_id: unitId, closed_by: user?.id, expected, counted: countedAmount, difference: diff, status: 'à traiter', closed_at: new Date().toISOString() },
+      });
+    }
     setActiveSessionId(null);
     await load();
-    return {};
+    return { difference: diff };
   };
 
   return {
