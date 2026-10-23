@@ -19,7 +19,7 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
-import { postSaleToTreasury, hasRegisterAccount } from '@/lib/posTreasury';
+import { postSaleToTreasury, hasRegisterAccount, paymentDestination } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
 import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
@@ -29,7 +29,7 @@ import type { Sale } from '@/hooks/useSales';
 
 interface CartLine { name: string; quantity: number; unitPrice: number; pack?: { label: string; size: number } }
 
-const PAYMENTS = ['Espèces', 'Mobile Money', 'Carte', 'Virement'];
+const PAYMENTS = ['Espèces', 'Mobile Money', 'Carte bancaire', 'Virement bancaire'];
 
 const checkoutRecovery = (error: unknown, saleRecorded: boolean) => {
   const detail = typeof error === 'string' ? error : error && typeof error === 'object'
@@ -250,10 +250,14 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         return;
       }
     }
-    if (!pendingPayment?.sale && payment === 'Espèces') {
+    if (!pendingPayment?.sale) {
       const regName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
-      if (!(await hasRegisterAccount(activeUnit.id, regName))) {
-        toast({ title: 'Aucune caisse en trésorerie', description: `Pour encaisser, créez d’abord dans Comptabilité › Trésorerie un compte « Caisse de vente » rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.`, variant: 'destructive' });
+      if (!(await hasRegisterAccount(activeUnit.id, regName, payment))) {
+        const bank = paymentDestination(payment) === 'bank';
+        const f = bank
+          ? { title: 'Aucun compte bancaire en trésorerie', description: `Pour un paiement « ${payment} », créez d’abord dans Comptabilité › Trésorerie un compte bancaire rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.` }
+          : { title: 'Aucune caisse en trésorerie', description: `Pour encaisser, créez d’abord dans Comptabilité › Trésorerie un compte « Caisse de vente » rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.` };
+        setCheckoutError(f); toast({ ...f, variant: 'destructive' });
         return;
       }
     }
@@ -304,7 +308,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     try {
       const sessionName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
       const t = await postSaleToTreasury(activeUnit.id, sale, sessionName);
-      if (t.status === 'no_account') toast({ title: 'Trésorerie non alimentée', description: 'Créez dans Trésorerie un compte « Caisse de vente » portant le nom de cette caisse.', variant: 'destructive' });
+      if (t.status === 'no_account') toast({ title: 'Trésorerie non alimentée', description: paymentDestination(sale.paymentMethod || payment) === 'bank' ? 'Créez dans Trésorerie un compte bancaire pour cette unité.' : 'Créez dans Trésorerie un compte « Caisse de vente » portant le nom de cette caisse.', variant: 'destructive' });
       else treasury.reload?.();
     } catch (e: any) {
       toast({ title: 'Vente encaissée, trésorerie à régulariser', description: e.message, variant: 'destructive' });
@@ -768,7 +772,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                   <Input aria-label={`Produit ${i + 1}`} className="h-8 flex-1 font-medium" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
                   <Button size="icon" variant="ghost" aria-label={`Retirer le produit ${i + 1}`} className="h-8 w-8 shrink-0" onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
                 </div>
-                <div className="grid grid-cols-[auto_1fr_auto] items-end gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_auto] items-end gap-2">
                   <div>
                     <span className="block text-xs text-muted-foreground">Quantité</span>
                     <div className="flex items-center gap-1">
@@ -783,7 +787,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                       value={l.unitPrice > 0 ? l.unitPrice : ''} onFocus={e => e.target.select()}
                       onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} />
                   </label>
-                  <div className="text-right">
+                  <div className="col-span-2 flex items-center justify-between sm:col-span-1 sm:block sm:text-right">
                     <span className="block text-xs text-muted-foreground">Total</span>
                     <span className="text-sm font-bold text-primary">{formatCurrency(l.quantity * l.unitPrice)}</span>
                   </div>
@@ -824,11 +828,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             </div>
             <p className="text-xs text-muted-foreground">{paymentDestination(payment) === 'bank' ? 'Encaissé sur le compte banque de l’unité (Trésorerie).' : 'Encaissé dans la caisse de l’unité (Trésorerie).'}</p>
             <div className="flex justify-between gap-2 text-lg font-bold pt-2 border-t border-border"><span>Total</span><span className="text-right">{formatCurrency(total)}</span></div>
-            <Button className="w-full h-12 text-base" disabled={busy || (!pendingPayment && !isValidPosCart(cart))} onClick={checkout}>{busy ? 'Encaissement…' : pendingPayment ? 'Reprendre l’encaissement' : `Encaisser · ${formatCurrency(total)}`}</Button>
+            {!pendingPayment && <Button className="w-full h-12 text-base" disabled={busy || !isValidPosCart(cart)} onClick={checkout}>{busy ? 'Encaissement…' : `Encaisser · ${formatCurrency(total)}`}</Button>}
           </CardContent>
         </Card>
       </div>
       </fieldset>
+      {pendingPayment && <Button className="w-full h-12 text-base" disabled={busy} onClick={checkout}>{busy ? 'Encaissement…' : 'Reprendre l’encaissement'}</Button>}
 
       </>)}
 
