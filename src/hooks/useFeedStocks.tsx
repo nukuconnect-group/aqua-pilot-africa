@@ -91,6 +91,9 @@ export const useFeedStocks = (unitId?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
+      if ((stock as any).stock_purpose === 'commercial' && !(Number((stock as any).sale_price) > 0)) {
+        throw new Error('Indiquez d’abord le prix de vente : un produit commercial ne peut pas être enregistré sans prix.');
+      }
 
       const row: any = { ...stock, user_id: user.id };
       let { data, error } = await (supabase as any).from('feed_stocks').insert([row]).select().single();

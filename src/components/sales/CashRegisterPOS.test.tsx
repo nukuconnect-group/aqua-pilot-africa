@@ -37,12 +37,12 @@ let container: HTMLDivElement;
 let root: Root;
 const click = async (button: HTMLButtonElement) => { await act(async () => button.click()); };
 const button = (text: string) => {
-  const match = [...container.querySelectorAll('button')].find(b => b.textContent?.includes(text));
+  const match = [...document.querySelectorAll("button")].find(b => b.textContent?.includes(text));
   if (!match) throw new Error(`Missing button: ${text}`);
   return match;
 };
 const input = async (label: string, value: string) => {
-  const element = container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
+  const element = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
   if (!element) throw new Error(`Missing input: ${label}`);
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
   await act(async () => {
@@ -53,8 +53,12 @@ const input = async (label: string, value: string) => {
 const fillCart = async () => {
   await input('Rechercher un produit', 'Poisson');
   await click(button('Poisson'));
+  await input('Prix du produit', '1');
+  await click(button('Ajouter à la sélection'));
   await input('Rechercher un produit', 'Aliment');
   await click(button('Aliment'));
+  await input('Prix du produit', '1');
+  await click(button('Ajouter à la sélection'));
   await click(button('Ajouter au panier (2)'));
   await input('Quantité 1', '2.5');
   await input('Prix unitaire 1', '2000');
