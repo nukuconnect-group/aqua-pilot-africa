@@ -34,6 +34,7 @@ import {
 import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/appClient';
+import { isUnitTypeAllowed } from '@/lib/unitTypeAccess';
 import { useLogs } from '@/contexts/LogsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -75,8 +76,7 @@ const ProductionUnitsManagement = () => {
     return () => { cancelled = true; };
   }, [user?.id, isAdmin]);
 
-  const isTypeAllowed = (type: string) =>
-    isAdmin || !allowedTypes || allowedTypes.length === 0 || allowedTypes.includes(type);
+  const isTypeAllowed = (type: string) => isUnitTypeAllowed(allowedTypes, type, isAdmin);
   
   const [newUnit, setNewUnit] = useState({
     name: '',
