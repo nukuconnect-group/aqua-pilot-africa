@@ -28,3 +28,15 @@ export const carriedOverBalance = (history: ClosedSessionLike[], name: string) =
     .sort((a, b) => new Date(b.closed_at || b.opened_at).getTime() - new Date(a.closed_at || a.opened_at).getTime())[0];
   return last ? Number(last.counted_amount) : null;
 };
+
+/** Dernière session clôturée de chaque caisse (par nom), la plus récente gagne quel que soit l'ordre reçu. */
+export const latestClosedByName = <T extends ClosedSessionLike>(history: T[]): T[] => {
+  const t = (s: ClosedSessionLike) => new Date(s.closed_at || s.opened_at).getTime();
+  const map = new Map<string, T>();
+  for (const s of history) {
+    const key = (s.name || '').trim().toLowerCase();
+    const cur = map.get(key);
+    if (!cur || t(s) > t(cur)) map.set(key, s);
+  }
+  return [...map.values()];
+};

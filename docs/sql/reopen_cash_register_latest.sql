@@ -1,0 +1,1 @@
+-- La réouverture reprend toujours la DERNIÈRE clôture de la caisse (même nom, même unité).
