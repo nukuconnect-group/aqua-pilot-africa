@@ -59,6 +59,10 @@ export interface FinancialSummary {
   }>;
 }
 
+/** Écriture de revenu créée automatiquement à l'enregistrement d'une vente (déjà comptée via la vente). */
+export const isSaleMirror = (t: { category?: string; description?: string }) =>
+  t.category === 'Vente de poissons' && (t.description || '').startsWith('Vente à ');
+
 export const useFinancialSummary = (unitId?: string) => {
   const { transactions, purchases } = useProductionUnits();
   const { allSales: sales } = useSales();
@@ -109,8 +113,10 @@ export const useFinancialSummary = (unitId?: string) => {
     const feedConsumed = feedingRecords.reduce((sum, r) => sum + r.quantity, 0);
 
     // Transactions comptables
-    const revenueTransactions = filteredTransactions.filter(t => t.type === 'revenue' && t.status !== 'cancelled');
-    const expenseTransactions = filteredTransactions.filter(t => t.type === 'expense' && t.status !== 'cancelled');
+    // Les ventes et achats sont déjà comptés depuis leurs propres tables : on exclut leurs écritures miroir
+    // pour ne jamais compter deux fois le même argent.
+    const revenueTransactions = filteredTransactions.filter(t => t.type === 'revenue' && t.status !== 'cancelled' && !isSaleMirror(t));
+    const expenseTransactions = filteredTransactions.filter(t => t.type === 'expense' && t.status !== 'cancelled' && !t.purchaseId);
     
     const transactionRevenue = revenueTransactions.reduce((sum, t) => sum + t.amount, 0);
     const transactionExpenses = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
