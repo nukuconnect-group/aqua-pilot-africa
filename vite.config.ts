@@ -16,16 +16,17 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'robots.txt', 'manifest.json'],
-      injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}']
-      },
+      // L'enregistrement passe uniquement par src/lib/pwaRegister.ts (gardes aperçu/dev).
+      injectRegister: null,
+      includeAssets: ['favicon.png', 'robots.txt'],
       workbox: {
         maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -120,32 +121,9 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
-      manifest: {
-        name: 'Aqua Pilot - Gestion Piscicole Intelligente',
-        short_name: 'Aqua Pilot',
-        description: 'Application de gestion piscicole intelligente avec fonctionnement hors ligne',
-        theme_color: '#047857',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
-        icons: [
-          {
-            src: '/favicon.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/favicon.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      },
+      // Le manifeste unique reste public/manifest.json (déjà lié dans index.html).
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ].filter(Boolean),

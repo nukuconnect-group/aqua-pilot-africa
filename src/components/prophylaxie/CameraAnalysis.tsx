@@ -187,9 +187,9 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
       toast({ title: 'Analyse non enregistrée dans l’historique', description: 'Le résultat reste affiché et peut être exporté.', variant: 'destructive' });
     }
   };
-  const exportPdf = () => {
+  const exportPdf = async () => {
     if (!result) return;
-    const blob = buildHealthReportPdf({
+    const blob = await buildHealthReportPdf({
       title: 'Rapport d’analyse photo — AquaHealth AI',
       date: new Date(),
       unitName: activeUnit?.name ?? 'Toutes les unités',
@@ -198,6 +198,7 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
       observations: result.observations,
       diseases: result.diseases.map((d: any) => ({ name: d.name, level: d.severity, confidence: d.confidence })),
       recommendations: result.recommendations,
+      photoDataUrl,
     });
     shareOrDownloadPdf(blob, `analyse-photo-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
@@ -208,6 +209,7 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
   const [species, setSpecies] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [result, setResult] = useState<VisionResult | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -215,7 +217,7 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
   useEffect(() => {
     requestVersion.current += 1;
-    setSelectedFile(null); setPreviewUrl(''); setResult(null); setSpecies(''); setAnalysisError(null); setAnalyzing(false);
+    setSelectedFile(null); setPreviewUrl(''); setPhotoDataUrl(null); setResult(null); setSpecies(''); setAnalysisError(null); setAnalyzing(false);
   }, [activeUnit?.id]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,6 +254,7 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
       const converted = await compressImage(selectedFile, { maxWidth: 1600, maxHeight: 1600, maxSizeMB: 2 });
       const imageBase64 = await toDataUrl(converted.file);
       if (!/^data:image\/(jpeg|png|webp);base64,/.test(imageBase64)) throw new Error('Format non pris en charge. Utilisez une photo JPG, PNG ou WebP.');
+      setPhotoDataUrl(imageBase64);
       const res = await analyzeWithAI({ mode: 'image', domain: 'fish', imageBase64, species: species.trim() || undefined });
       if (version !== requestVersion.current) return;
       setResult(res);
@@ -266,7 +269,7 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
     }
   };
 
-  const reset = () => { requestVersion.current += 1; setSelectedFile(null); setPreviewUrl(''); setResult(null); setAnalysisError(null); setAnalyzing(false); if (fileInputRef.current) fileInputRef.current.value = ''; };
+  const reset = () => { requestVersion.current += 1; setSelectedFile(null); setPreviewUrl(''); setPhotoDataUrl(null); setResult(null); setAnalysisError(null); setAnalyzing(false); if (fileInputRef.current) fileInputRef.current.value = ''; };
 
   return (
     <div className="space-y-4">
