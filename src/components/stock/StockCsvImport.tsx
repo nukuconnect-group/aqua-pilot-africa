@@ -76,29 +76,55 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
     try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Connectez-vous avant de téléverser les produits.');
-    for (let i = 0; i < rows.length; i++) {
+    const db = supabase as any;
+    const toPayload = (r: CsvRow) => ({
+      user_id: user.id,
+      stock_purpose: purpose,
+      sale_price: purpose === 'commercial' ? r.sale_price ?? null : null,
+      unit_id: unitId,
+      feed_type: r.name.trim(),
+      custom_name: r.name.trim(),
+      quantity: r.quantity,
+      unit: r.unit,
+      cost: r.cost ?? null,
+      supplier: r.supplier ?? null,
+      min_threshold: r.min_threshold ?? null,
+    });
+    const insertMany = async (payloads: any[]) => {
+      let res = await db.from('feed_stocks').insert(payloads).select('id, quantity');
+      if (isMissingColumnError(res.error)) res = await db.from('feed_stocks').insert(payloads.map(p => toLegacyStockRow(p))).select('id, quantity');
+      return res as { data: { id: string; quantity: number }[] | null; error: any };
+    };
+    const CHUNK = 50;
+    for (let start = 0; start < rows.length; start += CHUNK) {
       if (stopRequested.current) break;
-      const r = rows[i];
-      const payload: any = {
-        user_id: user.id,
-        stock_purpose: purpose,
-        sale_price: purpose === 'commercial' ? r.sale_price ?? null : null,
-        unit_id: unitId,
-        feed_type: r.name,
-        custom_name: r.name,
-        quantity: r.quantity,
-        unit: r.unit,
-        cost: r.cost,
-        supplier: r.supplier,
-        min_threshold: r.min_threshold,
-      };
-      let { error } = await (supabase as any).from('feed_stocks').insert(payload);
-      if (isMissingColumnError(error)) ({ error } = await (supabase as any).from('feed_stocks').insert(toLegacyStockRow(payload)));
-      if (error) ko++; else ok++;
-      setResults(previous => [...previous, { row: r, success: !error }]);
+      const chunk = rows.slice(start, start + CHUNK);
+      let created: { id: string; quantity: number }[] = [];
+      let chunkResults: { row: CsvRow; success: boolean }[] = [];
+      const { data, error } = await insertMany(chunk.map(toPayload));
+      if (!error) {
+        created = data || [];
+        chunkResults = chunk.map(row => ({ row, success: true }));
+      } else {
+        // Repli ligne par ligne pour isoler les articles en erreur.
+        for (const row of chunk) {
+          const one = await insertMany([toPayload(row)]);
+          if (!one.error && one.data) created.push(...one.data);
+          chunkResults.push({ row, success: !one.error });
+        }
+      }
+      // Mouvement d'entrée initial pour chaque article créé (historique du stock).
+      const movements = created.filter(c => Number(c.quantity) > 0).map(c => ({
+        user_id: user.id, unit_id: unitId, stock_id: c.id, type: 'in',
+        quantity: Number(c.quantity), quantity_after: Number(c.quantity), reason: 'Stock initial (import CSV)',
+      }));
+      if (movements.length) await db.from('stock_movements').insert(movements);
+      ok += chunkResults.filter(r => r.success).length;
+      ko += chunkResults.filter(r => !r.success).length;
+      setResults(previous => [...previous, ...chunkResults]);
       setImported(ok);
       setErrors(ko);
-      setProgress(Math.round(((i + 1) / rows.length) * 100));
+      setProgress(Math.round((Math.min(start + CHUNK, rows.length) / rows.length) * 100));
     }
     toast({ title: stopRequested.current ? 'Import arrêté' : 'Import terminé', description: `${ok} article(s) ajouté(s) au stock${ko ? `, ${ko} en erreur` : ''}.` });
     onDone();
@@ -139,6 +165,13 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
           Le fichier doit contenir une ligne par article : <b>nom; quantité; unité; prix d'achat; fournisseur; seuil d'alerte; prix de vente</b> (prix de vente pour un stock commercial).
           Chaque article importé reçoit automatiquement un code-barres.
         </p>
+        <div className="rounded-lg border border-border p-3 space-y-2">
+          <p className="text-sm font-medium">1. Quel type de stock voulez-vous importer ?</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" disabled={running} variant={purpose === 'production' ? 'default' : 'outline'} onClick={() => setPurpose('production')}>Stock de production (nourrir mes poissons)</Button>
+            <Button size="sm" disabled={running} variant={purpose === 'commercial' ? 'default' : 'outline'} onClick={() => setPurpose('commercial')}>Stock commercial (à vendre en caisse)</Button>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => downloadTemplate('production')}>
             <FileDown className="w-4 h-4 mr-1" /> Modèle stock de production
@@ -146,7 +179,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
           <Button variant="outline" size="sm" onClick={() => downloadTemplate('commercial')}>
             <FileDown className="w-4 h-4 mr-1" /> Modèle stock commercial
           </Button>
-          <Button size="sm" disabled={running} onClick={() => fileRef.current?.click()}>
+          <Button size="sm" disabled={running || !purpose} onClick={() => fileRef.current?.click()} title={!purpose ? 'Choisissez d’abord le type de stock' : undefined}>
             <Upload className="w-4 h-4 mr-1" /> Choisir un fichier CSV
           </Button>
           <input
@@ -161,16 +194,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
 
         {rows.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">{rows.length} article(s) détecté(s) dans le fichier</p>
-            {progress === null && (
-              <div className="rounded-lg border border-border p-3 space-y-2">
-                <p className="text-sm font-medium">Ce stock est-il destiné à la vente ou à la production ?</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant={purpose === 'production' ? 'default' : 'outline'} onClick={() => setPurpose('production')}>Stock de production (nourrir mes poissons)</Button>
-                  <Button size="sm" variant={purpose === 'commercial' ? 'default' : 'outline'} onClick={() => setPurpose('commercial')}>Stock commercial (à vendre en caisse)</Button>
-                </div>
-              </div>
-            )}
+            <p className="text-sm font-medium">{rows.length} article(s) détecté(s) — destination : {purpose === 'commercial' ? 'Stock commercial' : purpose === 'production' ? 'Stock de production' : 'à choisir ci-dessus'}</p>
             <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
               <table className="w-full text-xs">
                 <thead className="bg-muted sticky top-0">
