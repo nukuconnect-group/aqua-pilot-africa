@@ -8,14 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ShoppingCart, Plus, TrendingUp, Users, FileText, Download, Calendar, DollarSign, Eye, CreditCard, Pencil, Trash2, AlertTriangle, ScanLine, Tag } from 'lucide-react';
+import { ShoppingCart, Plus, TrendingUp, Users, FileText, Download, Calendar, DollarSign, Eye, CreditCard, Pencil, Trash2, AlertTriangle, ScanLine, Tag, Store, Zap } from 'lucide-react';
 import { useLogs } from '@/contexts/LogsContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import ProductionUnitSelector from './ProductionUnitSelector';
 import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
-import CashRegisterPOS from './sales/CashRegisterPOS';
+import CashRegisterPOS, { type PosView } from './sales/CashRegisterPOS';
+
+const POS_TABS = ['registers', 'pos', 'multi', 'ai'];
 import CashClosures from './sales/CashClosures';
 import SalesDashboard, { CancelledSales } from './sales/SalesDashboard';
 import { useSales, Sale, SaleItem } from '@/hooks/useSales';

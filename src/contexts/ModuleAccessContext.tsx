@@ -118,6 +118,8 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const moduleId = tabToModuleId(moduleOrTabId);
       if (moduleId === 'admin') return user?.role === 'admin';
       if (ALWAYS_OPEN_MODULES.includes(moduleId)) return true;
+      // Ventes et Stock sont disponibles dans toutes les unités (seul le rôle d'équipe peut les restreindre).
+      if (moduleId === 'sales' || moduleOrTabId === 'stock') return !isTeamMember || hasAccessToModule(moduleId);
        if (isUnrestricted) return allowed.has(moduleId);
       if (!allowed.has(moduleId)) return false;
       // Le rôle d'équipe restreint en plus l'abonnement.
