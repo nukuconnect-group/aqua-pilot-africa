@@ -153,6 +153,16 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     } catch { /* indicatif */ }
   };
   useEffect(() => { checkUnposted(); }, [activeUnit?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Réactualise le bandeau dès qu'un compte est créé/rattaché en Trésorerie ou au retour sur l'onglet.
+  useEffect(() => {
+    const refresh = () => { checkUnposted(); };
+    window.addEventListener('focus', refresh);
+    window.addEventListener('aquapilote:treasury-updated', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('aquapilote:treasury-updated', refresh);
+    };
+  }, [activeUnit?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const runBackfill = async () => {
     if (!activeUnit?.id) return;
     setBackfilling(true);

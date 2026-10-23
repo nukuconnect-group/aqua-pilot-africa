@@ -62,6 +62,7 @@ const CashFlowManager = () => {
       const { type, ...rest } = account;
       await treasury.createAccount({ ...rest, name: rest.name.trim() || ACCOUNT_TYPES.find(t => t.id === type)!.label, currency, opening: Number(account.opening || 0) });
       setAccountOpen(false); toast.success(`Compte enregistré pour ${units.find(u => u.id === account.unitId)?.name || 'l’unité'}`);
+      window.dispatchEvent(new CustomEvent('aquapilote:treasury-updated'));
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
   };
@@ -127,7 +128,7 @@ const CashFlowManager = () => {
     }}><Trash2 className="h-4 w-4 mr-1" />Supprimer</Button>{units.length > 1 && <Select value="" onValueChange={async v => {
       const target = units.find(u => u.id === v);
       if (!window.confirm(`Rattacher le compte « ${a.name} » à l’unité « ${target?.name || ''} » ? Son solde et son historique la suivent.`)) return;
-      try { await treasury.reattachAccount(a.id, v); toast.success(`Compte rattaché à ${target?.name || 'l’unité'}`); } catch (e: any) { toast.error(e.message); }
+      try { await treasury.reattachAccount(a.id, v); toast.success(`Compte rattaché à ${target?.name || 'l’unité'}`); window.dispatchEvent(new CustomEvent('aquapilote:treasury-updated')); } catch (e: any) { toast.error(e.message); }
     }}><SelectTrigger className="h-8 text-xs" aria-label="Rattacher à une autre unité"><SelectValue placeholder="Rattacher à une autre unité…" /></SelectTrigger><SelectContent>{units.filter(u => u.id !== a.unit_id).map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select>}</CardContent></Card>)}</div>
     {!treasury.loading && !treasury.error && !treasury.accounts.length && <div role="alert" className="border border-primary/40 bg-primary/5 rounded-md p-4 text-sm space-y-2"><p className="font-semibold">Aucun compte n’est rattaché à l’unité « {activeUnit?.name} ».</p><p className="text-muted-foreground">Aucun compte n’est créé automatiquement. Créez la caisse et le compte bancaire de cette unité (ou rattachez un compte existant depuis une autre unité) : sans eux, les ventes et les achats ne peuvent pas être enregistrés en trésorerie.</p><Button size="sm" disabled={!activeUnit} onClick={() => { setAccount({ unitId: activeUnit?.id || '', name: '', type: 'caisse', kind: 'cash', code: generateCode('571'), opening: '', counterpart: '101', date: today() }); setAccountOpen(true); }}><Plus className="h-4 w-4 mr-2" />Créer le compte de l’unité</Button></div>}
     <Tabs defaultValue="movements"><TabsList className="w-full sm:w-auto"><TabsTrigger value="movements">Mouvements</TabsTrigger><TabsTrigger value="entries">Écritures comptables</TabsTrigger></TabsList>
