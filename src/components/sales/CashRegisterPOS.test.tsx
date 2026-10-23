@@ -100,4 +100,10 @@ describe('parcours encaissement — tests isolés sans écriture réelle', () =>
     expect(state.toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Encaissement interrompu', variant: 'destructive' }));
     expect(button('Reprendre l’encaissement').disabled).toBe(false);
   });
+  it('encaisse et sort le stock en une seule opération serveur sans second mouvement', async () => {
+    state.postAtomic.mockResolvedValue(true);
+    await fillCart(); await click(button('Encaisser'));
+    expect(state.postAtomic).toHaveBeenCalledWith('unit-a', 'saved-sale', 'register-a', expect.any(Array));
+    expect(state.addMovement).not.toHaveBeenCalled();
+  });
 });
