@@ -135,6 +135,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       .then(({ data }: any) => { const n = (data?.full_name || '').trim(); if (n && !n.includes('@')) setCashierName(n); });
   }, [user?.id, metaName]);
   const [clientOpen, setClientOpen] = useState(false);
+  const [clientQuery, setClientQuery] = useState('');
   const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
   const [backfilling, setBackfilling] = useState(false);
   const checkUnposted = async () => {
@@ -189,18 +190,21 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
 
   const filtered = catalog.filter((p) => normalizeProductSearch(p.name).includes(normalizeProductSearch(search)) || p.codes.some(c => c.toLowerCase() === search.trim().toLowerCase()));
   const clientMatches = useMemo(() => {
-    const q = normalizeProductSearch(client);
+    const raw = clientQuery || client;
+    const q = normalizeProductSearch(raw);
+    const digits = raw.replace(/\D/g, '');
     if (!q) return [];
     const seen = new Map<string, { name: string; contact: string }>();
     for (const x of sales as any[]) {
       const n = (x.clientName || '').trim();
-      if (!n || n === 'Client comptoir' || !normalizeProductSearch(n).includes(q)) continue;
+      const hit = normalizeProductSearch(n).includes(q) || (digits.length >= 3 && String(x.clientContact || '').replace(/\D/g, '').includes(digits));
+      if (!n || n === 'Client comptoir' || !hit) continue;
       const k = n.toLowerCase();
       if (!seen.has(k) || (!seen.get(k)!.contact && x.clientContact)) seen.set(k, { name: n, contact: x.clientContact || '' });
       if (seen.size >= 8) break;
     }
-    return [...seen.values()].filter(c => c.name.toLowerCase() !== client.trim().toLowerCase() || !contact);
-  }, [client, contact, sales]);
+    return [...seen.values()].filter(c => clientQuery || c.name.toLowerCase() !== client.trim().toLowerCase() || !contact);
+  }, [client, clientQuery, contact, sales]);
   const noPrice = catalog.filter(p => !(p.price > 0)).length;
   const photoStatus = (productImages.generating || productImages.error || noPrice > 0) ? (
     <div className="space-y-1 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
@@ -880,8 +884,21 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               </div>
             ))}
             <div className="relative">
+              <Input aria-label="Rechercher un client" type="search" placeholder="Rechercher un client déjà servi (nom ou téléphone)" value={clientQuery} onChange={e => { setClientQuery(e.target.value); setClientOpen(true); }} onFocus={() => setClientOpen(true)} onBlur={() => window.setTimeout(() => setClientOpen(false), 150)} />
+              {clientOpen && clientQuery && (
+                <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
+                  {clientMatches.length ? clientMatches.map(c => (
+                    <button key={c.name + c.contact} type="button" className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                      onMouseDown={e => e.preventDefault()} onClick={() => { setClient(c.name); setContact(c.contact); setClientQuery(''); setClientOpen(false); }}>
+                      <span className="truncate font-medium">{c.name}</span><span className="shrink-0 text-xs text-muted-foreground">{c.contact}</span>
+                    </button>
+                  )) : <p className="px-3 py-2 text-sm text-muted-foreground">Aucun client trouvé : saisissez-le ci-dessous.</p>}
+                </div>
+              )}
+            </div>
+            <div className="relative">
               <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => { setClient(e.target.value); setClientOpen(true); }} onFocus={() => setClientOpen(true)} onBlur={() => window.setTimeout(() => setClientOpen(false), 150)} />
-              {clientOpen && clientMatches.length > 0 && (
+              {clientOpen && !clientQuery && clientMatches.length > 0 && (
                 <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
                   {clientMatches.map(c => (
                     <button key={c.name + c.contact} type="button" className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent"

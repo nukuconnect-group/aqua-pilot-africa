@@ -53,8 +53,12 @@ const input = async (label: string, value: string) => {
 const fillCart = async () => {
   await input('Rechercher un produit', 'Poisson');
   await click(button('Poisson'));
+  await input('Prix du produit', '1');
+  await click(button('Ajouter à la sélection'));
   await input('Rechercher un produit', 'Aliment');
   await click(button('Aliment'));
+  await input('Prix du produit', '1');
+  await click(button('Ajouter à la sélection'));
   await click(button('Ajouter au panier (2)'));
   await input('Quantité 1', '2.5');
   await input('Prix unitaire 1', '2000');
