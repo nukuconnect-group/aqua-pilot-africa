@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { AlertTriangle, PackageX } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { isCommercialStock } from '@/lib/stockPurpose';
 import { suggestedQuantity } from '@/components/accounting/PurchaseStockSection';
@@ -7,6 +8,7 @@ import { suggestedQuantity } from '@/components/accounting/PurchaseStockSection'
 /** Résumé succinct des produits en rupture et à réapprovisionner de l'unité active. */
 const RestockSummary: React.FC<{ unitId?: string }> = ({ unitId }) => {
   const { stocks } = useFeedStocks(unitId);
+  const [, setSearchParams] = useSearchParams();
   const { out, low } = useMemo(() => {
     const rows = stocks.filter((s) => s.unit_id === unitId || !unitId);
     return {
@@ -16,12 +18,7 @@ const RestockSummary: React.FC<{ unitId?: string }> = ({ unitId }) => {
   }, [stocks, unitId]);
   if (!unitId || (out.length === 0 && low.length === 0)) return null;
 
-  const go = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('module', 'purchases');
-    window.history.pushState({}, '', url);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  };
+  const go = () => setSearchParams({ module: 'purchases' });
   const item = (s: (typeof stocks)[number]) => (
     <li key={s.id} className="flex items-center justify-between gap-2 py-1 text-sm">
       <span className="min-w-0 truncate">
