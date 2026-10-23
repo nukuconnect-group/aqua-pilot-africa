@@ -1001,6 +1001,25 @@ const PurchaseManager = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {!editingPurchase && (
+              <PurchaseStockSection
+                stocks={stockItems}
+                target={stockTarget}
+                onTarget={setStockTarget}
+                onPickSuggestion={(s) => {
+                  const q = suggestedQuantity(s);
+                  const unitCost = Number(s.cost) || 0;
+                  setUnitPrice(unitCost);
+                  setNewPurchase((p) => ({
+                    ...p, description: s.custom_name || s.feed_type, quantity: q, unit: s.unit,
+                    supplier: p.supplier || s.supplier || '', amount: unitCost * q,
+                  }));
+                }}
+                onCreateNew={(name) => {
+                  setNewPurchase((p) => ({ ...p, description: p.description || name }));
+                }}
+              />
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Catégorie *</Label>
@@ -1196,19 +1215,6 @@ const PurchaseManager = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <Label>Quantité</Label>
-                <Input
-                  type="number"
-                  value={newPurchase.quantity}
-                  min="0"
-                  step="any"
-                  onChange={(e) => {
-                    const qty = parseFloat(e.target.value) || 0;
-                    setNewPurchase({ ...newPurchase, quantity: qty, amount: qty * unitPrice });
-                  }}
-                />
-              </div>
-              <div>
                 <Label>Prix d'achat unitaire *</Label>
                 <Input
                   type="number"
@@ -1224,6 +1230,19 @@ const PurchaseManager = () => {
                 />
               </div>
               <div>
+                <Label>Quantité à réapprovisionner</Label>
+                <Input
+                  type="number"
+                  value={newPurchase.quantity}
+                  min="0"
+                  step="any"
+                  onChange={(e) => {
+                    const qty = parseFloat(e.target.value) || 0;
+                    setNewPurchase({ ...newPurchase, quantity: qty, amount: qty * unitPrice });
+                  }}
+                />
+              </div>
+              <div>
                 <Label>Unité</Label>
                 <Input
                   value={newPurchase.unit}
@@ -1231,27 +1250,21 @@ const PurchaseManager = () => {
                   placeholder="kg, L, unités..."
                 />
               </div>
+              {stockTarget.purpose === 'commercial' && (
+                <div>
+                  <Label>Prix de vente unitaire *</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={stockTarget.salePrice || ''}
+                    onChange={(e) => setStockTarget({ ...stockTarget, salePrice: parseFloat(e.target.value) || 0 })}
+                    placeholder="Prix proposé à la caisse"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Ce prix sera proposé à la caisse lors des ventes.</p>
+                </div>
+              )}
             </div>
-
-            {!editingPurchase && (
-              <PurchaseStockSection
-                stocks={stockItems}
-                target={stockTarget}
-                onTarget={setStockTarget}
-                onPickSuggestion={(s) => {
-                  const q = suggestedQuantity(s);
-                  const unitCost = Number(s.cost) || 0;
-                  setUnitPrice(unitCost);
-                  setNewPurchase((p) => ({
-                    ...p, description: s.custom_name || s.feed_type, quantity: q, unit: s.unit,
-                    supplier: p.supplier || s.supplier || '', amount: unitCost * q,
-                  }));
-                }}
-                onCreateNew={(name) => {
-                  setNewPurchase((p) => ({ ...p, description: p.description || name }));
-                }}
-              />
-            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div>

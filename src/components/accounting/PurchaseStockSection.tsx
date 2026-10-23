@@ -92,15 +92,6 @@ const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPic
             <X className="h-3 w-3" /> Changer
           </button>
         </div>
-        {isCommercial && (
-          <div className="max-w-xs">
-            <Label>Prix de vente *</Label>
-            <Input type="number" min={0} className="mt-1" value={target.salePrice || ''}
-              onChange={(e) => onTarget({ ...target, salePrice: Number(e.target.value) || 0 })}
-              placeholder="Prix de vente unitaire" />
-            <p className="mt-1 text-xs text-muted-foreground">Ce prix sera proposé à la caisse lors des ventes.</p>
-          </div>
-        )}
         <p className="text-xs text-muted-foreground">La quantité entre en stock dès que l’achat est payé, avec un mouvement d’entrée.</p>
       </div>
     );
