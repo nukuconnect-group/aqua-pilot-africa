@@ -20,7 +20,8 @@ import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
 import { postSaleToTreasury, hasRegisterAccount } from '@/lib/posTreasury';
-import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
+import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
+import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -74,7 +75,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const unitOwner = (activeUnit as any)?.userId || (activeUnit as any)?.user_id;
   const isAdmin = !unitOwner || unitOwner === user?.id;
   const cash = useCashSession(activeUnit?.id, unitOwner);
-  const { stocks, refetch: refetchStocks } = useFeedStocks(activeUnit?.id);
+  const { stocks, refetch: refetchStocks, updateStock } = useFeedStocks(activeUnit?.id);
   const [opening, setOpening] = useState('');
   const [counted, setCounted] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -133,6 +134,20 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   }, [activeUnit?.id]);
 
   const catalog = useMemo(() => activeUnit?.id ? buildPosCatalog(activeUnit.id, sales, stocks) : [], [activeUnit?.id, sales, stocks]);
+  const productImages = useProductImages(useMemo(() => catalog.map(p => p.name), [catalog]));
+  const [pick, setPick] = useState<{ product: PosProduct; price: string; qty: string; save: boolean } | null>(null);
+  const openPick = (p: PosProduct) => setPick({ product: p, price: p.price > 0 ? String(p.price) : '', qty: '1', save: true });
+  const confirmPick = async () => {
+    if (!pick) return;
+    const price = Number(pick.price); const qty = Number(pick.qty);
+    if (!(price > 0) || !(qty > 0)) return toast({ title: 'Prix et quantité requis', variant: 'destructive' });
+    addToCart(pick.product.name, price, qty);
+    if (pick.save && price !== pick.product.price) {
+      const ids = new Set(stocks.map(s => s.id));
+      for (const id of pick.product.codes.filter(c => ids.has(c))) await updateStock(id, { sale_price: price } as any);
+    }
+    setPick(null);
+  };
 
   const filtered = catalog.filter((p) => normalizeProductSearch(p.name).includes(normalizeProductSearch(search)) || p.codes.some(c => c.toLowerCase() === search.trim().toLowerCase()));
   const total = calculatePosTotal(cart);
@@ -633,28 +648,64 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
             ) : (
+              <>
+              {productImages.missing > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
+                  <span>{productImages.missing} produit(s) sans photo.</span>
+                  <Button size="sm" variant="outline" disabled={productImages.generating} onClick={async () => { const r = await productImages.generateMissing(); if (r.error) toast({ title: 'Photos', description: r.error, variant: 'destructive' }); }}>
+                    <Sparkles className="h-4 w-4 mr-1" />{productImages.generating ? 'Création des photos…' : 'Créer les photos'}
+                  </Button>
+                </div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filtered.map((p) => {
                   const initials = p.name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-                  const tones = ['bg-primary/15 text-primary', 'bg-accent text-accent-foreground', 'bg-secondary text-secondary-foreground', 'bg-primary/25 text-primary'];
-                  const tone = tones[[...p.name].reduce((a, c) => a + c.charCodeAt(0), 0) % tones.length];
+                  const img = productImages.imageFor(p.name);
                   return (
-                  <button key={p.key} type="button" onClick={() => addToCart(p.name, p.price)}
-                    className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <div className={`flex h-20 items-center justify-center ${tone}`} aria-hidden>
-                      <span className="text-2xl font-bold tracking-wide">{initials || '?'}</span>
+                  <button key={p.key} type="button" onClick={() => openPick(p)}
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <div className="relative aspect-[4/3] w-full bg-muted">
+                      {img ? <img src={img} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
+                        : <div className="flex h-full items-center justify-center bg-primary/10 text-primary" aria-hidden><span className="text-2xl font-bold">{initials || '?'}</span></div>}
+                      <span className={`absolute bottom-1 right-1 rounded-md px-2 py-0.5 text-xs font-bold shadow ${p.price > 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                        {p.price > 0 ? formatCurrency(p.price) : 'Prix à saisir'}
+                      </span>
                     </div>
-                    <div className="flex flex-1 flex-col gap-1 p-2">
-                      <span className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight" title={p.name}>{p.name}</span>
-                      <span className={`text-sm font-bold ${p.price > 0 ? 'text-primary' : 'text-destructive'}`}>{p.price > 0 ? formatCurrency(p.price) : 'Prix à saisir'}</span>
+                    <div className="flex flex-1 flex-col gap-0.5 p-2">
+                      <span className="line-clamp-2 min-h-[2.5rem] break-words text-sm font-semibold leading-tight text-foreground" title={p.name}>{p.name}</span>
                       {p.quantity !== undefined && <span className="text-xs text-muted-foreground">Stock : {p.quantity} {p.unit}</span>}
                     </div>
                   </button>
                   );
                 })}
               </div>
+              </>
             )}
             {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+            <Dialog open={!!pick} onOpenChange={o => { if (!o) setPick(null); }}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader><DialogTitle className="break-words">{pick?.product.name}</DialogTitle></DialogHeader>
+                {pick && (
+                  <form className="space-y-3" onSubmit={e => { e.preventDefault(); confirmPick(); }}>
+                    {productImages.imageFor(pick.product.name) && <img src={productImages.imageFor(pick.product.name)} alt={pick.product.name} className="aspect-[4/3] w-full rounded-lg object-cover" />}
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-xs text-muted-foreground">Prix de vente
+                        <Input autoFocus type="number" min="0" step="any" inputMode="decimal" placeholder="Saisir le prix" className="mt-1 text-right font-semibold" value={pick.price} onFocus={e => e.target.select()} onChange={e => setPick({ ...pick, price: e.target.value })} />
+                      </label>
+                      <label className="text-xs text-muted-foreground">Quantité{pick.product.unit ? ` (${pick.product.unit})` : ''}
+                        <Input type="number" min="0" step="any" inputMode="decimal" className="mt-1 text-right" value={pick.qty} onFocus={e => e.target.select()} onChange={e => setPick({ ...pick, qty: e.target.value })} />
+                      </label>
+                    </div>
+                    <p className="text-sm">Total : <b className="text-primary">{formatCurrency((Number(pick.price) || 0) * (Number(pick.qty) || 0))}</b></p>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <input type="checkbox" checked={pick.save} onChange={e => setPick({ ...pick, save: e.target.checked })} />
+                      Enregistrer ce prix pour les prochaines ventes
+                    </label>
+                    <Button type="submit" className="w-full"><ShoppingCart className="h-4 w-4 mr-2" />Ajouter au panier</Button>
+                  </form>
+                )}
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" onClick={() => setCart(prev => [...prev, { name: search.trim(), quantity: 1, unitPrice: 0 }])}><Plus className="h-4 w-4 mr-2" />Ajouter un produit</Button>
           </CardContent>
         </Card>
