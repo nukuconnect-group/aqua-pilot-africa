@@ -61,8 +61,11 @@ const ProductionUnitsManagement = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [allowedTypes, setAllowedTypes] = useState<string[] | null>(null);
+  const [typesLoaded, setTypesLoaded] = useState(false);
 
   useEffect(() => {
+    setAllowedTypes(null);
+    setTypesLoaded(false);
     if (!user?.id || isAdmin) return;
     let cancelled = false;
     supabase
@@ -70,8 +73,14 @@ const ProductionUnitsManagement = () => {
       .select('production_units')
       .eq('id', user.id)
       .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setAllowedTypes((data?.production_units as string[] | null) ?? null);
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) {
+          toast.error("Impossible de vérifier les types d’unités autorisés. Réessayez en rouvrant ce module.");
+          return;
+        }
+        setAllowedTypes((data.production_units as string[] | null) ?? null);
+        setTypesLoaded(true);
       });
     return () => { cancelled = true; };
   }, [user?.id, isAdmin]);
@@ -172,6 +181,10 @@ const ProductionUnitsManagement = () => {
   };
 
   const handleSaveUnit = async () => {
+    if (!isAdmin && !typesLoaded) {
+      toast.error("Les types d’unités autorisés n’ont pas encore pu être vérifiés. Réessayez en rouvrant ce module.");
+      return;
+    }
     // Refus côté client : type non couvert par l'abonnement (le serveur bloque aussi).
     const typeChanged = !editingUnit || editingUnit.type !== newUnit.type;
     if (typeChanged && newUnit.type && !isTypeAllowed(newUnit.type)) {
@@ -209,7 +222,9 @@ const ProductionUnitsManagement = () => {
       setShowAddDialog(false);
     } catch (error) {
       console.error('Error saving unit:', error);
-      toast.error(t('unit_save_error'));
+      const message = error && typeof error === 'object' && 'message' in error
+        && typeof error.message === 'string' ? error.message : t('unit_save_error');
+      toast.error(message);
     }
   };
 

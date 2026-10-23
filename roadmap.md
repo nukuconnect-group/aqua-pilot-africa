@@ -114,3 +114,9 @@
 - [x] Tableau de bord stock : totaux et valeurs séparés commercial / production
 - [x] Mouvements : préciser commercial ou production
 - [x] Écritures : préciser le type de stock ; aliments consommés = charge (coût × quantité)
+
+## Vérification du refus des types d’unités
+- [x] Vérifier la règle existante : quatre tests réussis, dont grossissement autorisé et fabrication d’aliment refusée
+- [x] Corriger le faux succès après un refus de création ou modification et conserver le message du refus
+- [x] Bloquer la sauvegarde tant que la lecture des types autorisés n’a pas réussi
+- [ ] Vérifier le refus sur le compte réel : session indisponible, aperçu redirigé vers /auth ; aucune unité créée
