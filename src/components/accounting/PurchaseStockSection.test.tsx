@@ -64,7 +64,7 @@ describe('PurchaseStockSection — réapprovisionnement', () => {
     await render([commercial]);
     await typeSearch('tilapia');
     expect(container.textContent).toContain('Tilapia 1kg');
-    expect(container.textContent).toContain('coût 500');
+    expect(container.textContent).toContain('achat 500');
   });
 
   it('l\'ajout d\'un produit existant pré-remplit prix d\'achat et prix de vente enregistrés', async () => {
