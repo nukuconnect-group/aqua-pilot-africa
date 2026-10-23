@@ -25,7 +25,7 @@ import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { Sale } from '@/hooks/useSales';
 
-interface CartLine { name: string; quantity: number; unitPrice: number }
+interface CartLine { name: string; quantity: number; unitPrice: number; pack?: { label: string; size: number } }
 
 const PAYMENTS = ['Espèces', 'Mobile Money', 'Carte', 'Virement'];
 
@@ -212,7 +212,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       clientName: client.trim() || 'Client comptoir',
       clientContact: contact.trim(),
       unitId: activeUnit.id,
-      products: cart.map((l) => ({ ...l, total: l.quantity * l.unitPrice })),
+      products: cart.map(({ pack, ...l }) => ({ ...l, name: pack && pack.size > 1 ? `${l.name} (${Math.round((l.quantity / pack.size) * 100) / 100} ${pack.label} de ${pack.size})` : l.name, total: l.quantity * l.unitPrice })),
       totalAmount: total,
       status: 'paid',
       paymentMethod: payment,
@@ -322,7 +322,8 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   };
   const carried = carriedOverBalance(cash.history, registerName);
   const openNames = new Set(cash.sessions.map((x) => (x.name || '').trim().toLowerCase()));
-  const closedRegisters = Array.from(new Map(cash.history.filter((h) => h.name && !openNames.has(h.name.trim().toLowerCase())).map((h) => [h.name!.trim().toLowerCase(), h])).values());
+  const disabledNames = new Set(cash.history.filter((h) => (h as any).notes === 'caisse désactivée').map((h) => (h.name || '').trim().toLowerCase()));
+  const closedRegisters = Array.from(new Map(cash.history.filter((h) => h.name && !openNames.has(h.name.trim().toLowerCase()) && !disabledNames.has(h.name.trim().toLowerCase())).map((h) => [h.name!.trim().toLowerCase(), h])).values());
   const reopen = async (name: string) => {
     setBusy(true);
     try {
@@ -336,7 +337,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     {closedRegisters.map((h) => (
       <div key={h.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2 text-sm">
         <span className="min-w-0 truncate">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h.name!)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
+        <div className="flex gap-1"><Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h.name!)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
+        {isAdmin && <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
+          const { error } = await (appSupabase as any).from('cash_sessions').update({ notes: 'caisse désactivée' }).eq('id', h.id);
+          if (error) toast({ title: 'Désactivation impossible', description: error.message, variant: 'destructive' }); else { toast({ title: 'Caisse désactivée' }); cash.reload(); }
+        }}>Désactiver</Button>}</div>
       </div>
     ))}
   </div>;
@@ -539,6 +544,18 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                 <div className="flex-1 min-w-0">
                   <Input aria-label={`Produit ${i + 1}`} className="h-8" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
                   <label className="block text-xs text-muted-foreground mt-2">Prix unitaire<Input aria-label={`Prix unitaire ${i + 1}`} min="0" step="any" type="number" className="h-8 mt-1" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} /></label>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>Conditionnement</span>
+                    <select aria-label={`Conditionnement ${i + 1}`} className="h-8 rounded-md border border-border bg-background px-2" value={l.pack?.label || 'unité'}
+                      onChange={(e) => { const label = e.target.value; const size = label === 'unité' ? 1 : (l.pack?.size && l.pack.size > 1 ? l.pack.size : label === 'pack' ? 6 : 12); updateLine(i, { pack: label === 'unité' ? undefined : { label, size }, quantity: size }); }}>
+                      <option value="unité">Unité</option><option value="pack">Pack</option><option value="carton">Carton</option>
+                    </select>
+                    {l.pack && <>
+                      <label className="flex items-center gap-1">de<Input aria-label={`Unités par ${l.pack.label} ${i + 1}`} type="number" min="1" className="h-8 w-16" value={l.pack.size} onChange={(e) => { const size = Math.max(1, Number(e.target.value) || 1); const packs = l.quantity / l.pack!.size; updateLine(i, { pack: { ...l.pack!, size }, quantity: packs * size }); }} />unités</label>
+                      <label className="flex items-center gap-1">Nombre<Input aria-label={`Nombre de ${l.pack.label} ${i + 1}`} type="number" min="0" step="any" className="h-8 w-16" value={l.quantity / l.pack.size} onChange={(e) => updateLine(i, { quantity: (Number(e.target.value) || 0) * l.pack!.size })} /></label>
+                      <span>= {l.quantity} unités · {formatCurrency(l.quantity * l.unitPrice)}</span>
+                    </>}
+                  </div>
                 </div>
                 <Button size="icon" variant="outline" aria-label={`Diminuer la quantité ${i + 1}`} className="h-7 w-7" disabled={l.quantity <= 1} onClick={() => updateLine(i, { quantity: l.quantity - 1 })}><Minus className="w-3 h-3" /></Button>
                 <Input aria-label={`Quantité ${i + 1}`} min="0" step="any" type="number" className="h-7 w-16 text-center text-xs" value={l.quantity} onChange={(e) => updateLine(i, { quantity: Number(e.target.value) || 0 })} />
