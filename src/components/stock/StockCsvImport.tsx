@@ -194,16 +194,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
 
         {rows.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">{rows.length} article(s) détecté(s) dans le fichier</p>
-            {progress === null && (
-              <div className="rounded-lg border border-border p-3 space-y-2">
-                <p className="text-sm font-medium">Ce stock est-il destiné à la vente ou à la production ?</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant={purpose === 'production' ? 'default' : 'outline'} onClick={() => setPurpose('production')}>Stock de production (nourrir mes poissons)</Button>
-                  <Button size="sm" variant={purpose === 'commercial' ? 'default' : 'outline'} onClick={() => setPurpose('commercial')}>Stock commercial (à vendre en caisse)</Button>
-                </div>
-              </div>
-            )}
+            <p className="text-sm font-medium">{rows.length} article(s) détecté(s) — destination : {purpose === 'commercial' ? 'Stock commercial' : purpose === 'production' ? 'Stock de production' : 'à choisir ci-dessus'}</p>
             <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
               <table className="w-full text-xs">
                 <thead className="bg-muted sticky top-0">
