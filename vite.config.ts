@@ -16,16 +16,17 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'robots.txt', 'manifest.json'],
-      injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}']
-      },
+      // L'enregistrement passe uniquement par src/lib/pwaRegister.ts (gardes aperçu/dev).
+      injectRegister: null,
+      includeAssets: ['favicon.png', 'robots.txt'],
       workbox: {
         maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

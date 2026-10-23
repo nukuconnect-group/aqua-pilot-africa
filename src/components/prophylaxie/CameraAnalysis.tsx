@@ -217,7 +217,7 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
   useEffect(() => {
     requestVersion.current += 1;
-    setSelectedFile(null); setPreviewUrl(''); setResult(null); setSpecies(''); setAnalysisError(null); setAnalyzing(false);
+    setSelectedFile(null); setPreviewUrl(''); setPhotoDataUrl(null); setResult(null); setSpecies(''); setAnalysisError(null); setAnalyzing(false);
   }, [activeUnit?.id]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
