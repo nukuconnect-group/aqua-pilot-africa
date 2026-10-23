@@ -743,7 +743,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           {unposted.needs.includes('bank') && <p><b>Aucun compte bancaire pour {activeUnit.name}.</b> Créez-le pour recevoir les ventes par carte bancaire et virement.</p>}
           {unposted.count > 0 && <p>{unposted.count} vente(s) ({formatCurrency(unposted.amount)}) sont en comptabilité mais pas encore dans la caisse ou la banque.</p>}
           <div className="flex flex-wrap gap-2">
-            {unposted.needs.length > 0 && <Button size="sm" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'accounting' }))}>{unposted.needs.includes('cash') ? 'Créer une caisse' : 'Créer un compte bancaire'}</Button>}
+            {unposted.needs.length > 0 && <Button size="sm" onClick={() => {
+              const kind = unposted.needs.includes('cash') ? 'cash' : 'bank';
+              try { sessionStorage.setItem('aquapilote:open-treasury-account', kind); } catch { /* stockage indisponible */ }
+              window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'accounting' }));
+              window.dispatchEvent(new CustomEvent('aquapilote:open-treasury-account', { detail: { kind } }));
+            }}>{unposted.needs.includes('cash') ? 'Créer une caisse' : 'Créer un compte bancaire'}</Button>}
             {unposted.count > 0 && <Button size="sm" variant="outline" disabled={backfilling} onClick={runBackfill}>{backfilling ? 'Report…' : 'Reporter ces ventes'}</Button>}
             <Button size="sm" variant="ghost" onClick={checkUnposted}>Vérifier à nouveau</Button>
           </div>

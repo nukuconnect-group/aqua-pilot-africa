@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,16 @@ const AccountingManagement = () => {
   const { currency, setCurrency, t, formatCurrency } = useSettings();
   const [showAlerts, setShowAlerts] = useState(false);
   const { alerts, counts } = useFinancialAlerts(activeUnit?.id);
+  const [tab, setTab] = useState('dashboard');
+  // Demande venue des Ventes : ouvrir directement la Trésorerie pour créer la caisse ou la banque de l'unité.
+  useEffect(() => {
+    let pending: string | null = null;
+    try { pending = sessionStorage.getItem('aquapilote:open-treasury-account'); } catch { /* stockage indisponible */ }
+    if (pending) setTab('cashflow'); // le drapeau est consommé par CashFlowManager
+    const onOpenAccount = () => setTab('cashflow');
+    window.addEventListener('aquapilote:open-treasury-account', onOpenAccount);
+    return () => window.removeEventListener('aquapilote:open-treasury-account', onOpenAccount);
+  }, []);
 
   const currencies = [
     { code: 'XOF', symbol: 'F CFA', name: 'Franc CFA' },
@@ -139,7 +149,7 @@ const AccountingManagement = () => {
       </div>
 
       {/* Onglets principaux */}
-      <Tabs defaultValue="dashboard" className="space-y-4">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto rounded-xl">
           <TabsTrigger value="dashboard" className="text-xs sm:text-sm whitespace-nowrap">
             <TrendingUp className="icon-responsive mr-1" />
