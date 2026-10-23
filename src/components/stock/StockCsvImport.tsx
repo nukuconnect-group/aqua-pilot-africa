@@ -195,6 +195,13 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
         {rows.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">{rows.length} article(s) détecté(s) — destination : {purpose === 'commercial' ? 'Stock commercial' : purpose === 'production' ? 'Stock de production' : 'à choisir ci-dessus'}</p>
+            {purpose === 'commercial' && rows.some(r => !(Number(r.sale_price) > 0)) && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                <p className="font-semibold">{rows.filter(r => !(Number(r.sale_price) > 0)).length} produit(s) sans prix de vente :</p>
+                <p className="break-words">{rows.filter(r => !(Number(r.sale_price) > 0)).map(r => r.name).join(', ')}</p>
+                <p>Ils seront importés, mais il faudra saisir leur prix avant de les vendre en caisse.</p>
+              </div>
+            )}
             <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
               <table className="w-full text-xs">
                 <thead className="bg-muted sticky top-0">

@@ -150,6 +150,29 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   };
 
   const filtered = catalog.filter((p) => normalizeProductSearch(p.name).includes(normalizeProductSearch(search)) || p.codes.some(c => c.toLowerCase() === search.trim().toLowerCase()));
+  const noPrice = catalog.filter(p => !(p.price > 0)).length;
+  const photoStatus = (productImages.generating || productImages.error || noPrice > 0) ? (
+    <div className="space-y-1 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
+      {productImages.generating && <p className="flex items-center gap-1"><Sparkles className="h-3 w-3" />Création automatique des photos produits… {productImages.missing} restante(s).</p>}
+      {!productImages.generating && productImages.error && <p className="text-destructive">Photos : {productImages.error}</p>}
+      {noPrice > 0 && <p className="text-destructive">{noPrice} produit(s) sans prix de vente : touchez-les pour saisir le prix.</p>}
+    </div>
+  ) : null;
+  const searchResults = search.trim() ? (
+    <div className="divide-y divide-border rounded-lg border border-border">
+      {filtered.slice(0, 12).map(p => {
+        const img = productImages.imageFor(p.name);
+        return (
+          <button key={p.key} type="button" onClick={() => view === 'ai' ? (addToCart(p.name, p.price), toast({ title: `${p.name} ajouté` })) : openPick(p)} className="flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {img ? <img src={img} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" /> : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">{p.name.slice(0, 2).toUpperCase()}</span>}
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
+            <span className={`text-sm font-bold ${p.price > 0 ? 'text-primary' : 'text-destructive'}`}>{p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}</span>
+          </button>
+        );
+      })}
+      {!filtered.length && <p className="p-3 text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+    </div>
+  ) : <p className="text-xs text-muted-foreground">Tapez le nom ou le code d’un produit : il s’affiche aussitôt.</p>;
   const total = calculatePosTotal(cart);
   const sessionSales = cash.movements.filter((m) => m.type === 'sale');
   const sessionTotal = sessionSales.reduce((s, m) => s + m.amount, 0);
@@ -647,16 +670,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
+            ) : view === 'multi' ? (
+              searchResults
             ) : (
               <>
-              {productImages.missing > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
-                  <span>{productImages.missing} produit(s) sans photo.</span>
-                  <Button size="sm" variant="outline" disabled={productImages.generating} onClick={async () => { const r = await productImages.generateMissing(); if (r.error) toast({ title: 'Photos', description: r.error, variant: 'destructive' }); }}>
-                    <Sparkles className="h-4 w-4 mr-1" />{productImages.generating ? 'Création des photos…' : 'Créer les photos'}
-                  </Button>
-                </div>
-              )}
+              {photoStatus}
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filtered.map((p) => {
                   const initials = p.name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -666,9 +684,9 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                     className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <div className="relative aspect-[4/3] w-full bg-muted">
                       {img ? <img src={img} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-                        : <div className="flex h-full items-center justify-center bg-primary/10 text-primary" aria-hidden><span className="text-2xl font-bold">{initials || '?'}</span></div>}
+                        : <div className="flex h-full items-center justify-center bg-primary/10 text-primary" aria-hidden><span className="text-2xl font-bold">{productImages.generating ? '…' : initials || '?'}</span></div>}
                       <span className={`absolute bottom-1 right-1 rounded-md px-2 py-0.5 text-xs font-bold shadow ${p.price > 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
-                        {p.price > 0 ? formatCurrency(p.price) : 'Prix à saisir'}
+                        {p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}
                       </span>
                     </div>
                     <div className="flex flex-1 flex-col gap-0.5 p-2">
@@ -681,7 +699,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               </div>
               </>
             )}
-            {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+            {catalog.length > 0 && view !== 'multi' && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
             <Dialog open={!!pick} onOpenChange={o => { if (!o) setPick(null); }}>
               <DialogContent className="max-w-sm">
                 <DialogHeader><DialogTitle className="break-words">{pick?.product.name}</DialogTitle></DialogHeader>
@@ -711,6 +729,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         </Card>
         ) : (
         <div className="space-y-3">
+        <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
+          <p className="text-sm font-semibold">Rechercher un produit</p>
+          <Input placeholder="Nom ou code du produit" value={search} onChange={(e) => setSearch(e.target.value)} />
+          {searchResults}
+        </CardContent></Card>
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
           <p className="text-sm font-semibold">Vente par la voix ou par texte</p>
             <div className="flex gap-2">

@@ -108,7 +108,7 @@ ${SCHEMA_HINT}`;
 Renseigne subject avec le nom du sujet visible. isFishPhoto=true UNIQUEMENT pour une photographie de vrais poissons.
 Un texte (même « poisson » ou un nom d'espèce), document, dessin, logo, autre animal, plante ou objet n'est PAS une photo de poissons.
 Sans vrais poissons visibles ou si l'image est trop floue, isFishPhoto=false, explique dans rejectionReason pourquoi l'analyse n'est pas possible ; species=null, averageWeight=null, observations=[], diseases=[], recommendations=[].
-Si de vrais poissons sont visibles, reconnais l'espèce si possible (sinon null), décris les signes visibles et propose uniquement des hypothèses sanitaires prudentes à confirmer. Aucun diagnostic certain sur photo seule.
+Si de vrais poissons sont visibles, nomme directement le poisson dans species sous la forme « Nom commun (Nom scientifique) », par ex. « Tilapia du Nil (Oreochromis niloticus) » ou « Silure africain (Clarias gariepinus) » ; donne l'espèce la plus probable d'après la forme, les nageoires, la couleur et les motifs, et null seulement si aucune identification n'est raisonnable. Puis analyse en détail l'état visible (peau, écailles, nageoires, yeux, branchies, couleur, lésions, posture) dans observations et propose uniquement des hypothèses sanitaires prudentes à confirmer. Aucun diagnostic certain sur photo seule.
 averageWeight=null : le poids ne peut pas être établi sur cette photo. Pas de prescription ou dosage médicamenteux sur la seule photo.
 ${SCHEMA_HINT}`,
         },
