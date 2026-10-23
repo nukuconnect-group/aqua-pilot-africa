@@ -199,7 +199,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   ) : null;
   const toggleSel = (k: string) => setSel(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
   const addSelected = () => {
-    const chosen = catalog.filter(p => sel.has(p.key));
+    const chosen = [...sel].map(k => catalog.find(p => p.key === k)).filter(Boolean) as PosProduct[];
     chosen.forEach(p => addToCart(p.name, p.price > 0 ? p.price : 0));
     if (chosen.length) toast({ title: `${chosen.length} produit(s) ajouté(s) au panier`, description: chosen.some(p => !(p.price > 0)) ? 'Saisissez le prix des produits sans prix dans le panier.' : undefined });
     setSel(new Set()); setSearch('');
