@@ -165,6 +165,13 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
           Le fichier doit contenir une ligne par article : <b>nom; quantité; unité; prix d'achat; fournisseur; seuil d'alerte; prix de vente</b> (prix de vente pour un stock commercial).
           Chaque article importé reçoit automatiquement un code-barres.
         </p>
+        <div className="rounded-lg border border-border p-3 space-y-2">
+          <p className="text-sm font-medium">1. Quel type de stock voulez-vous importer ?</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" disabled={running} variant={purpose === 'production' ? 'default' : 'outline'} onClick={() => setPurpose('production')}>Stock de production (nourrir mes poissons)</Button>
+            <Button size="sm" disabled={running} variant={purpose === 'commercial' ? 'default' : 'outline'} onClick={() => setPurpose('commercial')}>Stock commercial (à vendre en caisse)</Button>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => downloadTemplate('production')}>
             <FileDown className="w-4 h-4 mr-1" /> Modèle stock de production
@@ -172,7 +179,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
           <Button variant="outline" size="sm" onClick={() => downloadTemplate('commercial')}>
             <FileDown className="w-4 h-4 mr-1" /> Modèle stock commercial
           </Button>
-          <Button size="sm" disabled={running} onClick={() => fileRef.current?.click()}>
+          <Button size="sm" disabled={running || !purpose} onClick={() => fileRef.current?.click()} title={!purpose ? 'Choisissez d’abord le type de stock' : undefined}>
             <Upload className="w-4 h-4 mr-1" /> Choisir un fichier CSV
           </Button>
           <input
