@@ -27,3 +27,17 @@ describe('AquaHealth photo eligibility', () => {
     expect(enforceFishPhoto(result, 'species')).toEqual(result);
   });
 });
+import { normalizeResult, parseModelJson } from '../../../supabase/functions/aqua-health-vision/result';
+describe('AquaHealth model output tolerance', () => {
+  it('accepts null fields, string confidence and fenced JSON from the model', () => {
+    const raw = '```json\n{"subject":"Tilapia","isFishPhoto":true,"species":null,"observations":null,"diseases":[{"name":"Saprolégniose","severity":"Modéré","confidence":"0.6","description":null}],"recommendations":"Isoler"}\n```';
+    const r = normalizeResult(parseModelJson(raw))!;
+    expect(r.isFishPhoto).toBe(true);
+    expect(r.observations).toEqual([]);
+    expect(r.diseases[0]).toMatchObject({ name: 'Saprolégniose', severity: 'medium', confidence: 60 });
+    expect(r.recommendations).toEqual(['Isoler']);
+  });
+  it('returns null when the model output is not JSON', () => {
+    expect(normalizeResult(parseModelJson('désolé'))).toBeNull();
+  });
+});
