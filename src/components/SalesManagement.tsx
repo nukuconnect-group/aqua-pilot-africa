@@ -64,7 +64,7 @@ const createEmptySale = (unitId = '', documentType: SalesDocumentType = 'receipt
 
 const SalesManagement = () => {
   const { addLog } = useLogs();
-  const { units, activeUnit } = useProductionUnits();
+  const { units, activeUnit, setActiveUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
 
   const { formatCurrency, t, currency, companyInfo } = useSettings();
@@ -975,6 +975,7 @@ const SalesManagement = () => {
         )}
 
         <TabsContent value="closures" className="space-y-3 sm:space-y-4">
+          <div className="flex justify-end"><Button variant="outline" size="sm" onClick={generateSalesReport}><Download className="w-4 h-4 mr-2" />Rapport de caisse et ventes (CSV)</Button></div>
           <CashClosures />
         </TabsContent>
 

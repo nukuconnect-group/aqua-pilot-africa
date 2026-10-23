@@ -272,7 +272,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     } finally { setBusy(false); paymentLock.current = false; }
   };
 
-  if (!activeUnit || (units.length > 1 && !unitConfirmed)) return (
+  if (!activeUnit) return (
     <Card className="rounded-2xl"><CardHeader><CardTitle className="text-base">Avec quelle unité voulez-vous vendre ?</CardTitle></CardHeader>
       <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {units.length === 0 ? <p className="text-sm text-muted-foreground">Aucune unité disponible.</p> : units.map((u) => (
@@ -417,12 +417,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               {cash.sessions.map((s) => <option key={s.id} value={s.id} className="text-foreground">{s.name || 'Caisse'}</option>)}
             </select>
           ) : <span className="font-semibold">{cash.session.name || 'Caisse principale'}</span>}
-          {units.length > 1 && <button className="text-xs underline opacity-80" disabled={busy || !!pendingPayment} onClick={() => setUnitConfirmed(false)}>{activeUnit.name} · changer</button>}
           <div className="ml-auto flex flex-wrap gap-1">
             {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
-            <Button variant="secondary" size="sm" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4 mr-1" />Opérations</Button>
-            <Button variant="secondary" size="sm" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4 mr-1" />Clôturer</Button>
-            <Button variant="secondary" size="sm" onClick={() => setLocked(true)} aria-label="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" className="bg-background text-foreground hover:bg-muted" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4 mr-1" />Opérations</Button>
+            <Button variant="outline" size="sm" className="bg-background text-foreground hover:bg-muted" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4 mr-1" />Clôturer</Button>
+            <Button variant="outline" size="sm" className="bg-background text-foreground hover:bg-muted" onClick={() => setLocked(true)} aria-label="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
