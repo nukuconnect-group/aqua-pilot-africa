@@ -391,7 +391,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
         <div className="relative z-10 w-full md:w-1/2 flex items-start justify-center px-4 pt-24 pb-6 md:pt-8 md:pb-8 md:px-10 overflow-y-auto md:bg-slate-50">
          <div className="w-full max-w-xl md:mt-0">
-          <div className="bg-white rounded-2xl shadow-lg md:shadow-xl border border-slate-200/70 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-lg md:shadow-xl border border-border overflow-hidden">
             <div className="p-6 sm:p-8">
               {/* Logo / titre */}
               <div className="text-center mb-6">
@@ -400,7 +400,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                   alt="AquaPilote"
                   className="mx-auto h-20 w-auto object-contain mb-2"
                 />
-                <DialogTitle className="text-2xl font-semibold text-slate-800">
+                <DialogTitle className="text-2xl font-semibold text-foreground">
                   Créer votre compte
                 </DialogTitle>
                 <DialogDescription className="sr-only">
@@ -491,7 +491,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                     className="border-0 shadow-none pl-7 pr-9 h-11 rounded-full bg-transparent focus-visible:ring-0"
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-slate-600">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </FieldWithIcon>
@@ -534,9 +534,9 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                 </FieldWithIcon>
                 {/* Type d'exploitation */}
                 <div className="pt-2">
-                  <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <Factory className="w-4 h-4 text-blue-500" />
-                    Type d'exploitation <span className="text-pink-500">*</span>
+                  <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Factory className="w-4 h-4 text-primary" />
+                    Type d'exploitation <span className="text-destructive">*</span>
                   </Label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
                     {[
@@ -550,10 +550,10 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                           key={opt.v}
                           type="button"
                           onClick={() => handleInputChange('exploitationType', opt.v)}
-                          className={`text-left rounded-xl border p-3 transition-all ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                          className={`text-left rounded-xl border p-3 transition-all ${active ? 'border-primary bg-primary/10 ring-2 ring-primary/30' : 'border-border hover:border-primary/50 bg-card'}`}
                         >
-                          <div className="text-sm font-semibold text-slate-800">{opt.label}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">{opt.desc}</div>
+                          <div className="text-sm font-semibold text-foreground">{opt.label}</div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</div>
                         </button>
                       );
                     })}
@@ -562,17 +562,17 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
                 {/* Besoin de capteurs IoT */}
                 <div className="pt-2">
-                   <label className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${formData.needsSensors ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30'}`}>
+                   <label className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${formData.needsSensors ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-blue-300 hover:bg-primary/5'}`}>
                      <Checkbox
                        checked={formData.needsSensors}
                        onCheckedChange={(checked) => handleInputChange('needsSensors', checked === true)}
                        className="h-5 w-5 shrink-0 aspect-square rounded-[4px] border-2 border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                      />
                     <div className="flex items-start gap-2 flex-1">
-                      <Radio className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <Radio className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="text-sm font-semibold text-slate-800">J'ai besoin de capteurs IoT</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">Cochez si vous souhaitez équiper votre ferme de capteurs (température, pH, oxygène…). Notre équipe pourra vous accompagner.</div>
+                        <div className="text-sm font-semibold text-foreground">J'ai besoin de capteurs IoT</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">Cochez si vous souhaitez équiper votre ferme de capteurs (température, pH, oxygène…). Notre équipe pourra vous accompagner.</div>
                       </div>
                     </div>
                   </label>
@@ -581,11 +581,11 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                 {currentStep === 3 && <>
                 {/* Unités à gérer */}
                 <div className="pt-2">
-                  <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <Fish className="w-4 h-4 text-blue-500" />
-                    Que voulez-vous gérer ? <span className="text-pink-500">*</span>
+                  <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Fish className="w-4 h-4 text-primary" />
+                    Que voulez-vous gérer ? <span className="text-destructive">*</span>
                   </Label>
-                  <p className="text-xs text-slate-500 mt-1">Choisissez une ou plusieurs unités. Chacune aura ses propres modules.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Choisissez une ou plusieurs unités. Chacune aura ses propres modules.</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                     {SIGNUP_UNIT_OPTIONS.map(opt => {
                       const active = formData.productionUnits.includes(opt.type);
@@ -596,12 +596,12 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                           type="button"
                           aria-pressed={active}
                           onClick={() => toggleBreedingType(opt.type, !active)}
-                          className={`relative text-left rounded-xl border p-3 transition-all ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                          className={`relative text-left rounded-xl border p-3 transition-all ${active ? 'border-primary bg-primary/10 ring-2 ring-primary/30' : 'border-border hover:border-primary/50 bg-card'}`}
                         >
-                          {active && <Check className="absolute top-2 right-2 w-4 h-4 text-blue-600" />}
-                          <Icon className={`w-6 h-6 mb-2 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
-                          <p className="text-sm font-semibold text-slate-800">{opt.label}</p>
-                          <p className="text-xs text-slate-500">{opt.desc}</p>
+                          {active && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
+                          <Icon className={`w-6 h-6 mb-2 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <p className="text-sm font-semibold text-foreground">{opt.label}</p>
+                          <p className="text-xs text-muted-foreground">{opt.desc}</p>
                         </button>
                       );
                     })}
@@ -667,7 +667,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
       <DialogContent hideClose className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <MailCheck className="w-5 h-5 text-blue-600" />
+            <MailCheck className="w-5 h-5 text-primary" />
             Confirmez votre adresse e-mail
           </DialogTitle>
           <DialogDescription className="text-sm text-slate-600 pt-2 space-y-3">
@@ -705,10 +705,10 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
 // Composant champ avec icône à gauche dans un input arrondi
 const FieldWithIcon: React.FC<{ icon: React.ReactNode; required?: boolean; children: React.ReactNode }> = ({ icon, required, children }) => (
-  <div className="relative flex items-center rounded-full border border-slate-200 bg-white shadow-sm hover:border-slate-300 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center gap-0.5 pointer-events-none">
+  <div className="relative flex items-center rounded-full border border-border bg-card shadow-sm hover:border-primary/50 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground flex items-center gap-0.5 pointer-events-none">
       {icon}
-      {required && <span className="text-pink-500 text-xs leading-none">*</span>}
+      {required && <span className="text-destructive text-xs leading-none">*</span>}
     </div>
     <div className="w-full pl-7">
       {children}
@@ -731,16 +731,16 @@ const CountryCombobox: React.FC<{
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="w-full flex items-center justify-between pl-7 pr-4 h-11 rounded-full bg-transparent text-left text-sm text-slate-700 focus:outline-none"
+            className="w-full flex items-center justify-between pl-7 pr-4 h-11 rounded-full bg-transparent text-left text-sm text-foreground focus:outline-none"
           >
-            <span className={selected ? '' : 'text-slate-400'}>
+            <span className={selected ? '' : 'text-muted-foreground'}>
               {selected
                 ? `${selected.flag} ${selected.name}`
                 : detecting
                   ? 'Détection…'
                   : 'Sélectionnez le pays de résidence'}
             </span>
-            <ChevronsUpDown className="w-4 h-4 text-slate-400 shrink-0" />
+            <ChevronsUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="p-0 w-[--radix-popover-trigger-width] z-[2000]" align="start">
@@ -761,7 +761,7 @@ const CountryCombobox: React.FC<{
                     <Check className={`mr-2 h-4 w-4 ${value === c.code ? 'opacity-100' : 'opacity-0'}`} />
                     <span className="mr-2">{c.flag}</span>
                     <span className="flex-1">{c.name}</span>
-                    <span className="text-xs text-slate-400">{c.phonePrefix}</span>
+                    <span className="text-xs text-muted-foreground">{c.phonePrefix}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
