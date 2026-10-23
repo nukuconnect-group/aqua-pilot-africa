@@ -17,6 +17,7 @@ import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
 import CashRegisterPOS from './sales/CashRegisterPOS';
 import CashClosures from './sales/CashClosures';
+import SalesDashboard, { CancelledSales } from './sales/SalesDashboard';
 import { useSales, Sale, SaleItem } from '@/hooks/useSales';
 import { useToast } from '@/hooks/use-toast';
 import { createNotification } from '@/lib/notificationService';
@@ -949,6 +950,10 @@ const SalesManagement = () => {
       <Tabs defaultValue="pos" className="space-y-3 sm:space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-full sm:w-auto min-w-full bg-muted rounded-xl">
+            <TabsTrigger value="dashboard" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              Tableau de bord
+            </TabsTrigger>
             <TabsTrigger value="pos" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Caisse
@@ -975,8 +980,20 @@ const SalesManagement = () => {
               <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Clôtures
             </TabsTrigger>
+            <TabsTrigger value="returns" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
+              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              Annulations
+            </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="dashboard" className="space-y-3 sm:space-y-4">
+          <SalesDashboard sales={filteredSales} />
+        </TabsContent>
+
+        <TabsContent value="returns" className="space-y-3 sm:space-y-4">
+          <CancelledSales sales={filteredSales} />
+        </TabsContent>
 
         <TabsContent value="pos" className="space-y-3 sm:space-y-4">
           <CashRegisterPOS />
