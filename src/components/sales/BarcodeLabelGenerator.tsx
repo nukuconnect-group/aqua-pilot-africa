@@ -7,7 +7,7 @@ import { Printer, Tag, Search } from 'lucide-react';
 import JsBarcode from 'jsbarcode';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useProductionUnits } from '@/hooks/useProductionUnits';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { getSalePrice, isCommercialStock } from '@/lib/stockPurpose';
 import { normalizeProductSearch } from '@/lib/posCatalog';
