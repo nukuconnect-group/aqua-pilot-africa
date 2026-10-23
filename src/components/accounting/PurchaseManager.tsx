@@ -1242,11 +1242,13 @@ const PurchaseManager = () => {
                   const q = suggestedQuantity(s);
                   const unitCost = Number(s.cost) || 0;
                   setUnitPrice(unitCost);
-                  setStockTarget({ purpose: isCommercialStock(s) ? 'commercial' : 'production', stockId: s.id, salePrice: 0 });
                   setNewPurchase((p) => ({
                     ...p, description: s.custom_name || s.feed_type, quantity: q, unit: s.unit,
                     supplier: p.supplier || s.supplier || '', amount: unitCost * q,
                   }));
+                }}
+                onCreateNew={(name) => {
+                  setNewPurchase((p) => ({ ...p, description: p.description || name }));
                 }}
               />
             )}
