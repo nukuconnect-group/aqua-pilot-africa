@@ -77,8 +77,9 @@ const MODULE_META: Record<string, { category: string; premium?: boolean; core?: 
   production: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'algoculture'] },
   accounting: { category: 'Gestion' },
   purchases: { category: 'Gestion', unitTypes: ALL_OPERATIONAL_UNIT_TYPES },
-  sales: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
-  suppliers: { category: 'Gestion', unitTypes: ['transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
+  // Toutes les unités vendent, avec écritures en comptabilité et trésorerie.
+  sales: { category: 'Gestion', unitTypes: ALL_OPERATIONAL_UNIT_TYPES },
+  suppliers: { category: 'Gestion', unitTypes: ALL_OPERATIONAL_UNIT_TYPES },
   hr: { category: 'Gestion', premium: true },
   planning: { category: 'Pilotage' },
   reports: { category: 'Pilotage' },
@@ -187,7 +188,7 @@ export const DEFAULT_PLANS: PlanConfig[] = [
     'Exploitation et gestion de base',
     0,
     'yearly',
-    ['units', 'infrastructure', 'livestock', 'feeding', 'health', 'aquahealth', 'production', 'sales', 'purchases', 'crm', 'planning', 'reports'],
+    ['units', 'infrastructure', 'livestock', 'feeding', 'health', 'aquahealth', 'production', 'sales', 'purchases', 'crm', 'accounting', 'planning', 'reports'],
     1,
   ),
   makePlan(
