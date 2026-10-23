@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Fish, Loader2, User as UserIcon, Mail, Phone, MapPin, Building2, KeyRound, Factory, Radio, ChevronsUpDown, Check, MailCheck, ShieldAlert, Egg, Store, Scissors, Snowflake, Leaf, Wheat } from 'lucide-react';
+import { Eye, EyeOff, Fish, Loader2, User as UserIcon, Mail, Phone, MapPin, Building2, KeyRound, Factory, Radio, ChevronsUpDown, Check, MailCheck, ShieldAlert, Egg, Store, Scissors, Snowflake, Leaf, Wheat, ChevronLeft, ChevronRight, Sparkles, Star, Rocket, Crown, Handshake, Layers } from 'lucide-react';
 import { SIGNUP_UNIT_OPTIONS } from '@/lib/signupUnits';
 
 const UNIT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -26,6 +26,21 @@ import registerBgAsset from '@/assets/aquapilote-register-bg-v2.png.asset.json';
 import loginBgAsset from '@/assets/aquapilote-login-bg-v2.png.asset.json';
 import fishColumnsMobile from '@/assets/fish-columns-mobile.jpg';
 import { ALL_COUNTRIES } from '@/lib/allCountries';
+
+const STEPS = [
+  { title: 'Compte', icon: UserIcon, heading: 'Vos informations', desc: 'Identité, contact et mot de passe sécurisé.' },
+  { title: 'Exploitation', icon: Building2, heading: 'Votre exploitation', desc: 'Nom, adresse et taille de votre ferme.' },
+  { title: 'Unités', icon: Layers, heading: 'Vos unités de production', desc: 'Choisissez ce que vous voulez gérer : seuls ces espaces seront affichés.' },
+  { title: 'Abonnement', icon: Crown, heading: 'Votre abonnement', desc: 'Commencez gratuitement pendant 1 mois, puis choisissez l’offre adaptée.' },
+];
+
+const SIGNUP_PLANS = [
+  { id: 'trial_discovery', name: 'Essai gratuit — 1 mois', desc: 'Accès complet pendant 30 jours, sans paiement.', price: '0 F CFA', period: '30 jours', icon: Sparkles, badge: 'Pour commencer', features: ['Tous les modules de vos unités', 'Aucune carte bancaire', 'Changement d’offre à tout moment'] },
+  { id: 'annual_basic', name: 'Semi-exploitation', desc: 'Petites et moyennes exploitations.', price: '60 000 F CFA', period: '/ an', icon: Star, features: ['Modules principaux', 'Rapports PDF et Excel', 'Support prioritaire'] },
+  { id: 'annual_pro', name: 'Semi-industriel', desc: 'Production organisée à échelle moyenne.', price: '120 000 F CFA', period: '/ an', icon: Rocket, features: ['Tout Semi-exploitation', 'Multi-unités et équipe', 'Analyse IA des maladies'] },
+  { id: 'annual_enterprise', name: 'Industriel', desc: 'Grandes productions intensives.', price: 'Sur devis', period: '', icon: Crown, features: ['Tous les modules', 'Formation sur site', 'Interlocuteur dédié'] },
+  { id: 'custom', name: 'Sur mesure', desc: 'Besoins spécifiques : contactez-nous.', price: 'Nous contacter', period: '', icon: Handshake, features: ['Modules et intégrations adaptés', 'Accompagnement personnalisé'] },
+];
 
 interface EnhancedRegistrationProps {
   onClose: () => void;
@@ -111,7 +126,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
   onSwitchToLogin,
   selectedPlan = null
 }) => {
-  const [chosenPlan, setChosenPlan] = useState<string>(selectedPlan || 'standard');
+  const [chosenPlan, setChosenPlan] = useState<string>(selectedPlan || 'trial_discovery');
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -246,24 +261,32 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
   };
 
 
-  const getFormErrors = (): string[] => {
+  const getFormErrors = (upTo = 4): string[] => {
     const errors: string[] = [];
-    if (formData.lastName.trim().length < 2) errors.push('Saisissez votre nom (2 caractères minimum).');
-    if (formData.firstName.trim().length < 2) errors.push('Saisissez votre prénom (2 caractères minimum).');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) errors.push('Saisissez une adresse e-mail valide.');
-    if (formData.phone.trim().length < 4) errors.push('Saisissez votre numéro de téléphone.');
-    if (!formData.countryCode) errors.push('Sélectionnez votre pays.');
-    if (formData.companyName.trim().length < 2) errors.push('Saisissez le nom de votre ferme.');
-    if (formData.location.trim().length < 2) errors.push("Saisissez l'adresse de votre ferme.");
-    if (formData.password.length < 8) errors.push('Le mot de passe doit contenir au moins 8 caractères.');
-    if (!/[A-Z]/.test(formData.password)) errors.push('Le mot de passe doit contenir une majuscule.');
-    if (!/[a-z]/.test(formData.password)) errors.push('Le mot de passe doit contenir une minuscule.');
-    if (!/[0-9]/.test(formData.password)) errors.push('Le mot de passe doit contenir un chiffre.');
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) errors.push('Le mot de passe doit contenir un caractère spécial.');
-    if (formData.password !== formData.confirmPassword) errors.push('Les deux mots de passe ne correspondent pas.');
-    if (formData.productionUnits.length === 0) errors.push('Choisissez au moins une unité à gérer.');
-    if (!formData.exploitationType) errors.push("Sélectionnez un type d'exploitation.");
+    const step1: string[] = []; const step2: string[] = []; const step3: string[] = [];
+    if (formData.lastName.trim().length < 2) step1.push('Saisissez votre nom (2 caractères minimum).');
+    if (formData.firstName.trim().length < 2) step1.push('Saisissez votre prénom (2 caractères minimum).');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) step1.push('Saisissez une adresse e-mail valide.');
+    if (formData.phone.trim().length < 4) step1.push('Saisissez votre numéro de téléphone.');
+    if (!formData.countryCode) step1.push('Sélectionnez votre pays.');
+    if (formData.companyName.trim().length < 2) step2.push('Saisissez le nom de votre ferme.');
+    if (formData.location.trim().length < 2) step2.push("Saisissez l'adresse de votre ferme.");
+    if (formData.password.length < 8) step1.push('Le mot de passe doit contenir au moins 8 caractères.');
+    if (!/[A-Z]/.test(formData.password)) step1.push('Le mot de passe doit contenir une majuscule.');
+    if (!/[a-z]/.test(formData.password)) step1.push('Le mot de passe doit contenir une minuscule.');
+    if (!/[0-9]/.test(formData.password)) step1.push('Le mot de passe doit contenir un chiffre.');
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) step1.push('Le mot de passe doit contenir un caractère spécial.');
+    if (formData.password !== formData.confirmPassword) step1.push('Les deux mots de passe ne correspondent pas.');
+    if (formData.productionUnits.length === 0) step3.push('Choisissez au moins une unité à gérer.');
+    if (!formData.exploitationType) step2.push("Sélectionnez un type d'exploitation.");
+    errors.push(...step1); if (upTo >= 2) errors.push(...step2); if (upTo >= 3) errors.push(...step3);
     return errors;
+  };
+
+  const goNext = () => {
+    const errs = getFormErrors(currentStep);
+    if (errs.length) { setFormErrors(errs); return; }
+    setFormErrors([]); setCurrentStep((s) => Math.min(4, s + 1));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -368,7 +391,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
         <div className="relative z-10 w-full md:w-1/2 flex items-start justify-center px-4 pt-24 pb-6 md:pt-8 md:pb-8 md:px-10 overflow-y-auto md:bg-slate-50">
          <div className="w-full max-w-xl md:mt-0">
-          <div className="bg-white rounded-2xl shadow-lg md:shadow-xl border border-slate-200/70 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-lg md:shadow-xl border border-border overflow-hidden">
             <div className="p-6 sm:p-8">
               {/* Logo / titre */}
               <div className="text-center mb-6">
@@ -377,7 +400,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                   alt="AquaPilote"
                   className="mx-auto h-20 w-auto object-contain mb-2"
                 />
-                <DialogTitle className="text-2xl font-semibold text-slate-800">
+                <DialogTitle className="text-2xl font-semibold text-foreground">
                   Créer votre compte
                 </DialogTitle>
                 <DialogDescription className="sr-only">
@@ -385,7 +408,28 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                 </DialogDescription>
               </div>
 
-              <form onSubmit={handleSubmit} noValidate className="space-y-3">
+              {/* Étapes */}
+              <ol className="mb-6 grid grid-cols-4 gap-2" aria-label="Étapes de l'inscription">
+                {STEPS.map((s, i) => {
+                  const n = i + 1; const done = currentStep > n; const active = currentStep === n; const Icon = s.icon;
+                  return (
+                    <li key={s.title} className="flex flex-col items-center gap-1.5 text-center">
+                      <span className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${done ? 'border-primary bg-primary text-primary-foreground' : active ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'}`}>
+                        {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                      </span>
+                      <span className={`text-[11px] font-medium leading-tight ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{s.title}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Étape {currentStep} sur 4</p>
+                <h3 className="text-lg font-semibold text-foreground">{STEPS[currentStep - 1].heading}</h3>
+                <p className="text-sm text-muted-foreground">{STEPS[currentStep - 1].desc}</p>
+              </div>
+
+              <form onSubmit={currentStep === 4 ? handleSubmit : (e) => { e.preventDefault(); goNext(); }} noValidate className="space-y-3">
+                {currentStep === 1 && <>
                 {/* Nom + Prénom */}
                 <div className="grid grid-cols-2 gap-3">
                   <FieldWithIcon icon={<UserIcon className="w-4 h-4" />} required>
@@ -436,7 +480,37 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                   onChange={handleCountryChange}
                   detecting={isDetectingLocation}
                 />
+                {/* Mot de passe */}
+                <FieldWithIcon icon={<KeyRound className="w-4 h-4" />} required>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Mot de passe (min. 8 caractères)"
+                    value={formData.password}
+                    onChange={e => handleInputChange('password', e.target.value)}
+                    required minLength={8}
+                    className="border-0 shadow-none pl-7 pr-9 h-11 rounded-full bg-transparent focus-visible:ring-0"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-slate-600">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </FieldWithIcon>
 
+                {/* Confirmation */}
+                <FieldWithIcon icon={<KeyRound className="w-4 h-4" />} required>
+                  <Input
+                    type="password" placeholder="Confirmer le mot de passe"
+                    value={formData.confirmPassword}
+                    onChange={e => handleInputChange('confirmPassword', e.target.value)}
+                    required minLength={8}
+                    className="border-0 shadow-none pl-7 h-11 rounded-full bg-transparent focus-visible:ring-0"
+                  />
+                </FieldWithIcon>
+                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                  <p className="text-xs text-destructive pl-2">Les mots de passe ne correspondent pas</p>
+                )}
+                </>}
+                {currentStep === 2 && <>
                 {/* Nom de la ferme */}
                 <FieldWithIcon icon={<Building2 className="w-4 h-4" />} required>
                   <Input
@@ -458,71 +532,11 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                     className="border-0 shadow-none pl-7 h-11 rounded-full bg-transparent focus-visible:ring-0"
                   />
                 </FieldWithIcon>
-
-                {/* Mot de passe */}
-                <FieldWithIcon icon={<KeyRound className="w-4 h-4" />} required>
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Mot de passe (min. 8 caractères)"
-                    value={formData.password}
-                    onChange={e => handleInputChange('password', e.target.value)}
-                    required minLength={8}
-                    className="border-0 shadow-none pl-7 pr-9 h-11 rounded-full bg-transparent focus-visible:ring-0"
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </FieldWithIcon>
-
-                {/* Confirmation */}
-                <FieldWithIcon icon={<KeyRound className="w-4 h-4" />} required>
-                  <Input
-                    type="password" placeholder="Confirmer le mot de passe"
-                    value={formData.confirmPassword}
-                    onChange={e => handleInputChange('confirmPassword', e.target.value)}
-                    required minLength={8}
-                    className="border-0 shadow-none pl-7 h-11 rounded-full bg-transparent focus-visible:ring-0"
-                  />
-                </FieldWithIcon>
-                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <p className="text-xs text-destructive pl-2">Les mots de passe ne correspondent pas</p>
-                )}
-
-                {/* Unités à gérer */}
-                <div className="pt-2">
-                  <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <Fish className="w-4 h-4 text-blue-500" />
-                    Que voulez-vous gérer ? <span className="text-pink-500">*</span>
-                  </Label>
-                  <p className="text-xs text-slate-500 mt-1">Choisissez une ou plusieurs unités. Chacune aura ses propres modules.</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                    {SIGNUP_UNIT_OPTIONS.map(opt => {
-                      const active = formData.productionUnits.includes(opt.type);
-                      const Icon = UNIT_ICONS[opt.type] ?? Fish;
-                      return (
-                        <button
-                          key={opt.type}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => toggleBreedingType(opt.type, !active)}
-                          className={`relative text-left rounded-xl border p-3 transition-all ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
-                        >
-                          {active && <Check className="absolute top-2 right-2 w-4 h-4 text-blue-600" />}
-                          <Icon className={`w-6 h-6 mb-2 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
-                          <p className="text-sm font-semibold text-slate-800">{opt.label}</p>
-                          <p className="text-xs text-slate-500">{opt.desc}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 {/* Type d'exploitation */}
                 <div className="pt-2">
-                  <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <Factory className="w-4 h-4 text-blue-500" />
-                    Type d'exploitation <span className="text-pink-500">*</span>
+                  <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Factory className="w-4 h-4 text-primary" />
+                    Type d'exploitation <span className="text-destructive">*</span>
                   </Label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
                     {[
@@ -536,10 +550,10 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                           key={opt.v}
                           type="button"
                           onClick={() => handleInputChange('exploitationType', opt.v)}
-                          className={`text-left rounded-xl border p-3 transition-all ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                          className={`text-left rounded-xl border p-3 transition-all ${active ? 'border-primary bg-primary/10 ring-2 ring-primary/30' : 'border-border hover:border-primary/50 bg-card'}`}
                         >
-                          <div className="text-sm font-semibold text-slate-800">{opt.label}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">{opt.desc}</div>
+                          <div className="text-sm font-semibold text-foreground">{opt.label}</div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</div>
                         </button>
                       );
                     })}
@@ -548,69 +562,100 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
                 {/* Besoin de capteurs IoT */}
                 <div className="pt-2">
-                   <label className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${formData.needsSensors ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30'}`}>
+                   <label className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${formData.needsSensors ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-blue-300 hover:bg-primary/5'}`}>
                      <Checkbox
                        checked={formData.needsSensors}
                        onCheckedChange={(checked) => handleInputChange('needsSensors', checked === true)}
                        className="h-5 w-5 shrink-0 aspect-square rounded-[4px] border-2 border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                      />
                     <div className="flex items-start gap-2 flex-1">
-                      <Radio className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <Radio className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="text-sm font-semibold text-slate-800">J'ai besoin de capteurs IoT</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">Cochez si vous souhaitez équiper votre ferme de capteurs (température, pH, oxygène…). Notre équipe pourra vous accompagner.</div>
+                        <div className="text-sm font-semibold text-foreground">J'ai besoin de capteurs IoT</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">Cochez si vous souhaitez équiper votre ferme de capteurs (température, pH, oxygène…). Notre équipe pourra vous accompagner.</div>
                       </div>
                     </div>
                   </label>
                 </div>
-
-                {/* Choix de l'abonnement — 1er mois offert */}
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-800">Choisissez votre abonnement</p>
-                  <p className="text-[11px] text-slate-500">Le premier mois est offert en mode essai, sans paiement. Vous pourrez changer d'offre à tout moment.</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[{ id: 'standard', label: 'Standard' }, { id: 'premium', label: 'Premium' }, { id: 'enterprise', label: 'Entreprise' }].map((p) => (
-                      <button type="button" key={p.id} onClick={() => setChosenPlan(p.id)}
-                        className={`rounded-xl border-2 p-2 text-center text-sm font-semibold transition-colors ${chosenPlan === p.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-700'}`}>
-                        {p.label}
-                        <span className="block text-[10px] font-normal text-green-700">1 mois gratuit</span>
-                      </button>
-                    ))}
+                </>}
+                {currentStep === 3 && <>
+                {/* Unités à gérer */}
+                <div className="pt-2">
+                  <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Fish className="w-4 h-4 text-primary" />
+                    Que voulez-vous gérer ? <span className="text-destructive">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">Choisissez une ou plusieurs unités. Chacune aura ses propres modules.</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                    {SIGNUP_UNIT_OPTIONS.map(opt => {
+                      const active = formData.productionUnits.includes(opt.type);
+                      const Icon = UNIT_ICONS[opt.type] ?? Fish;
+                      return (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => toggleBreedingType(opt.type, !active)}
+                          className={`relative text-left rounded-xl border p-3 transition-all ${active ? 'border-primary bg-primary/10 ring-2 ring-primary/30' : 'border-border hover:border-primary/50 bg-card'}`}
+                        >
+                          {active && <Check className="absolute top-2 right-2 w-4 h-4 text-primary" />}
+                          <Icon className={`w-6 h-6 mb-2 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <p className="text-sm font-semibold text-foreground">{opt.label}</p>
+                          <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-
-                {/* Bouton Valider */}
-                {formErrors.length > 0 && (
-                  <div role="alert" aria-live="assertive" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                    <p className="font-semibold">Inscription impossible</p>
-                    <ul className="mt-1 list-disc space-y-1 pl-5">
-                      {formErrors.map((message) => <li key={message}>{message}</li>)}
-                    </ul>
+                </>}
+                {currentStep === 4 && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {SIGNUP_PLANS.map((p) => {
+                      const active = chosenPlan === p.id; const Icon = p.icon;
+                      return (
+                        <button key={p.id} type="button" aria-pressed={active} onClick={() => setChosenPlan(p.id)}
+                          className={`relative flex flex-col rounded-xl border-2 p-4 text-left transition-all ${active ? 'border-primary bg-primary/5 shadow-md' : 'border-border bg-card hover:border-primary/50'} ${p.id === 'trial_discovery' ? 'sm:col-span-2' : ''}`}>
+                          {p.badge && <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">{p.badge}</span>}
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
+                            <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}>{active && <Check className="h-3 w-3" />}</span>
+                          </div>
+                          <p className="mt-3 font-semibold text-foreground">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">{p.desc}</p>
+                          <p className="mt-2 text-lg font-bold text-foreground">{p.price}<span className="ml-1 text-xs font-normal text-muted-foreground">{p.period}</span></p>
+                          <ul className="mt-2 space-y-1">
+                            {p.features.map((f) => <li key={f} className="flex items-start gap-1.5 text-xs text-muted-foreground"><Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />{f}</li>)}
+                          </ul>
+                        </button>
+                      );
+                    })}
+                    <p className="sm:col-span-2 text-xs text-muted-foreground">Chaque compte démarre par 1 mois d’essai gratuit, sans paiement. L’offre choisie est enregistrée et pourra être activée à la fin de l’essai. Pour « Sur mesure », notre équipe vous recontacte.</p>
                   </div>
                 )}
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-12 rounded-full mt-4 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-                  style={{ background: 'linear-gradient(90deg, #a78bfa 0%, #60a5fa 50%, #22d3ee 100%)' }}
-                >
-                  {isLoading ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création…</>
-                  ) : 'Valider'}
-                </Button>
 
-                {/* Demo + lien connexion */}
+                {formErrors.length > 0 && (
+                  <div role="alert" aria-live="assertive" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                    <ul className="list-disc space-y-1 pl-5">{formErrors.map((m) => <li key={m}>{m}</li>)}</ul>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-3">
+                  {currentStep > 1 && (
+                    <Button type="button" variant="outline" className="h-12 flex-1 rounded-full" onClick={() => { setFormErrors([]); setCurrentStep((s) => s - 1); }}>
+                      <ChevronLeft className="mr-1 h-4 w-4" /> Retour
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={isLoading} className="h-12 flex-[2] rounded-full font-semibold">
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Création…</>
+                      : currentStep < 4 ? <>Continuer <ChevronRight className="ml-1 h-4 w-4" /></> : 'Créer mon compte'}
+                  </Button>
+                </div>
+
                 <div className="flex flex-col items-center gap-2 pt-2">
-                  <button type="button" onClick={onSwitchToLogin}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                    J'ai déjà un compte
-                  </button>
-                  <button type="button" onClick={handleDemoMode}
-                    className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                    <Fish className="w-3 h-3" /> Essayer la démo
-                  </button>
+                  <button type="button" onClick={onSwitchToLogin} className="text-sm font-medium text-primary hover:underline">J'ai déjà un compte</button>
                 </div>
               </form>
+
             </div>
           </div>
         </div>
@@ -622,7 +667,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
       <DialogContent hideClose className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <MailCheck className="w-5 h-5 text-blue-600" />
+            <MailCheck className="w-5 h-5 text-primary" />
             Confirmez votre adresse e-mail
           </DialogTitle>
           <DialogDescription className="text-sm text-slate-600 pt-2 space-y-3">
@@ -660,10 +705,10 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
 // Composant champ avec icône à gauche dans un input arrondi
 const FieldWithIcon: React.FC<{ icon: React.ReactNode; required?: boolean; children: React.ReactNode }> = ({ icon, required, children }) => (
-  <div className="relative flex items-center rounded-full border border-slate-200 bg-white shadow-sm hover:border-slate-300 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center gap-0.5 pointer-events-none">
+  <div className="relative flex items-center rounded-full border border-border bg-card shadow-sm hover:border-primary/50 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground flex items-center gap-0.5 pointer-events-none">
       {icon}
-      {required && <span className="text-pink-500 text-xs leading-none">*</span>}
+      {required && <span className="text-destructive text-xs leading-none">*</span>}
     </div>
     <div className="w-full pl-7">
       {children}
@@ -686,16 +731,16 @@ const CountryCombobox: React.FC<{
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="w-full flex items-center justify-between pl-7 pr-4 h-11 rounded-full bg-transparent text-left text-sm text-slate-700 focus:outline-none"
+            className="w-full flex items-center justify-between pl-7 pr-4 h-11 rounded-full bg-transparent text-left text-sm text-foreground focus:outline-none"
           >
-            <span className={selected ? '' : 'text-slate-400'}>
+            <span className={selected ? '' : 'text-muted-foreground'}>
               {selected
                 ? `${selected.flag} ${selected.name}`
                 : detecting
                   ? 'Détection…'
                   : 'Sélectionnez le pays de résidence'}
             </span>
-            <ChevronsUpDown className="w-4 h-4 text-slate-400 shrink-0" />
+            <ChevronsUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="p-0 w-[--radix-popover-trigger-width] z-[2000]" align="start">
@@ -716,7 +761,7 @@ const CountryCombobox: React.FC<{
                     <Check className={`mr-2 h-4 w-4 ${value === c.code ? 'opacity-100' : 'opacity-0'}`} />
                     <span className="mr-2">{c.flag}</span>
                     <span className="flex-1">{c.name}</span>
-                    <span className="text-xs text-slate-400">{c.phonePrefix}</span>
+                    <span className="text-xs text-muted-foreground">{c.phonePrefix}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
