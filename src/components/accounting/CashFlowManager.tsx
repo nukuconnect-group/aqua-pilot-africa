@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase as appDb } from '@/integrations/supabase/appClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,6 +70,24 @@ const CashFlowManager = () => {
     for (let i = 1; i < 1000; i++) { const c = `${prefix}${i}`; if (!used.has(c)) return c; }
     return prefix;
   };
+  // Ouverture directe depuis les Ventes : formulaire de création pré-rempli pour l'unité active.
+  const openAccountDialog = useCallback((kind?: string) => {
+    const type = kind === 'bank' ? 'banque' : 'caisse_vente';
+    const t = ACCOUNT_TYPES.find(x => x.id === type)!;
+    setAccount({ unitId: activeUnit?.id || '', name: '', type, kind: t.kind, code: generateCode(t.prefix), opening: '', counterpart: '101', date: today() });
+    setAccountOpen(true);
+  }, [activeUnit?.id, treasury.accounts]);
+  useEffect(() => {
+    let pending: string | null = null;
+    try {
+      pending = sessionStorage.getItem('aquapilote:open-treasury-account');
+      if (pending) sessionStorage.removeItem('aquapilote:open-treasury-account');
+    } catch { /* stockage indisponible */ }
+    if (pending) openAccountDialog(pending);
+    const onEvt = (e: Event) => openAccountDialog((e as CustomEvent<{ kind?: string }>).detail?.kind);
+    window.addEventListener('aquapilote:open-treasury-account', onEvt);
+    return () => window.removeEventListener('aquapilote:open-treasury-account', onEvt);
+  }, [openAccountDialog]);
   const saveExpense = async () => {
     if (busy) return;
     const cat = EXPENSES.find(e => e.label === expense.category)!;
