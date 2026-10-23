@@ -1,6 +1,6 @@
 
 - AquaAssistant UI must remain in `AquaAssistantModule`; the legacy `AquaAssistant` widget is not a second implementation. This keeps one mounted assistant surface and one persisted conversation system.
-- Render the assistant launcher through a body portal independently of module eligibility; keep the conversation permission check so layout clipping cannot hide the launcher or bypass access rules.
+- Render the assistant launcher through a body portal independently of module eligibility, hiding it only while the assistant overlay is actually rendered; keep the conversation permission check so layout clipping or stale open state cannot hide the launcher or bypass access rules.
 - Preserve explicit tab IDs during URL resolution; permission-group IDs must not redirect sibling screens, so Stock remains a separate screen with existing feeding permissions.
 
 - Treasury uses append-only unit-scoped movements with server-side account locking and balanced journal lines; account opening is atomic to prevent partial initialization.

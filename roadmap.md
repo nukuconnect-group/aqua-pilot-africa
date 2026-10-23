@@ -89,7 +89,7 @@
 - [ ] Tester les 12 scénarios avec un compte connecté (aucune session disponible ici)
 
 ## Icônes du 23/10/2026
-- [ ] Corriger les couleurs réellement appliquées et vérifier AquaAssistant et Caisse sur mobile et ordinateur, sans modifier de données
+- [x] Corriger la classe de fond inexistante d’AquaAssistant et Caisse ; icônes visibles et contrastées vérifiées en mode essai sur mobile et ordinateur, ouverture du chat avec module conservé ; 10 tests réussis
 - [x] Sortir le bouton AquaAssistant des contraintes d’affichage et le conserver indépendamment des restrictions de module, sans contourner les accès
 - [x] Contraster les icônes et boutons de caisse, éviter la compression des onglets ; compilation et 5 tests existants réussis
 - [ ] Vérifier visuellement sur le compte réel : connexion nécessaire dans l’aperçu, la session automatique n’est pas disponible pour ce compte
