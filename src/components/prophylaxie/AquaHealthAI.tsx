@@ -13,6 +13,9 @@ import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { toast } from '@/hooks/use-toast';
+import ExpertDirectory from './ExpertDirectory';
+import { buildHealthReportPdf, shareOrDownloadPdf } from '@/lib/healthReportPdf';
+import { FileDown } from 'lucide-react';
 import { getUnitTerms, isAlgaeUnitType } from '@/lib/unitContext';
 
 const RISK_COLOR: Record<string, string> = {
@@ -51,10 +54,29 @@ const AquaHealthAI: React.FC = () => {
 
   const loadHistory = async () => {
     if (!user?.id) return;
-    const { data } = await supabase.from('aqua_diagnoses').select('*').order('created_at', { ascending: false }).limit(20);
+    const { data } = await supabase.from('aqua_diagnoses').select('*').order('created_at', { ascending: false }).limit(50);
     setHistory(data ?? []);
   };
 
+
+  const exportHistory = (h: any) => {
+    const r = h.results;
+    const isPhoto = r && !Array.isArray(r) && r.source === 'photo';
+    const nameOf = (id: string) => symptoms.find(s => s.id === id)?.label ?? id;
+    const blob = buildHealthReportPdf({
+      title: isPhoto ? 'Rapport d’analyse photo — AquaHealth AI' : 'Rapport de diagnostic — AquaHealth AI',
+      date: new Date(h.created_at),
+      unitName: unitName(h.unit_id),
+      species: isPhoto ? r.species : null,
+      symptoms: isPhoto ? [] : [...(h.selected_symptoms ?? []).map(nameOf), ...(h.other_symptoms ? [h.other_symptoms] : [])],
+      observations: isPhoto ? r.observations : [],
+      diseases: isPhoto
+        ? (r.diseases ?? []).map((d: any) => ({ name: d.name, level: d.severity, confidence: d.confidence }))
+        : (Array.isArray(r) ? r : []).map((d: any) => ({ name: d.name, level: d.risk, confidence: d.score })),
+      recommendations: isPhoto ? r.recommendations : [],
+    });
+    shareOrDownloadPdf(blob, `diagnostic-${new Date(h.created_at).toISOString().slice(0, 10)}.pdf`);
+  };
 
   const toggle = (id: string) => {
     const next = new Set(selected);
@@ -137,7 +159,7 @@ const AquaHealthAI: React.FC = () => {
         </CardContent>
       </Card>
 
-      <CameraAnalysis />
+      <CameraAnalysis onSaved={loadHistory} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
@@ -214,6 +236,8 @@ const AquaHealthAI: React.FC = () => {
         </Card>
       </div>
 
+      <ExpertDirectory context={results[0]?.disease.name} />
+
       {history.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -242,10 +266,12 @@ const AquaHealthAI: React.FC = () => {
                     <Badge variant="secondary">{unitName(h.unit_id)}</Badge>
                     <Badge variant="outline">{(h.selected_symptoms ?? []).length} symptômes</Badge>
                     {h.risk_level && <Badge className={RISK_COLOR[h.risk_level]}>{RISK_LABEL[h.risk_level]}</Badge>}
-                    {Array.isArray(h.results) && h.results[0]?.name && (
-                      <span className="text-xs font-medium">{h.results[0].name}</span>
+                    {h.results && !Array.isArray(h.results) && h.results.source === 'photo' && <Badge variant="outline">Photo</Badge>}
+                    {(Array.isArray(h.results) ? h.results[0]?.name : h.notes) && (
+                      <span className="text-xs font-medium">{Array.isArray(h.results) ? h.results[0].name : h.notes}</span>
                     )}
                   </div>
+                  <Button size="sm" variant="ghost" onClick={() => exportHistory(h)} aria-label="Exporter en PDF"><FileDown className="w-4 h-4 mr-1" />PDF</Button>
                 </div>
               ))}
             </div>
