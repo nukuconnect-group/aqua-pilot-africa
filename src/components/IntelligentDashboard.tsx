@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Fish, Factory, Thermometer, Activity, TrendingUp, Settings, AlertTriangle, Clock, Heart, Egg, Scale, Droplets, UtensilsCrossed, DollarSign, ShoppingCart, Users, TrendingDown } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import RestockSummary from './dashboard/RestockSummary';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
@@ -493,6 +494,8 @@ const IntelligentDashboard = () => {
             {activeUnit.name}
           </Badge>}
       </div>
+
+      <RestockSummary unitId={activeUnit?.id} />
 
       {/* Métriques dynamiques */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
