@@ -20,6 +20,11 @@ export default {
 		},
 		extend: {
 			colors: {
+				'register-action': {
+					DEFAULT: 'hsl(var(--register-action))',
+					foreground: 'hsl(var(--register-action-foreground))',
+					hover: 'hsl(var(--register-action-hover))'
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
