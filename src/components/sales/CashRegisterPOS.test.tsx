@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
-  addSale: vi.fn(), addMovement: vi.fn(), validateSession: vi.fn(), toast: vi.fn(),
+  addSale: vi.fn(), addMovement: vi.fn(), validateSession: vi.fn(), toast: vi.fn(), postAtomic: vi.fn(),
   session: { id: 'register-a', name: 'Caisse A', opened_at: '2026-10-20T00:00:00Z' },
 }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
@@ -20,6 +20,11 @@ vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({
 }) }));
 vi.mock('./BarcodeScanner', () => ({ default: () => null }));
 vi.mock('./CashSalesHistory', () => ({ default: () => null }));
+vi.mock('@/lib/posStock', async (orig) => ({
+  ...(await orig<typeof import('@/lib/posStock')>()),
+  postSaleAtomically: state.postAtomic,
+  deductSoldStock: vi.fn(async () => undefined),
+}));
 import CashRegisterPOS from './CashRegisterPOS';
 
 let container: HTMLDivElement;
@@ -51,6 +56,7 @@ const fillCart = async () => {
 beforeEach(async () => {
   vi.clearAllMocks();
   state.validateSession.mockResolvedValue({});
+  state.postAtomic.mockResolvedValue(false);
   state.addMovement.mockResolvedValue({});
   state.addSale.mockImplementation(async sale => ({ ...sale, id: 'saved-sale' }));
   container = document.createElement('div'); document.body.appendChild(container);
