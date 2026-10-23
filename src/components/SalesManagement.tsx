@@ -64,7 +64,7 @@ const createEmptySale = (unitId = '', documentType: SalesDocumentType = 'receipt
 
 const SalesManagement = () => {
   const { addLog } = useLogs();
-  const { units, activeUnit } = useProductionUnits();
+  const { units, activeUnit, setActiveUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
 
   const { formatCurrency, t, currency, companyInfo } = useSettings();
@@ -569,28 +569,18 @@ const SalesManagement = () => {
           <Button variant="destructive" disabled={isCancelling || !cancellationReason.trim()} onClick={handleCancelSale}>{isCancelling ? 'Enregistrement…' : 'Confirmer l’annulation'}</Button>
         </DialogContent>
       </Dialog>
-      {/* En-tête */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-3 py-2 sm:px-4 sm:py-3 rounded-xl text-white">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold truncate">Ventes &amp; Caisse</h2>
-            </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      {/* En-tête compact : titre + unité active */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">
+        <h2 className="text-base font-semibold text-foreground">Ventes &amp; Caisse</h2>
+        <div className="ml-auto flex items-center gap-2 min-w-0">
+          <span className="hidden sm:inline text-xs text-muted-foreground">Unité active</span>
+          <Select value={activeUnit?.id} onValueChange={(v) => { const u = units.find(x => x.id === v); if (u) setActiveUnit(u); }}>
+            <SelectTrigger className="h-8 w-48 sm:w-64 text-sm" aria-label="Unité de production active"><SelectValue placeholder="Choisir une unité" /></SelectTrigger>
+            <SelectContent>{units.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
             <Dialog open={showSaleDialog} onOpenChange={setShowSaleDialog}>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="outline"
-                  className="bg-white/20 border-white/30 text-white hover:bg-white/30 text-sm sm:text-base"
-                  onClick={() => {
-                    applyDocumentType('receipt');
-                    setShowSaleDialog(true);
-                  }}
-                >
-                  <Plus className="w-4 h-4 sm:mr-2" />
-                  <span>Nouvelle vente</span>
-                </Button>
-              </div>
+
               <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle className="text-base sm:text-lg">
@@ -888,15 +878,6 @@ const SalesManagement = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            
-            <Button variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30 w-full sm:w-auto text-sm sm:text-base" onClick={generateSalesReport}>
-              <Download className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Rapport</span>
-            </Button>
-          </div>
-          </div>
-          <ProductionUnitSelector />
-        </div>
       </div>
 
       {/* KPIs */}
@@ -994,6 +975,7 @@ const SalesManagement = () => {
         )}
 
         <TabsContent value="closures" className="space-y-3 sm:space-y-4">
+          <div className="flex justify-end"><Button variant="outline" size="sm" onClick={generateSalesReport}><Download className="w-4 h-4 mr-2" />Rapport de caisse et ventes (CSV)</Button></div>
           <CashClosures />
         </TabsContent>
 
