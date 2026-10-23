@@ -12,10 +12,26 @@ export const findRegisterAccount = (accounts: TreasuryAccount[], registerName?: 
     (cash.length === 1 ? cash[0] : null);
 };
 
-/** Indique si l'unité possède un compte caisse de trésorerie pouvant recevoir les ventes. */
-export async function hasRegisterAccount(unitId: string, registerName?: string | null) {
+/** Espèces et Mobile Money vont en caisse ; carte bancaire et virement vont en banque. */
+export const paymentDestination = (payment?: string | null): 'cash' | 'bank' =>
+  /virement|carte|ch[eè]que|banc/i.test(payment || '') ? 'bank' : 'cash';
+
+/** Compte bancaire actif de l'unité : nom contenant « vente », sinon le premier. */
+export const findBankAccount = (accounts: TreasuryAccount[]) => {
+  const bank = accounts.filter(a => a.kind === 'bank' && !(a as any).archived_at);
+  return bank.find(a => norm(a.name).includes('vente')) || bank[0] || null;
+};
+
+export const findSaleAccount = (accounts: TreasuryAccount[], payment?: string | null, registerName?: string | null) =>
+  paymentDestination(payment) === 'bank' ? findBankAccount(accounts) : findRegisterAccount(accounts, registerName);
+
+/** Contrepartie des encaissements de vente (compte clients, hors trésorerie). */
+export const SALE_COUNTERPART = '411';
+
+/** Indique si l'unité possède le compte (caisse ou banque) qui recevra ce mode de paiement. */
+export async function hasRegisterAccount(unitId: string, registerName?: string | null, payment?: string | null) {
   const { data } = await db.from('treasury_accounts').select('*').eq('unit_id', unitId);
-  return !!findRegisterAccount(data || [], registerName);
+  return !!findSaleAccount(data || [], payment, registerName);
 }
 
 /**
@@ -25,17 +41,17 @@ export async function hasRegisterAccount(unitId: string, registerName?: string |
  * Idempotent : l'identifiant de la vente sert d'identifiant de mouvement.
  */
 export async function postSaleToTreasury(unitId: string, sale: { id: string; totalAmount: number; paymentMethod?: string; documentNumber?: string; clientName?: string; date?: string }, registerName?: string | null) {
-  if (!(sale.totalAmount > 0) || (sale.paymentMethod || 'Espèces') !== 'Espèces') return { status: 'skipped' as const };
+  if (!(sale.totalAmount > 0)) return { status: 'skipped' as const };
   const { data: accounts } = await db.from('treasury_accounts').select('*').eq('unit_id', unitId);
-  const account = findRegisterAccount(accounts || [], registerName);
+  const account = findSaleAccount(accounts || [], sale.paymentMethod, registerName);
   if (!account) return { status: 'no_account' as const };
   const { data: existing } = await db.from('treasury_movements').select('id').eq('request_id', sale.id).limit(1);
   if (existing?.length) return { status: 'ok' as const };
   const { error } = await db.from('treasury_movements').insert({
     request_id: sale.id, user_id: account.user_id, unit_id: unitId, kind: 'receipt', source_id: null, destination_id: account.id,
     amount: sale.totalAmount, date: sale.date || new Date().toISOString().slice(0, 10),
-    label: `Vente ${sale.documentNumber || sale.clientName || ''} · ${sale.id}`.trim(), journal: 'CA',
-    lines: movementLines('receipt', sale.totalAmount, undefined, account, '571'),
+    label: `Vente ${sale.documentNumber || sale.clientName || ''} · ${sale.id}`.trim(), journal: account.kind === 'bank' ? 'BQ' : 'CA',
+    lines: movementLines('receipt', sale.totalAmount, undefined, account, SALE_COUNTERPART),
   });
   if (error) throw error;
   return { status: 'ok' as const, account };
@@ -53,9 +69,32 @@ export async function reverseSaleInTreasury(unitId: string, saleId: string, reas
   const { error } = await db.from('treasury_movements').insert({
     request_id: crypto.randomUUID(), user_id: acc.user_id, unit_id: unitId, kind: 'payment', source_id: acc.id, destination_id: null,
     amount: Number(original.amount), date: new Date().toISOString().slice(0, 10),
-    label: `Annulation vente · ${reason} · ${saleId}`, journal: 'CA',
-    lines: movementLines('payment', Number(original.amount), acc, undefined, '571'),
+    label: `Annulation vente · ${reason} · ${saleId}`, journal: acc.kind === 'bank' ? 'BQ' : 'CA',
+    lines: movementLines('payment', Number(original.amount), acc, undefined, SALE_COUNTERPART),
   });
   if (error) throw error;
   return { status: 'ok' as const };
+}
+
+/** Ventes payées de l'unité qui n'ont pas encore de mouvement de trésorerie. */
+export async function findUnpostedSales(unitId: string) {
+  const { data: sales } = await db.from('sales').select('id, total_amount, payment_method, document_number, client_name, date, status')
+    .eq('unit_id', unitId).neq('status', 'cancelled').gt('total_amount', 0).limit(1000);
+  const list = (sales || []).filter((s: any) => ['paid', 'confirmed', 'delivered'].includes(s.status));
+  if (!list.length) return [];
+  const { data: moves } = await db.from('treasury_movements').select('request_id').eq('unit_id', unitId).in('request_id', list.map((s: any) => s.id));
+  const done = new Set((moves || []).map((m: any) => m.request_id));
+  return list.filter((s: any) => !done.has(s.id));
+}
+
+/** Reporte une seule fois chaque vente passée dans la caisse ou la banque correspondant à son paiement. */
+export async function backfillSalesToTreasury(unitId: string) {
+  const pending = await findUnpostedSales(unitId);
+  let posted = 0; const missing = new Set<'cash' | 'bank'>();
+  for (const s of pending) {
+    const r = await postSaleToTreasury(unitId, { id: s.id, totalAmount: Number(s.total_amount), paymentMethod: s.payment_method, documentNumber: s.document_number, clientName: s.client_name, date: s.date });
+    if (r.status === 'ok') posted++;
+    if (r.status === 'no_account') missing.add(paymentDestination(s.payment_method));
+  }
+  return { posted, missing: [...missing] };
 }
