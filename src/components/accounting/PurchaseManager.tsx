@@ -54,8 +54,21 @@ const PurchaseManager = () => {
   const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
   const [selectedInvoicePurchase, setSelectedInvoicePurchase] = useState<any>(null);
   const [newSupplierName, setNewSupplierName] = useState('');
+  const catKey = `aquapilote-purchase-categories-${activeUnit?.id || 'all'}`;
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [customSubcategories, setCustomSubcategories] = useState<Record<string, string[]>>({});
+  const [unitPrice, setUnitPrice] = useState(0);
+  // Catégories et sous-catégories créées par l'utilisateur, conservées pour cette unité.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(catKey) || '{}');
+      setCustomCategories(saved.categories || []);
+      setCustomSubcategories(saved.subcategories || {});
+    } catch { /* ignore */ }
+  }, [catKey]);
+  useEffect(() => {
+    try { localStorage.setItem(catKey, JSON.stringify({ categories: customCategories, subcategories: customSubcategories })); } catch { /* ignore */ }
+  }, [catKey, customCategories, customSubcategories]);
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
   const [showCustomSubcategoryInput, setShowCustomSubcategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -133,12 +146,17 @@ const PurchaseManager = () => {
   ];
 
   const handleAddPurchase = async () => {
-    const amount = Number(newPurchase.amount);
     const qty = Number(newPurchase.quantity) || 0;
-    if (!newPurchase.category || !newPurchase.description || !(amount > 0)) {
-      toast({ title: 'Champs requis', description: 'Catégorie, description et montant sont obligatoires.', variant: 'destructive' });
+    const amount = Math.round(qty * unitPrice * 100) / 100;
+    if (!newPurchase.category || !newPurchase.description || !(qty > 0) || !(unitPrice > 0)) {
+      toast({ title: 'Champs requis', description: 'Catégorie, produit, quantité et prix unitaire sont obligatoires.', variant: 'destructive' });
       return;
     }
+    if (!newPurchase.supplier.trim()) {
+      toast({ title: 'Fournisseur requis', description: 'Choisissez ou saisissez le fournisseur.', variant: 'destructive' });
+      return;
+    }
+    if (stockTarget.purpose === 'none' && !window.confirm('Cet achat n’entrera dans aucun stock (service, frais…). Continuer ?')) return;
     if (!newPurchase.isCredit && !treasuryAccountId) {
       toast({ title: 'Choisissez le compte à débiter', description: 'Sélectionnez la caisse ou le compte bancaire de trésorerie qui paie cet achat.', variant: 'destructive' });
       return;
@@ -151,9 +169,17 @@ const PurchaseManager = () => {
       }
     }
     const account = treasury.accounts.find((a) => a.id === treasuryAccountId);
-    if (!newPurchase.isCredit && account && Number((account as any).balance ?? Infinity) < amount) {
-      toast({ title: 'Solde insuffisant', description: `${account.name} ne dispose pas de ce montant.`, variant: 'destructive' });
+    if (!newPurchase.isCredit && account && accountBalance(account.id, treasury.movements) < amount) {
+      toast({ title: 'Solde insuffisant', description: `${account.name} ne dispose que de ${accountBalance(account.id, treasury.movements).toLocaleString('fr-FR')} ${getCurrencySymbol(account.currency as any)}.`, variant: 'destructive' });
       return;
+    }
+    newPurchase.amount = amount;
+    newPurchase.paymentMethod = newPurchase.isCredit ? 'Crédit fournisseur' : account?.kind === 'cash' ? 'Espèces' : 'Virement';
+    // Fournisseur saisi à la main : il est créé automatiquement dans Clients et fournisseurs.
+    const supplierName = newPurchase.supplier.trim();
+    if (!suppliers.some((sup) => sup.name.trim().toLowerCase() === supplierName.toLowerCase())) {
+      await addSupplier({ name: supplierName, contact: '', email: '', phone: '', address: '', status: 'active', category: newPurchase.category || '', products: [], rating: 5, notes: 'Créé automatiquement depuis un achat', unitId: activeUnit?.id || '' } as any);
+      refetchSuppliers();
     }
     const selectedUnit = units.find(u => u.id === newPurchase.unitId);
 
@@ -297,6 +323,7 @@ const PurchaseManager = () => {
     setEditingPurchase(null);
     setStockTarget(EMPTY_STOCK_TARGET);
     setTreasuryAccountId('');
+    setUnitPrice(0);
   };
 
   const handleEditPurchase = (purchase: any) => {
@@ -309,6 +336,7 @@ const PurchaseManager = () => {
       amount: purchase.amount,
       currency: purchase.currency,
       quantity: purchase.quantity || 0,
+      _price: setUnitPrice(purchase.quantity ? Number(purchase.amount) / Number(purchase.quantity) : Number(purchase.amount)),
       unit: purchase.unit || '',
       paymentMethod: purchase.paymentMethod,
       reference: purchase.reference || '',
@@ -1135,13 +1163,11 @@ const PurchaseManager = () => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label>Montant *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={newPurchase.amount}
-                    onChange={(e) => setNewPurchase({...newPurchase, amount: parseFloat(e.target.value) || 0})}
-                  />
+                  <Label>Montant total</Label>
+                  <div className="h-10 flex items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums" aria-live="polite">
+                    {((Number(newPurchase.quantity) || 0) * unitPrice).toLocaleString('fr-FR')}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Quantité × prix unitaire</p>
                 </div>
                 <div>
                   <Label>Devise</Label>
@@ -1164,40 +1190,33 @@ const PurchaseManager = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <Label>Quantité</Label>
                 <Input
                   type="number"
                   value={newPurchase.quantity}
+                  min="0"
+                  step="any"
                   onChange={(e) => {
-                    const qty = parseInt(e.target.value) || 0;
-                    // Calcul auto du montant si prix unitaire déjà défini
-                    const unitPrice = newPurchase.amount && newPurchase.quantity > 0 
-                      ? newPurchase.amount / newPurchase.quantity 
-                      : 0;
-                    setNewPurchase({
-                      ...newPurchase, 
-                      quantity: qty,
-                      amount: unitPrice > 0 ? qty * unitPrice : newPurchase.amount
-                    });
+                    const qty = parseFloat(e.target.value) || 0;
+                    setNewPurchase({ ...newPurchase, quantity: qty, amount: qty * unitPrice });
                   }}
                 />
               </div>
               <div>
-                <Label>Prix Unitaire</Label>
+                <Label>Prix unitaire *</Label>
                 <Input
                   type="number"
+                  min="0"
                   step="0.01"
-                  value={newPurchase.quantity > 0 ? (newPurchase.amount / newPurchase.quantity).toFixed(2) : '0'}
+                  value={unitPrice || ''}
                   onChange={(e) => {
-                    const unitPrice = parseFloat(e.target.value) || 0;
-                    setNewPurchase({
-                      ...newPurchase,
-                      amount: unitPrice * (newPurchase.quantity || 1)
-                    });
+                    const price = parseFloat(e.target.value) || 0;
+                    setUnitPrice(price);
+                    setNewPurchase({ ...newPurchase, amount: price * (Number(newPurchase.quantity) || 0) });
                   }}
-                  placeholder="Prix par unité"
+                  placeholder="Prix d'achat par unité"
                 />
               </div>
               <div>
@@ -1207,46 +1226,6 @@ const PurchaseManager = () => {
                   onChange={(e) => setNewPurchase({...newPurchase, unit: e.target.value})}
                   placeholder="kg, L, unités..."
                 />
-              </div>
-              <div>
-                <Label>Mode de paiement *</Label>
-                <Select
-                  value={newPurchase.paymentMethod}
-                  onValueChange={(value) => setNewPurchase({...newPurchase, paymentMethod: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentMethods.map(method => (
-                      <SelectItem key={method} value={method}>{method}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Compte à débiter {!newPurchase.isCredit && '*'}</Label>
-                <Select
-                  value={treasuryAccountId}
-                  onValueChange={setTreasuryAccountId}
-                  disabled={newPurchase.isCredit}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={newPurchase.isCredit ? 'Aucun (achat à crédit)' : 'Choisir la caisse…'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {treasury.accounts.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name} ({a.kind === 'cash' ? 'Caisse' : 'Banque'})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!newPurchase.isCredit && treasury.accounts.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Aucune caisse créée. Créez d'abord un compte dans Comptabilité → Trésorerie.
-                  </p>
-                )}
               </div>
             </div>
 
@@ -1258,10 +1237,11 @@ const PurchaseManager = () => {
                 onPickSuggestion={(s) => {
                   const q = suggestedQuantity(s);
                   const unitCost = Number(s.cost) || 0;
+                  setUnitPrice(unitCost);
                   setStockTarget({ purpose: isCommercialStock(s) ? 'commercial' : 'production', stockId: s.id, salePrice: 0 });
                   setNewPurchase((p) => ({
                     ...p, description: s.custom_name || s.feed_type, quantity: q, unit: s.unit,
-                    supplier: p.supplier || s.supplier || '', amount: unitCost > 0 ? unitCost * q : p.amount,
+                    supplier: p.supplier || s.supplier || '', amount: unitCost * q,
                   }));
                 }}
               />
@@ -1362,12 +1342,40 @@ const PurchaseManager = () => {
               />
             </div>
 
+            {!editingPurchase && (
+              <div className="rounded-md border border-border p-3 space-y-2">
+                <Label>Mode de paiement {!newPurchase.isCredit && '*'}</Label>
+                {newPurchase.isCredit ? (
+                  <p className="text-sm text-muted-foreground">Achat à crédit : aucun compte n’est débité maintenant.</p>
+                ) : treasury.accounts.length === 0 ? (
+                  <p className="text-sm text-destructive">Aucune caisse ni compte bancaire n’est rattaché à cette unité. Créez-en un dans Comptabilité → Trésorerie.</p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {treasury.accounts.map((a) => {
+                      const bal = accountBalance(a.id, treasury.movements);
+                      const total = (Number(newPurchase.quantity) || 0) * unitPrice;
+                      return (
+                        <button key={a.id} type="button" onClick={() => setTreasuryAccountId(a.id)}
+                          className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm ${treasuryAccountId === a.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/60'}`}>
+                          <span className="min-w-0">
+                            <span className="block font-medium truncate">{a.name}</span>
+                            <span className="text-xs text-muted-foreground">{a.kind === 'cash' ? 'Caisse' : 'Compte bancaire'} · {a.account_code}</span>
+                          </span>
+                          <span className={`text-xs tabular-nums shrink-0 ${bal < total ? 'text-destructive' : 'text-muted-foreground'}`}>{bal.toLocaleString('fr-FR')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={resetForm}>
                 Annuler
               </Button>
               <Button onClick={editingPurchase ? handleUpdatePurchase : handleAddPurchase}>
-                {editingPurchase ? 'Modifier' : 'Enregistrer'}
+                {editingPurchase ? 'Modifier' : 'Acheter'}
               </Button>
             </div>
           </div>
