@@ -21,6 +21,9 @@ import { useSuppliers, Supplier } from '@/hooks/useSuppliers';
 import { useTreasury } from '@/hooks/useTreasury';
 import { expenseAccount } from '@/lib/syscohada';
 import { getUnitTerms } from '@/lib/unitContext';
+import { useFeedStocks } from '@/hooks/useFeedStocks';
+import PurchaseStockSection, { EMPTY_STOCK_TARGET, suggestedQuantity, type PurchaseStockTarget } from './PurchaseStockSection';
+import { isCommercialStock } from '@/lib/stockPurpose';
 
 
 const PurchaseManager = () => {
@@ -41,6 +44,8 @@ const PurchaseManager = () => {
   const { suppliers, addSupplier, refetch: refetchSuppliers } = useSuppliers();
   const treasury = useTreasury(activeUnit?.id);
   const [treasuryAccountId, setTreasuryAccountId] = useState('');
+  const { stocks: stockItems, createStock, updateStock } = useFeedStocks(activeUnit?.id);
+  const [stockTarget, setStockTarget] = useState<PurchaseStockTarget>(EMPTY_STOCK_TARGET);
 
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
@@ -128,46 +133,94 @@ const PurchaseManager = () => {
   ];
 
   const handleAddPurchase = async () => {
+    const amount = Number(newPurchase.amount);
+    const qty = Number(newPurchase.quantity) || 0;
+    if (!newPurchase.category || !newPurchase.description || !(amount > 0)) {
+      toast({ title: 'Champs requis', description: 'Catégorie, description et montant sont obligatoires.', variant: 'destructive' });
+      return;
+    }
+    if (!newPurchase.isCredit && !treasuryAccountId) {
+      toast({ title: 'Choisissez le compte à débiter', description: 'Sélectionnez la caisse ou le compte bancaire de trésorerie qui paie cet achat.', variant: 'destructive' });
+      return;
+    }
+    const targetStock = stockItems.find((s) => s.id === stockTarget.stockId);
+    if (stockTarget.purpose !== 'none') {
+      if (!(qty > 0)) { toast({ title: 'Quantité requise', description: 'Indiquez la quantité qui entre en stock.', variant: 'destructive' }); return; }
+      if (stockTarget.purpose === 'commercial' && !targetStock && !(stockTarget.salePrice > 0)) {
+        toast({ title: 'Prix de vente requis', description: 'Un produit commercial doit avoir son prix de vente.', variant: 'destructive' }); return;
+      }
+    }
+    const account = treasury.accounts.find((a) => a.id === treasuryAccountId);
+    if (!newPurchase.isCredit && account && Number((account as any).balance ?? Infinity) < amount) {
+      toast({ title: 'Solde insuffisant', description: `${account.name} ne dispose pas de ce montant.`, variant: 'destructive' });
+      return;
+    }
     const selectedUnit = units.find(u => u.id === newPurchase.unitId);
+
+    // 1. Prélèvement dans le compte choisi (écriture comptable équilibrée côté trésorerie).
+    if (treasuryAccountId && !newPurchase.isCredit) {
+      try {
+        await treasury.recordMovement({
+          requestId: crypto.randomUUID(),
+          kind: 'payment',
+          sourceId: treasuryAccountId,
+          destinationId: '',
+          amount,
+          date: new Date().toISOString().split('T')[0],
+          label: `Achat — ${newPurchase.description || newPurchase.category}${newPurchase.supplier ? ` · ${newPurchase.supplier}` : ''}`,
+          counterpart: expenseAccount(newPurchase.category),
+        });
+      } catch (e: any) {
+        toast({ title: 'Achat non enregistré', description: `Le compte n’a pas pu être débité : ${e.message}`, variant: 'destructive' });
+        return;
+      }
+    }
+
     addPurchase({
       date: new Date().toISOString().split('T')[0],
       category: newPurchase.category,
       subcategory: newPurchase.subcategory,
       description: newPurchase.description,
       supplier: newPurchase.supplier,
-      amount: Number(newPurchase.amount),
+      amount,
       currency: newPurchase.currency as 'XOF' | 'EUR' | 'USD' | 'MAD',
       quantity: newPurchase.quantity || undefined,
       unit: newPurchase.unit || undefined,
-      paymentMethod: newPurchase.paymentMethod,
+      paymentMethod: newPurchase.paymentMethod || (account?.kind === 'bank' ? 'Virement' : 'Espèces'),
       reference: newPurchase.reference,
       unitId: newPurchase.unitId || undefined,
       unitName: selectedUnit?.name || undefined,
-      status: 'pending',
+      status: newPurchase.isCredit ? 'pending' : 'received',
       deliveryDate: newPurchase.deliveryDate || undefined,
-      notes: newPurchase.notes || undefined,
+      notes: [newPurchase.notes, account ? `Payé depuis : ${account.name}` : ''].filter(Boolean).join(' · ') || undefined,
       isCredit: newPurchase.isCredit || false,
       dueDate: newPurchase.isCredit ? newPurchase.dueDate : undefined,
       paymentTerms: newPurchase.isCredit ? newPurchase.paymentTerms : undefined
     });
 
-    // Prélèvement dans la caisse / le compte choisi (achat payé comptant)
-    if (treasuryAccountId && !newPurchase.isCredit) {
+    // 2. Entrée en stock dès le paiement.
+    if (stockTarget.purpose !== 'none' && !newPurchase.isCredit && activeUnit?.id) {
       try {
-        await treasury.recordMovement({
-          requestId: `purchase-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          kind: 'payment',
-          sourceId: treasuryAccountId,
-          destinationId: '',
-          amount: Number(newPurchase.amount),
-          date: new Date().toISOString().split('T')[0],
-          label: `Achat — ${newPurchase.description || newPurchase.category}`,
-          counterpart: expenseAccount(newPurchase.category),
-        });
+        if (targetStock) {
+          const after = Number(targetStock.quantity) + qty;
+          await updateStock(targetStock.id, { quantity: after, cost: qty > 0 ? amount / qty : targetStock.cost } as any);
+          await (supabase as any).from('stock_movements').insert({
+            user_id: targetStock.user_id, unit_id: activeUnit.id, stock_id: targetStock.id, type: 'in',
+            quantity: qty, quantity_after: after, reason: `Achat${newPurchase.supplier ? ` — ${newPurchase.supplier}` : ''}`,
+          });
+        } else {
+          await createStock({
+            unit_id: activeUnit.id, feed_type: newPurchase.category, custom_name: newPurchase.description,
+            quantity: qty, unit: newPurchase.unit || 'unité', supplier: newPurchase.supplier || null,
+            cost: amount / qty, min_threshold: 0, stock_purpose: stockTarget.purpose,
+            sale_price: stockTarget.purpose === 'commercial' ? stockTarget.salePrice : null,
+          } as any);
+        }
       } catch (e: any) {
-        toast({ title: 'Achat enregistré, caisse non mise à jour', description: e.message, variant: 'destructive' });
+        toast({ title: 'Achat payé, stock non mis à jour', description: e.message, variant: 'destructive' });
       }
     }
+
 
     
     addLog('Achat enregistré', 'Achats', `${newPurchase.category}: ${newPurchase.description} - ${newPurchase.amount} ${newPurchase.currency}`, 'success');
