@@ -355,6 +355,10 @@ const getDemoInfrastructures = (): Infrastructure[] => [
   }
 ];
 
+const readSavedUnitId = (userId?: string) => {
+  try { return localStorage.getItem(`aquapilote.activeUnit.${userId ?? 'anon'}`); } catch { return null; }
+};
+
 export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) => {
   const { isDemoMode, isAuthenticated, user } = useAuth();
   // La devise vient du réglage global de l'application (une seule source de vérité).
@@ -374,7 +378,14 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [depreciableAssets, setDepreciableAssets] = useState<DepreciableAsset[]>([]);
-  const [activeUnit, setActiveUnit] = useState<ProductionUnit | null>(null);
+  const [activeUnit, setActiveUnitState] = useState<ProductionUnit | null>(null);
+  const setActiveUnit = useCallback((unit: ProductionUnit | null) => {
+    setActiveUnitState(unit);
+    try {
+      const key = `aquapilote.activeUnit.${user?.id ?? 'anon'}`;
+      if (unit) localStorage.setItem(key, unit.id); else localStorage.removeItem(key);
+    } catch { /* stockage indisponible */ }
+  }, [user?.id]);
 
   // Fonction pour charger les unités depuis la base de données
   const fetchUnitsFromDB = useCallback(async () => {
@@ -442,10 +453,11 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
         }));
         
         setUnits(convertedUnits);
-        setActiveUnit((current) => {
+        setActiveUnitState((current) => {
           if (!convertedUnits.length) return null;
-          if (!current) return convertedUnits[0];
-          return convertedUnits.find((unit) => unit.id === current.id) ?? convertedUnits[0];
+          const savedId = current?.id ?? readSavedUnitId(user?.id);
+          // Sans choix enregistré : vue « Toutes les unités »
+          return savedId ? (convertedUnits.find((unit) => unit.id === savedId) ?? null) : null;
         });
       }
     } catch (err) {
