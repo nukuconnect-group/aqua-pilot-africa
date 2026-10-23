@@ -633,15 +633,25 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-                {filtered.map((p) => (
-                  <Button key={p.key} variant="outline" onClick={() => addToCart(p.name, p.price)}
-                    className="h-auto min-h-20 w-full flex-col items-start rounded-lg border-primary/30 p-3 text-left whitespace-normal hover:bg-primary/10 hover:border-primary">
-                    <span className="text-sm font-semibold break-words">{p.name}</span>
-                    <span className="text-xs text-muted-foreground">{p.price > 0 ? formatCurrency(p.price) : 'Prix à renseigner'}</span>
-                    {p.quantity !== undefined && <span className="text-xs text-muted-foreground">Stock : {p.quantity} {p.unit}</span>}
-                  </Button>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                {filtered.map((p) => {
+                  const initials = p.name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+                  const tones = ['bg-primary/15 text-primary', 'bg-accent text-accent-foreground', 'bg-secondary text-secondary-foreground', 'bg-primary/25 text-primary'];
+                  const tone = tones[[...p.name].reduce((a, c) => a + c.charCodeAt(0), 0) % tones.length];
+                  return (
+                  <button key={p.key} type="button" onClick={() => addToCart(p.name, p.price)}
+                    className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <div className={`flex h-20 items-center justify-center ${tone}`} aria-hidden>
+                      <span className="text-2xl font-bold tracking-wide">{initials || '?'}</span>
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1 p-2">
+                      <span className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-tight" title={p.name}>{p.name}</span>
+                      <span className={`text-sm font-bold ${p.price > 0 ? 'text-primary' : 'text-destructive'}`}>{p.price > 0 ? formatCurrency(p.price) : 'Prix à saisir'}</span>
+                      {p.quantity !== undefined && <span className="text-xs text-muted-foreground">Stock : {p.quantity} {p.unit}</span>}
+                    </div>
+                  </button>
+                  );
+                })}
               </div>
             )}
             {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
@@ -679,27 +689,43 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <CardContent className="space-y-3">
             {cart.length === 0 && <p className="text-sm text-muted-foreground">Touchez un produit pour l'ajouter.</p>}
             {cart.map((l, i) => (
-              <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border-l-4 border-primary p-2 odd:bg-primary/5 even:bg-accent/40">
-                <div className="flex-1 min-w-0">
-                  <Input aria-label={`Produit ${i + 1}`} className="h-8" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
-                  <label className="block text-xs text-muted-foreground mt-2">Prix unitaire<Input aria-label={`Prix unitaire ${i + 1}`} min="0" step="any" type="number" className="h-8 mt-1" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} /></label>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span>Conditionnement</span>
-                    <select aria-label={`Conditionnement ${i + 1}`} className="h-8 rounded-md border border-border bg-background px-2" value={l.pack?.label || 'unité'}
-                      onChange={(e) => { const label = e.target.value; const size = label === 'unité' ? 1 : (l.pack?.size && l.pack.size > 1 ? l.pack.size : label === 'pack' ? 6 : 12); updateLine(i, { pack: label === 'unité' ? undefined : { label, size }, quantity: size }); }}>
-                      <option value="unité">Unité</option><option value="pack">Pack</option><option value="carton">Carton</option>
-                    </select>
-                    {l.pack && <>
-                      <label className="flex items-center gap-1">de<Input aria-label={`Unités par ${l.pack.label} ${i + 1}`} type="number" min="1" className="h-8 w-16" value={l.pack.size} onChange={(e) => { const size = Math.max(1, Number(e.target.value) || 1); const packs = l.quantity / l.pack!.size; updateLine(i, { pack: { ...l.pack!, size }, quantity: packs * size }); }} />unités</label>
-                      <label className="flex items-center gap-1">Nombre<Input aria-label={`Nombre de ${l.pack.label} ${i + 1}`} type="number" min="0" step="any" className="h-8 w-16" value={l.quantity / l.pack.size} onChange={(e) => updateLine(i, { quantity: (Number(e.target.value) || 0) * l.pack!.size })} /></label>
-                      <span>= {l.quantity} unités · {formatCurrency(l.quantity * l.unitPrice)}</span>
-                    </>}
+              <div key={i} className={`space-y-2 rounded-lg border-l-4 p-2 odd:bg-primary/5 even:bg-accent/40 ${l.unitPrice > 0 ? 'border-primary' : 'border-destructive'}`}>
+                <div className="flex items-center gap-2">
+                  <Input aria-label={`Produit ${i + 1}`} className="h-8 flex-1 font-medium" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
+                  <Button size="icon" variant="ghost" aria-label={`Retirer le produit ${i + 1}`} className="h-8 w-8 shrink-0" onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+                <div className="grid grid-cols-[auto_1fr_auto] items-end gap-2">
+                  <div>
+                    <span className="block text-xs text-muted-foreground">Quantité</span>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="outline" aria-label={`Diminuer la quantité ${i + 1}`} className="h-8 w-8" disabled={l.quantity <= 1} onClick={() => updateLine(i, { quantity: l.quantity - 1 })}><Minus className="w-3 h-3" /></Button>
+                      <Input aria-label={`Quantité ${i + 1}`} min="0" step="any" type="number" className="h-8 w-14 text-center text-sm" value={l.quantity} onChange={(e) => updateLine(i, { quantity: Number(e.target.value) || 0 })} />
+                      <Button size="icon" variant="outline" aria-label={`Augmenter la quantité ${i + 1}`} className="h-8 w-8" onClick={() => updateLine(i, { quantity: l.quantity + 1 })}><Plus className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                  <label className="block min-w-0 text-xs text-muted-foreground">Prix unitaire
+                    <Input aria-label={`Prix unitaire ${i + 1}`} min="0" step="any" type="number" inputMode="decimal" placeholder="Saisir le prix"
+                      className={`h-8 mt-0.5 text-right font-semibold ${l.unitPrice > 0 ? '' : 'border-destructive'}`}
+                      value={l.unitPrice > 0 ? l.unitPrice : ''} onFocus={e => e.target.select()}
+                      onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} />
+                  </label>
+                  <div className="text-right">
+                    <span className="block text-xs text-muted-foreground">Total</span>
+                    <span className="text-sm font-bold text-primary">{formatCurrency(l.quantity * l.unitPrice)}</span>
                   </div>
                 </div>
-                <Button size="icon" variant="outline" aria-label={`Diminuer la quantité ${i + 1}`} className="h-7 w-7" disabled={l.quantity <= 1} onClick={() => updateLine(i, { quantity: l.quantity - 1 })}><Minus className="w-3 h-3" /></Button>
-                <Input aria-label={`Quantité ${i + 1}`} min="0" step="any" type="number" className="h-7 w-16 text-center text-xs" value={l.quantity} onChange={(e) => updateLine(i, { quantity: Number(e.target.value) || 0 })} />
-                <Button size="icon" variant="outline" aria-label={`Augmenter la quantité ${i + 1}`} className="h-7 w-7" onClick={() => updateLine(i, { quantity: l.quantity + 1 })}><Plus className="w-3 h-3" /></Button>
-                <Button size="icon" variant="ghost" aria-label={`Retirer le produit ${i + 1}`} className="h-7 w-7" onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span>Conditionnement</span>
+                  <select aria-label={`Conditionnement ${i + 1}`} className="h-8 rounded-md border border-border bg-background px-2" value={l.pack?.label || 'unité'}
+                    onChange={(e) => { const label = e.target.value; const size = label === 'unité' ? 1 : (l.pack?.size && l.pack.size > 1 ? l.pack.size : label === 'pack' ? 6 : 12); updateLine(i, { pack: label === 'unité' ? undefined : { label, size }, quantity: size }); }}>
+                    <option value="unité">Unité</option><option value="pack">Pack</option><option value="carton">Carton</option>
+                  </select>
+                  {l.pack && <>
+                    <label className="flex items-center gap-1">de<Input aria-label={`Unités par ${l.pack.label} ${i + 1}`} type="number" min="1" className="h-8 w-16" value={l.pack.size} onChange={(e) => { const size = Math.max(1, Number(e.target.value) || 1); const packs = l.quantity / l.pack!.size; updateLine(i, { pack: { ...l.pack!, size }, quantity: packs * size }); }} />unités</label>
+                    <label className="flex items-center gap-1">Nombre<Input aria-label={`Nombre de ${l.pack.label} ${i + 1}`} type="number" min="0" step="any" className="h-8 w-16" value={l.quantity / l.pack.size} onChange={(e) => updateLine(i, { quantity: (Number(e.target.value) || 0) * l.pack!.size })} /></label>
+                    <span>= {l.quantity} unités</span>
+                  </>}
+                </div>
               </div>
             ))}
             <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => setClient(e.target.value)} />
