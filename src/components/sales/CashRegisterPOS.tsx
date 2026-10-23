@@ -89,6 +89,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [scanOpen, setScanOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [locked, setLocked] = useState(false);
+  const [lockAsk, setLockAsk] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const lastActivity = useRef(Date.now());
@@ -421,7 +422,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
             <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4 mr-1" />Opérations</Button>
             <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4 mr-1" />Clôturer</Button>
-            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setLocked(true)} aria-label="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller : protège la caisse par votre mot de passe pendant une absence"><KeyRound className="h-4 w-4 mr-1" />Verrouiller</Button>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -559,6 +560,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <Input type="password" aria-label="Mot de passe" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && unlock()} />
         {unlockError && <p className="text-sm text-destructive">{unlockError}</p>}
         <Button onClick={unlock} disabled={!unlockPassword}><Unlock className="w-4 h-4 mr-2" />Déverrouiller</Button>
+        <Button variant="outline" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' }))}>Quitter la caisse</Button>
+      </DialogContent></Dialog>
+      <Dialog open={lockAsk} onOpenChange={setLockAsk}><DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><KeyRound className="w-5 h-5" />Verrouiller la caisse ?</DialogTitle></DialogHeader>
+        <p className="text-sm text-muted-foreground">Pendant votre absence, personne ne peut vendre ni voir la caisse. Le panier est conservé. Votre mot de passe sera demandé pour reprendre.</p>
+        <div className="flex gap-2"><Button className="flex-1" onClick={() => { setLockAsk(false); setLocked(true); }}><Lock className="w-4 h-4 mr-2" />Verrouiller</Button><Button variant="outline" className="flex-1" onClick={() => setLockAsk(false)}>Annuler</Button></div>
       </DialogContent></Dialog>
 
       {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}

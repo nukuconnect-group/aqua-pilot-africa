@@ -233,6 +233,8 @@ const Dashboard: React.FC = () => {
 
   // État pour afficher le module AquaAssistant en page complète
   const [showAquaAssistantModule, setShowAquaAssistantModule] = useState(false);
+  // Fenêtre de discussion par-dessus le module en cours (le module reste visible derrière).
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   // Detecter le changement d'onglet vers aqua-assistant
   useEffect(() => {
@@ -415,7 +417,9 @@ const Dashboard: React.FC = () => {
         <MobileNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
         {canAccessTab('aqua-assistant') && (
-          <AssistantFloatingBubble activeTab={activeTab} onOpen={() => handleTabChange('aqua-assistant')} />
+          assistantOpen && activeTab !== 'aqua-assistant'
+            ? <AquaAssistantModule onClose={() => setAssistantOpen(false)} />
+            : <AssistantFloatingBubble activeTab={activeTab} onOpen={() => setAssistantOpen(true)} />
         )}
         
         {/* Modal menu mobile */}
