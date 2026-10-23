@@ -13,11 +13,26 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useHrOperations } from '@/hooks/useHrOperations';
 import type { Employee } from '@/hooks/useEmployees';
+import { loanSchedule } from '@/lib/loanSchedule';
 
 interface Props {
   employees: Employee[];
   unitId?: string;
 }
+
+const ScheduleTable = ({ rows, fmt, repaid = 0 }: { rows: ReturnType<typeof loanSchedule>; fmt: (n: number) => string; repaid?: number }) => {
+  let cum = 0;
+  return (
+    <div className="max-h-60 overflow-auto rounded-md border mt-1">
+      <table className="w-full text-xs">
+        <thead className="bg-muted sticky top-0"><tr><th className="p-1 text-left">N°</th><th className="p-1 text-left">Échéance</th><th className="p-1 text-right">Mensualité</th><th className="p-1 text-right">Capital restant</th><th className="p-1 text-right">État</th></tr></thead>
+        <tbody>{rows.map(r => { cum += r.amount; const paid = repaid >= cum - 0.01; return (
+          <tr key={r.n} className="border-t"><td className="p-1">{r.n}</td><td className="p-1">{new Date(r.date).toLocaleDateString('fr-FR')}</td><td className="p-1 text-right">{fmt(r.amount)}</td><td className="p-1 text-right">{fmt(r.remaining)}</td><td className="p-1 text-right">{paid ? 'Payée' : 'À payer'}</td></tr>
+        ); })}</tbody>
+      </table>
+    </div>
+  );
+};
 
 const LoansManagement = ({ employees, unitId }: Props) => {
   const { toast } = useToast();
@@ -36,17 +51,18 @@ const LoansManagement = ({ employees, unitId }: Props) => {
 
   const submit = async () => {
     const employee = employees.find(e => e.id === form.employeeId);
-    if (!employee || form.amount <= 0 || form.monthlyAmount <= 0) {
-      toast({ title: 'Formulaire incomplet', description: 'Employé, montant et remboursement mensuel sont requis.', variant: 'destructive' });
+    if (!employee || form.amount <= 0 || (form.monthlyAmount <= 0 && form.months <= 0)) {
+      toast({ title: 'Formulaire incomplet', description: 'Employé, montant et durée (ou mensualité) sont requis.', variant: 'destructive' });
       return;
     }
     const months = form.months > 0 ? form.months : Math.ceil(form.amount / form.monthlyAmount);
+    const monthlyAmount = form.monthlyAmount > 0 ? form.monthlyAmount : Math.ceil(form.amount / months);
     await addLoan({
       employeeId: employee.id,
       employeeName: `${employee.firstName} ${employee.lastName}`,
       unitId: employee.unitId,
       amount: form.amount,
-      monthlyAmount: form.monthlyAmount,
+      monthlyAmount,
       months,
       startDate: form.startDate,
       reason: form.reason,
@@ -58,7 +74,7 @@ const LoansManagement = ({ employees, unitId }: Props) => {
     }
     toast({
       title: 'Prêt enregistré' + cashNote,
-      description: `${formatCurrency(form.amount)} pour ${employee.firstName} ${employee.lastName} — ${formatCurrency(form.monthlyAmount)}/mois déduits de la paie`,
+      description: `${formatCurrency(form.amount)} pour ${employee.firstName} ${employee.lastName} — ${formatCurrency(monthlyAmount)}/mois déduits de la paie`,
     });
     setForm({ employeeId: '', amount: 0, monthlyAmount: 0, months: 0, startDate: new Date().toISOString().split('T')[0], reason: '' });
     setOpen(false);
@@ -103,6 +119,10 @@ const LoansManagement = ({ employees, unitId }: Props) => {
                     <div><span className="text-muted-foreground">Restant</span><p className="font-semibold">{formatCurrency(remaining)}</p></div>
                     <div><span className="text-muted-foreground">Échéances restantes</span><p className="font-semibold">{installmentsLeft}</p></div>
                   </div>
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground">Tableau d’amortissement ({loan.months} échéances)</summary>
+                    <ScheduleTable rows={loanSchedule(loan.amount, loan.months, loan.startDate)} fmt={formatCurrency} repaid={repaid} />
+                  </details>
                   {history.length > 0 && (
                     <details className="text-xs">
                       <summary className="cursor-pointer text-muted-foreground">Historique des remboursements ({history.length})</summary>
@@ -160,7 +180,7 @@ const LoansManagement = ({ employees, unitId }: Props) => {
                   type="number"
                   placeholder={form.amount && form.monthlyAmount ? String(Math.ceil(form.amount / form.monthlyAmount)) : ''}
                   value={form.months || ''}
-                  onChange={e => setForm({ ...form, months: Number(e.target.value) || 0 })}
+                  onChange={e => { const months = Number(e.target.value) || 0; setForm({ ...form, months, monthlyAmount: months > 0 && form.amount > 0 ? Math.ceil(form.amount / months) : form.monthlyAmount }); }}
                 />
               </div>
               <div>
@@ -172,6 +192,7 @@ const LoansManagement = ({ employees, unitId }: Props) => {
               <Label>Motif (facultatif)</Label>
               <Input value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} />
             </div>
+            {(() => { const m = form.months > 0 ? form.months : form.monthlyAmount > 0 ? Math.ceil(form.amount / form.monthlyAmount) : 0; const sch = loanSchedule(form.amount, m, form.startDate); return sch.length > 0 && <ScheduleTable rows={sch} fmt={formatCurrency} />; })()}
             <p className="text-xs text-muted-foreground">
               Le remboursement mensuel est automatiquement déduit du bulletin de paie jusqu'au solde complet.
             </p>
