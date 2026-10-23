@@ -7,7 +7,7 @@ const state = vi.hoisted(() => ({
   session: { id: 'register-a', name: 'Caisse A', opened_at: '2026-10-20T00:00:00Z' },
 }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
-vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ formatCurrency: (n: number) => `${n} F CFA` }) }));
+vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ formatCurrency: (n: number) => `${n} F CFA`, companyInfo: {} }) }));
 vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ activeUnit: { id: 'unit-a', name: 'Unité A' } }) }));
 vi.mock('@/hooks/useSales', () => ({ useSales: () => ({ sales: [], addSale: state.addSale }) }));
 vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [
