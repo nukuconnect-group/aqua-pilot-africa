@@ -56,5 +56,10 @@ export function useTreasury(unitId?: string) {
     if (error) throw new Error(/archived_at|column|policy|permission/i.test(error.message) ? 'La suppression de comptes n’est pas encore activée sur le serveur (script docs/sql/treasury_archive.sql à exécuter).' : error.message);
     await load();
   };
-  return { accounts, movements, error, loading, createAccount, archiveAccount, recordMovement, reload: load };
+  const reattachAccount = async (id: string, targetUnitId: string) => {
+    const { error } = await db.rpc('reattach_treasury_account', { _account_id: id, _unit_id: targetUnitId });
+    if (error) throw new Error(error.message);
+    await load();
+  };
+  return { accounts, movements, error, loading, createAccount, archiveAccount, reattachAccount, recordMovement, reload: load };
 }
