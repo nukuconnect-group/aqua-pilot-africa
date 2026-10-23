@@ -94,3 +94,11 @@
 - [x] Sortir le bouton AquaAssistant des contraintes d’affichage et le conserver indépendamment des restrictions de module, sans contourner les accès
 - [x] Contraster les icônes et boutons de caisse, éviter la compression des onglets ; compilation et 5 tests existants réussis
 - [ ] Vérifier visuellement sur le compte réel : connexion nécessaire dans l’aperçu, la session automatique n’est pas disponible pour ce compte
+
+## Demande du 23/10/2026
+- [ ] Photos réalistes automatiques des produits (par lots), réutilisées sur les fiches
+- [ ] Import de stock : signaler les produits sans prix
+- [ ] Caisse : afficher les produits avec photos ; Multi-caisses : retirer le catalogue
+- [ ] Recherche produit instantanée dans Caisse, Vente IA, Multi-caisses ; Vente IA fonctionnelle
+- [ ] AquaHealth : détection du poisson sur photo + nom direct + analyse
+- [ ] Page Experts (Afrique, Maroc) : photo, titre, numéro, contact WhatsApp / message, notification WhatsApp — en attente des vraies informations
