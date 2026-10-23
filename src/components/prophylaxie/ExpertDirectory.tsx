@@ -73,17 +73,28 @@ export default function ExpertDirectory({ context }: { context?: string }) {
       <CardContent className="space-y-2">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : experts.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aucun expert n'est encore inscrit dans l'annuaire.</p>
-        ) : experts.map((e) => (
-          <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-md">
-            <div className="space-y-1">
-              <p className="font-medium text-sm">{e.full_name} <span className="text-muted-foreground font-normal">· {e.specialty}</span></p>
-              <p className="text-xs text-muted-foreground">{[e.organization, e.city, e.country].filter(Boolean).join(' · ')}</p>
-              {e.services && <p className="text-xs">{e.services}</p>}
-              {e.provides_products && <Badge variant="secondary">Fournit des produits</Badge>}
+        ) : <div className="grid gap-3 sm:grid-cols-2">{experts.map((e) => {
+          const photo = (e as any).photo_url || (e as any).avatar_url;
+          const wa = (e.whatsapp || e.phone || '').replace(/\D/g, '');
+          const initials = e.full_name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+          return (
+          <div key={e.id} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              {photo ? <img src={photo} alt={e.full_name} className="h-16 w-16 shrink-0 rounded-full object-cover" />
+                : <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">{initials}</span>}
+              <div className="min-w-0">
+                <p className="font-semibold break-words">{e.full_name}</p>
+                <p className="text-sm text-primary">{e.specialty}</p>
+                <p className="text-xs text-muted-foreground">{[e.organization, e.city, e.country].filter(Boolean).join(' · ')}</p>
+              </div>
             </div>
+            {e.services && <p className="text-xs">{e.services}</p>}
+            {(e.whatsapp || e.phone) && <p className="text-sm">WhatsApp : <a className="font-medium text-primary" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">{e.whatsapp || e.phone}</a></p>}
+            {e.provides_products && <Badge variant="secondary" className="w-fit">Fournit des produits</Badge>}
             <ContactActions name={e.full_name} phone={e.whatsapp || e.phone || ''} email={e.email || ''} message={message} />
           </div>
-        ))}
+          );
+        })}</div>}
       </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>
