@@ -14,6 +14,7 @@ export interface CashSession {
   counted_amount: number | null;
   difference: number | null;
   status: 'open' | 'closed';
+  cashier_ids?: string[];
 }
 
 export interface CashMovement {

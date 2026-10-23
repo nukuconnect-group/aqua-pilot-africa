@@ -12,6 +12,8 @@ import { useSales } from '@/hooks/useSales';
 import { useCashSession } from '@/hooks/useCashSession';
 import BarcodeScanner from './BarcodeScanner';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
+import CashierAssignDialog from './CashierAssignDialog';
+import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
 import CashSalesHistory from './CashSalesHistory';
@@ -62,7 +64,10 @@ const CashRegisterPOS: React.FC = () => {
   const { formatCurrency } = useSettings();
   const { activeUnit } = useProductionUnits();
   const { sales, addSale } = useSales();
-  const cash = useCashSession(activeUnit?.id);
+  const { user } = useAuth();
+  const unitOwner = (activeUnit as any)?.userId || (activeUnit as any)?.user_id;
+  const isAdmin = !unitOwner || unitOwner === user?.id;
+  const cash = useCashSession(activeUnit?.id, unitOwner);
   const { stocks, refetch: refetchStocks } = useFeedStocks(activeUnit?.id);
   const [opening, setOpening] = useState('');
   const [counted, setCounted] = useState('');
@@ -230,7 +235,7 @@ const CashRegisterPOS: React.FC = () => {
     <div className="space-y-6"><Card className="max-w-md mx-auto rounded-lg">
       <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Lock className="w-5 h-5 text-primary" />Ouvrir une caisse — {activeUnit.name}</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        {openingForm}
+        {isAdmin ? openingForm : <p className="text-sm text-muted-foreground">Aucune caisse ouverte ne vous est attribuée. Demandez à l’administrateur de vous ajouter comme caissier.</p>}
         {cash.history.length > 0 && (
           <div className="pt-2 space-y-1">
             <p className="text-xs font-semibold text-muted-foreground">Dernières clôtures</p>
@@ -271,7 +276,8 @@ const CashRegisterPOS: React.FC = () => {
         <span className="text-xs text-muted-foreground">depuis {new Date(cash.session.opened_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
         <span className="text-sm ml-auto">Ventes : <b>{formatCurrency(sessionTotal)}</b> ({sessionSales.length})</span>
         <span className="text-sm">Espèces attendues : <b>{formatCurrency(cash.expected)}</b></span>
-        <Button variant="outline" size="sm" disabled={busy || !!pendingPayment} onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>
+        {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
+        {isAdmin && <Button variant="outline" size="sm" disabled={busy || !!pendingPayment} onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}
       </div>
 
       <Tabs defaultValue="checkout"><TabsList><TabsTrigger value="checkout">Vendre</TabsTrigger><TabsTrigger value="history">Historique des ventes</TabsTrigger></TabsList>
