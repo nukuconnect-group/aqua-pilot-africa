@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase as appDb } from '@/integrations/supabase/appClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Wallet, Landmark, ArrowDownLeft, ArrowUpRight, ArrowRightLeft, RefreshCw } from 'lucide-react';
+import { Plus, Wallet, Landmark, ArrowDownLeft, ArrowUpRight, ArrowRightLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -33,6 +34,12 @@ const today = () => new Date().toISOString().slice(0, 10);
 const CashFlowManager = () => {
   const { activeUnit, units } = useProductionUnits();
   const [registerNames, setRegisterNames] = useState<string[]>([]);
+  const [registerUnit, setRegisterUnit] = useState('');
+  useEffect(() => {
+    if (!registerUnit) { setRegisterNames([]); return; }
+    (appDb as any).from('cash_sessions').select('name').eq('unit_id', registerUnit).then(({ data }: any) =>
+      setRegisterNames([...new Set<string>((data || []).map((r: any) => r.name).filter(Boolean))]));
+  }, [registerUnit]);
   const { currency } = useSettings();
   const treasury = useTreasury(activeUnit?.id);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -47,6 +54,7 @@ const CashFlowManager = () => {
     setMovement({ requestId: crypto.randomUUID(), kind, sourceId: '', destinationId: '', amount: '', date: today(), label: '', counterpart: '' });
     setMovementOpen(true);
   };
+  useEffect(() => { setRegisterUnit(account.unitId); }, [account.unitId]);
   const saveAccount = async () => {
     if (busy) return;
     setBusy(true);
