@@ -22,6 +22,7 @@ import { useTreasury } from '@/hooks/useTreasury';
 import { expenseAccount } from '@/lib/syscohada';
 import { getUnitTerms } from '@/lib/unitContext';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
+import { accountBalance } from '@/lib/treasury';
 import PurchaseStockSection, { EMPTY_STOCK_TARGET, suggestedQuantity, type PurchaseStockTarget } from './PurchaseStockSection';
 import { isCommercialStock } from '@/lib/stockPurpose';
 
@@ -328,6 +329,7 @@ const PurchaseManager = () => {
 
   const handleEditPurchase = (purchase: any) => {
     setEditingPurchase(purchase);
+    setUnitPrice(purchase.quantity ? Number(purchase.amount) / Number(purchase.quantity) : Number(purchase.amount));
     setNewPurchase({
       category: purchase.category,
       subcategory: purchase.subcategory || '',
@@ -336,7 +338,6 @@ const PurchaseManager = () => {
       amount: purchase.amount,
       currency: purchase.currency,
       quantity: purchase.quantity || 0,
-      _price: setUnitPrice(purchase.quantity ? Number(purchase.amount) / Number(purchase.quantity) : Number(purchase.amount)),
       unit: purchase.unit || '',
       paymentMethod: purchase.paymentMethod,
       reference: purchase.reference || '',
