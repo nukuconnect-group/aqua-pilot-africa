@@ -76,29 +76,55 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
     try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Connectez-vous avant de téléverser les produits.');
-    for (let i = 0; i < rows.length; i++) {
+    const db = supabase as any;
+    const toPayload = (r: CsvRow) => ({
+      user_id: user.id,
+      stock_purpose: purpose,
+      sale_price: purpose === 'commercial' ? r.sale_price ?? null : null,
+      unit_id: unitId,
+      feed_type: r.name.trim(),
+      custom_name: r.name.trim(),
+      quantity: r.quantity,
+      unit: r.unit,
+      cost: r.cost ?? null,
+      supplier: r.supplier ?? null,
+      min_threshold: r.min_threshold ?? null,
+    });
+    const insertMany = async (payloads: any[]) => {
+      let res = await db.from('feed_stocks').insert(payloads).select('id, quantity');
+      if (isMissingColumnError(res.error)) res = await db.from('feed_stocks').insert(payloads.map(p => toLegacyStockRow(p))).select('id, quantity');
+      return res as { data: { id: string; quantity: number }[] | null; error: any };
+    };
+    const CHUNK = 50;
+    for (let start = 0; start < rows.length; start += CHUNK) {
       if (stopRequested.current) break;
-      const r = rows[i];
-      const payload: any = {
-        user_id: user.id,
-        stock_purpose: purpose,
-        sale_price: purpose === 'commercial' ? r.sale_price ?? null : null,
-        unit_id: unitId,
-        feed_type: r.name,
-        custom_name: r.name,
-        quantity: r.quantity,
-        unit: r.unit,
-        cost: r.cost,
-        supplier: r.supplier,
-        min_threshold: r.min_threshold,
-      };
-      let { error } = await (supabase as any).from('feed_stocks').insert(payload);
-      if (isMissingColumnError(error)) ({ error } = await (supabase as any).from('feed_stocks').insert(toLegacyStockRow(payload)));
-      if (error) ko++; else ok++;
-      setResults(previous => [...previous, { row: r, success: !error }]);
+      const chunk = rows.slice(start, start + CHUNK);
+      let created: { id: string; quantity: number }[] = [];
+      let chunkResults: { row: CsvRow; success: boolean }[] = [];
+      const { data, error } = await insertMany(chunk.map(toPayload));
+      if (!error) {
+        created = data || [];
+        chunkResults = chunk.map(row => ({ row, success: true }));
+      } else {
+        // Repli ligne par ligne pour isoler les articles en erreur.
+        for (const row of chunk) {
+          const one = await insertMany([toPayload(row)]);
+          if (!one.error && one.data) created.push(...one.data);
+          chunkResults.push({ row, success: !one.error });
+        }
+      }
+      // Mouvement d'entrée initial pour chaque article créé (historique du stock).
+      const movements = created.filter(c => Number(c.quantity) > 0).map(c => ({
+        user_id: user.id, unit_id: unitId, stock_id: c.id, type: 'in',
+        quantity: Number(c.quantity), quantity_after: Number(c.quantity), reason: 'Stock initial (import CSV)',
+      }));
+      if (movements.length) await db.from('stock_movements').insert(movements);
+      ok += chunkResults.filter(r => r.success).length;
+      ko += chunkResults.filter(r => !r.success).length;
+      setResults(previous => [...previous, ...chunkResults]);
       setImported(ok);
       setErrors(ko);
-      setProgress(Math.round(((i + 1) / rows.length) * 100));
+      setProgress(Math.round((Math.min(start + CHUNK, rows.length) / rows.length) * 100));
     }
     toast({ title: stopRequested.current ? 'Import arrêté' : 'Import terminé', description: `${ok} article(s) ajouté(s) au stock${ko ? `, ${ko} en erreur` : ''}.` });
     onDone();
