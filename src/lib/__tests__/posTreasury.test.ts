@@ -19,3 +19,17 @@ describe('caisse de trésorerie rattachée à la caisse de vente', () => {
     expect(findRegisterAccount([acc('a', 'Banque', 'bank')], 'Comptoir')).toBeNull();
   });
 });
+
+import { paymentDestination, findSaleAccount } from '@/lib/posTreasury';
+describe('destination des ventes selon le paiement', () => {
+  it('espèces et Mobile Money vont en caisse, carte bancaire et virement en banque', () => {
+    expect(paymentDestination('Espèces')).toBe('cash');
+    expect(paymentDestination('Mobile Money')).toBe('cash');
+    expect(paymentDestination('Carte bancaire')).toBe('bank');
+    expect(paymentDestination('Virement bancaire')).toBe('bank');
+  });
+  it('un virement sans compte bancaire ne trouve aucun compte', () => {
+    expect(findSaleAccount([acc('a', 'Caisse de vente')], 'Virement bancaire')).toBeNull();
+    expect(findSaleAccount([acc('a', 'Caisse de vente'), acc('b', 'Banque', 'bank')], 'Virement bancaire')?.id).toBe('b');
+  });
+});
