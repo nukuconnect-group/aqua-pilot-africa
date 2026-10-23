@@ -647,16 +647,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
+            ) : view === 'multi' ? (
+              searchResults
             ) : (
               <>
-              {productImages.missing > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
-                  <span>{productImages.missing} produit(s) sans photo.</span>
-                  <Button size="sm" variant="outline" disabled={productImages.generating} onClick={async () => { const r = await productImages.generateMissing(); if (r.error) toast({ title: 'Photos', description: r.error, variant: 'destructive' }); }}>
-                    <Sparkles className="h-4 w-4 mr-1" />{productImages.generating ? 'Création des photos…' : 'Créer les photos'}
-                  </Button>
-                </div>
-              )}
+              {photoStatus}
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filtered.map((p) => {
                   const initials = p.name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -666,9 +661,9 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                     className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <div className="relative aspect-[4/3] w-full bg-muted">
                       {img ? <img src={img} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-                        : <div className="flex h-full items-center justify-center bg-primary/10 text-primary" aria-hidden><span className="text-2xl font-bold">{initials || '?'}</span></div>}
+                        : <div className="flex h-full items-center justify-center bg-primary/10 text-primary" aria-hidden><span className="text-2xl font-bold">{productImages.generating ? '…' : initials || '?'}</span></div>}
                       <span className={`absolute bottom-1 right-1 rounded-md px-2 py-0.5 text-xs font-bold shadow ${p.price > 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
-                        {p.price > 0 ? formatCurrency(p.price) : 'Prix à saisir'}
+                        {p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}
                       </span>
                     </div>
                     <div className="flex flex-1 flex-col gap-0.5 p-2">
@@ -681,7 +676,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               </div>
               </>
             )}
-            {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+            {catalog.length > 0 && view !== 'multi' && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
             <Dialog open={!!pick} onOpenChange={o => { if (!o) setPick(null); }}>
               <DialogContent className="max-w-sm">
                 <DialogHeader><DialogTitle className="break-words">{pick?.product.name}</DialogTitle></DialogHeader>
