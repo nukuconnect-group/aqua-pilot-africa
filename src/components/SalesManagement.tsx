@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getCompanyDocumentFields, isSaleSettled } from '@/lib/salesDocumentUtils';
 import { SalesDocumentType, generateNextDocumentNumber, getDefaultLegalMentions, validateSalesDocumentDraft } from '@/lib/salesDocumentHelpers';
 import { getUnitTerms } from '@/lib/unitContext';
+import { reverseSaleInTreasury } from '@/lib/posTreasury';
 
 
 interface SaleFormState {
@@ -503,6 +504,8 @@ const SalesManagement = () => {
     setIsCancelling(true);
     try {
       await cancelSale(cancellingSale.id, cancellationReason);
+      try { await reverseSaleInTreasury(cancellingSale.unitId, cancellingSale.id, cancellationReason); }
+      catch (e: any) { toast({ title: 'Trésorerie à régulariser', description: e.message, variant: 'destructive' }); }
       await auditDocumentAction('Vente annulée', `${cancellingSale.documentNumber || cancellingSale.id} : ${cancellationReason}`, 'warning');
       toast({ title: 'Vente annulée', description: 'La vente est conservée et ses écritures sont contrepassées.' });
       setCancellingSale(null);
