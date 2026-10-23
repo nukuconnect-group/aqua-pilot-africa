@@ -15,6 +15,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import ProductionUnitSelector from './ProductionUnitSelector';
 import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
+import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import CashRegisterPOS, { type PosView } from './sales/CashRegisterPOS';
 
 const POS_TABS = ['registers', 'pos', 'multi', 'ai'];
@@ -71,6 +72,7 @@ const SalesManagement = () => {
   const { sales, loading, addSale, updateSale, cancelSale } = useSales();
   
   const [salesTab, setSalesTab] = useState('pos');
+  const { isTeamMember } = useTeamMemberAccess();
   const [showSaleDialog, setShowSaleDialog] = useState(false);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   const [previewReceiptData, setPreviewReceiptData] = useState<ReceiptData | null>(null);
@@ -898,7 +900,7 @@ const SalesManagement = () => {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {salesTab === 'overview' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -946,17 +948,13 @@ const SalesManagement = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div>}
 
       {/* Tabs pour les différentes fonctionnalités */}
       <Tabs value={salesTab} onValueChange={setSalesTab} className="space-y-3 sm:space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-full sm:w-auto min-w-full bg-muted rounded-xl">
-            <TabsTrigger value="dashboard" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Tableau de bord
-            </TabsTrigger>
-            {([['registers', 'Gestion des caisses', Store], ['pos', 'Caisse', CreditCard], ['multi', 'Multi-caisses', Users], ['ai', 'Vente IA', Zap]] as const).map(([v, label, Icon]) => (
+            {(([...(isTeamMember ? [] : [['registers', 'Gestion des caisses', Store]]), ['pos', 'Caisse', CreditCard], ['multi', 'Multi-caisses', Users], ['ai', 'Vente IA', Zap]]) as [string, string, typeof Store][]).map(([v, label, Icon]) => (
               <TabsTrigger key={v} value={v} className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
                 <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 {label}
@@ -986,9 +984,6 @@ const SalesManagement = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="dashboard" className="space-y-3 sm:space-y-4">
-          <SalesDashboard sales={filteredSales} />
-        </TabsContent>
 
         <TabsContent value="returns" className="space-y-3 sm:space-y-4">
           <CancelledSales sales={filteredSales} />

@@ -75,15 +75,24 @@ if ('serviceWorker' in navigator) {
   
   // Recharger automatiquement la page dès qu'un nouveau SW prend le contrôle,
   // sauf sur les previews Lovable pour éviter les reloads en boucle.
+  // Nouvelle version : elle est installée en arrière-plan et appliquée seulement
+  // quand l'application n'est pas à l'écran (onglet caché / appli en fond),
+  // pour ne jamais effacer une saisie en cours.
   if (!isPreviewHost()) {
+    let pendingReload = false;
     let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
+    const applyWhenHidden = () => {
+      if (pendingReload && !refreshing && document.visibilityState === 'hidden') {
         refreshing = true;
-        console.log('🔄 Nouveau contrôleur détecté, rechargement...');
         window.location.reload();
       }
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      pendingReload = true;
+      console.log('🔄 Nouvelle version prête, appliquée en arrière-plan');
+      applyWhenHidden();
     });
+    document.addEventListener('visibilitychange', applyWhenHidden);
   }
 }
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle, RotateCcw } from 'lucide-react';
+import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle, RotateCcw, Boxes, MoreHorizontal, KeyRound } from 'lucide-react';
 import { useTreasury } from '@/hooks/useTreasury';
 import CashDiscrepancies from './CashDiscrepancies';
 import { summarizeSession, carriedOverBalance, cashDifference } from '@/lib/cashBalance';
@@ -77,6 +77,10 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [opening, setOpening] = useState('');
   const [counted, setCounted] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [tickets, setTickets] = useState<{ id: number; cart: CartLine[]; client: string }[]>([{ id: 1, cart: [], client: '' }]);
+  const [activeTicket, setActiveTicket] = useState(1);
+  const [opsOpen, setOpsOpen] = useState(false);
+  const [closeOpen, setCloseOpen] = useState(false);
   const [client, setClient] = useState('');
   const [payment, setPayment] = useState('Espèces');
   const [search, setSearch] = useState('');
@@ -262,6 +266,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     });
     setPendingPayment(null); requestKey.current = undefined;
     setCart([]); setClient(''); setContact('');
+    if (tickets.length > 1) removeTicket();
     } catch (error) {
       reportFailure('Encaissement interrompu', error);
     } finally { setBusy(false); paymentLock.current = false; }
@@ -306,6 +311,22 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       toast({ title: 'Transfert enregistré' });
     } catch (e: any) { toast({ title: 'Transfert incomplet', description: e.message, variant: 'destructive' }); }
     finally { setBusy(false); }
+  };
+  const switchTicket = (id: number) => {
+    if (id === activeTicket) return;
+    const next = tickets.find((t) => t.id === id);
+    setTickets((ts) => ts.map((t) => (t.id === activeTicket ? { ...t, cart, client } : t)));
+    setCart(next?.cart || []); setClient(next?.client || ''); setActiveTicket(id);
+  };
+  const addTicket = () => {
+    const id = Math.max(...tickets.map((t) => t.id)) + 1;
+    setTickets((ts) => [...ts.map((t) => (t.id === activeTicket ? { ...t, cart, client } : t)), { id, cart: [], client: '' }]);
+    setCart([]); setClient(''); setActiveTicket(id);
+  };
+  const removeTicket = () => {
+    const rest = tickets.filter((t) => t.id !== activeTicket);
+    if (!rest.length) { setCart([]); setClient(''); return; }
+    setTickets(rest); setCart(rest[0].cart); setClient(rest[0].client); setActiveTicket(rest[0].id);
   };
   const todayKey = new Date().toDateString();
   const todayMoves = cash.movements.filter((m) => new Date(m.created_at).toDateString() === todayKey);
@@ -388,197 +409,29 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   return (
     <div className="space-y-3">
       <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
-        {units.length > 1 && <Button variant="ghost" size="sm" disabled={busy || !!pendingPayment} onClick={() => setUnitConfirmed(false)}>{activeUnit.name} · Changer d’unité</Button>}
-        <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Caisse ouverte</Badge>
-        {cash.sessions.length > 1 ? (
-          <select
-            className="h-8 rounded-md border border-border bg-background px-2 text-sm"
-            value={cash.session.id}
-            disabled={busy || !!pendingPayment}
-            onChange={(e) => cash.setActiveSession(e.target.value)}
-            aria-label="Choisir la caisse"
-          >
-            {cash.sessions.map((s) => (
-              <option key={s.id} value={s.id}>{s.name || 'Caisse'} — ouverte {new Date(s.opened_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-sm font-medium">{cash.session.name || 'Caisse principale'}</span>
-        )}
-        <span className="text-xs text-muted-foreground">depuis {new Date(cash.session.opened_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-        <span className="text-sm ml-auto">Ventes : <b>{formatCurrency(sessionTotal)}</b> ({sessionSales.length})</span>
-        <span className="text-sm">Espèces attendues : <b>{formatCurrency(cash.expected)}</b></span>
-        {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
-        {isAdmin && <Button variant="outline" size="sm" disabled={busy || !!pendingPayment} onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}
-        <Button variant="secondary" size="sm" onClick={() => setLocked(true)}><Lock className="h-4 w-4 mr-1" />Verrouiller</Button>
+      <div className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-3 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-medium">● Ouverte</span>
+          {cash.sessions.length > 1 ? (
+            <select className="h-8 rounded-md border-0 bg-primary-foreground/15 px-2 text-sm font-semibold" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
+              {cash.sessions.map((s) => <option key={s.id} value={s.id} className="text-foreground">{s.name || 'Caisse'}</option>)}
+            </select>
+          ) : <span className="font-semibold">{cash.session.name || 'Caisse principale'}</span>}
+          {units.length > 1 && <button className="text-xs underline opacity-80" disabled={busy || !!pendingPayment} onClick={() => setUnitConfirmed(false)}>{activeUnit.name} · changer</button>}
+          <div className="ml-auto flex flex-wrap gap-1">
+            {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
+            <Button variant="secondary" size="sm" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4 mr-1" />Opérations</Button>
+            <Button variant="secondary" size="sm" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4 mr-1" />Clôturer</Button>
+            <Button variant="secondary" size="sm" onClick={() => setLocked(true)} aria-label="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-lg bg-primary-foreground/10 p-2"><p className="text-[11px] opacity-80">Ventes du jour</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
+          <div className="rounded-lg bg-primary-foreground/10 p-2"><p className="text-[11px] opacity-80">Tickets du jour</p><p className="font-bold">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
+          <div className="rounded-lg bg-primary-foreground/10 p-2"><p className="text-[11px] opacity-80">Solde en caisse</p><p className="font-bold">{formatCurrency(cash.expected)}</p></div>
+        </div>
       </div>
-      <Dialog open={locked} onOpenChange={() => {}}><DialogContent className="max-w-sm [&>button]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-        <DialogHeader><DialogTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Caisse verrouillée</DialogTitle></DialogHeader>
-        <p className="text-sm text-muted-foreground">Le panier et les ventes enregistrées sont conservés. Saisissez le mot de passe de votre compte pour reprendre.</p>
-        <Input type="password" aria-label="Mot de passe" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && unlock()} />
-        {unlockError && <p className="text-sm text-destructive">{unlockError}</p>}
-        <Button onClick={unlock} disabled={!unlockPassword}><Unlock className="w-4 h-4 mr-2" />Déverrouiller</Button>
-      </DialogContent></Dialog>
-
-      {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
-      {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
-
-      {view === 'registers' && (
-        <div className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {cash.sessions.map((s) => (
-              <Card key={s.id} className={`rounded-xl ${s.id === cash.session?.id ? 'border-primary' : ''}`}>
-                <CardContent className="p-4 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2"><span className="font-semibold truncate">{s.name || 'Caisse'}</span><Badge>Ouverte</Badge></div>
-                  <div className="flex justify-between text-muted-foreground"><span>Ouverte le</span><span>{new Date(s.opened_at).toLocaleString('fr-FR')}</span></div>
-                  <div className="flex justify-between text-muted-foreground"><span>Caissier(s) affecté(s)</span><span>{((s as any).cashier_ids || []).length}</span></div>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button size="sm" onClick={() => { cash.setActiveSession(s.id); onNavigate?.('checkout'); }}>Accéder à la caisse</Button>
-                    {isAdmin && <CashierAssignDialog sessionId={s.id} current={(s as any).cashier_ids || []} onSaved={() => cash.reload()} />}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          {reopenList}
-          <Card className="rounded-xl"><CardContent className="p-3 grid gap-3 md:grid-cols-2">
-          <div className="space-y-1 text-sm">
-            <p className="font-semibold">Bilan de la caisse « {cash.session.name || 'Caisse'} »</p>
-            {([['Solde d’ouverture', summary.opening], ['Ventes (tous paiements)', summary.sales],
-              ...Object.entries(summary.salesByPayment).map(([k, v]) => [`  dont ${k}`, v] as [string, number]),
-              ['Entrées d’espèces', summary.cashIn], ['Sorties / dépenses', -summary.cashOut],
-              ['Transferts entrants', summary.transfersIn], ['Transferts sortants', -summary.transfersOut]] as [string, number][]).map(([k, v]) => (
-              <div key={k} className="flex justify-between text-muted-foreground"><span className="whitespace-pre">{k}</span><span>{formatCurrency(v)}</span></div>
-            ))}
-            <div className="flex justify-between font-semibold border-t border-border pt-1"><span>Solde théorique (espèces)</span><span>{formatCurrency(summary.expected)}</span></div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">Clôturer la journée</p>
-            <Input type="number" placeholder="Montant physique compté" value={counted} onChange={(e) => setCounted(e.target.value)} />
-            {counted !== '' && (() => { const d = cashDifference(Number(counted) || 0, summary.expected); return (
-              <p className={`text-xs ${d === 0 ? 'text-primary' : 'text-destructive'}`}>{d === 0 ? 'Caisse équilibrée.' : `Écart ${d > 0 ? 'positif' : 'négatif'} : ${formatCurrency(d)} — il sera enregistré et signalé au responsable.`}</p>
-            ); })()}
-            <p className="text-xs text-muted-foreground">Le montant compté reste dans la caisse et sera repris à la prochaine ouverture.</p>
-            <Button variant="destructive" size="sm" className="w-full" disabled={counted === '' || busy || !!pendingPayment} onClick={async () => {
-              const r: any = await cash.closeSession(Number(counted) || 0);
-              if (r.error) toast({ title: 'Clôture impossible', description: r.error, variant: 'destructive' });
-              else { setCounted(''); toast(r.difference ? { title: 'Caisse fermée avec écart', description: `Écart de ${formatCurrency(r.difference)} enregistré et notifié.`, variant: 'destructive' } : { title: 'Clôture équilibrée' }); }
-            }}><Lock className="w-4 h-4 mr-1" />Clôturer</Button>
-          </div>
-          </CardContent></Card>
-          {isAdmin && <CashDiscrepancies history={cash.history} formatCurrency={formatCurrency} unitId={activeUnit.id} />}
-          <h3 className="font-semibold text-sm">Historique des ventes en caisse</h3>
-          <CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session.id} />
-        </div>
-      )}
-      {(view === 'checkout' || view === 'ai') && (<>
-      <Card className="rounded-xl"><CardContent className="p-3 flex flex-wrap items-end gap-3 text-sm">
-        <div><p className="text-xs text-muted-foreground">Ventes d’aujourd’hui</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
-        {Object.entries(today.salesByPayment).map(([k, v]) => <div key={k}><p className="text-xs text-muted-foreground">{k}</p><p className="font-semibold">{formatCurrency(v)}</p></div>)}
-        <div><p className="text-xs text-muted-foreground">Espèces attendues</p><p className="font-semibold">{formatCurrency(cash.expected)}</p></div>
-        <div className="flex gap-2 ml-auto w-full sm:w-auto">
-          <Input type="number" className="h-9 sm:w-40" placeholder="Espèces comptées" value={dayCount} onChange={(e) => setDayCount(e.target.value)} />
-          <Button size="sm" variant="outline" className="h-9" disabled={dayCount === ''} onClick={checkDayCount}>Vérifier</Button>
-        </div>
-      </CardContent></Card>
-      <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
-      <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
-        {view === 'checkout' ? (
-        <Card className="rounded-2xl">
-          <CardContent className="p-3 space-y-3">
-            <div className="flex gap-2">
-              <Input placeholder="Rechercher un produit ou un code" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0].name, filtered[0].price); }} />
-              <Button variant="outline" onClick={() => setScanOpen(true)} aria-label="Scanner un code"><ScanLine className="w-4 h-4" /></Button>
-            </div>
-            {catalog.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-                {filtered.map((p) => (
-                  <Button key={p.key} variant="outline" onClick={() => addToCart(p.name, p.price)}
-                    className="h-auto min-h-20 w-full flex-col items-start rounded-lg p-3 text-left whitespace-normal">
-                    <span className="text-sm font-semibold break-words">{p.name}</span>
-                    <span className="text-xs text-muted-foreground">{p.price > 0 ? formatCurrency(p.price) : 'Prix à renseigner'}</span>
-                    {p.quantity !== undefined && <span className="text-xs text-muted-foreground">Stock : {p.quantity} {p.unit}</span>}
-                  </Button>
-                ))}
-              </div>
-            )}
-            {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
-            <Button variant="outline" onClick={() => setCart(prev => [...prev, { name: search.trim(), quantity: 1, unitPrice: 0 }])}><Plus className="h-4 w-4 mr-2" />Ajouter un produit</Button>
-          </CardContent>
-        </Card>
-        ) : (
-        <div className="space-y-3">
-        <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
-          <p className="text-sm font-semibold">Vente par la voix ou par texte</p>
-            <div className="flex gap-2">
-              <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
-              <Button variant="outline" onClick={startVoice} disabled={listening} aria-label="Dicter la vente"><Mic className={`w-4 h-4 ${listening ? 'text-destructive animate-pulse' : ''}`} /></Button>
-              <Button variant="secondary" onClick={() => handleQuick()}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
-            </div>
-        </CardContent></Card>
-        <PosAiSuggestions cart={cart} catalog={catalog} formatCurrency={formatCurrency}
-          onConfirm={(lines) => {
-            setCart(prev => {
-              const next = [...prev];
-              lines.forEach(l => {
-                const k = next.findIndex(x => x.name.toLowerCase() === l.name.toLowerCase());
-                if (k >= 0) next[k] = { ...next[k], quantity: Math.max(next[k].quantity, l.quantity) };
-                else next.push({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice });
-              });
-              return next;
-            });
-            toast({ title: 'Propositions ajoutées au panier', description: 'Vérifiez puis encaissez.' });
-          }} />
-
-        </div>
-        )}
-        <Card id="pos-cart" className="rounded-2xl lg:sticky lg:top-4 lg:self-start">
-          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Panier</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {cart.length === 0 && <p className="text-sm text-muted-foreground">Touchez un produit pour l'ajouter.</p>}
-            {cart.map((l, i) => (
-              <div key={i} className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
-                <div className="flex-1 min-w-0">
-                  <Input aria-label={`Produit ${i + 1}`} className="h-8" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
-                  <label className="block text-xs text-muted-foreground mt-2">Prix unitaire<Input aria-label={`Prix unitaire ${i + 1}`} min="0" step="any" type="number" className="h-8 mt-1" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} /></label>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span>Conditionnement</span>
-                    <select aria-label={`Conditionnement ${i + 1}`} className="h-8 rounded-md border border-border bg-background px-2" value={l.pack?.label || 'unité'}
-                      onChange={(e) => { const label = e.target.value; const size = label === 'unité' ? 1 : (l.pack?.size && l.pack.size > 1 ? l.pack.size : label === 'pack' ? 6 : 12); updateLine(i, { pack: label === 'unité' ? undefined : { label, size }, quantity: size }); }}>
-                      <option value="unité">Unité</option><option value="pack">Pack</option><option value="carton">Carton</option>
-                    </select>
-                    {l.pack && <>
-                      <label className="flex items-center gap-1">de<Input aria-label={`Unités par ${l.pack.label} ${i + 1}`} type="number" min="1" className="h-8 w-16" value={l.pack.size} onChange={(e) => { const size = Math.max(1, Number(e.target.value) || 1); const packs = l.quantity / l.pack!.size; updateLine(i, { pack: { ...l.pack!, size }, quantity: packs * size }); }} />unités</label>
-                      <label className="flex items-center gap-1">Nombre<Input aria-label={`Nombre de ${l.pack.label} ${i + 1}`} type="number" min="0" step="any" className="h-8 w-16" value={l.quantity / l.pack.size} onChange={(e) => updateLine(i, { quantity: (Number(e.target.value) || 0) * l.pack!.size })} /></label>
-                      <span>= {l.quantity} unités · {formatCurrency(l.quantity * l.unitPrice)}</span>
-                    </>}
-                  </div>
-                </div>
-                <Button size="icon" variant="outline" aria-label={`Diminuer la quantité ${i + 1}`} className="h-7 w-7" disabled={l.quantity <= 1} onClick={() => updateLine(i, { quantity: l.quantity - 1 })}><Minus className="w-3 h-3" /></Button>
-                <Input aria-label={`Quantité ${i + 1}`} min="0" step="any" type="number" className="h-7 w-16 text-center text-xs" value={l.quantity} onChange={(e) => updateLine(i, { quantity: Number(e.target.value) || 0 })} />
-                <Button size="icon" variant="outline" aria-label={`Augmenter la quantité ${i + 1}`} className="h-7 w-7" onClick={() => updateLine(i, { quantity: l.quantity + 1 })}><Plus className="w-3 h-3" /></Button>
-                <Button size="icon" variant="ghost" aria-label={`Retirer le produit ${i + 1}`} className="h-7 w-7" onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            ))}
-            <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => setClient(e.target.value)} />
-            <Input placeholder="Téléphone ou email du client (facultatif)" value={contact} onChange={e => setContact(e.target.value)} />
-            <div className="grid grid-cols-2 gap-2">
-              {PAYMENTS.map((p) => (
-                <Button key={p} size="sm" variant={payment === p ? 'default' : 'outline'} onClick={() => setPayment(p)}>{p}</Button>
-              ))}
-            </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-border"><span>Total</span><span>{formatCurrency(total)}</span></div>
-          </CardContent>
-        </Card>
-      </div>
-      </fieldset>
-      <Button className="w-full h-12 text-base" disabled={busy || (!pendingPayment && !isValidPosCart(cart))} onClick={checkout}>{busy ? 'Encaissement…' : pendingPayment ? 'Reprendre l’encaissement' : `Encaisser · ${formatCurrency(total)}`}</Button>
-
-      </>)}
-      {view === 'multi' && (<>
+      <Dialog open={opsOpen} onOpenChange={setOpsOpen}><DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto"><DialogHeader><DialogTitle>Opérations de caisse</DialogTitle></DialogHeader>
       <Card className="rounded-2xl">
         <CardContent className="p-3 grid gap-3 md:grid-cols-2">
           <div className="space-y-2">
@@ -633,7 +486,205 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           </CardContent>
         </Card>
       )}
+      </DialogContent></Dialog>
+      <Dialog open={closeOpen} onOpenChange={(o) => !busy && setCloseOpen(o)}><DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto"><DialogHeader><DialogTitle>Clôturer « {cash.session.name || 'Caisse'} »</DialogTitle></DialogHeader>
+        <div className="rounded-lg border border-border p-3 space-y-2">
+          <p className="text-sm text-muted-foreground">1. Facultatif : transférez les fonds avant la clôture. Sinon ils restent dans la caisse et seront repris demain.</p>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Transférer les fonds</p>
+            <select className="h-10 w-full rounded-md border border-border bg-background px-2 text-sm" value={transferTarget} onChange={(e) => setTransferTarget(e.target.value)} aria-label="Destination">
+              <option value="">Destination…</option>
+              {cash.sessions.filter((s) => s.id !== cash.session?.id).map((s) => <option key={s.id} value={`cash:${s.id}`}>Caisse · {s.name || 'Caisse'}</option>)}
+              {treasury.accounts.map((a) => <option key={a.id} value={`treasury:${a.id}`}>Trésorerie · {a.name}</option>)}
+              <option value="person">Remise à une personne (comptable, responsable…)</option>
+            </select>
+            {transferTarget === 'person' && <Input placeholder="Nom et fonction du bénéficiaire" value={transferPerson} onChange={(e) => setTransferPerson(e.target.value)} />}
+            <div className="flex gap-2">
+              <Input type="number" placeholder="Montant" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} />
+              <Button size="sm" variant="outline" className="h-10" onClick={() => setTransferAmount(String(Math.max(0, cash.expected)))}>Tout</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Espèces disponibles : {formatCurrency(cash.expected)}</p>
+            <Button size="sm" className="w-full" disabled={busy || !transferTarget || !(Number(transferAmount) > 0) || (transferTarget === 'person' && !transferPerson.trim())} onClick={doTransfer}>Transférer</Button>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">2. Comptez les espèces présentes puis clôturez.</p>
+          <Card className="rounded-xl"><CardContent className="p-3 grid gap-3 md:grid-cols-2">
+          <div className="space-y-1 text-sm">
+            <p className="font-semibold">Bilan de la caisse « {cash.session.name || 'Caisse'} »</p>
+            {([['Solde d’ouverture', summary.opening], ['Ventes (tous paiements)', summary.sales],
+              ...Object.entries(summary.salesByPayment).map(([k, v]) => [`  dont ${k}`, v] as [string, number]),
+              ['Entrées d’espèces', summary.cashIn], ['Sorties / dépenses', -summary.cashOut],
+              ['Transferts entrants', summary.transfersIn], ['Transferts sortants', -summary.transfersOut]] as [string, number][]).map(([k, v]) => (
+              <div key={k} className="flex justify-between text-muted-foreground"><span className="whitespace-pre">{k}</span><span>{formatCurrency(v)}</span></div>
+            ))}
+            <div className="flex justify-between font-semibold border-t border-border pt-1"><span>Solde théorique (espèces)</span><span>{formatCurrency(summary.expected)}</span></div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Clôturer la journée</p>
+            <Input type="number" placeholder="Montant physique compté" value={counted} onChange={(e) => setCounted(e.target.value)} />
+            {counted !== '' && (() => { const d = cashDifference(Number(counted) || 0, summary.expected); return (
+              <p className={`text-xs ${d === 0 ? 'text-primary' : 'text-destructive'}`}>{d === 0 ? 'Caisse équilibrée.' : `Écart ${d > 0 ? 'positif' : 'négatif'} : ${formatCurrency(d)} — il sera enregistré et signalé au responsable.`}</p>
+            ); })()}
+            <p className="text-xs text-muted-foreground">Le montant compté reste dans la caisse et sera repris à la prochaine ouverture.</p>
+            <Button variant="destructive" size="sm" className="w-full" disabled={counted === '' || busy || !!pendingPayment} onClick={async () => {
+              const r: any = await cash.closeSession(Number(counted) || 0);
+              if (r.error) toast({ title: 'Clôture impossible', description: r.error, variant: 'destructive' });
+              else { setCounted(''); setCloseOpen(false); toast(r.difference ? { title: 'Caisse fermée avec écart', description: `Écart de ${formatCurrency(r.difference)} enregistré et notifié.`, variant: 'destructive' } : { title: 'Clôture équilibrée' }); }
+            }}><Lock className="w-4 h-4 mr-1" />Clôturer</Button>
+          </div>
+          </CardContent></Card>
+      </DialogContent></Dialog>
+      <Dialog open={locked} onOpenChange={() => {}}><DialogContent className="max-w-sm [&>button]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Caisse verrouillée</DialogTitle></DialogHeader>
+        <p className="text-sm text-muted-foreground">Le panier et les ventes enregistrées sont conservés. Saisissez le mot de passe de votre compte pour reprendre.</p>
+        <Input type="password" aria-label="Mot de passe" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && unlock()} />
+        {unlockError && <p className="text-sm text-destructive">{unlockError}</p>}
+        <Button onClick={unlock} disabled={!unlockPassword}><Unlock className="w-4 h-4 mr-2" />Déverrouiller</Button>
+      </DialogContent></Dialog>
+
+      {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
+      {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
+
+      {view === 'registers' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between"><h3 className="font-semibold">Caisses de l’unité</h3>{isAdmin && <Button size="sm" onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}</div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {cash.sessions.map((s) => (
+              <Card key={s.id} className={`rounded-xl ${s.id === cash.session?.id ? 'border-primary' : ''}`}>
+                <CardContent className="p-4 space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-2"><span className="font-semibold truncate">{s.name || 'Caisse'}</span><Badge>Ouverte</Badge></div>
+                  <div className="flex justify-between text-muted-foreground"><span>Ouverte le</span><span>{new Date(s.opened_at).toLocaleString('fr-FR')}</span></div>
+                  <div className="flex justify-between text-muted-foreground"><span>Caissier(s) affecté(s)</span><span>{((s as any).cashier_ids || []).length}</span></div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button size="sm" onClick={() => { cash.setActiveSession(s.id); onNavigate?.('checkout'); }}>Accéder à la caisse</Button>
+                    {isAdmin && <CashierAssignDialog sessionId={s.id} current={(s as any).cashier_ids || []} onSaved={() => cash.reload()} />}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {reopenList}
+          {isAdmin && <CashDiscrepancies history={cash.history} formatCurrency={formatCurrency} unitId={activeUnit.id} />}
+          <h3 className="font-semibold text-sm">Historique des ventes en caisse</h3>
+          <CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session.id} />
+        </div>
+      )}
+      {(view === 'checkout' || view === 'ai' || view === 'multi') && (<>
+      {catalog.length === 0 && (
+        <Card className="rounded-xl border-primary/40 bg-primary/5"><CardContent className="p-4 flex flex-wrap items-center gap-3">
+          <Boxes className="w-6 h-6 text-primary" />
+          <div className="flex-1 min-w-0"><p className="font-semibold">Initiez votre stock pour vendre</p><p className="text-sm text-muted-foreground">Ajoutez vos produits en « Stock commercial » avec leur prix de vente : ils apparaîtront ici.</p></div>
+          <Button onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>Initier le stock</Button>
+        </CardContent></Card>
+      )}
+      {(view === 'multi' || tickets.length > 1) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {tickets.map((t, i) => (
+            <Button key={t.id} size="sm" variant={t.id === activeTicket ? 'default' : 'outline'} disabled={busy || !!pendingPayment} onClick={() => switchTicket(t.id)}>
+              Client {i + 1}{(t.id === activeTicket ? cart : t.cart).length ? ` · ${(t.id === activeTicket ? cart : t.cart).length}` : ''}
+            </Button>
+          ))}
+          <Button size="sm" variant="secondary" disabled={busy || !!pendingPayment || tickets.length >= 6} onClick={addTicket}><Plus className="w-4 h-4 mr-1" />Nouveau client</Button>
+          {tickets.length > 1 && <Button size="sm" variant="ghost" disabled={busy || !!pendingPayment} onClick={removeTicket}><Trash2 className="w-4 h-4 mr-1" />Fermer ce ticket</Button>}
+        </div>
+      )}
+      <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
+      <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
+        {view !== 'ai' ? (
+        <Card className="rounded-2xl">
+          <CardContent className="p-3 space-y-3">
+            <div className="flex gap-2">
+              <Input placeholder="Rechercher un produit ou un code" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0].name, filtered[0].price); }} />
+              <Button variant="outline" onClick={() => setScanOpen(true)} aria-label="Scanner un code"><ScanLine className="w-4 h-4" /></Button>
+            </div>
+            {catalog.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+                {filtered.map((p) => (
+                  <Button key={p.key} variant="outline" onClick={() => addToCart(p.name, p.price)}
+                    className="h-auto min-h-20 w-full flex-col items-start rounded-lg border-primary/30 p-3 text-left whitespace-normal hover:bg-primary/10 hover:border-primary">
+                    <span className="text-sm font-semibold break-words">{p.name}</span>
+                    <span className="text-xs text-muted-foreground">{p.price > 0 ? formatCurrency(p.price) : 'Prix à renseigner'}</span>
+                    {p.quantity !== undefined && <span className="text-xs text-muted-foreground">Stock : {p.quantity} {p.unit}</span>}
+                  </Button>
+                ))}
+              </div>
+            )}
+            {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+            <Button variant="outline" onClick={() => setCart(prev => [...prev, { name: search.trim(), quantity: 1, unitPrice: 0 }])}><Plus className="h-4 w-4 mr-2" />Ajouter un produit</Button>
+          </CardContent>
+        </Card>
+        ) : (
+        <div className="space-y-3">
+        <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
+          <p className="text-sm font-semibold">Vente par la voix ou par texte</p>
+            <div className="flex gap-2">
+              <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
+              <Button variant="outline" onClick={startVoice} disabled={listening} aria-label="Dicter la vente"><Mic className={`w-4 h-4 ${listening ? 'text-destructive animate-pulse' : ''}`} /></Button>
+              <Button variant="secondary" onClick={() => handleQuick()}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
+            </div>
+        </CardContent></Card>
+        <PosAiSuggestions cart={cart} catalog={catalog} formatCurrency={formatCurrency}
+          onConfirm={(lines) => {
+            setCart(prev => {
+              const next = [...prev];
+              lines.forEach(l => {
+                const k = next.findIndex(x => x.name.toLowerCase() === l.name.toLowerCase());
+                if (k >= 0) next[k] = { ...next[k], quantity: Math.max(next[k].quantity, l.quantity) };
+                else next.push({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice });
+              });
+              return next;
+            });
+            toast({ title: 'Propositions ajoutées au panier', description: 'Vérifiez puis encaissez.' });
+          }} />
+
+        </div>
+        )}
+        <Card id="pos-cart" className="rounded-2xl lg:sticky lg:top-4 lg:self-start">
+          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Panier</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {cart.length === 0 && <p className="text-sm text-muted-foreground">Touchez un produit pour l'ajouter.</p>}
+            {cart.map((l, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border-l-4 border-primary p-2 odd:bg-primary/5 even:bg-accent/40">
+                <div className="flex-1 min-w-0">
+                  <Input aria-label={`Produit ${i + 1}`} className="h-8" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
+                  <label className="block text-xs text-muted-foreground mt-2">Prix unitaire<Input aria-label={`Prix unitaire ${i + 1}`} min="0" step="any" type="number" className="h-8 mt-1" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} /></label>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>Conditionnement</span>
+                    <select aria-label={`Conditionnement ${i + 1}`} className="h-8 rounded-md border border-border bg-background px-2" value={l.pack?.label || 'unité'}
+                      onChange={(e) => { const label = e.target.value; const size = label === 'unité' ? 1 : (l.pack?.size && l.pack.size > 1 ? l.pack.size : label === 'pack' ? 6 : 12); updateLine(i, { pack: label === 'unité' ? undefined : { label, size }, quantity: size }); }}>
+                      <option value="unité">Unité</option><option value="pack">Pack</option><option value="carton">Carton</option>
+                    </select>
+                    {l.pack && <>
+                      <label className="flex items-center gap-1">de<Input aria-label={`Unités par ${l.pack.label} ${i + 1}`} type="number" min="1" className="h-8 w-16" value={l.pack.size} onChange={(e) => { const size = Math.max(1, Number(e.target.value) || 1); const packs = l.quantity / l.pack!.size; updateLine(i, { pack: { ...l.pack!, size }, quantity: packs * size }); }} />unités</label>
+                      <label className="flex items-center gap-1">Nombre<Input aria-label={`Nombre de ${l.pack.label} ${i + 1}`} type="number" min="0" step="any" className="h-8 w-16" value={l.quantity / l.pack.size} onChange={(e) => updateLine(i, { quantity: (Number(e.target.value) || 0) * l.pack!.size })} /></label>
+                      <span>= {l.quantity} unités · {formatCurrency(l.quantity * l.unitPrice)}</span>
+                    </>}
+                  </div>
+                </div>
+                <Button size="icon" variant="outline" aria-label={`Diminuer la quantité ${i + 1}`} className="h-7 w-7" disabled={l.quantity <= 1} onClick={() => updateLine(i, { quantity: l.quantity - 1 })}><Minus className="w-3 h-3" /></Button>
+                <Input aria-label={`Quantité ${i + 1}`} min="0" step="any" type="number" className="h-7 w-16 text-center text-xs" value={l.quantity} onChange={(e) => updateLine(i, { quantity: Number(e.target.value) || 0 })} />
+                <Button size="icon" variant="outline" aria-label={`Augmenter la quantité ${i + 1}`} className="h-7 w-7" onClick={() => updateLine(i, { quantity: l.quantity + 1 })}><Plus className="w-3 h-3" /></Button>
+                <Button size="icon" variant="ghost" aria-label={`Retirer le produit ${i + 1}`} className="h-7 w-7" onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
+              </div>
+            ))}
+            <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => setClient(e.target.value)} />
+            <Input placeholder="Téléphone ou email du client (facultatif)" value={contact} onChange={e => setContact(e.target.value)} />
+            <div className="grid grid-cols-2 gap-2">
+              {PAYMENTS.map((p) => (
+                <Button key={p} size="sm" variant={payment === p ? 'default' : 'outline'} onClick={() => setPayment(p)}>{p}</Button>
+              ))}
+            </div>
+            <div className="flex justify-between text-lg font-bold pt-2 border-t border-border"><span>Total</span><span>{formatCurrency(total)}</span></div>
+          </CardContent>
+        </Card>
+      </div>
+      </fieldset>
+      <Button className="w-full h-12 text-base" disabled={busy || (!pendingPayment && !isValidPosCart(cart))} onClick={checkout}>{busy ? 'Encaissement…' : pendingPayment ? 'Reprendre l’encaissement' : `Encaisser · ${formatCurrency(total)}`}</Button>
+
       </>)}
+
 
       <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}><DialogContent className="max-w-sm"><DialogHeader><DialogTitle>Reçu {receipt?.number}</DialogTitle></DialogHeader>
         {receipt && <div className="space-y-2 text-sm">
@@ -644,7 +695,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <Button className="w-full" onClick={printReceipt}><Printer className="w-4 h-4 mr-2" />Imprimer le reçu</Button>
         </div>}
       </DialogContent></Dialog>
-      {(view === 'checkout' || view === 'ai') && cart.length > 0 && (
+      {view !== 'registers' && cart.length > 0 && (
         <Button className="lg:hidden fixed bottom-20 left-4 z-40 h-12 rounded-full shadow-lg" onClick={() => document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth' })}>
           <ShoppingCart className="w-4 h-4 mr-2" />{cart.reduce((n, l) => n + l.quantity, 0)} article(s) · {formatCurrency(total)}
         </Button>
