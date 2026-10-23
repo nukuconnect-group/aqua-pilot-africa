@@ -45,7 +45,7 @@ const checkoutRecovery = (error: unknown, saleRecorded: boolean) => {
 export const parseQuickSale = (text: string, catalog: { name: string; price: number }[]) => {
   const lines: CartLine[] = [];
   let client = '';
-  const m = text.match(/\b(?:à|a|pour|client)\s+([^,]+)$/i);
+  const m = text.match(/(?:^|\s)(?:à|a|pour|client)\s+([^,\d]+)$/i);
   let body = text;
   if (m) { client = m[1].trim(); body = text.slice(0, m.index); }
   body.split(/,|\bet\b|\+/i).forEach((chunk) => {
@@ -62,7 +62,7 @@ export const parseQuickSale = (text: string, catalog: { name: string; price: num
 const CashRegisterPOS: React.FC = () => {
   const { toast } = useToast();
   const { formatCurrency } = useSettings();
-  const { activeUnit, units, setActiveUnit } = useProductionUnits();
+  const { activeUnit, units = [], setActiveUnit } = useProductionUnits();
   const { sales, addSale } = useSales();
   const { user } = useAuth();
   const unitOwner = (activeUnit as any)?.userId || (activeUnit as any)?.user_id;
@@ -90,6 +90,7 @@ const CashRegisterPOS: React.FC = () => {
   const [contact, setContact] = useState('');
   const [receipt, setReceipt] = useState<{ number: string; date: string; client: string; payment: string; register: string; lines: CartLine[]; total: number } | null>(null);
   const [listening, setListening] = useState(false);
+  const [unitConfirmed, setUnitConfirmed] = useState(false);
   const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
 
   useEffect(() => {
@@ -238,11 +239,11 @@ const CashRegisterPOS: React.FC = () => {
     } finally { setBusy(false); paymentLock.current = false; }
   };
 
-  if (!activeUnit) return (
-    <Card className="rounded-2xl"><CardHeader><CardTitle className="text-base">Choisissez l’unité où vous vendez</CardTitle></CardHeader>
+  if (!activeUnit || (units.length > 1 && !unitConfirmed)) return (
+    <Card className="rounded-2xl"><CardHeader><CardTitle className="text-base">Avec quelle unité voulez-vous vendre ?</CardTitle></CardHeader>
       <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {units.length === 0 ? <p className="text-sm text-muted-foreground">Aucune unité disponible.</p> : units.map((u) => (
-          <Button key={u.id} variant="outline" className="h-auto justify-start p-3 text-left whitespace-normal" onClick={() => setActiveUnit(u)}>{u.name}</Button>
+          <Button key={u.id} variant="outline" className="h-auto justify-start p-3 text-left whitespace-normal" onClick={() => { setActiveUnit(u); setUnitConfirmed(true); }}>{u.name}</Button>
         ))}
       </CardContent></Card>
   );
@@ -296,6 +297,7 @@ const CashRegisterPOS: React.FC = () => {
     <div className="space-y-3">
       <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
+        {units.length > 1 && <Button variant="ghost" size="sm" disabled={busy || !!pendingPayment} onClick={() => setUnitConfirmed(false)}>{activeUnit.name} · Changer d’unité</Button>}
         <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Caisse ouverte</Badge>
         {cash.sessions.length > 1 ? (
           <select

@@ -2,9 +2,9 @@ import type { ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 
 /** Unités proposées à l'inscription ; chaque choix crée une unité du même type. */
 export const SIGNUP_UNIT_OPTIONS: { type: ProductionUnitType; label: string; desc: string }[] = [
-  { type: 'grossissement', label: 'Production de poissons', desc: 'Grossissement, bassins et cycles' },
+  { type: 'grossissement', label: 'Grossissement', desc: 'Production de poissons en bassins' },
   { type: 'ecloserie', label: 'Écloserie', desc: 'Reproduction et alevins' },
-  { type: 'fabrication_aliment', label: "Fabrication d'aliments", desc: 'Formulation et production d’aliments' },
+  { type: 'fabrication_aliment', label: "Fabrication d'aliment", desc: 'Formulation et production d’aliments' },
   { type: 'commercialisation', label: 'Commercialisation', desc: 'Vente, caisse et stock commercial' },
   { type: 'transformation', label: 'Transformation', desc: 'Fumage, découpe, conditionnement' },
   { type: 'conservation', label: 'Conservation', desc: 'Stockage froid et congélation' },
