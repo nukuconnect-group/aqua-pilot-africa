@@ -41,7 +41,7 @@ const languages: Language[] = [
   { id: 'swahili', label: 'Kiswahili', code: 'sw-KE', flag: '🇰🇪' },
 ];
 
-const AquaAssistantModule = () => {
+const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
   const { units, activeUnit } = useProductionUnits();
   const { isDemoMode } = useAuth();
   const { t } = useSettings();
@@ -411,7 +411,7 @@ const AquaAssistantModule = () => {
             <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>
-            <Button variant="outline" size="icon" className="shrink-0" onClick={() => { setIsFullscreen(false); window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => { setIsFullscreen(false); if (onClose) onClose(); else window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
               <X className="size-4" />
             </Button>
           </div>
