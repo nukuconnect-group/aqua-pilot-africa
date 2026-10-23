@@ -52,7 +52,7 @@ const AssistantFloatingBubble: React.FC<Props> = ({ activeTab, onOpen }) => {
         </div>
       )}
       <Button size="icon" onClick={open} aria-label="Ouvrir AquaAssistant" title="AquaAssistant"
-        className="relative h-12 w-12 rounded-full bg-sidebar-background text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground shadow-lg ring-2 ring-background motion-safe:hover:scale-105 transition-transform [&_svg]:size-6">
+        className="relative h-12 w-12 shrink-0 rounded-full bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground shadow-lg ring-2 ring-background motion-safe:hover:scale-105 transition-transform [&_svg]:size-6">
                 <Bot className="relative" strokeWidth={2.2} />
         <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-background" aria-hidden />
       </Button>
