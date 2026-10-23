@@ -199,7 +199,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
               <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
                 <p className="font-semibold">{rows.filter(r => !(Number(r.sale_price) > 0)).length} produit(s) sans prix de vente :</p>
                 <p className="break-words">{rows.filter(r => !(Number(r.sale_price) > 0)).map(r => r.name).join(', ')}</p>
-                <p>Ils seront importés, mais il faudra saisir leur prix avant de les vendre en caisse.</p>
+                <p>Saisissez leur prix de vente dans le tableau : l’import est refusé tant qu’un produit commercial n’a pas de prix.</p>
               </div>
             )}
             <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
@@ -209,7 +209,8 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
                     <th className="text-left p-2">Article</th>
                     <th className="text-right p-2">Quantité</th>
                     <th className="text-left p-2">Unité</th>
-                    <th className="text-right p-2">Prix</th>
+                    <th className="text-right p-2">Coût</th>
+                    {purpose === 'commercial' && <th className="text-right p-2">Prix de vente</th>}
                     <th className="p-2">{progress === null ? 'Retirer' : 'Résultat'}</th>
                   </tr>
                 </thead>
@@ -220,6 +221,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
                       <td className="p-2 text-right">{progress === null ? <Input aria-label={`Quantité import ${i + 1}`} type="number" min="0" step="any" value={r.quantity} onChange={e => setRows(previous => previous.map((row, index) => index === i ? { ...row, quantity: Number(e.target.value) } : row))} /> : r.quantity}</td>
                       <td className="p-2">{r.unit}</td>
                       <td className="p-2 text-right">{progress === null ? <Input aria-label={`Coût import ${i + 1}`} type="number" min="0" step="any" value={r.cost ?? ''} onChange={e => setRows(previous => previous.map((row, index) => index === i ? { ...row, cost: Number(e.target.value) } : row))} /> : r.cost ?? '—'}</td>
+                      {purpose === 'commercial' && <td className="p-2 text-right">{progress === null ? <Input aria-label={`Prix de vente import ${i + 1}`} type="number" min="0" step="any" className={Number(r.sale_price) > 0 ? '' : 'border-destructive'} placeholder="Prix requis" value={r.sale_price || ''} onChange={e => setRows(previous => previous.map((row, index) => index === i ? { ...row, sale_price: Number(e.target.value) || 0 } : row))} /> : r.sale_price ?? '—'}</td>}
                       <td className="p-2">{progress === null ? <Button size="icon" variant="ghost" aria-label={`Retirer ${r.name} de l’import`} onClick={() => setRows(previous => previous.filter((_, index) => index !== i))}><Trash2 className="h-4 w-4" /></Button> : results[i] ? (results[i].success ? 'Ajouté au stock' : 'Non ajouté') : running ? 'En attente' : 'Non traité'}</td>
                     </tr>
                   ))}
@@ -227,7 +229,7 @@ const StockCsvImport: React.FC<{ unitId: string; onDone: () => void; onViewStock
               </table>
             </div>
             {progress === null ? (
-              <div className="flex flex-wrap gap-2"><Button disabled={running || !purpose || rows.some(row => !row.name.trim() || !Number.isFinite(row.quantity) || row.quantity < 0 || (row.cost !== undefined && (!Number.isFinite(row.cost) || row.cost < 0)))} onClick={runImport}>Lancer l'import ({rows.length} articles)</Button><Button variant="outline" disabled={running} onClick={cancelPreview}>Annuler l’import</Button></div>
+              <div className="flex flex-wrap gap-2"><Button disabled={running || !purpose || (purpose === 'commercial' && rows.some(row => !(Number(row.sale_price) > 0))) || rows.some(row => !row.name.trim() || !Number.isFinite(row.quantity) || row.quantity < 0 || (row.cost !== undefined && (!Number.isFinite(row.cost) || row.cost < 0)))} onClick={runImport}>Lancer l'import ({rows.length} articles)</Button><Button variant="outline" disabled={running} onClick={cancelPreview}>Annuler l’import</Button></div>
             ) : (
               <div className="space-y-1">
                 <Progress value={progress} />
