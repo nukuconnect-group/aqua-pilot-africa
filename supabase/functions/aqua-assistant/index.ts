@@ -235,6 +235,7 @@ const buildFarmContext = async (supabase: any, unitId?: string | null, unitName?
 
   const lines = [
     `DONNÉES RÉELLES ${unitName ? `DE L'UNITÉ « ${unitName} »` : 'DE TOUTES LES UNITÉS'} (au ${today}) :`,
+    `- Devise : tous les montants ci-dessous sont en F CFA.`,
     `- Unités : ${U.map((u: any) => `${u.name} [${u.type ?? '-'}]`).join(' ; ') || 'aucune'}`,
     `- Infrastructures (${I.length}) : ${I.slice(0, 25).map((i: any) => `${i.name} (${i.type ?? '-'}, ${i.status ?? '-'})`).join(' ; ') || 'aucune'}`,
     `- Lots : ${B.length} lot(s), ${totalFish} sujets, biomasse ${biomass.toFixed(1)} kg`,
