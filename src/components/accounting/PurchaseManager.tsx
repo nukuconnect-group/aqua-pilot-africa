@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Filter, Download, Edit, Trash2, Search, ShoppingCart, CheckCircle, Clock, XCircle, Package, DollarSign, FileText, UserPlus, CreditCard, AlertTriangle, CalendarClock } from 'lucide-react';
+import { Plus, Filter, Download, Edit, Trash2, Search, ShoppingCart, CheckCircle, Clock, XCircle, Package, DollarSign, FileText, UserPlus, CreditCard, AlertTriangle, CalendarClock, Banknote, Tag } from 'lucide-react';
 import { useLogs } from '@/contexts/LogsContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/hooks/use-toast';
@@ -1215,7 +1215,7 @@ const PurchaseManager = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <Label>Prix d'achat unitaire *</Label>
+                <Label className="flex items-center gap-1"><Banknote className="h-4 w-4" />Prix d'achat unitaire *</Label>
                 <Input
                   type="number"
                   min="0"
@@ -1250,20 +1250,24 @@ const PurchaseManager = () => {
                   placeholder="kg, L, unités..."
                 />
               </div>
-              {stockTarget.purpose === 'commercial' && (
-                <div>
-                  <Label>Prix de vente unitaire *</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={stockTarget.salePrice || ''}
-                    onChange={(e) => setStockTarget({ ...stockTarget, salePrice: parseFloat(e.target.value) || 0 })}
-                    placeholder="Prix proposé à la caisse"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Ce prix sera proposé à la caisse lors des ventes.</p>
-                </div>
-              )}
+              <div>
+                <Label className="flex items-center gap-1">
+                  <Tag className="h-4 w-4" />Prix de vente unitaire{stockTarget.purpose === 'commercial' ? ' *' : ''}
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={stockTarget.salePrice || ''}
+                  onChange={(e) => setStockTarget({ ...stockTarget, salePrice: parseFloat(e.target.value) || 0 })}
+                  placeholder="Prix proposé à la caisse"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stockTarget.purpose === 'commercial'
+                    ? 'Ce prix sera proposé à la caisse lors des ventes et enregistré avec le produit.'
+                    : 'Sert si le produit entre ensuite dans le stock commercial, pour le vendre à ce prix.'}
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
