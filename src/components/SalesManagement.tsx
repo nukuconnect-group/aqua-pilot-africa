@@ -900,7 +900,7 @@ const SalesManagement = () => {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {salesTab === 'overview' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -948,7 +948,7 @@ const SalesManagement = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div>}
 
       {/* Tabs pour les différentes fonctionnalités */}
       <Tabs value={salesTab} onValueChange={setSalesTab} className="space-y-3 sm:space-y-4">
