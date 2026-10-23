@@ -58,7 +58,7 @@ export const hasAssignedModule = (
 ): boolean => ALWAYS_OPEN_MODULES.includes(tabToModuleId(tabOrModuleId)) || hasAccessToModule(tabToModuleId(tabOrModuleId));
 
 /** Modules accessibles à tous les utilisateurs, quel que soit l'abonnement ou le rôle d'équipe. */
-export const ALWAYS_OPEN_MODULES = ['business-intelligence'];
+export const ALWAYS_OPEN_MODULES = ['business-intelligence', 'aqua-assistant'];
 
 export const sanitizeModulePermissions = (permissions: Record<string, boolean> = {}) =>
   APP_MODULE_PERMISSIONS.reduce<Record<string, boolean>>((acc, module) => {

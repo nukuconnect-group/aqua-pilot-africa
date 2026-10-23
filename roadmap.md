@@ -89,6 +89,7 @@
 - [ ] Tester les 12 scénarios avec un compte connecté (aucune session disponible ici)
 
 ## Icônes du 23/10/2026
+- [x] Ouvrir AquaAssistant sans restriction d’abonnement ni d’attribution d’équipe ; 26 tests réussis, ouverture/fermeture vérifiée depuis Ventes, Stock et Comptabilité en mode essai ; droits des données inchangés, réponse IA sur compte réel non vérifiable sans session
 - [x] Corriger la classe de fond inexistante d’AquaAssistant et Caisse ; icônes visibles et contrastées vérifiées en mode essai sur mobile et ordinateur, ouverture du chat avec module conservé ; 10 tests réussis
 - [x] Sortir le bouton AquaAssistant des contraintes d’affichage et le conserver indépendamment des restrictions de module, sans contourner les accès
 - [x] Contraster les icônes et boutons de caisse, éviter la compression des onglets ; compilation et 5 tests existants réussis
