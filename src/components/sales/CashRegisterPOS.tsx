@@ -19,6 +19,7 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
+import { postSaleToTreasury } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
@@ -254,6 +255,14 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         toast({ title: 'Vente encaissée, stock à corriger', description: 'La sortie de stock n’a pas pu être enregistrée. Corrigez la quantité dans Stock.', variant: 'destructive' });
       }
     }
+    try {
+      const sessionName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
+      const t = await postSaleToTreasury(activeUnit.id, sale, sessionName);
+      if (t.status === 'no_account') toast({ title: 'Trésorerie non alimentée', description: 'Créez dans Trésorerie un compte « Caisse de vente » portant le nom de cette caisse.', variant: 'destructive' });
+      else treasury.reload?.();
+    } catch (e: any) {
+      toast({ title: 'Vente encaissée, trésorerie à régulariser', description: e.message, variant: 'destructive' });
+    }
     toast({ title: 'Vente encaissée', description: `${formatCurrency(sale.totalAmount)} — ${sale.documentNumber || ''}` });
     setReceipt({
       number: sale.documentNumber || sale.id.slice(0, 8).toUpperCase(),
@@ -298,14 +307,10 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         const r = await cash.transferTo(transferTarget.slice(5), amount);
         if (r.error) throw new Error(r.error);
       } else {
-        const account = transferTarget.startsWith('treasury:') ? treasury.accounts.find((a) => a.id === transferTarget.slice(9)) : null;
-        const label = account ? `Transfert vers trésorerie ${account.name}` : `Transfert — remise à ${transferPerson.trim()}`;
-        const out = await cash.addMovement({ type: 'cash_out', amount, label });
+        // Remise au comptable / à une personne : simple historique, la trésorerie n'est pas créditée
+        // (les ventes y sont déjà inscrites au moment de l'encaissement).
+        const out = await cash.addMovement({ type: 'cash_out', amount, label: `Transfert — remise à ${transferPerson.trim()}` });
         if (out.error) throw new Error(out.error);
-        if (account) {
-          await treasury.recordMovement({ requestId: crypto.randomUUID(), kind: 'receipt', sourceId: '', destinationId: account.id, amount, date: new Date().toISOString().slice(0, 10), label: `Versement de la caisse ${cash.session?.name || ''}`.trim(), counterpart: '471' })
-            .catch((e) => { throw new Error(`Sortie de caisse enregistrée, mais le compte de trésorerie n’a pas été crédité : ${e.message}. Régularisez dans Trésorerie.`); });
-        }
       }
       setTransferAmount(''); setTransferTarget(''); setTransferPerson('');
       toast({ title: 'Transfert enregistré' });
