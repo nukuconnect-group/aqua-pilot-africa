@@ -14,8 +14,10 @@ import {
   Smartphone, Mail, Lock, Globe, Moon, Sun, HelpCircle, Trash2, RefreshCw, 
   FileText, Zap, Volume2, VolumeX, Clock, MapPin, CreditCard, Link2, LogOut,
   AlertTriangle, Check, X, Vibrate, Languages, Monitor, Accessibility, Wifi, WifiOff,
-  HardDrive, CheckCircle, Building2, Image, Loader2
+  HardDrive, CheckCircle, Building2, Image, Loader2,
+  Printer as PrinterIcon,
 } from 'lucide-react';
+import PeripheralsSettings from '@/components/settings/PeripheralsSettings';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -780,8 +782,14 @@ const SettingsManagement = () => {
               <Building2 className="w-4 h-4 mr-1" />
               Entreprise
             </TabsTrigger>
+            <TabsTrigger value="devices" className="text-xs px-2.5 py-2 data-[state=active]:bg-background whitespace-nowrap">
+              <PrinterIcon className="w-4 h-4 mr-1" />
+              Périphériques
+            </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="devices"><PeripheralsSettings /></TabsContent>
 
         {/* Onglet Entreprise */}
         <TabsContent value="company" className="space-y-4 sm:space-y-6">

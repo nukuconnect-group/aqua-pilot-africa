@@ -10,6 +10,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { buildEntries, trialBalance, incomeStatement, CHART, JOURNALS, JournalCode } from '@/lib/syscohada';
 import { useAccountingLedger } from '@/hooks/useAccountingLedger';
 import { ManualEntryForm, MarkingPanel, ClosingPanel } from './SyscohadaAdvanced';
+import AccountNumberSettings, { useAccountOverrides, remapAccount } from './AccountNumberSettings';
 
 const downloadCsv = (name: string, rows: (string | number)[][]) => {
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
@@ -29,6 +30,7 @@ const SyscohadaAccounting: React.FC = () => {
   const [journal, setJournal] = useState<JournalCode>('VT');
 
   const ledgerData = useAccountingLedger(activeUnit?.id);
+  const overrides = useAccountOverrides();
   const entries = useMemo(() => {
     const inRange = (d: string) => d >= from && d <= to;
     const u = activeUnit?.id;
@@ -36,8 +38,10 @@ const SyscohadaAccounting: React.FC = () => {
       sales.filter((s) => !u || s.unitId === u),
       (purchases as any[]).filter((p) => (!u || p.unitId === u) && inRange(p.date)),
       (transactions as any[]).filter((t) => (!u || t.unitId === u) && inRange(t.date)),
-    ).filter((e) => inRange(e.date)), ...ledgerData.manual.filter((e) => inRange(e.date))].sort((a, b) => a.date.localeCompare(b.date));
-  }, [sales, purchases, transactions, activeUnit?.id, from, to, ledgerData.manual]);
+    ).filter((e) => inRange(e.date)), ...ledgerData.manual.filter((e) => inRange(e.date))]
+      .map((e) => ({ ...e, lines: e.lines.map((l) => ({ ...l, account: remapAccount(l.account, overrides.map) })) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [sales, purchases, transactions, activeUnit?.id, from, to, ledgerData.manual, overrides.map]);
 
   const balance = useMemo(() => trialBalance(entries), [entries]);
   const cr = incomeStatement(balance);
@@ -145,9 +149,7 @@ const SyscohadaAccounting: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="plan">
-          <Card className="rounded-2xl"><CardContent className="p-3 grid sm:grid-cols-2 gap-x-6 text-sm">
-            {Object.entries(CHART).map(([k, v]) => <div key={k} className="flex gap-3 border-b border-border/50 py-1"><span className="font-mono w-12">{k}</span><span>{v}</span></div>)}
-          </CardContent></Card>
+          <AccountNumberSettings map={overrides.map} onSaved={overrides.reload} />
         </TabsContent>
       </Tabs>
     </div>

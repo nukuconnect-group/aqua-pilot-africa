@@ -34,3 +34,15 @@ describe('caisse à solde permanent', () => {
     expect(carriedOverBalance(h, 'Nouvelle')).toBeNull();
   });
 });
+
+import { latestClosedByName } from '../cashBalance';
+describe('solde cumulé des caisses', () => {
+  it('rouvre avec la dernière clôture (200 000) et non la première (100 000)', () => {
+    const h = [
+      { id: 'j1', name: 'KOMI', status: 'closed', opened_at: '2026-10-21T08:00:00Z', closed_at: '2026-10-21T18:00:00Z', counted_amount: 100000 },
+      { id: 'j2', name: 'KOMI', status: 'closed', opened_at: '2026-10-22T08:00:00Z', closed_at: '2026-10-22T18:00:00Z', counted_amount: 200000 },
+    ];
+    expect(latestClosedByName(h)[0].id).toBe('j2');
+    expect(latestClosedByName([...h].reverse())[0].counted_amount).toBe(200000);
+  });
+});

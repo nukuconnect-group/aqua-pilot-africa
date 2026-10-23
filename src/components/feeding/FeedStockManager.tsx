@@ -401,47 +401,36 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
       </AlertDialog>
       {error && <div role="alert" className="rounded-md border border-destructive/40 p-4 text-sm"><p>Impossible de charger les articles de cette unité.</p><Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Réessayer</Button></div>}
       {!error && stocks.length === 0 && <p className="text-sm text-muted-foreground">Aucun article enregistré dans cette unité.</p>}
-      {/* Carte récapitulative du stock */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Package className="w-4 h-4 text-primary" />
-              <span className="text-xs text-muted-foreground">Stock total</span>
-            </div>
-            <p className="break-words text-xl font-bold text-primary">{getTotalQuantity().toLocaleString('fr-FR')} kg</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingDown className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-muted-foreground">Valeur totale</span>
-            </div>
-            <p className="break-words text-xl font-bold text-green-600">{getTotalValue().toLocaleString('fr-FR')} F</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <BarChart3 className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-muted-foreground">Types {unitTerms.feedLabel.toLowerCase()}s</span>
-            </div>
-            <p className="break-words text-xl font-bold text-blue-600">{getTotalStocks()}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-900/20">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <AlertTriangle className="w-4 h-4 text-orange-600" />
-              <span className="text-xs text-muted-foreground">Coût moyen/kg</span>
-            </div>
-            <p className="break-words text-xl font-bold text-orange-600">{getAverageCost().toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</p>
-          </CardContent>
-        </Card>
+      {/* Récapitulatif séparé : stock de production (pour nourrir) et stock commercial (pour vendre) */}
+      <div className="grid gap-3 md:grid-cols-2">
+        {(['production', 'commercial'] as const).map((purpose) => {
+          const list = stocks.filter((s) => getStockPurpose(s) === purpose);
+          const value = list.reduce((t, s) => t + Number(s.quantity) * (Number(s.cost) || 0), 0);
+          const saleValue = list.reduce((t, s) => t + Number(s.quantity) * (Number((s as any).sale_price) || 0), 0);
+          const low = list.filter((s) => Number(s.quantity) <= Number(s.min_threshold ?? 0)).length;
+          const units = Array.from(new Set(list.map((s) => s.unit)));
+          const qty = list.reduce((t, s) => t + Number(s.quantity), 0);
+          const isProd = purpose === 'production';
+          return (
+            <Card key={purpose} className="border-border">
+              <CardContent className="p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Package className="h-4 w-4 text-primary" />
+                    {isProd ? 'Stock de production' : 'Stock commercial'}</span>
+                  <span className="text-xs text-muted-foreground">{isProd ? 'pour nourrir / produire' : 'pour vendre en caisse'}</span>
+                </div>
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm sm:grid-cols-4">
+                  <div><dt className="text-xs text-muted-foreground">Articles</dt><dd className="font-bold tabular-nums">{list.length}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Quantité</dt><dd className="font-bold tabular-nums">{qty.toLocaleString('fr-FR')} {units.length === 1 ? units[0] : 'unités mixtes'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">{isProd ? 'Valeur (coût)' : 'Valeur d’achat'}</dt><dd className="font-bold tabular-nums">{value.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</dd></div>
+                  {isProd
+                    ? <div><dt className="text-xs text-muted-foreground">Sous le seuil</dt><dd className={`font-bold tabular-nums ${low ? 'text-destructive' : ''}`}>{low}</dd></div>
+                    : <div><dt className="text-xs text-muted-foreground">Valeur de vente</dt><dd className="font-bold tabular-nums">{saleValue.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} F</dd></div>}
+                </dl>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
       
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-4 items-start">

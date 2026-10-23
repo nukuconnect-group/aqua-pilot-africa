@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { useToast } from '@/hooks/use-toast';
+import { getStockPurpose } from '@/lib/stockPurpose';
 
 export const applyMovement = (current: number, type: 'in' | 'out' | 'adjust', qty: number) =>
   type === 'in' ? current + qty : type === 'out' ? current - qty : qty;
@@ -56,6 +57,7 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
   };
 
   const name = (id: string) => { const s = stocks.find((x) => x.id === id); return s ? (s.custom_name || s.feed_type) : 'Produit supprimé'; };
+  const purposeOf = (id: string) => { const s = stocks.find((x) => x.id === id); return s ? (getStockPurpose(s) === 'commercial' ? 'Commercial' : 'Production') : '—'; };
   const unitOf = (id: string) => stocks.find((x) => x.id === id)?.unit || '';
   const signed = (r: Mv) => r.type === 'in' ? `+${fmtNum(r.quantity)}` : r.type === 'out' ? `−${fmtNum(r.quantity)}` : `=${fmtNum(r.quantity)}`;
 
@@ -68,7 +70,7 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
         <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_auto]">
           <select aria-label="Produit du mouvement" className="min-w-0 w-full border border-input bg-background rounded-md h-10 px-2 text-sm" value={stockId} onChange={(e) => setStockId(e.target.value)}>
             <option value="">Produit…</option>
-            {stocks.map((s) => <option key={s.id} value={s.id}>{s.custom_name || s.feed_type} ({s.quantity} {s.unit})</option>)}
+            {stocks.map((s) => <option key={s.id} value={s.id}>{s.custom_name || s.feed_type} — {getStockPurpose(s) === 'commercial' ? 'commercial' : 'production'} ({s.quantity} {s.unit})</option>)}
           </select>
           <select aria-label="Type de mouvement" className="min-w-0 w-full border border-input bg-background rounded-md h-10 px-2 text-sm" value={type} onChange={(e) => setType(e.target.value as any)}>
             <option value="in">Entrée</option><option value="out">Sortie</option><option value="adjust">Inventaire (quantité comptée)</option>
@@ -80,11 +82,12 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
         {rows.length === 0 ? <p className="text-sm text-muted-foreground">Aucun mouvement enregistré.</p> : (<>
           <div className="hidden md:block max-h-[560px] overflow-auto rounded-md border border-border">
             <table className="w-full table-fixed text-sm">
-              <colgroup><col className="w-[150px]" /><col /><col className="w-[110px]" /><col className="w-[110px]" /><col className="w-[120px]" /><col className="w-[28%]" /></colgroup>
+              <colgroup><col className="w-[150px]" /><col /><col className="w-[110px]" /><col className="w-[110px]" /><col className="w-[110px]" /><col className="w-[120px]" /><col className="w-[28%]" /></colgroup>
               <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2.5 text-left font-medium">Date</th>
                   <th className="px-3 py-2.5 text-left font-medium">Produit</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Stock</th>
                   <th className="px-3 py-2.5 text-left font-medium">Type</th>
                   <th className="px-3 py-2.5 text-right font-medium">Quantité</th>
                   <th className="px-3 py-2.5 text-right font-medium">Stock après</th>
@@ -95,6 +98,7 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
                 <tr key={r.id} className="hover:bg-muted/40">
                   <td className="px-3 py-2.5 whitespace-nowrap tabular-nums text-muted-foreground">{fmtDate(r.created_at)}</td>
                   <td className="px-3 py-2.5 truncate font-medium" title={name(r.stock_id)}>{name(r.stock_id)}</td>
+                  <td className="px-3 py-2.5 text-xs text-muted-foreground">{purposeOf(r.stock_id)}</td>
                   <td className="px-3 py-2.5"><TypeBadge type={r.type} /></td>
                   <td className={`px-3 py-2.5 text-right tabular-nums font-semibold ${QTY_TONE[r.type]}`}>{signed(r)} <span className="font-normal text-muted-foreground">{unitOf(r.stock_id)}</span></td>
                   <td className="px-3 py-2.5 text-right tabular-nums">{fmtNum(r.quantity_after)} <span className="text-muted-foreground">{unitOf(r.stock_id)}</span></td>
@@ -106,7 +110,7 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
           <ul className="md:hidden divide-y divide-border rounded-md border border-border">{rows.map((r) => (
             <li key={r.id} className="p-3 space-y-1.5">
               <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 truncate font-medium">{name(r.stock_id)}</span>
+                <span className="min-w-0 truncate font-medium">{name(r.stock_id)} <span className="text-xs font-normal text-muted-foreground">· Stock {purposeOf(r.stock_id).toLowerCase()}</span></span>
                 <TypeBadge type={r.type} />
               </div>
               <div className="flex items-center justify-between text-sm tabular-nums">

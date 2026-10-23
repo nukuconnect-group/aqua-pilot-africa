@@ -8,7 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle, RotateCcw, Boxes, MoreHorizontal, KeyRound } from 'lucide-react';
 import { useTreasury } from '@/hooks/useTreasury';
 import CashDiscrepancies from './CashDiscrepancies';
-import { summarizeSession, carriedOverBalance, cashDifference } from '@/lib/cashBalance';
+import { summarizeSession, carriedOverBalance, cashDifference, latestClosedByName } from '@/lib/cashBalance';
+import { readDevicePrefs, receiptPageCss, createWedgeReader, scanChannelName } from '@/lib/devicePrefs';
 import { supabase as appSupabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -292,12 +293,41 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
 
   const printReceipt = () => {
     const html = receiptRef.current?.outerHTML;
-    if (!receipt || !html) return;
-    const w = window.open('', '_blank', 'width=320,height=640');
+    if (!html) return;
+    const fmt = readDevicePrefs().receiptFormat;
+    const w = window.open('', '_blank', fmt === 'A4' ? 'width=800,height=900' : 'width=340,height=640');
     if (!w) return;
-    w.document.write(`<html><head><title>Reçu ${receipt.number}</title><style>${RECEIPT_PRINT_CSS}</style></head><body>${html}</body></html>`);
+    w.document.write(`<html><head><title>Reçu</title><style>${RECEIPT_PRINT_CSS}${receiptPageCss(fmt)}</style></head><body>${html}</body></html>`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
+
+  // Impression automatique du reçu si l'appareil est réglé ainsi.
+  useEffect(() => {
+    if (receipt && readDevicePrefs().autoPrint) { const t = setTimeout(printReceipt, 400); return () => clearTimeout(t); }
+  }, [receipt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lecteur USB/Bluetooth (saisie clavier rapide + Entrée) et scans envoyés depuis un téléphone.
+  const scanRef = useRef(handleScan); scanRef.current = handleScan;
+  useEffect(() => {
+    const prefs = readDevicePrefs();
+    const read = createWedgeReader();
+    const onKey = (e: KeyboardEvent) => {
+      if (!prefs.hardwareScanner) return;
+      const code = read(e.key, e.timeStamp);
+      if (code) { e.preventDefault(); scanRef.current(code); }
+    };
+    window.addEventListener('keydown', onKey);
+    let channel: any;
+    if (prefs.remoteScanner) {
+      appSupabase.auth.getUser().then(({ data }) => {
+        if (!data.user) return;
+        channel = appSupabase.channel(scanChannelName(data.user.id))
+          .on('broadcast', { event: 'scan' }, ({ payload }: any) => payload?.code && scanRef.current(String(payload.code)))
+          .subscribe();
+      });
+    }
+    return () => { window.removeEventListener('keydown', onKey); if (channel) appSupabase.removeChannel(channel); };
+  }, []);
 
   const handleQuick = (input?: string) => {
     const { lines, client: c } = parseQuickSale(input ?? quick, catalog);
@@ -482,7 +512,8 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const carried = carriedOverBalance(cash.history, registerName);
   const openNames = new Set(cash.sessions.map((x) => (x.name || '').trim().toLowerCase()));
   const disabledNames = new Set(cash.history.filter((h) => (h as any).notes === 'caisse désactivée').map((h) => (h.name || '').trim().toLowerCase()));
-  const closedRegisters = Array.from(new Map(cash.history.filter((h) => h.name && !openNames.has(h.name.trim().toLowerCase()) && !disabledNames.has(h.name.trim().toLowerCase())).map((h) => [h.name!.trim().toLowerCase(), h])).values());
+  // Une ligne par caisse : sa DERNIÈRE clôture, dont le solde compté cumule toutes les journées précédentes.
+  const closedRegisters = latestClosedByName(cash.history.filter((h) => h.name && !openNames.has(h.name.trim().toLowerCase()) && !disabledNames.has(h.name.trim().toLowerCase())));
   const reopen = async (h: { id: string; name?: string | null }) => {
     setBusy(true);
     try {

@@ -109,3 +109,8 @@
 - [ ] Étape 2 : données de l’unité gardées sur l’appareil, consultables hors ligne
 - [ ] Étape 3 : ventes, achats et stock enregistrés hors ligne puis envoyés au retour d’internet
 - [ ] Limite : la toute première connexion à un compte exige internet
+
+## Stock commercial / production (demandé)
+- [x] Tableau de bord stock : totaux et valeurs séparés commercial / production
+- [x] Mouvements : préciser commercial ou production
+- [x] Écritures : préciser le type de stock ; aliments consommés = charge (coût × quantité)
