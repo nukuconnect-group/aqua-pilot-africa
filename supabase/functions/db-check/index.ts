@@ -1,7 +1,6 @@
 import postgres from "npm:postgres@3.4.4";
 
-const schema = await Deno.readTextFile(new URL("./schema.sql", import.meta.url));
-const grants = await Deno.readTextFile(new URL("./grants.sql", import.meta.url));
+import { schema, grants } from "./sql.ts";
 
 Deno.serve(async () => {
   const sql = postgres(Deno.env.get("AQUAPILOTE_DB_URL") ?? "", { max: 1, prepare: false, connect_timeout: 10 });
