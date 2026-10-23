@@ -45,7 +45,7 @@ const checkoutRecovery = (error: unknown, saleRecorded: boolean) => {
 export const parseQuickSale = (text: string, catalog: { name: string; price: number }[]) => {
   const lines: CartLine[] = [];
   let client = '';
-  const m = text.match(/\b(?:à|a|pour|client)\s+([^,]+)$/i);
+  const m = text.match(/(?:^|\s)(?:à|a|pour|client)\s+([^,\d]+)$/i);
   let body = text;
   if (m) { client = m[1].trim(); body = text.slice(0, m.index); }
   body.split(/,|\bet\b|\+/i).forEach((chunk) => {
@@ -62,7 +62,7 @@ export const parseQuickSale = (text: string, catalog: { name: string; price: num
 const CashRegisterPOS: React.FC = () => {
   const { toast } = useToast();
   const { formatCurrency } = useSettings();
-  const { activeUnit, units, setActiveUnit } = useProductionUnits();
+  const { activeUnit, units = [], setActiveUnit } = useProductionUnits();
   const { sales, addSale } = useSales();
   const { user } = useAuth();
   const unitOwner = (activeUnit as any)?.userId || (activeUnit as any)?.user_id;
