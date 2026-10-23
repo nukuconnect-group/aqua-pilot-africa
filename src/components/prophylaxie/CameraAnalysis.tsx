@@ -13,7 +13,9 @@ import {
   AlertCircle,
   X,
   Scan,
+  FileDown,
 } from 'lucide-react';
+import { buildHealthReportPdf, shareOrDownloadPdf } from '@/lib/healthReportPdf';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -162,8 +164,43 @@ export const analyzeWithAI = async (payload: {
   return data as VisionResult;
 };
 
-const CameraAnalysis = () => {
+const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
   const { activeUnit } = useProductionUnits();
+  const saveToHistory = async (res: VisionResult) => {
+    try {
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s?.session?.user.id;
+      if (!uid) return;
+      const top = res.diseases[0];
+      const { error } = await supabase.from('aqua_diagnoses').insert({
+        user_id: uid,
+        unit_id: activeUnit?.id ?? null,
+        selected_symptoms: [],
+        other_symptoms: `Analyse photo${res.species ? ` — ${res.species}` : ''}`,
+        results: { source: 'photo', species: res.species ?? null, observations: res.observations ?? [], recommendations: res.recommendations ?? [], diseases: res.diseases } as any,
+        risk_level: top?.severity ?? null,
+        notes: top?.name ?? null,
+      } as any);
+      if (error) throw error;
+      onSaved?.();
+    } catch {
+      toast({ title: 'Analyse non enregistrée dans l’historique', description: 'Le résultat reste affiché et peut être exporté.', variant: 'destructive' });
+    }
+  };
+  const exportPdf = () => {
+    if (!result) return;
+    const blob = buildHealthReportPdf({
+      title: 'Rapport d’analyse photo — AquaHealth AI',
+      date: new Date(),
+      unitName: activeUnit?.name ?? 'Toutes les unités',
+      species: result.species,
+      subject: result.subject,
+      observations: result.observations,
+      diseases: result.diseases.map((d: any) => ({ name: d.name, level: d.severity, confidence: d.confidence })),
+      recommendations: result.recommendations,
+    });
+    shareOrDownloadPdf(blob, `analyse-photo-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
   const isAlgae = isAlgaeUnitType(activeUnit?.type);
   const unitTerms = getUnitTerms(activeUnit?.type);
   const { toast } = useToast();
@@ -218,7 +255,10 @@ const CameraAnalysis = () => {
       const res = await analyzeWithAI({ mode: 'image', domain: 'fish', imageBase64, species: species.trim() || undefined });
       if (version !== requestVersion.current) return;
       setResult(res);
-      if (res.analysisAllowed !== false) toast({ title: 'Analyse terminée', description: `${res.diseases.length} hypothèse(s) évaluée(s).` });
+      if (res.analysisAllowed !== false) {
+        toast({ title: 'Analyse terminée', description: `${res.diseases.length} hypothèse(s) évaluée(s).` });
+        await saveToHistory(res);
+      }
     } catch (e: any) {
       if (version === requestVersion.current) setAnalysisError(e?.message ?? 'L’analyse est indisponible pour le moment.');
     } finally {
@@ -289,6 +329,11 @@ const CameraAnalysis = () => {
 
       {analysisError && <p role="alert" className="text-sm text-destructive">{analysisError}</p>}
       {result && <VisionResultView result={result} />}
+      {result && result.analysisAllowed !== false && (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={exportPdf}><FileDown className="w-4 h-4 mr-2" />Exporter en PDF</Button>
+        </div>
+      )}
     </div>
   );
 };
