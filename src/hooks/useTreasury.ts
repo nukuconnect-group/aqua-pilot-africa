@@ -7,6 +7,7 @@ export function useTreasury(unitId?: string) {
   const [state, setState] = useState<{ unitId?: string; accounts: TreasuryAccount[]; movements: TreasuryMovement[] }>({ accounts: [], movements: [] });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [otherAccounts, setOtherAccounts] = useState<TreasuryAccount[]>([]);
   const accounts = state.unitId === unitId ? state.accounts : [];
   const movements = state.unitId === unitId ? state.movements : [];
   const load = useCallback(async () => {
@@ -20,6 +21,8 @@ export function useTreasury(unitId?: string) {
     setError(failure ? 'Impossible de charger la trésorerie pour le moment. Réessayez dans un instant.' : null);
     setState({ unitId, accounts: (a.data || []).filter((x: any) => !x.archived_at), movements: (m.data || []).map((r: TreasuryMovement) => ({ ...r, amount: Number(r.amount) })) });
     setLoading(false);
+    const o = await db.from('treasury_accounts').select('*').neq('unit_id', unitId).order('name');
+    setOtherAccounts((o.data || []).filter((x: any) => !x.archived_at));
   }, [unitId]);
   useEffect(() => { load(); }, [load]);
   const createAccount = async (input: { unitId?: string; name: string; kind: 'cash' | 'bank'; code: string; currency: string; opening: number; counterpart: string; date: string }) => {
@@ -61,5 +64,13 @@ export function useTreasury(unitId?: string) {
     if (error) throw new Error(error.message);
     await load();
   };
-  return { accounts, movements, error, loading, createAccount, archiveAccount, reattachAccount, recordMovement, reload: load };
+  /** Transfert vers un compte d'une autre unité : deux écritures atomiques via le compte de liaison 185. */
+  const transferBetweenUnits = async (input: { requestId: string; sourceId: string; destinationId: string; amount: number; date: string; label: string }) => {
+    if (!input.label.trim()) throw new Error('Libellé obligatoire.');
+    if (input.amount > accountBalance(input.sourceId, movements)) throw new Error('Solde insuffisant sur le compte source.');
+    const { error } = await db.rpc('transfer_between_units', { _request_id: input.requestId, _source_id: input.sourceId, _destination_id: input.destinationId, _amount: input.amount, _date: input.date, _label: input.label.trim() });
+    if (error) throw new Error(error.message);
+    await load();
+  };
+  return { otherAccounts, transferBetweenUnits, accounts, movements, error, loading, createAccount, archiveAccount, reattachAccount, recordMovement, reload: load };
 }
