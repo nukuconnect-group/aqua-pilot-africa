@@ -81,9 +81,9 @@
 - [x] Panier visible sur ordinateur, bouton panier sur téléphone
 - [ ] Transfert caisse → trésorerie atomique avec écriture comptable (fonction serveur à installer sur la base de l'application)
 - [ ] Écriture comptable serveur à chaque vente (pos_post_sale), sans doublon
-- [ ] Conditionnements (pièce / pack / carton) dans le stock et la caisse
+- [x] Conditionnements unité / pack / carton dans le panier (stock déduit en unités)
 - [x] Tableau de suivi des écarts avec mesures correctives (Gestion des caisses)
 - [x] Ventes du jour + comptage des espèces avec notification d'écart
 - [x] Transfert total ou partiel : autre caisse, compte de trésorerie, remise à une personne
-- [ ] Activation/désactivation des caisses
+- [x] Désactivation des caisses fermées
 - [ ] Tester les 12 scénarios avec un compte connecté (aucune session disponible ici)
