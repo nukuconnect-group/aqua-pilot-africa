@@ -4,7 +4,7 @@ import { getStockPurpose } from '@/lib/stockPurpose';
 /**
  * Déduit la quantité distribuée du stock correspondant, enregistre la sortie
  * dans l'historique des mouvements et crée l'écriture comptable de la sortie
- * (débit 602 achats d'aliments / crédit 321 stock d'aliments) quand le coût
+ * (débit 6032 variation des stocks de matières / crédit 321 stock de production) : la consommation devient une charge sans redoubler l'achat quand le coût
  * de l'article est connu.
  */
 export async function deductFeedStock(unitId: string, feedType: string, qty: number, reason: string, stockId?: string) {
@@ -33,9 +33,9 @@ export async function deductFeedStock(unitId: string, feedType: string, qty: num
       unit_id: unitId,
       date: new Date().toISOString().split('T')[0],
       journal: 'OD',
-      label: `Sortie de stock — ${s.custom_name || s.feed_type} (${reason})`,
+      label: `Consommation stock de production — ${s.custom_name || s.feed_type} · ${qty} ${s.unit} × ${unitCost} (${reason})`,
       lines: [
-        { account: '602', debit: amount, credit: 0 },
+        { account: '6032', debit: amount, credit: 0 },
         { account: '321', debit: 0, credit: amount },
       ],
     });

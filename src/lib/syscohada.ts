@@ -8,6 +8,7 @@ export const CHART: Record<string, string> = {
   '401': 'Fournisseurs', '411': 'Clients', '421': 'Personnel, rémunérations dues',
   '521': 'Banques', '5212': 'Mobile Money', '571': 'Caisse',
   '601': 'Achats de marchandises', '602': 'Achats de matières premières (alevins, aliments)',
+  '6031': 'Variation des stocks de marchandises', '6032': 'Variation des stocks de matières premières (consommation)',
   '604': 'Achats stockés de matières et fournitures', '605': 'Autres achats (eau, énergie, carburant)',
   '622': 'Locations et charges locatives', '624': 'Entretien, réparations et maintenance',
   '627': 'Publicité', '628': 'Frais de télécommunications', '631': 'Frais bancaires',
