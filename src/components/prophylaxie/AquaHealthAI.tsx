@@ -59,11 +59,11 @@ const AquaHealthAI: React.FC = () => {
   };
 
 
-  const exportHistory = (h: any) => {
+  const exportHistory = async (h: any) => {
     const r = h.results;
     const isPhoto = r && !Array.isArray(r) && r.source === 'photo';
     const nameOf = (id: string) => symptoms.find(s => s.id === id)?.label ?? id;
-    const blob = buildHealthReportPdf({
+    const blob = await buildHealthReportPdf({
       title: isPhoto ? 'Rapport d’analyse photo — AquaHealth AI' : 'Rapport de diagnostic — AquaHealth AI',
       date: new Date(h.created_at),
       unitName: unitName(h.unit_id),
