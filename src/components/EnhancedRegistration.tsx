@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Fish, Loader2, User as UserIcon, Mail, Phone, MapPin, Building2, KeyRound, Factory, Radio, ChevronsUpDown, Check, MailCheck, ShieldAlert, Egg, Store, Scissors, Snowflake, Leaf, Wheat } from 'lucide-react';
+import { Eye, EyeOff, Fish, Loader2, User as UserIcon, Mail, Phone, MapPin, Building2, KeyRound, Factory, Radio, ChevronsUpDown, Check, MailCheck, ShieldAlert, Egg, Store, Scissors, Snowflake, Leaf, Wheat, ChevronLeft, ChevronRight, Sparkles, Star, Rocket, Crown, Handshake, Layers } from 'lucide-react';
 import { SIGNUP_UNIT_OPTIONS } from '@/lib/signupUnits';
 
 const UNIT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -26,6 +26,21 @@ import registerBgAsset from '@/assets/aquapilote-register-bg-v2.png.asset.json';
 import loginBgAsset from '@/assets/aquapilote-login-bg-v2.png.asset.json';
 import fishColumnsMobile from '@/assets/fish-columns-mobile.jpg';
 import { ALL_COUNTRIES } from '@/lib/allCountries';
+
+const STEPS = [
+  { title: 'Compte', icon: UserIcon, heading: 'Vos informations', desc: 'Identité, contact et mot de passe sécurisé.' },
+  { title: 'Exploitation', icon: Building2, heading: 'Votre exploitation', desc: 'Nom, adresse et taille de votre ferme.' },
+  { title: 'Unités', icon: Layers, heading: 'Vos unités de production', desc: 'Choisissez ce que vous voulez gérer : seuls ces espaces seront affichés.' },
+  { title: 'Abonnement', icon: Crown, heading: 'Votre abonnement', desc: 'Commencez gratuitement pendant 1 mois, puis choisissez l’offre adaptée.' },
+];
+
+const SIGNUP_PLANS = [
+  { id: 'trial_discovery', name: 'Essai gratuit — 1 mois', desc: 'Accès complet pendant 30 jours, sans paiement.', price: '0 F CFA', period: '30 jours', icon: Sparkles, badge: 'Pour commencer', features: ['Tous les modules de vos unités', 'Aucune carte bancaire', 'Changement d’offre à tout moment'] },
+  { id: 'annual_basic', name: 'Semi-exploitation', desc: 'Petites et moyennes exploitations.', price: '60 000 F CFA', period: '/ an', icon: Star, features: ['Modules principaux', 'Rapports PDF et Excel', 'Support prioritaire'] },
+  { id: 'annual_pro', name: 'Semi-industriel', desc: 'Production organisée à échelle moyenne.', price: '120 000 F CFA', period: '/ an', icon: Rocket, badge: 'Le plus choisi', features: ['Tout Semi-exploitation', 'Multi-unités et équipe', 'Analyse IA des maladies'] },
+  { id: 'annual_enterprise', name: 'Industriel', desc: 'Grandes productions intensives.', price: 'Sur devis', period: '', icon: Crown, features: ['Tous les modules', 'Formation sur site', 'Interlocuteur dédié'] },
+  { id: 'custom', name: 'Sur mesure', desc: 'Besoins spécifiques : contactez-nous.', price: 'Nous contacter', period: '', icon: Handshake, features: ['Modules et intégrations adaptés', 'Accompagnement personnalisé'] },
+];
 
 interface EnhancedRegistrationProps {
   onClose: () => void;
@@ -111,7 +126,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
   onSwitchToLogin,
   selectedPlan = null
 }) => {
-  const [chosenPlan, setChosenPlan] = useState<string>(selectedPlan || 'standard');
+  const [chosenPlan, setChosenPlan] = useState<string>(selectedPlan || 'trial_discovery');
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -246,24 +261,32 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
   };
 
 
-  const getFormErrors = (): string[] => {
+  const getFormErrors = (upTo = 4): string[] => {
     const errors: string[] = [];
-    if (formData.lastName.trim().length < 2) errors.push('Saisissez votre nom (2 caractères minimum).');
-    if (formData.firstName.trim().length < 2) errors.push('Saisissez votre prénom (2 caractères minimum).');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) errors.push('Saisissez une adresse e-mail valide.');
-    if (formData.phone.trim().length < 4) errors.push('Saisissez votre numéro de téléphone.');
-    if (!formData.countryCode) errors.push('Sélectionnez votre pays.');
-    if (formData.companyName.trim().length < 2) errors.push('Saisissez le nom de votre ferme.');
-    if (formData.location.trim().length < 2) errors.push("Saisissez l'adresse de votre ferme.");
-    if (formData.password.length < 8) errors.push('Le mot de passe doit contenir au moins 8 caractères.');
-    if (!/[A-Z]/.test(formData.password)) errors.push('Le mot de passe doit contenir une majuscule.');
-    if (!/[a-z]/.test(formData.password)) errors.push('Le mot de passe doit contenir une minuscule.');
-    if (!/[0-9]/.test(formData.password)) errors.push('Le mot de passe doit contenir un chiffre.');
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) errors.push('Le mot de passe doit contenir un caractère spécial.');
-    if (formData.password !== formData.confirmPassword) errors.push('Les deux mots de passe ne correspondent pas.');
-    if (formData.productionUnits.length === 0) errors.push('Choisissez au moins une unité à gérer.');
-    if (!formData.exploitationType) errors.push("Sélectionnez un type d'exploitation.");
+    const step1: string[] = []; const step2: string[] = []; const step3: string[] = [];
+    if (formData.lastName.trim().length < 2) step1.push('Saisissez votre nom (2 caractères minimum).');
+    if (formData.firstName.trim().length < 2) step1.push('Saisissez votre prénom (2 caractères minimum).');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) step1.push('Saisissez une adresse e-mail valide.');
+    if (formData.phone.trim().length < 4) step1.push('Saisissez votre numéro de téléphone.');
+    if (!formData.countryCode) step1.push('Sélectionnez votre pays.');
+    if (formData.companyName.trim().length < 2) step2.push('Saisissez le nom de votre ferme.');
+    if (formData.location.trim().length < 2) step2.push("Saisissez l'adresse de votre ferme.");
+    if (formData.password.length < 8) step1.push('Le mot de passe doit contenir au moins 8 caractères.');
+    if (!/[A-Z]/.test(formData.password)) step1.push('Le mot de passe doit contenir une majuscule.');
+    if (!/[a-z]/.test(formData.password)) step1.push('Le mot de passe doit contenir une minuscule.');
+    if (!/[0-9]/.test(formData.password)) step1.push('Le mot de passe doit contenir un chiffre.');
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) step1.push('Le mot de passe doit contenir un caractère spécial.');
+    if (formData.password !== formData.confirmPassword) step1.push('Les deux mots de passe ne correspondent pas.');
+    if (formData.productionUnits.length === 0) step3.push('Choisissez au moins une unité à gérer.');
+    if (!formData.exploitationType) step2.push("Sélectionnez un type d'exploitation.");
+    errors.push(...step1); if (upTo >= 2) errors.push(...step2); if (upTo >= 3) errors.push(...step3);
     return errors;
+  };
+
+  const goNext = () => {
+    const errs = getFormErrors(currentStep);
+    if (errs.length) { setFormErrors(errs); return; }
+    setFormErrors([]); setCurrentStep((s) => Math.min(4, s + 1));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
