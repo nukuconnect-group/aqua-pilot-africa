@@ -188,7 +188,7 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
     }
     setActiveSessionId(null);
     await load();
-    return {};
+    return { difference: diff };
   };
 
   return {
