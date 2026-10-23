@@ -20,7 +20,8 @@ import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
 import { postSaleToTreasury, hasRegisterAccount } from '@/lib/posTreasury';
-import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
+import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
+import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -74,7 +75,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const unitOwner = (activeUnit as any)?.userId || (activeUnit as any)?.user_id;
   const isAdmin = !unitOwner || unitOwner === user?.id;
   const cash = useCashSession(activeUnit?.id, unitOwner);
-  const { stocks, refetch: refetchStocks } = useFeedStocks(activeUnit?.id);
+  const { stocks, refetch: refetchStocks, updateStock } = useFeedStocks(activeUnit?.id);
   const [opening, setOpening] = useState('');
   const [counted, setCounted] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -133,6 +134,20 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   }, [activeUnit?.id]);
 
   const catalog = useMemo(() => activeUnit?.id ? buildPosCatalog(activeUnit.id, sales, stocks) : [], [activeUnit?.id, sales, stocks]);
+  const productImages = useProductImages(useMemo(() => catalog.map(p => p.name), [catalog]));
+  const [pick, setPick] = useState<{ product: PosProduct; price: string; qty: string; save: boolean } | null>(null);
+  const openPick = (p: PosProduct) => setPick({ product: p, price: p.price > 0 ? String(p.price) : '', qty: '1', save: true });
+  const confirmPick = async () => {
+    if (!pick) return;
+    const price = Number(pick.price); const qty = Number(pick.qty);
+    if (!(price > 0) || !(qty > 0)) return toast({ title: 'Prix et quantité requis', variant: 'destructive' });
+    addToCart(pick.product.name, price, qty);
+    if (pick.save && price !== pick.product.price) {
+      const ids = new Set(stocks.map(s => s.id));
+      for (const id of pick.product.codes.filter(c => ids.has(c))) await updateStock(id, { sale_price: price } as any);
+    }
+    setPick(null);
+  };
 
   const filtered = catalog.filter((p) => normalizeProductSearch(p.name).includes(normalizeProductSearch(search)) || p.codes.some(c => c.toLowerCase() === search.trim().toLowerCase()));
   const total = calculatePosTotal(cart);
