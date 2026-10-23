@@ -300,6 +300,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   };
 
   const filteredStocks = stocks.filter((stock) => {
+    if (purposeFilter !== 'all' && getStockPurpose(stock) !== purposeFilter) return false;
     const query = stockSearch.trim().toLowerCase();
     if (!query) return true;
     return [stock.custom_name, stock.feed_type, stock.supplier, stock.notes]
@@ -808,6 +809,13 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         </TabsList>
         
         <TabsContent value="stocks" className="space-y-4">
+          <div className="inline-flex rounded-lg border border-border p-1 gap-1" role="group" aria-label="Type de stock">
+            {([['all', 'Tous'], ['production', 'Stock de production'], ['commercial', 'Stock commercial']] as const).map(([v, l]) => (
+              <Button key={v} size="sm" variant={purposeFilter === v ? 'default' : 'ghost'} onClick={() => setPurposeFilter(v)}>
+                {l} ({v === 'all' ? stocks.length : stocks.filter(s => getStockPurpose(s) === v).length})
+              </Button>
+            ))}
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm"><Checkbox aria-label="Sélectionner tous les articles affichés" disabled={!filteredStocks.length || deleting} checked={filteredStocks.length > 0 && filteredStocks.every(stock => selectedIds.includes(stock.id))} onCheckedChange={checked => setSelectedIds(ids => checked ? [...new Set([...ids, ...filteredStocks.map(stock => stock.id)])] : ids.filter(id => !filteredStocks.some(stock => stock.id === id)))} />Tout sélectionner{stockSearch ? ' (résultats)' : ''}</label>
             <span className="text-sm text-muted-foreground">{selectedIds.length} sélectionné(s)</span>
