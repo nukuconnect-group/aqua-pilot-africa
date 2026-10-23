@@ -121,32 +121,9 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
-      manifest: {
-        name: 'Aqua Pilot - Gestion Piscicole Intelligente',
-        short_name: 'Aqua Pilot',
-        description: 'Application de gestion piscicole intelligente avec fonctionnement hors ligne',
-        theme_color: '#047857',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
-        icons: [
-          {
-            src: '/favicon.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/favicon.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      },
+      // Le manifeste unique reste public/manifest.json (déjà lié dans index.html).
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ].filter(Boolean),
