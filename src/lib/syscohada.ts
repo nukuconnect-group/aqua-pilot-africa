@@ -57,6 +57,7 @@ export const treasuryAccount = (method?: string) => {
 
 export const expenseAccount = (category?: string) => {
   const c = (category || '').toLowerCase();
+  if (/marchandise|commercial|revente|produit fini/.test(c)) return '601';
   if (/alevin|aliment|provende|semence|intrant|nutriment/.test(c)) return '602';
   if (/salaire|personnel|paie|rh/.test(c)) return '661';
   if (/social|cnss/.test(c)) return '664';
@@ -87,7 +88,7 @@ export function buildEntries(sales: SaleIn[], purchases: PurchaseIn[], transacti
     if (!(status === 'confirmed' || status === 'paid' || status === 'delivered') || !(s.totalAmount > 0)) continue;
     const start = out.length;
     out.push({ id: `vt-${s.id}`, date: s.date, journal: 'VT', label: `Vente ${s.clientName}`, ref: s.documentNumber,
-      lines: [{ account: '411', debit: s.totalAmount, credit: 0 }, { account: '702', debit: 0, credit: s.totalAmount }] });
+      lines: [{ account: '411', debit: s.totalAmount, credit: 0 }, { account: '701', debit: 0, credit: s.totalAmount }] });
     const paid = status === 'paid' ? s.totalAmount : s.isCredit ? (s.paidAmount || 0) : s.totalAmount;
     if (paid > 0) {
       const t = treasuryAccount(s.paymentMethod);
