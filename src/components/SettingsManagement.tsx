@@ -14,7 +14,7 @@ import {
   Smartphone, Mail, Lock, Globe, Moon, Sun, HelpCircle, Trash2, RefreshCw, 
   FileText, Zap, Volume2, VolumeX, Clock, MapPin, CreditCard, Link2, LogOut,
   AlertTriangle, Check, X, Vibrate, Languages, Monitor, Accessibility, Wifi, WifiOff,
-  HardDrive, CheckCircle, Building2, Image, Loader2
+  HardDrive, CheckCircle, Building2, Image, Loader2,
   Printer as PrinterIcon,
 } from 'lucide-react';
 import PeripheralsSettings from '@/components/settings/PeripheralsSettings';
