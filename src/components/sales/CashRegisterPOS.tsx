@@ -1,3 +1,4 @@
+import CounterReceipt, { RECEIPT_PRINT_CSS } from './CounterReceipt';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -786,11 +787,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                   const img = productImages.imageFor(p.name);
                   return (
                   <button key={p.key} type="button" onClick={() => openPick(p)}
-                    className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <div className="relative aspect-[4/3] w-full bg-muted">
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-none border border-border bg-card text-left shadow-sm transition hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <div className="relative aspect-square w-full bg-muted">
                       {img ? <img src={img} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
                         : <div className="flex h-full items-center justify-center bg-primary/10 text-primary" aria-hidden><span className="text-2xl font-bold">{productImages.generating ? '…' : initials || '?'}</span></div>}
-                      <span className={`absolute bottom-1 right-1 rounded-md px-2 py-0.5 text-xs font-bold shadow ${p.price > 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                      <span className={`absolute bottom-0 right-0 rounded-none px-2 py-0.5 text-xs font-bold shadow ${p.price > 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
                         {p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}
                       </span>
                     </div>
