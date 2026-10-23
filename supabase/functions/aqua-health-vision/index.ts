@@ -2,21 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3';
-import { enforceFishPhoto } from './result.ts';
+import { enforceFishPhoto, normalizeResult, parseModelJson } from './result.ts';
 
 const BodySchema = z.object({
   mode: z.enum(['image', 'species']), domain: z.enum(['algae', 'fish']).optional(),
   imageBase64: z.string().max(12 * 1024 * 1024).optional(),
   species: z.string().max(200).optional(), language: z.string().max(80).optional(),
-});
-const ResultSchema = z.object({
-  subject: z.string().nullable().optional(), isFishPhoto: z.boolean().optional(),
-  rejectionReason: z.string().nullable().optional(), species: z.string().nullable().optional(),
-  averageWeight: z.number().nullable().optional(), observations: z.array(z.string()).default([]),
-  diseases: z.array(z.object({ name: z.string(), severity: z.enum(['low', 'medium', 'high']),
-    confidence: z.number().min(0).max(100), description: z.string().optional(), causes: z.string().optional(),
-    treatment: z.string().optional(), prevention: z.string().optional() })).default([]),
-  recommendations: z.array(z.string()).default([]),
 });
 // Validate existing application users without moving their data or accounts.
 const APP_URL = 'https://hhsvraqchtqqgaezhnzn.supabase.co';
@@ -101,10 +92,14 @@ avec pour chacune : causes, signes cliniques, traitement (produit, dosage, duré
 et prévention. Ajoute des recommandations prophylactiques concrètes.
 ${SCHEMA_HINT}`;
     } else {
-      const imageData = String(body.imageBase64 ?? "");
-      if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/\r\n]+=*$/.test(imageData)) {
+      const rawImage = String(body.imageBase64 ?? "").trim();
+      const imgMatch = rawImage.match(/^data:image\/(jpeg|jpg|png|webp);base64,([\s\S]+)$/i);
+      const b64 = imgMatch?.[2].replace(/\s+/g, '') ?? '';
+      if (!imgMatch || b64.length < 100 || !/^[A-Za-z0-9+/_-]+=*$/.test(b64)) {
         return new Response(JSON.stringify({ error: "Photo illisible. Importez une image JPG, PNG ou WebP." }), { status: 400, headers: cors });
       }
+      const mime = imgMatch[1].toLowerCase() === 'jpg' ? 'jpeg' : imgMatch[1].toLowerCase();
+      const imageData = `data:image/${mime};base64,${b64}`;
       const extra = body.species ? `Espèce déclarée par l'éleveur : ${body.species}.` : "";
       content = [
         {
@@ -151,22 +146,17 @@ ${SCHEMA_HINT}`,
       return new Response(JSON.stringify({ error: message }), { status, headers: cors });
     }
 
-    const json = await aiRes.json();
+    const json = await aiRes.json().catch(() => null);
     const message = json?.choices?.[0]?.message;
-    if (message?.refusal || !message?.content) return new Response(JSON.stringify({ error: message?.refusal || 'L’IA n’a pas pu analyser cette image.' }), { status: 422, headers: cors });
-    const raw = message.content;
-    let parsed: unknown;
-    try {
-      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-    } catch {
-      const match = String(raw).match(/\{[\s\S]*\}/);
-      parsed = match ? JSON.parse(match[0]) : null;
+    if (message?.refusal || !message?.content) return new Response(JSON.stringify({ error: message?.refusal || 'L’IA n’a pas pu analyser cette image. Essayez une photo plus nette.' }), { status: 422, headers: cors });
+    const normalized = normalizeResult(parseModelJson(message.content));
+    if (!normalized) {
+      console.error('aqua-health-vision unreadable model output');
+      return new Response(JSON.stringify({ error: 'La réponse de l’analyse est illisible. Relancez l’analyse.' }), { status: 502, headers: cors });
     }
-    const validated = ResultSchema.safeParse(parsed);
-    if (!validated.success) return new Response(JSON.stringify({ error: 'La réponse de l’analyse est incomplète. Aucun diagnostic ne peut être affiché.' }), { status: 502, headers: cors });
 
     return new Response(
-      JSON.stringify(enforceFishPhoto(validated.data, mode)),
+      JSON.stringify(enforceFishPhoto(normalized, mode)),
       { headers: cors },
     );
   } catch (e) {
