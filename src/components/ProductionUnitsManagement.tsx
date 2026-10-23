@@ -28,7 +28,8 @@ import {
   Gauge,
   Users,
   BarChart3,
-  Search
+  Search,
+  Lock
 } from 'lucide-react';
 import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -295,11 +296,25 @@ const ProductionUnitsManagement = () => {
                       <SelectValue placeholder={t('select_type')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {unitTypes.map(type => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                      ))}
+                      {unitTypes.map(type => {
+                        const allowed = isTypeAllowed(type.value) || editingUnit?.type === type.value;
+                        return (
+                          <SelectItem key={type.value} value={type.value} disabled={!allowed}>
+                            <span className="flex items-center gap-2">
+                              {type.label}
+                              {!allowed && <Lock className="w-3 h-3 text-muted-foreground" />}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  {allowedTypes && allowedTypes.length > 0 && !isAdmin && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Votre abonnement couvre : {allowedTypes.map((v) => unitTypes.find((ut) => ut.value === v)?.label || v).join(', ')}.
+                      Pour créer un autre type d'unité, écrivez à l'administration afin d'étendre votre abonnement.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm">{t('capacity')}</Label>
