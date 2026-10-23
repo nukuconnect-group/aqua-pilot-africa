@@ -6,6 +6,7 @@ Deno.serve(async () => {
   const sql = postgres(Deno.env.get("AQUAPILOTE_DB_URL") ?? "", { max: 1, prepare: false, connect_timeout: 10 });
   try {
     await sql.begin(async (tx) => {
+      await tx.unsafe("SET LOCAL check_function_bodies = off");
       await tx.unsafe(schema);
       await tx.unsafe(grants);
       await tx.unsafe("NOTIFY pgrst, 'reload schema'");
