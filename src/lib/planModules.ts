@@ -86,7 +86,7 @@ const MODULE_META: Record<string, { category: string; premium?: boolean; core?: 
   analytics: { category: 'Intelligence', premium: true },
   library: { category: 'Intelligence', premium: true },
   'business-intelligence': { category: 'Intelligence', core: true },
-  'aqua-assistant': { category: 'Intelligence', premium: true },
+  'aqua-assistant': { category: 'Intelligence', core: true },
   support: { category: 'Système', core: true },
   offline: { category: 'Système' },
   settings: { category: 'Système', core: true },
@@ -656,7 +656,7 @@ export const computeModuleAccess = (
   });
 
   allowed.forEach((key) => {
-    if (role === 'admin' || role === 'owner') {
+    if (key === 'aqua-assistant' || role === 'admin' || role === 'owner') {
       permissions[key] = FULL_PERMISSIONS;
       return;
     }

@@ -132,6 +132,7 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const getPermissions = useCallback(
     (moduleOrTabId: string): ModulePermissionSet => {
       const moduleId = tabToModuleId(moduleOrTabId);
+      if (moduleId === 'aqua-assistant') return FULL_PERMISSIONS;
       if (isUnrestricted) return allowed.has(moduleId) ? FULL_PERMISSIONS : NO_PERMISSIONS;
       if (!hasModuleAccess(moduleId)) return NO_PERMISSIONS;
       return permissions[moduleId] || FULL_PERMISSIONS;

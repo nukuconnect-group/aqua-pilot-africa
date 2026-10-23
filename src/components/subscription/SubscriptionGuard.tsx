@@ -11,12 +11,12 @@ import { useAuth } from '@/contexts/AuthContext';
  * shows a blocking screen with a CTA to the subscription page.
  * Admin & team members are exempt.
  */
-export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SubscriptionGuard: React.FC<{ children: React.ReactNode; moduleId?: string }> = ({ children, moduleId }) => {
   const { subscription, loading } = useCurrentSubscription();
   const { user, isDemoMode } = useAuth();
   const navigate = useNavigate();
 
-  if (loading || isDemoMode || !user) return <>{children}</>;
+  if (moduleId === 'aqua-assistant' || loading || isDemoMode || !user) return <>{children}</>;
   if (user.role === 'admin' || user.isTeamMember) return <>{children}</>;
   if (!subscription || subscription.isActive) return <>{children}</>;
 
