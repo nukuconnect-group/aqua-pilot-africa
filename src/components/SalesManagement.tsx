@@ -878,15 +878,6 @@ const SalesManagement = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            
-            <Button variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30 w-full sm:w-auto text-sm sm:text-base" onClick={generateSalesReport}>
-              <Download className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Rapport</span>
-            </Button>
-          </div>
-          </div>
-          <ProductionUnitSelector />
-        </div>
       </div>
 
       {/* KPIs */}
