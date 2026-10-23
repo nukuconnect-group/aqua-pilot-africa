@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
-  addSale: vi.fn(), addMovement: vi.fn(), validateSession: vi.fn(), toast: vi.fn(),
+  addSale: vi.fn(), addMovement: vi.fn(), validateSession: vi.fn(), toast: vi.fn(), postAtomic: vi.fn(),
   session: { id: 'register-a', name: 'Caisse A', opened_at: '2026-10-20T00:00:00Z' },
 }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
@@ -16,10 +16,15 @@ vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [
 ] }) }));
 vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({
   session: state.session, sessions: [state.session], movements: [], history: [], allMovements: [],
-  expected: 10000, loading: false, validateSession: state.validateSession, addMovement: state.addMovement,
+  expected: 10000, loading: false, reload: vi.fn(async () => undefined), validateSession: state.validateSession, addMovement: state.addMovement,
 }) }));
 vi.mock('./BarcodeScanner', () => ({ default: () => null }));
 vi.mock('./CashSalesHistory', () => ({ default: () => null }));
+vi.mock('@/lib/posStock', async (orig) => ({
+  ...(await orig<typeof import('@/lib/posStock')>()),
+  postSaleAtomically: state.postAtomic,
+  deductSoldStock: vi.fn(async () => undefined),
+}));
 import CashRegisterPOS from './CashRegisterPOS';
 
 let container: HTMLDivElement;
@@ -51,6 +56,7 @@ const fillCart = async () => {
 beforeEach(async () => {
   vi.clearAllMocks();
   state.validateSession.mockResolvedValue({});
+  state.postAtomic.mockResolvedValue(false);
   state.addMovement.mockResolvedValue({});
   state.addSale.mockImplementation(async sale => ({ ...sale, id: 'saved-sale' }));
   container = document.createElement('div'); document.body.appendChild(container);
@@ -93,5 +99,11 @@ describe('parcours encaissement — tests isolés sans écriture réelle', () =>
     await fillCart(); await click(button('Encaisser'));
     expect(state.toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Encaissement interrompu', variant: 'destructive' }));
     expect(button('Reprendre l’encaissement').disabled).toBe(false);
+  });
+  it('encaisse et sort le stock en une seule opération serveur sans second mouvement', async () => {
+    state.postAtomic.mockResolvedValue(true);
+    await fillCart(); await click(button('Encaisser'));
+    expect(state.postAtomic).toHaveBeenCalledWith('unit-a', 'saved-sale', 'register-a', expect.any(Array));
+    expect(state.addMovement).not.toHaveBeenCalled();
   });
 });

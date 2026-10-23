@@ -12,7 +12,7 @@ import { useSales } from '@/hooks/useSales';
 import { useCashSession } from '@/hooks/useCashSession';
 import BarcodeScanner from './BarcodeScanner';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
-import { deductSoldStock, findStockShortage } from '@/lib/posStock';
+import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch } from '@/lib/posCatalog';
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
@@ -170,16 +170,28 @@ const CashRegisterPOS: React.FC = () => {
     }
     recordedSale = sale;
     setPendingPayment({ sale, sessionId });
-    const res = await cash.addMovement({ type: 'sale', amount: sale.totalAmount, payment_method: sale.paymentMethod, sale_id: sale.id, label: sale.documentNumber || sale.clientName }, sessionId);
-    if (res.error) {
-      reportFailure('Vente enregistrée, encaissement à reprendre', res.error);
+    let posted = false;
+    try {
+      posted = await postSaleAtomically(activeUnit.id, sale.id, sessionId, cart);
+    } catch (e) {
+      reportFailure('Vente enregistrée, encaissement à reprendre', e instanceof Error ? e.message : undefined);
       return;
     }
-    try {
-      await deductSoldStock(activeUnit.id, sale.id, cart);
+    if (posted) {
+      await cash.reload();
       refetchStocks?.();
-    } catch {
-      toast({ title: 'Vente encaissée, stock à corriger', description: 'La sortie de stock n’a pas pu être enregistrée. Corrigez la quantité dans Stock.', variant: 'destructive' });
+    } else {
+      const res = await cash.addMovement({ type: 'sale', amount: sale.totalAmount, payment_method: sale.paymentMethod, sale_id: sale.id, label: sale.documentNumber || sale.clientName }, sessionId);
+      if (res.error) {
+        reportFailure('Vente enregistrée, encaissement à reprendre', res.error);
+        return;
+      }
+      try {
+        await deductSoldStock(activeUnit.id, sale.id, cart);
+        refetchStocks?.();
+      } catch {
+        toast({ title: 'Vente encaissée, stock à corriger', description: 'La sortie de stock n’a pas pu être enregistrée. Corrigez la quantité dans Stock.', variant: 'destructive' });
+      }
     }
     toast({ title: 'Vente encaissée', description: `${formatCurrency(sale.totalAmount)} — ${sale.documentNumber || ''}` });
     setPendingPayment(null); requestKey.current = undefined;
