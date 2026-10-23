@@ -82,5 +82,8 @@
 - [ ] Transfert caisse → trésorerie atomique avec écriture comptable (fonction serveur à installer sur la base de l'application)
 - [ ] Écriture comptable serveur à chaque vente (pos_post_sale), sans doublon
 - [ ] Conditionnements (pièce / pack / carton) dans le stock et la caisse
-- [ ] Tableau de suivi des écarts avec mesures correctives ; activation/désactivation des caisses
+- [x] Tableau de suivi des écarts avec mesures correctives (Gestion des caisses)
+- [x] Ventes du jour + comptage des espèces avec notification d'écart
+- [x] Transfert total ou partiel : autre caisse, compte de trésorerie, remise à une personne
+- [ ] Activation/désactivation des caisses
 - [ ] Tester les 12 scénarios avec un compte connecté (aucune session disponible ici)
