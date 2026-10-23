@@ -730,6 +730,11 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         ) : (
         <div className="space-y-3">
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
+          <p className="text-sm font-semibold">Rechercher un produit</p>
+          <Input placeholder="Nom ou code du produit" value={search} onChange={(e) => setSearch(e.target.value)} />
+          {searchResults}
+        </CardContent></Card>
+        <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
           <p className="text-sm font-semibold">Vente par la voix ou par texte</p>
             <div className="flex gap-2">
               <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
