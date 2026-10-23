@@ -68,6 +68,7 @@ const SalesManagement = () => {
   const { toast } = useToast();
   const { sales, loading, addSale, updateSale, cancelSale } = useSales();
   
+  const [salesTab, setSalesTab] = useState('pos');
   const [showSaleDialog, setShowSaleDialog] = useState(false);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   const [previewReceiptData, setPreviewReceiptData] = useState<ReceiptData | null>(null);
@@ -565,12 +566,11 @@ const SalesManagement = () => {
         </DialogContent>
       </Dialog>
       {/* En-tête */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-4 sm:p-6 rounded-xl text-white">
-        <div className="flex flex-col gap-3 sm:gap-4">
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-3 py-2 sm:px-4 sm:py-3 rounded-xl text-white">
+        <div className="flex flex-col gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2 truncate">{t('sales_management')}</h2>
-              <p className="text-sm sm:text-base text-green-100">{t('sales_management_desc')}</p>
+              <h2 className="text-lg sm:text-xl font-bold truncate">Ventes &amp; Caisse</h2>
             </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Dialog open={showSaleDialog} onOpenChange={setShowSaleDialog}>
@@ -947,17 +947,19 @@ const SalesManagement = () => {
       </div>
 
       {/* Tabs pour les différentes fonctionnalités */}
-      <Tabs defaultValue="pos" className="space-y-3 sm:space-y-4">
+      <Tabs value={salesTab} onValueChange={setSalesTab} className="space-y-3 sm:space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-full sm:w-auto min-w-full bg-muted rounded-xl">
             <TabsTrigger value="dashboard" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Tableau de bord
             </TabsTrigger>
-            <TabsTrigger value="pos" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
-              <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Caisse
-            </TabsTrigger>
+            {([['registers', 'Gestion des caisses', Store], ['pos', 'Caisse', CreditCard], ['multi', 'Multi-caisses', Users], ['ai', 'Vente IA', Zap]] as const).map(([v, label, Icon]) => (
+              <TabsTrigger key={v} value={v} className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
+                <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                {label}
+              </TabsTrigger>
+            ))}
             <TabsTrigger value="history" className="text-xs sm:text-sm flex-1 sm:flex-none px-3 sm:px-4 whitespace-nowrap">
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Historique
@@ -990,9 +992,9 @@ const SalesManagement = () => {
           <CancelledSales sales={filteredSales} />
         </TabsContent>
 
-        <TabsContent value="pos" className="space-y-3 sm:space-y-4">
-          <CashRegisterPOS />
-        </TabsContent>
+        {POS_TABS.includes(salesTab) && (
+          <CashRegisterPOS view={salesTab === 'pos' ? 'checkout' : salesTab as PosView} onNavigate={(v) => setSalesTab(v === 'checkout' ? 'pos' : v)} />
+        )}
 
         <TabsContent value="closures" className="space-y-3 sm:space-y-4">
           <CashClosures />

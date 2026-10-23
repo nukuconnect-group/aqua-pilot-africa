@@ -19,7 +19,6 @@ import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSea
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Sale } from '@/hooks/useSales';
 
 interface CartLine { name: string; quantity: number; unitPrice: number }
