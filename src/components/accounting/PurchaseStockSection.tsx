@@ -88,7 +88,9 @@ const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPic
               </div>
             )}
             {!selected && (
-              <p className="mt-1 text-xs text-muted-foreground">Le nom du produit est la description de l’achat.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Le nom du produit est la description de l’achat. Le prix d’achat et le prix de vente saisis ci-dessous seront enregistrés avec le produit, pour le vendre ensuite à ce prix.
+              </p>
             )}
           </div>
           <button type="button" onClick={() => onTarget(EMPTY_STOCK_TARGET)}
