@@ -480,8 +480,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             <select className="h-10 w-full rounded-md border border-border bg-background px-2 text-sm" value={transferTarget} onChange={(e) => setTransferTarget(e.target.value)} aria-label="Destination">
               <option value="">Destination…</option>
               {cash.sessions.filter((s) => s.id !== cash.session?.id).map((s) => <option key={s.id} value={`cash:${s.id}`}>Caisse · {s.name || 'Caisse'}</option>)}
-              {treasury.accounts.map((a) => <option key={a.id} value={`treasury:${a.id}`}>Trésorerie · {a.name}</option>)}
-              <option value="person">Remise à une personne (comptable, responsable…)</option>
+              <option value="person">Remise au comptable ou à une personne</option>
             </select>
             {transferTarget === 'person' && <Input placeholder="Nom et fonction du bénéficiaire" value={transferPerson} onChange={(e) => setTransferPerson(e.target.value)} />}
             <div className="flex gap-2">
@@ -516,8 +515,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             <select className="h-10 w-full rounded-md border border-border bg-background px-2 text-sm" value={transferTarget} onChange={(e) => setTransferTarget(e.target.value)} aria-label="Destination">
               <option value="">Destination…</option>
               {cash.sessions.filter((s) => s.id !== cash.session?.id).map((s) => <option key={s.id} value={`cash:${s.id}`}>Caisse · {s.name || 'Caisse'}</option>)}
-              {treasury.accounts.map((a) => <option key={a.id} value={`treasury:${a.id}`}>Trésorerie · {a.name}</option>)}
-              <option value="person">Remise à une personne (comptable, responsable…)</option>
+              <option value="person">Remise au comptable ou à une personne</option>
             </select>
             {transferTarget === 'person' && <Input placeholder="Nom et fonction du bénéficiaire" value={transferPerson} onChange={(e) => setTransferPerson(e.target.value)} />}
             <div className="flex gap-2">
