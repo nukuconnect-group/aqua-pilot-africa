@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle, RotateCcw } from 'lucide-react';
+import { useTreasury } from '@/hooks/useTreasury';
+import CashDiscrepancies from './CashDiscrepancies';
 import { summarizeSession, carriedOverBalance, cashDifference } from '@/lib/cashBalance';
 import { supabase as appSupabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
@@ -105,6 +107,9 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [registerName, setRegisterName] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
   const [transferTarget, setTransferTarget] = useState('');
+  const [transferPerson, setTransferPerson] = useState('');
+  const [dayCount, setDayCount] = useState('');
+  const treasury = useTreasury(activeUnit?.id);
   const [openRegister, setOpenRegister] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<{ sale: Sale; sessionId: string } | null>(null);
   const paymentLock = useRef(false);
@@ -279,6 +284,42 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <Alert><AlertDescription>Les caisses n’ont pas pu s’afficher. Cliquez sur « Réessayer ».<Button variant="outline" className="ml-2" onClick={() => cash.reload()}>Réessayer</Button></AlertDescription></Alert>
   );
 
+  const doTransfer = async () => {
+    const amount = Number(transferAmount) || 0;
+    if (amount > cash.expected) { toast({ title: 'Transfert impossible', description: 'Montant supérieur aux espèces disponibles.', variant: 'destructive' }); return; }
+    setBusy(true);
+    try {
+      if (transferTarget.startsWith('cash:')) {
+        const r = await cash.transferTo(transferTarget.slice(5), amount);
+        if (r.error) throw new Error(r.error);
+      } else {
+        const account = transferTarget.startsWith('treasury:') ? treasury.accounts.find((a) => a.id === transferTarget.slice(9)) : null;
+        const label = account ? `Transfert vers trésorerie ${account.name}` : `Transfert — remise à ${transferPerson.trim()}`;
+        const out = await cash.addMovement({ type: 'cash_out', amount, label });
+        if (out.error) throw new Error(out.error);
+        if (account) {
+          await treasury.recordMovement({ requestId: crypto.randomUUID(), kind: 'receipt', sourceId: '', destinationId: account.id, amount, date: new Date().toISOString().slice(0, 10), label: `Versement de la caisse ${cash.session?.name || ''}`.trim(), counterpart: '471' })
+            .catch((e) => { throw new Error(`Sortie de caisse enregistrée, mais le compte de trésorerie n’a pas été crédité : ${e.message}. Régularisez dans Trésorerie.`); });
+        }
+      }
+      setTransferAmount(''); setTransferTarget(''); setTransferPerson('');
+      toast({ title: 'Transfert enregistré' });
+    } catch (e: any) { toast({ title: 'Transfert incomplet', description: e.message, variant: 'destructive' }); }
+    finally { setBusy(false); }
+  };
+  const todayKey = new Date().toDateString();
+  const todayMoves = cash.movements.filter((m) => new Date(m.created_at).toDateString() === todayKey);
+  const today = summarizeSession(0, todayMoves);
+  const checkDayCount = async () => {
+    const diff = cashDifference(Number(dayCount) || 0, cash.expected);
+    if (diff !== 0 && unitOwner !== undefined) {
+      await (appSupabase as any).from('notifications').insert({ user_id: unitOwner || user?.id, type: 'cash_count', module: 'sales', is_critical: true,
+        title: `Écart au comptage — ${cash.session?.name || 'Caisse'}`, message: `${diff > 0 ? 'Excédent' : 'Manquant'} de ${Math.abs(diff)} · théorique ${cash.expected} · compté ${Number(dayCount) || 0}`,
+        metadata: { session_id: cash.session?.id, unit_id: activeUnit?.id, counted_by: user?.id, expected: cash.expected, counted: Number(dayCount) || 0, difference: diff } });
+    }
+    toast(diff === 0 ? { title: 'Comptage conforme' } : { title: 'Écart constaté', description: `${formatCurrency(diff)} — l’administrateur est notifié.`, variant: 'destructive' });
+    setDayCount('');
+  };
   const carried = carriedOverBalance(cash.history, registerName);
   const openNames = new Set(cash.sessions.map((x) => (x.name || '').trim().toLowerCase()));
   const closedRegisters = Array.from(new Map(cash.history.filter((h) => h.name && !openNames.has(h.name.trim().toLowerCase())).map((h) => [h.name!.trim().toLowerCase(), h])).values());
@@ -421,11 +462,21 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             }}><Lock className="w-4 h-4 mr-1" />Clôturer</Button>
           </div>
           </CardContent></Card>
+          {isAdmin && <CashDiscrepancies history={cash.history} formatCurrency={formatCurrency} unitId={activeUnit.id} />}
           <h3 className="font-semibold text-sm">Historique des ventes en caisse</h3>
           <CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session.id} />
         </div>
       )}
       {(view === 'checkout' || view === 'ai') && (<>
+      <Card className="rounded-xl"><CardContent className="p-3 flex flex-wrap items-end gap-3 text-sm">
+        <div><p className="text-xs text-muted-foreground">Ventes d’aujourd’hui</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
+        {Object.entries(today.salesByPayment).map(([k, v]) => <div key={k}><p className="text-xs text-muted-foreground">{k}</p><p className="font-semibold">{formatCurrency(v)}</p></div>)}
+        <div><p className="text-xs text-muted-foreground">Espèces attendues</p><p className="font-semibold">{formatCurrency(cash.expected)}</p></div>
+        <div className="flex gap-2 ml-auto w-full sm:w-auto">
+          <Input type="number" className="h-9 sm:w-40" placeholder="Espèces comptées" value={dayCount} onChange={(e) => setDayCount(e.target.value)} />
+          <Button size="sm" variant="outline" className="h-9" disabled={dayCount === ''} onClick={checkDayCount}>Vérifier</Button>
+        </div>
+      </CardContent></Card>
       <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
       <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
         {view === 'checkout' ? (
@@ -534,32 +585,20 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-semibold">Transfert vers une autre caisse</p>
-            {cash.sessions.length < 2 ? (
-              <p className="text-xs text-muted-foreground">Ouvrez une seconde caisse pour pouvoir transférer des espèces entre caisses.</p>
-            ) : (
-              <>
-                <div className="flex gap-2">
-                  <Input type="number" placeholder="Montant" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} />
-                  <select
-                    className="h-10 rounded-md border border-border bg-background px-2 text-sm flex-1"
-                    value={transferTarget}
-                    onChange={(e) => setTransferTarget(e.target.value)}
-                    aria-label="Caisse de destination"
-                  >
-                    <option value="">Caisse de destination…</option>
-                    {cash.sessions.filter((s) => s.id !== cash.session?.id).map((s) => (
-                      <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>
-                    ))}
-                  </select>
-                </div>
-                <Button size="sm" variant="outline" className="w-full" disabled={!transferTarget || !transferAmount} onClick={async () => {
-                  const r = await cash.transferTo(transferTarget, Number(transferAmount) || 0);
-                  if (r.error) toast({ title: 'Transfert impossible', description: r.error, variant: 'destructive' });
-                  else { setTransferAmount(''); setTransferTarget(''); toast({ title: 'Transfert enregistré' }); }
-                }}>Transférer</Button>
-              </>
-            )}
+            <p className="text-sm font-semibold">Transférer les fonds</p>
+            <select className="h-10 w-full rounded-md border border-border bg-background px-2 text-sm" value={transferTarget} onChange={(e) => setTransferTarget(e.target.value)} aria-label="Destination">
+              <option value="">Destination…</option>
+              {cash.sessions.filter((s) => s.id !== cash.session?.id).map((s) => <option key={s.id} value={`cash:${s.id}`}>Caisse · {s.name || 'Caisse'}</option>)}
+              {treasury.accounts.map((a) => <option key={a.id} value={`treasury:${a.id}`}>Trésorerie · {a.name}</option>)}
+              <option value="person">Remise à une personne (comptable, responsable…)</option>
+            </select>
+            {transferTarget === 'person' && <Input placeholder="Nom et fonction du bénéficiaire" value={transferPerson} onChange={(e) => setTransferPerson(e.target.value)} />}
+            <div className="flex gap-2">
+              <Input type="number" placeholder="Montant" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} />
+              <Button size="sm" variant="outline" className="h-10" onClick={() => setTransferAmount(String(Math.max(0, cash.expected)))}>Tout</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Espèces disponibles : {formatCurrency(cash.expected)}</p>
+            <Button size="sm" className="w-full" disabled={busy || !transferTarget || !(Number(transferAmount) > 0) || (transferTarget === 'person' && !transferPerson.trim())} onClick={doTransfer}>Transférer</Button>
           </div>
         </CardContent>
       </Card>
