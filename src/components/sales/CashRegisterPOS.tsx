@@ -127,6 +127,13 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [unitConfirmed, setUnitConfirmed] = useState(false);
   const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
+  const metaName = (user as any)?.user_metadata?.full_name || [(user as any)?.user_metadata?.first_name, (user as any)?.user_metadata?.last_name].filter(Boolean).join(' ');
+  const [cashierName, setCashierName] = useState<string>(metaName || '');
+  useEffect(() => {
+    if (metaName || !user?.id) return;
+    (appSupabase as any).from('profiles').select('full_name').eq('id', user.id).maybeSingle()
+      .then(({ data }: any) => { const n = (data?.full_name || '').trim(); if (n && !n.includes('@')) setCashierName(n); });
+  }, [user?.id, metaName]);
   const [clientOpen, setClientOpen] = useState(false);
   const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
   const [backfilling, setBackfilling] = useState(false);
@@ -451,10 +458,16 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const openNames = new Set(cash.sessions.map((x) => (x.name || '').trim().toLowerCase()));
   const disabledNames = new Set(cash.history.filter((h) => (h as any).notes === 'caisse désactivée').map((h) => (h.name || '').trim().toLowerCase()));
   const closedRegisters = Array.from(new Map(cash.history.filter((h) => h.name && !openNames.has(h.name.trim().toLowerCase()) && !disabledNames.has(h.name.trim().toLowerCase())).map((h) => [h.name!.trim().toLowerCase(), h])).values());
-  const reopen = async (name: string) => {
+  const reopen = async (h: { id: string; name?: string | null }) => {
     setBusy(true);
     try {
-      const r = await cash.openSession(carriedOverBalance(cash.history, name) ?? 0, name);
+      const { data, error } = await (appSupabase as any).rpc('reopen_cash_register', { _session_id: h.id });
+      if (error) {
+        const missing = /reopen_cash_register|function/i.test(error.message || '') && !isAdmin;
+        if (!missing) { toast({ title: 'Ouverture impossible', description: error.message, variant: 'destructive' }); return; }
+      }
+      if (!error) { if (data) cash.setActiveSession(data); await cash.reload(); toast({ title: 'Caisse rouverte', description: 'Mêmes caissiers, solde de la dernière clôture repris.' }); return; }
+      const r = await cash.openSession(carriedOverBalance(cash.history, h.name || '') ?? 0, h.name || undefined);
       if (r.error) toast({ title: 'Ouverture impossible', description: r.error, variant: 'destructive' });
       else toast({ title: 'Caisse rouverte', description: 'Le solde de la dernière clôture est repris.' });
     } finally { setBusy(false); }
@@ -464,7 +477,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     {closedRegisters.map((h) => (
       <div key={h.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2 text-sm">
         <span className="min-w-0 truncate">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
-        <div className="flex gap-1"><Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h.name!)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
+        <div className="flex gap-1"><Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
         {isAdmin && <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
           const { error } = await (appSupabase as any).from('cash_sessions').update({ notes: 'caisse désactivée' }).eq('id', h.id);
           if (error) toast({ title: 'Désactivation impossible', description: error.message, variant: 'destructive' }); else { toast({ title: 'Caisse désactivée' }); cash.reload(); }
@@ -535,8 +548,8 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             ) : <p className="font-bold truncate">{cash.session.name || 'Caisse principale'}</p>}
           </div>
           <div className="rounded-lg bg-white/15 p-2 min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-blue-100">Caissier</p>
-            <p className="font-bold truncate">{(user as any)?.user_metadata?.full_name || [(user as any)?.user_metadata?.first_name, (user as any)?.user_metadata?.last_name].filter(Boolean).join(' ') || user?.email || '—'}</p>
+            <p className="text-[11px] uppercase tracking-wide text-blue-100">Caissier / Caissière</p>
+            <p className="font-bold truncate">{cashierName || '—'}</p>
           </div>
           <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Ventes du jour</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
           <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Tickets du jour</p><p className="font-bold">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
@@ -546,7 +559,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <div className="flex flex-wrap items-center gap-1 text-xs">
             <span className="text-blue-100">Caisses fermées :</span>
             {closedRegisters.map((h) => (
-              <button key={h.id} disabled={busy} onClick={() => reopen(h.name!)} className="rounded-full bg-white/90 px-2 py-0.5 font-medium text-blue-900 hover:bg-white" title="Rouvrir avec le solde de la dernière clôture">
+              <button key={h.id} disabled={busy} onClick={() => reopen(h)} className="rounded-full bg-white/90 px-2 py-0.5 font-medium text-blue-900 hover:bg-white" title="Rouvrir avec le solde de la dernière clôture">
                 {h.name} · {formatCurrency(Number(h.counted_amount) || 0)} ↺
               </button>
             ))}
