@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sale } from '@/hooks/useSales';
 import { useSettings } from '@/contexts/SettingsContext';
 import { TrendingUp, Wallet, Clock, Undo2 } from 'lucide-react';
+import RevenueByRegister from './RevenueByRegister';
 
 const startOf = (kind: 'day' | 'week' | 'month' | 'year') => {
   const d = new Date();
@@ -76,6 +77,7 @@ export default function SalesDashboard({ sales }: { sales: Sale[] }) {
           <div><p className="text-xs text-muted-foreground">Ventes annulées</p><p className="font-bold">{k.cancelledCount}</p></div>
         </CardContent></Card>
       </div>
+      <RevenueByRegister />
       <p className="text-xs text-muted-foreground">Les ventes annulées sont exclues du chiffre d’affaires. Une vente à crédit n’est comptée comme encaissée qu’à hauteur des paiements reçus.</p>
     </div>
   );
