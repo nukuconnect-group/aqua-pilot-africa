@@ -575,7 +575,7 @@ const SalesManagement = () => {
         <div className="ml-auto flex items-center gap-2 min-w-0">
           <span className="hidden sm:inline text-xs text-blue-100">Unité active</span>
           <Select value={activeUnit?.id} onValueChange={(v) => { const u = units.find(x => x.id === v); if (u) setActiveUnit(u); }}>
-            <SelectTrigger className="h-8 w-48 sm:w-64 text-sm" aria-label="Unité de production active"><SelectValue placeholder="Choisir une unité" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-48 sm:w-64 text-sm bg-white text-blue-900 border-white" aria-label="Unité de production active"><SelectValue placeholder="Choisir une unité" /></SelectTrigger>
             <SelectContent>{units.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
