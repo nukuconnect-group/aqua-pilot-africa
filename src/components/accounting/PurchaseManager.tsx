@@ -295,6 +295,8 @@ const PurchaseManager = () => {
     });
     setShowPurchaseForm(false);
     setEditingPurchase(null);
+    setStockTarget(EMPTY_STOCK_TARGET);
+    setTreasuryAccountId('');
   };
 
   const handleEditPurchase = (purchase: any) => {
@@ -1223,7 +1225,7 @@ const PurchaseManager = () => {
                 </Select>
               </div>
               <div>
-                <Label>Caisse / compte de prélèvement</Label>
+                <Label>Compte à débiter {!newPurchase.isCredit && '*'}</Label>
                 <Select
                   value={treasuryAccountId}
                   onValueChange={setTreasuryAccountId}
@@ -1247,6 +1249,23 @@ const PurchaseManager = () => {
                 )}
               </div>
             </div>
+
+            {!editingPurchase && (
+              <PurchaseStockSection
+                stocks={stockItems}
+                target={stockTarget}
+                onTarget={setStockTarget}
+                onPickSuggestion={(s) => {
+                  const q = suggestedQuantity(s);
+                  const unitCost = Number(s.cost) || 0;
+                  setStockTarget({ purpose: isCommercialStock(s) ? 'commercial' : 'production', stockId: s.id, salePrice: 0 });
+                  setNewPurchase((p) => ({
+                    ...p, description: s.custom_name || s.feed_type, quantity: q, unit: s.unit,
+                    supplier: p.supplier || s.supplier || '', amount: unitCost > 0 ? unitCost * q : p.amount,
+                  }));
+                }}
+              />
+            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div>
