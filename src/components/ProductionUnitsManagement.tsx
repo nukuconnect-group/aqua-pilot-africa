@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,9 +28,13 @@ import {
   Gauge,
   Users,
   BarChart3,
-  Search
+  Search,
+  Lock
 } from 'lucide-react';
 import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUnitsContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/appClient';
+import { isUnitTypeAllowed } from '@/lib/unitTypeAccess';
 import { useLogs } from '@/contexts/LogsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -51,6 +55,28 @@ const ProductionUnitsManagement = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [unitSearch, setUnitSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+
+  // Types d'unités couverts par l'abonnement du compte (profil).
+  // null = pas de restriction (comptes anciens sans liste enregistrée).
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const [allowedTypes, setAllowedTypes] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!user?.id || isAdmin) return;
+    let cancelled = false;
+    supabase
+      .from('profiles')
+      .select('production_units')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setAllowedTypes((data?.production_units as string[] | null) ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id, isAdmin]);
+
+  const isTypeAllowed = (type: string) => isUnitTypeAllowed(allowedTypes, type, isAdmin);
   
   const [newUnit, setNewUnit] = useState({
     name: '',
@@ -146,6 +172,12 @@ const ProductionUnitsManagement = () => {
   };
 
   const handleSaveUnit = async () => {
+    // Refus côté client : type non couvert par l'abonnement (le serveur bloque aussi).
+    const typeChanged = !editingUnit || editingUnit.type !== newUnit.type;
+    if (typeChanged && newUnit.type && !isTypeAllowed(newUnit.type)) {
+      toast.error("Ce type d'unité n'est pas couvert par votre abonnement. Écrivez à l'administration pour étendre votre abonnement.");
+      return;
+    }
     const unitToSave = {
       ...newUnit,
       photoUrl: selectedPhoto || newUnit.photoUrl || ''
@@ -264,11 +296,25 @@ const ProductionUnitsManagement = () => {
                       <SelectValue placeholder={t('select_type')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {unitTypes.map(type => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                      ))}
+                      {unitTypes.map(type => {
+                        const allowed = isTypeAllowed(type.value) || editingUnit?.type === type.value;
+                        return (
+                          <SelectItem key={type.value} value={type.value} disabled={!allowed}>
+                            <span className="flex items-center gap-2">
+                              {type.label}
+                              {!allowed && <Lock className="w-3 h-3 text-muted-foreground" />}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  {allowedTypes && allowedTypes.length > 0 && !isAdmin && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Votre abonnement couvre : {allowedTypes.map((v) => unitTypes.find((ut) => ut.value === v)?.label || v).join(', ')}.
+                      Pour créer un autre type d'unité, écrivez à l'administration afin d'étendre votre abonnement.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm">{t('capacity')}</Label>
