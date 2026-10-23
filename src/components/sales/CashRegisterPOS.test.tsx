@@ -25,6 +25,12 @@ vi.mock('@/lib/posStock', async (orig) => ({
   postSaleAtomically: state.postAtomic,
   deductSoldStock: vi.fn(async () => undefined),
 }));
+vi.mock('@/lib/posTreasury', async (orig) => ({
+  ...(await orig<typeof import('@/lib/posTreasury')>()),
+  hasRegisterAccount: vi.fn(async () => true),
+  postSaleToTreasury: vi.fn(async () => ({ status: 'ok' })),
+  findUnpostedSales: vi.fn(async () => []),
+}));
 import CashRegisterPOS from './CashRegisterPOS';
 
 let container: HTMLDivElement;
@@ -45,8 +51,11 @@ const input = async (label: string, value: string) => {
   });
 };
 const fillCart = async () => {
+  await input('Rechercher un produit', 'Poisson');
   await click(button('Poisson'));
+  await input('Rechercher un produit', 'Aliment');
   await click(button('Aliment'));
+  await click(button('Ajouter au panier (2)'));
   await input('Quantité 1', '2.5');
   await input('Prix unitaire 1', '2000');
   await input('Quantité 2', '3');

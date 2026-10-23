@@ -19,7 +19,7 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
-import { postSaleToTreasury, hasRegisterAccount } from '@/lib/posTreasury';
+import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
 import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
@@ -29,7 +29,7 @@ import type { Sale } from '@/hooks/useSales';
 
 interface CartLine { name: string; quantity: number; unitPrice: number; pack?: { label: string; size: number } }
 
-const PAYMENTS = ['Espèces', 'Mobile Money', 'Carte', 'Virement'];
+const PAYMENTS = ['Espèces', 'Mobile Money', 'Carte bancaire', 'Virement bancaire'];
 
 const checkoutRecovery = (error: unknown, saleRecorded: boolean) => {
   const detail = typeof error === 'string' ? error : error && typeof error === 'object'
@@ -126,6 +126,32 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [listening, setListening] = useState(false);
   const [unitConfirmed, setUnitConfirmed] = useState(false);
   const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [clientOpen, setClientOpen] = useState(false);
+  const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
+  const [backfilling, setBackfilling] = useState(false);
+  const checkUnposted = async () => {
+    if (!activeUnit?.id) return;
+    try {
+      const list = await findUnpostedSales(activeUnit.id);
+      const { data: accs } = await (appSupabase as any).from('treasury_accounts').select('kind, archived_at').eq('unit_id', activeUnit.id);
+      const kinds = new Set((accs || []).filter((a: any) => !a.archived_at).map((a: any) => a.kind));
+      const needs = [...new Set(list.map((x: any) => paymentDestination(x.payment_method)))].filter(k => !kinds.has(k)) as ('cash' | 'bank')[];
+      if (!kinds.has('cash')) needs.includes('cash') || needs.push('cash');
+      setUnposted({ count: list.length, amount: list.reduce((t: number, x: any) => t + Number(x.total_amount), 0), needs });
+    } catch { /* indicatif */ }
+  };
+  useEffect(() => { checkUnposted(); }, [activeUnit?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const runBackfill = async () => {
+    if (!activeUnit?.id) return;
+    setBackfilling(true);
+    try {
+      const r = await backfillSalesToTreasury(activeUnit.id);
+      toast({ title: 'Ventes reportées en trésorerie', description: `${r.posted} vente(s) ajoutée(s) à la caisse ou à la banque.${r.missing.length ? ' Certaines attendent un compte à créer.' : ''}` });
+      treasury.reload?.();
+    } catch (e: any) { toast({ title: 'Report interrompu', description: e?.message, variant: 'destructive' }); }
+    finally { setBackfilling(false); checkUnposted(); }
+  };
 
   useEffect(() => {
     setCart([]); setClient(''); setContact(''); setPendingPayment(null);
@@ -150,6 +176,19 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   };
 
   const filtered = catalog.filter((p) => normalizeProductSearch(p.name).includes(normalizeProductSearch(search)) || p.codes.some(c => c.toLowerCase() === search.trim().toLowerCase()));
+  const clientMatches = useMemo(() => {
+    const q = normalizeProductSearch(client);
+    if (!q) return [];
+    const seen = new Map<string, { name: string; contact: string }>();
+    for (const x of sales as any[]) {
+      const n = (x.clientName || '').trim();
+      if (!n || n === 'Client comptoir' || !normalizeProductSearch(n).includes(q)) continue;
+      const k = n.toLowerCase();
+      if (!seen.has(k) || (!seen.get(k)!.contact && x.clientContact)) seen.set(k, { name: n, contact: x.clientContact || '' });
+      if (seen.size >= 8) break;
+    }
+    return [...seen.values()].filter(c => c.name.toLowerCase() !== client.trim().toLowerCase() || !contact);
+  }, [client, contact, sales]);
   const noPrice = catalog.filter(p => !(p.price > 0)).length;
   const photoStatus = (productImages.generating || productImages.error || noPrice > 0) ? (
     <div className="space-y-1 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
@@ -158,19 +197,31 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       {noPrice > 0 && <p className="text-destructive">{noPrice} produit(s) sans prix de vente : touchez-les pour saisir le prix.</p>}
     </div>
   ) : null;
-  const searchResults = search.trim() ? (
+  const toggleSel = (k: string) => setSel(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const addSelected = () => {
+    const chosen = [...sel].map(k => catalog.find(p => p.key === k)).filter(Boolean) as PosProduct[];
+    chosen.forEach(p => addToCart(p.name, p.price > 0 ? p.price : 0));
+    if (chosen.length) toast({ title: `${chosen.length} produit(s) ajouté(s) au panier`, description: chosen.some(p => !(p.price > 0)) ? 'Saisissez le prix des produits sans prix dans le panier.' : undefined });
+    setSel(new Set()); setSearch('');
+  };
+  const searchResults = search.trim() || sel.size ? (
+    <div className="space-y-2">
     <div className="divide-y divide-border rounded-lg border border-border">
-      {filtered.slice(0, 12).map(p => {
+      {(search.trim() ? filtered : catalog.filter(p => sel.has(p.key))).slice(0, 15).map(p => {
         const img = productImages.imageFor(p.name);
+        const on = sel.has(p.key);
         return (
-          <button key={p.key} type="button" onClick={() => view === 'ai' ? (addToCart(p.name, p.price), toast({ title: `${p.name} ajouté` })) : openPick(p)} className="flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button key={p.key} type="button" aria-pressed={on} onClick={() => toggleSel(p.key)} className={`flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? 'bg-primary/10' : ''}`}>
+            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${on ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}>{on ? '✓' : ''}</span>
             {img ? <img src={img} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" /> : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">{p.name.slice(0, 2).toUpperCase()}</span>}
             <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
             <span className={`text-sm font-bold ${p.price > 0 ? 'text-primary' : 'text-destructive'}`}>{p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}</span>
           </button>
         );
       })}
-      {!filtered.length && <p className="p-3 text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+      {search.trim() && !filtered.length && <p className="p-3 text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+    </div>
+    {sel.size > 0 && <Button type="button" className="w-full" onClick={addSelected}><ShoppingCart className="h-4 w-4 mr-2" />Ajouter au panier ({sel.size})</Button>}
     </div>
   ) : <p className="text-xs text-muted-foreground">Tapez le nom ou le code d’un produit : il s’affiche aussitôt.</p>;
   const total = calculatePosTotal(cart);
@@ -250,10 +301,14 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         return;
       }
     }
-    if (!pendingPayment?.sale && payment === 'Espèces') {
+    if (!pendingPayment?.sale) {
       const regName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
-      if (!(await hasRegisterAccount(activeUnit.id, regName))) {
-        toast({ title: 'Aucune caisse en trésorerie', description: `Pour encaisser, créez d’abord dans Comptabilité › Trésorerie un compte « Caisse de vente » rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.`, variant: 'destructive' });
+      if (!(await hasRegisterAccount(activeUnit.id, regName, payment))) {
+        const bank = paymentDestination(payment) === 'bank';
+        const f = bank
+          ? { title: 'Aucun compte bancaire en trésorerie', description: `Pour un paiement « ${payment} », créez d’abord dans Comptabilité › Trésorerie un compte bancaire rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.` }
+          : { title: 'Aucune caisse en trésorerie', description: `Pour encaisser, créez d’abord dans Comptabilité › Trésorerie un compte « Caisse de vente » rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.` };
+        setCheckoutError(f); toast({ ...f, variant: 'destructive' });
         return;
       }
     }
@@ -304,7 +359,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     try {
       const sessionName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
       const t = await postSaleToTreasury(activeUnit.id, sale, sessionName);
-      if (t.status === 'no_account') toast({ title: 'Trésorerie non alimentée', description: 'Créez dans Trésorerie un compte « Caisse de vente » portant le nom de cette caisse.', variant: 'destructive' });
+      if (t.status === 'no_account') toast({ title: 'Trésorerie non alimentée', description: paymentDestination(sale.paymentMethod || payment) === 'bank' ? 'Créez dans Trésorerie un compte bancaire pour cette unité.' : 'Créez dans Trésorerie un compte « Caisse de vente » portant le nom de cette caisse.', variant: 'destructive' });
       else treasury.reload?.();
     } catch (e: any) {
       toast({ title: 'Vente encaissée, trésorerie à régulariser', description: e.message, variant: 'destructive' });
@@ -613,6 +668,18 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <div className="flex gap-2"><Button className="flex-1" onClick={() => { setLockAsk(false); setLocked(true); }}><Lock className="w-4 h-4 mr-2" />Verrouiller</Button><Button variant="outline" className="flex-1" onClick={() => setLockAsk(false)}>Annuler</Button></div>
       </DialogContent></Dialog>
 
+      {(unposted.needs.length > 0 || unposted.count > 0) && (
+        <Alert><AlertDescription className="space-y-2">
+          {unposted.needs.includes('cash') && <p><b>Aucune caisse en trésorerie pour {activeUnit.name}.</b> Créez un compte « Caisse de vente » pour recevoir les ventes en espèces et Mobile Money.</p>}
+          {unposted.needs.includes('bank') && <p><b>Aucun compte bancaire pour {activeUnit.name}.</b> Créez-le pour recevoir les ventes par carte bancaire et virement.</p>}
+          {unposted.count > 0 && <p>{unposted.count} vente(s) ({formatCurrency(unposted.amount)}) sont en comptabilité mais pas encore dans la caisse ou la banque.</p>}
+          <div className="flex flex-wrap gap-2">
+            {unposted.needs.length > 0 && <Button size="sm" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'accounting' }))}>{unposted.needs.includes('cash') ? 'Créer une caisse' : 'Créer un compte bancaire'}</Button>}
+            {unposted.count > 0 && <Button size="sm" variant="outline" disabled={backfilling} onClick={runBackfill}>{backfilling ? 'Report…' : 'Reporter ces ventes'}</Button>}
+            <Button size="sm" variant="ghost" onClick={checkUnposted}>Vérifier à nouveau</Button>
+          </div>
+        </AlertDescription></Alert>
+      )}
       {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
       {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
 
@@ -665,12 +732,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <Card className="rounded-2xl">
           <CardContent className="p-3 space-y-3">
             <div className="flex gap-2">
-              <Input placeholder="Rechercher un produit ou un code" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0].name, filtered[0].price); }} />
+              <Input aria-label="Rechercher un produit" placeholder="Rechercher un produit ou un code" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0].name, filtered[0].price); }} />
               <Button variant="outline" onClick={() => setScanOpen(true)} aria-label="Scanner un code"><ScanLine className="w-4 h-4" /></Button>
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
-            ) : view === 'multi' ? (
+            ) : view === 'multi' || search.trim() || sel.size ? (
               searchResults
             ) : (
               <>
@@ -768,7 +835,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                   <Input aria-label={`Produit ${i + 1}`} className="h-8 flex-1 font-medium" value={l.name} onChange={e => updateLine(i, { name: e.target.value })} />
                   <Button size="icon" variant="ghost" aria-label={`Retirer le produit ${i + 1}`} className="h-8 w-8 shrink-0" onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
                 </div>
-                <div className="grid grid-cols-[auto_1fr_auto] items-end gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_auto] items-end gap-2">
                   <div>
                     <span className="block text-xs text-muted-foreground">Quantité</span>
                     <div className="flex items-center gap-1">
@@ -783,7 +850,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                       value={l.unitPrice > 0 ? l.unitPrice : ''} onFocus={e => e.target.select()}
                       onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) || 0 })} />
                   </label>
-                  <div className="text-right">
+                  <div className="col-span-2 flex items-center justify-between sm:col-span-1 sm:block sm:text-right">
                     <span className="block text-xs text-muted-foreground">Total</span>
                     <span className="text-sm font-bold text-primary">{formatCurrency(l.quantity * l.unitPrice)}</span>
                   </div>
@@ -802,19 +869,34 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                 </div>
               </div>
             ))}
-            <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => setClient(e.target.value)} />
+            <div className="relative">
+              <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => { setClient(e.target.value); setClientOpen(true); }} onFocus={() => setClientOpen(true)} onBlur={() => window.setTimeout(() => setClientOpen(false), 150)} />
+              {clientOpen && clientMatches.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
+                  {clientMatches.map(c => (
+                    <button key={c.name + c.contact} type="button" className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                      onMouseDown={e => e.preventDefault()} onClick={() => { setClient(c.name); setContact(c.contact); setClientOpen(false); }}>
+                      <span className="truncate font-medium">{c.name}</span><span className="shrink-0 text-xs text-muted-foreground">{c.contact}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Input placeholder="Téléphone ou email du client (facultatif)" value={contact} onChange={e => setContact(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Le client est enregistré avec la vente et retrouvé à la prochaine saisie de son nom.</p>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENTS.map((p) => (
                 <Button key={p} size="sm" variant={payment === p ? 'default' : 'outline'} onClick={() => setPayment(p)}>{p}</Button>
               ))}
             </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-border"><span>Total</span><span>{formatCurrency(total)}</span></div>
+            <p className="text-xs text-muted-foreground">{paymentDestination(payment) === 'bank' ? 'Encaissé sur le compte banque de l’unité (Trésorerie).' : 'Encaissé dans la caisse de l’unité (Trésorerie).'}</p>
+            <div className="flex justify-between gap-2 text-lg font-bold pt-2 border-t border-border"><span>Total</span><span className="text-right">{formatCurrency(total)}</span></div>
+            {!pendingPayment && <Button className="w-full h-12 text-base" disabled={busy || !isValidPosCart(cart)} onClick={checkout}>{busy ? 'Encaissement…' : `Encaisser · ${formatCurrency(total)}`}</Button>}
           </CardContent>
         </Card>
       </div>
       </fieldset>
-      <Button className="w-full h-12 text-base" disabled={busy || (!pendingPayment && !isValidPosCart(cart))} onClick={checkout}>{busy ? 'Encaissement…' : pendingPayment ? 'Reprendre l’encaissement' : `Encaisser · ${formatCurrency(total)}`}</Button>
+      {pendingPayment && <Button className="w-full h-12 text-base" disabled={busy} onClick={checkout}>{busy ? 'Encaissement…' : 'Reprendre l’encaissement'}</Button>}
 
       </>)}
 

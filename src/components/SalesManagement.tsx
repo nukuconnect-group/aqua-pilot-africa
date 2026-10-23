@@ -977,7 +977,7 @@ const SalesManagement = () => {
           <CashRegisterPOS view={salesTab === 'pos' ? 'checkout' : salesTab as PosView} onNavigate={(v) => setSalesTab(v === 'checkout' ? 'pos' : v)} />
         )}
 
-        {POS_TABS.includes(salesTab) && filteredSales.length > 0 && (
+        {false && POS_TABS.includes(salesTab) && filteredSales.length > 0 && (
           <section className="rounded-lg border border-border bg-card p-3 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground">Dernières ventes</h3>
