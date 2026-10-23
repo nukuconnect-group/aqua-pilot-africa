@@ -102,3 +102,4 @@
 - [x] Recherche produit instantanée dans Caisse, Vente IA, Multi-caisses ; Vente IA fonctionnelle
 - [x] AquaHealth : détection du poisson sur photo + nom direct + analyse
 - [ ] Page Experts (Afrique, Maroc) : photo, titre, numéro, contact WhatsApp / message, notification WhatsApp — fiche prête ; en attente de la photo et d’une connexion WhatsApp Business pour l’envoi automatique
+- [ ] Ventes passées non reportées en trésorerie : rattrapage vers caisse (espèces/mobile money) ou banque (carte/virement), invitation à créer les comptes manquants
