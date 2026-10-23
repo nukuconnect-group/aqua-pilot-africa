@@ -235,6 +235,7 @@ const Dashboard: React.FC = () => {
   const [showAquaAssistantModule, setShowAquaAssistantModule] = useState(false);
   // Fenêtre de discussion par-dessus le module en cours (le module reste visible derrière).
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const assistantOverlayVisible = assistantOpen && activeTab !== 'aqua-assistant' && canAccessTab('aqua-assistant');
 
   // Detecter le changement d'onglet vers aqua-assistant
   useEffect(() => {
@@ -416,10 +417,10 @@ const Dashboard: React.FC = () => {
         {/* Navigation mobile en bas */}
         <MobileNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
-        {assistantOpen && activeTab !== 'aqua-assistant' && canAccessTab('aqua-assistant') && (
+        {assistantOverlayVisible && (
           <AquaAssistantModule onClose={() => setAssistantOpen(false)} />
         )}
-        {!assistantOpen && <AssistantFloatingBubble activeTab={activeTab} onOpen={() => {
+        {!assistantOverlayVisible && <AssistantFloatingBubble activeTab={activeTab} onOpen={() => {
           if (canAccessTab('aqua-assistant') && activeTab !== 'aqua-assistant') setAssistantOpen(true);
           else if (activeTab !== 'aqua-assistant') commitTabChange('aqua-assistant');
         }} />}
