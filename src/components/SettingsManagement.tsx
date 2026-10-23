@@ -15,7 +15,9 @@ import {
   FileText, Zap, Volume2, VolumeX, Clock, MapPin, CreditCard, Link2, LogOut,
   AlertTriangle, Check, X, Vibrate, Languages, Monitor, Accessibility, Wifi, WifiOff,
   HardDrive, CheckCircle, Building2, Image, Loader2
+  Printer as PrinterIcon,
 } from 'lucide-react';
+import PeripheralsSettings from '@/components/settings/PeripheralsSettings';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
