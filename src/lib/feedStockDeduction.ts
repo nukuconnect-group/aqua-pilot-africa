@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/appClient';
+import { getStockPurpose } from '@/lib/stockPurpose';
 
 /**
  * Déduit la quantité distribuée du stock correspondant, enregistre la sortie
@@ -9,11 +10,13 @@ import { supabase } from '@/integrations/supabase/appClient';
 export async function deductFeedStock(unitId: string, feedType: string, qty: number, reason: string, stockId?: string) {
   if (!(qty > 0) || (!feedType && !stockId)) return { status: 'skipped' as const };
   const db = supabase as any;
-  const { data: stocks } = await db.from('feed_stocks').select('*').eq('unit_id', unitId);
+  const { data: all } = await db.from('feed_stocks').select('*').eq('unit_id', unitId);
+  // Nourrir les poissons ne prélève que le stock de production, jamais le stock commercial.
+  const stocks = (all || []).filter((x: any) => getStockPurpose(x) === 'production');
   const key = feedType.trim().toLowerCase();
   const s = stockId
-    ? (stocks || []).find((x: any) => x.id === stockId)
-    : (stocks || []).find((x: any) => [x.feed_type, x.custom_name].some((v: string) => (v || '').trim().toLowerCase() === key));
+    ? stocks.find((x: any) => x.id === stockId)
+    : stocks.find((x: any) => [x.feed_type, x.custom_name].some((v: string) => (v || '').trim().toLowerCase() === key));
   if (!s) return { status: 'not_found' as const };
   if (Number(s.quantity) < qty) return { status: 'insufficient' as const, stock: s };
   const after = Number(s.quantity) - qty;

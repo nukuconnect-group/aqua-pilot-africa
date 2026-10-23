@@ -409,26 +409,43 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   return (
     <div className="space-y-3">
       <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
-      <div className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-3 space-y-2">
+      <div className="rounded-xl bg-blue-700 text-white p-3 space-y-3 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-medium">● Ouverte</span>
-          {cash.sessions.length > 1 ? (
-            <select className="h-8 rounded-md border-0 bg-primary-foreground/15 px-2 text-sm font-semibold" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
-              {cash.sessions.map((s) => <option key={s.id} value={s.id} className="text-foreground">{s.name || 'Caisse'}</option>)}
-            </select>
-          ) : <span className="font-semibold">{cash.session.name || 'Caisse principale'}</span>}
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-semibold text-white">● Ouverte</span>
           <div className="ml-auto flex flex-wrap gap-1">
             {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
-            <Button variant="outline" size="sm" className="bg-background text-foreground hover:bg-muted" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4 mr-1" />Opérations</Button>
-            <Button variant="outline" size="sm" className="bg-background text-foreground hover:bg-muted" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4 mr-1" />Clôturer</Button>
-            <Button variant="outline" size="sm" className="bg-background text-foreground hover:bg-muted" onClick={() => setLocked(true)} aria-label="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4 mr-1" />Opérations</Button>
+            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4 mr-1" />Clôturer</Button>
+            <Button variant="outline" size="sm" className="bg-white text-blue-800 border-white hover:bg-blue-50" onClick={() => setLocked(true)} aria-label="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-lg bg-primary-foreground/10 p-2"><p className="text-[11px] opacity-80">Ventes du jour</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
-          <div className="rounded-lg bg-primary-foreground/10 p-2"><p className="text-[11px] opacity-80">Tickets du jour</p><p className="font-bold">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
-          <div className="rounded-lg bg-primary-foreground/10 p-2"><p className="text-[11px] opacity-80">Solde en caisse</p><p className="font-bold">{formatCurrency(cash.expected)}</p></div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="rounded-lg bg-white/15 p-2 min-w-0">
+            <p className="text-[11px] uppercase tracking-wide text-blue-100">Caisse</p>
+            {cash.sessions.length > 1 ? (
+              <select className="mt-0.5 w-full h-7 rounded bg-white text-blue-900 px-1 text-sm font-semibold" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
+                {cash.sessions.map((s) => <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>)}
+              </select>
+            ) : <p className="font-bold truncate">{cash.session.name || 'Caisse principale'}</p>}
+          </div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0">
+            <p className="text-[11px] uppercase tracking-wide text-blue-100">Caissier</p>
+            <p className="font-bold truncate">{(user as any)?.user_metadata?.full_name || [(user as any)?.user_metadata?.first_name, (user as any)?.user_metadata?.last_name].filter(Boolean).join(' ') || user?.email || '—'}</p>
+          </div>
+          <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Ventes du jour</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
+          <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Tickets du jour</p><p className="font-bold">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 col-span-2 sm:col-span-1"><p className="text-[11px] uppercase tracking-wide text-blue-100">Solde en caisse</p><p className="font-bold">{formatCurrency(cash.expected)}</p></div>
         </div>
+        {closedRegisters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1 text-xs">
+            <span className="text-blue-100">Caisses fermées :</span>
+            {closedRegisters.map((h) => (
+              <button key={h.id} disabled={busy} onClick={() => reopen(h.name!)} className="rounded-full bg-white/90 px-2 py-0.5 font-medium text-blue-900 hover:bg-white" title="Rouvrir avec le solde de la dernière clôture">
+                {h.name} · {formatCurrency(Number(h.counted_amount) || 0)} ↺
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <Dialog open={opsOpen} onOpenChange={setOpsOpen}><DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto"><DialogHeader><DialogTitle>Opérations de caisse</DialogTitle></DialogHeader>
       <Card className="rounded-2xl">
