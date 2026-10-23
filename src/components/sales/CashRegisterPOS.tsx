@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, Unlock, ScanLine, Sparkles, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
@@ -62,7 +62,7 @@ export const parseQuickSale = (text: string, catalog: { name: string; price: num
 const CashRegisterPOS: React.FC = () => {
   const { toast } = useToast();
   const { formatCurrency } = useSettings();
-  const { activeUnit } = useProductionUnits();
+  const { activeUnit, units, setActiveUnit } = useProductionUnits();
   const { sales, addSale } = useSales();
   const { user } = useAuth();
   const unitOwner = (activeUnit as any)?.userId || (activeUnit as any)?.user_id;
@@ -88,6 +88,8 @@ const CashRegisterPOS: React.FC = () => {
   const paymentLock = useRef(false);
   const requestKey = useRef<string>();
   const [contact, setContact] = useState('');
+  const [receipt, setReceipt] = useState<{ number: string; date: string; client: string; payment: string; register: string; lines: CartLine[]; total: number } | null>(null);
+  const [listening, setListening] = useState(false);
   const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
 
   useEffect(() => {
@@ -120,8 +122,29 @@ const CashRegisterPOS: React.FC = () => {
     else toast({ title: 'Produit inconnu', description: `Code « ${raw} » non trouvé dans vos produits.`, variant: 'destructive' });
   };
 
-  const handleQuick = () => {
-    const { lines, client: c } = parseQuickSale(quick, catalog);
+  const startVoice = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast({ title: 'Dictée indisponible', description: 'Ce navigateur ne permet pas la dictée. Utilisez Chrome ou tapez la vente.', variant: 'destructive' }); return; }
+    const rec = new SR();
+    rec.lang = 'fr-FR'; rec.interimResults = false;
+    rec.onresult = (e: any) => { const text = e.results[0][0].transcript as string; setQuick(text); handleQuick(text); };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => { setListening(false); toast({ title: 'Dictée interrompue', description: 'Autorisez le micro puis réessayez.', variant: 'destructive' }); };
+    setListening(true); rec.start();
+  };
+
+  const printReceipt = () => {
+    if (!receipt) return;
+    const w = window.open('', '_blank', 'width=380,height=600');
+    if (!w) return;
+    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+    const rows = receipt.lines.map((l) => `<tr><td>${esc(l.name)}</td><td style="text-align:right">${l.quantity}</td><td style="text-align:right">${esc(formatCurrency(l.quantity * l.unitPrice))}</td></tr>`).join('');
+    w.document.write(`<html><head><title>Reçu ${esc(receipt.number)}</title><style>body{font-family:monospace;font-size:12px;padding:8px}table{width:100%;border-collapse:collapse}td{padding:2px 0}h2{text-align:center;margin:4px 0}</style></head><body><h2>${esc(activeUnit?.name || '')}</h2><p>Reçu : ${esc(receipt.number)}<br/>Date : ${esc(receipt.date)}<br/>Caisse : ${esc(receipt.register)}<br/>Client : ${esc(receipt.client)}</p><table>${rows}</table><hr/><p><b>Total : ${esc(formatCurrency(receipt.total))}</b><br/>Paiement : ${esc(receipt.payment)}</p><p style="text-align:center">Merci</p></body></html>`);
+    w.document.close(); w.focus(); w.print();
+  };
+
+  const handleQuick = (input?: string) => {
+    const { lines, client: c } = parseQuickSale(input ?? quick, catalog);
     if (!lines.length) {
       toast({ title: 'Rien reconnu', description: 'Indiquez une quantité et un produit déjà vendu, ex. « 20 tilapia à Kossi ».', variant: 'destructive' });
       return;
@@ -199,6 +222,15 @@ const CashRegisterPOS: React.FC = () => {
       }
     }
     toast({ title: 'Vente encaissée', description: `${formatCurrency(sale.totalAmount)} — ${sale.documentNumber || ''}` });
+    setReceipt({
+      number: sale.documentNumber || sale.id.slice(0, 8).toUpperCase(),
+      date: new Date().toLocaleString('fr-FR'),
+      client: sale.clientName || 'Client comptoir',
+      payment: sale.paymentMethod || payment,
+      register: cash.sessions.find((s) => s.id === sessionId)?.name || 'Caisse',
+      lines: sale.products?.length ? sale.products.map((p: any) => ({ name: p.name, quantity: p.quantity, unitPrice: p.unitPrice })) : cart,
+      total: sale.totalAmount,
+    });
     setPendingPayment(null); requestKey.current = undefined;
     setCart([]); setClient(''); setContact('');
     } catch (error) {
@@ -206,7 +238,14 @@ const CashRegisterPOS: React.FC = () => {
     } finally { setBusy(false); paymentLock.current = false; }
   };
 
-  if (!activeUnit) return <Alert><AlertDescription>Sélectionnez une unité de production pour ouvrir la caisse.</AlertDescription></Alert>;
+  if (!activeUnit) return (
+    <Card className="rounded-2xl"><CardHeader><CardTitle className="text-base">Choisissez l’unité où vous vendez</CardTitle></CardHeader>
+      <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {units.length === 0 ? <p className="text-sm text-muted-foreground">Aucune unité disponible.</p> : units.map((u) => (
+          <Button key={u.id} variant="outline" className="h-auto justify-start p-3 text-left whitespace-normal" onClick={() => setActiveUnit(u)}>{u.name}</Button>
+        ))}
+      </CardContent></Card>
+  );
 
   if (cash.loading && !cash.session) return <p className="text-sm text-muted-foreground">Chargement des caisses…</p>;
   if (cash.notInstalled) return (
@@ -295,8 +334,9 @@ const CashRegisterPOS: React.FC = () => {
               <Button variant="outline" onClick={() => setScanOpen(true)} aria-label="Scanner un code"><ScanLine className="w-4 h-4" /></Button>
             </div>
             <div className="flex gap-2">
-              <Input placeholder="Quantités et noms des produits" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
-              <Button variant="secondary" onClick={handleQuick}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
+              <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
+              <Button variant="outline" onClick={startVoice} disabled={listening} aria-label="Dicter la vente"><Mic className={`w-4 h-4 ${listening ? 'text-destructive animate-pulse' : ''}`} /></Button>
+              <Button variant="secondary" onClick={() => handleQuick()}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
@@ -438,6 +478,15 @@ const CashRegisterPOS: React.FC = () => {
       )}
       </TabsContent></Tabs>
 
+      <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}><DialogContent className="max-w-sm"><DialogHeader><DialogTitle>Reçu {receipt?.number}</DialogTitle></DialogHeader>
+        {receipt && <div className="space-y-2 text-sm">
+          <p className="text-muted-foreground">{receipt.date} · {receipt.register} · {receipt.client}</p>
+          {receipt.lines.map((l, i) => <div key={i} className="flex justify-between border-b border-border py-1"><span>{l.name} × {l.quantity}</span><span>{formatCurrency(l.quantity * l.unitPrice)}</span></div>)}
+          <div className="flex justify-between font-bold pt-1"><span>Total</span><span>{formatCurrency(receipt.total)}</span></div>
+          <p className="text-muted-foreground">Paiement : {receipt.payment}</p>
+          <Button className="w-full" onClick={printReceipt}><Printer className="w-4 h-4 mr-2" />Imprimer le reçu</Button>
+        </div>}
+      </DialogContent></Dialog>
       <BarcodeScanner open={scanOpen} onClose={() => setScanOpen(false)} onScan={handleScan} />
     </div>
   );

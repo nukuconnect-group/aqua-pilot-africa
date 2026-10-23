@@ -54,6 +54,7 @@ import { Shield, Building2, Info, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { APP_MODULE_PERMISSIONS, hasAssignedModule, moduleParamToTabId, tabToModuleId } from '@/lib/moduleAccess';
 import { useModuleAccess } from '@/contexts/ModuleAccessContext';
+import FirstUnitsSetup from '@/components/onboarding/FirstUnitsSetup';
 import ModuleNotIncluded from '@/components/subscription/ModuleNotIncluded';
 import {
   beginRouteTransition,
@@ -351,6 +352,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <SidebarProvider>
+      <FirstUnitsSetup onRequest={() => handleTabChange('support')} />
       <div className="min-h-screen bg-background flex w-full m-0 p-0 overflow-x-hidden">
         {/* Sidebar Navigation - masqué sur mobile */}
         <div className="hidden md:flex">

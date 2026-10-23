@@ -10,7 +10,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Fish, Loader2, User as UserIcon, Mail, Phone, MapPin, Building2, KeyRound, Factory, Radio, ChevronsUpDown, Check, MailCheck, ShieldAlert } from 'lucide-react';
+import { Eye, EyeOff, Fish, Loader2, User as UserIcon, Mail, Phone, MapPin, Building2, KeyRound, Factory, Radio, ChevronsUpDown, Check, MailCheck, ShieldAlert, Egg, Store, Scissors, Snowflake, Leaf, Wheat } from 'lucide-react';
+import { SIGNUP_UNIT_OPTIONS } from '@/lib/signupUnits';
+
+const UNIT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  grossissement: Fish, ecloserie: Egg, fabrication_aliment: Wheat, commercialisation: Store,
+  transformation: Scissors, conservation: Snowflake, algoculture: Leaf,
+};
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader, DialogFooter } from '@/components/ui/dialog';
@@ -255,7 +261,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
     if (!/[0-9]/.test(formData.password)) errors.push('Le mot de passe doit contenir un chiffre.');
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) errors.push('Le mot de passe doit contenir un caractère spécial.');
     if (formData.password !== formData.confirmPassword) errors.push('Les deux mots de passe ne correspondent pas.');
-    if (formData.productionUnits.length === 0) errors.push("Sélectionnez au moins un type d'élevage.");
+    if (formData.productionUnits.length === 0) errors.push('Choisissez au moins une unité à gérer.');
     if (!formData.exploitationType) errors.push("Sélectionnez un type d'exploitation.");
     return errors;
   };
@@ -483,30 +489,33 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                   <p className="text-xs text-destructive pl-2">Les mots de passe ne correspondent pas</p>
                 )}
 
-                {/* Type d'élevage */}
+                {/* Unités à gérer */}
                 <div className="pt-2">
                   <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                     <Fish className="w-4 h-4 text-blue-500" />
-                    Type d'élevage <span className="text-pink-500">*</span>
+                    Que voulez-vous gérer ? <span className="text-pink-500">*</span>
                   </Label>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                     {breedingTypes.map(type => {
-                       const active = formData.productionUnits.includes(type);
-                       return (
-                         <label
-                           key={type}
-                           className={`flex items-center gap-3 text-sm rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${active ? 'border-blue-500 bg-blue-50 text-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'}`}
-                         >
-                           <Checkbox
-                             checked={active}
-                             onCheckedChange={(checked) => toggleBreedingType(type, checked === true)}
-                            className="h-5 w-5 shrink-0 aspect-square rounded-[4px] border-2 border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                           />
-                           <span className="font-medium">{type}</span>
-                         </label>
-                       );
-                     })}
-                   </div>
+                  <p className="text-xs text-slate-500 mt-1">Choisissez une ou plusieurs unités. Chacune aura ses propres modules.</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                    {SIGNUP_UNIT_OPTIONS.map(opt => {
+                      const active = formData.productionUnits.includes(opt.type);
+                      const Icon = UNIT_ICONS[opt.type] ?? Fish;
+                      return (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => toggleBreedingType(opt.type, !active)}
+                          className={`relative text-left rounded-xl border p-3 transition-all ${active ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                        >
+                          {active && <Check className="absolute top-2 right-2 w-4 h-4 text-blue-600" />}
+                          <Icon className={`w-6 h-6 mb-2 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
+                          <p className="text-sm font-semibold text-slate-800">{opt.label}</p>
+                          <p className="text-xs text-slate-500">{opt.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Type d'exploitation */}
