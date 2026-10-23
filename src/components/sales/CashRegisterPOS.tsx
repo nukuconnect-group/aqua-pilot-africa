@@ -150,6 +150,29 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   };
 
   const filtered = catalog.filter((p) => normalizeProductSearch(p.name).includes(normalizeProductSearch(search)) || p.codes.some(c => c.toLowerCase() === search.trim().toLowerCase()));
+  const noPrice = catalog.filter(p => !(p.price > 0)).length;
+  const photoStatus = (productImages.generating || productImages.error || noPrice > 0) ? (
+    <div className="space-y-1 rounded-lg border border-dashed border-border p-2 text-xs text-muted-foreground">
+      {productImages.generating && <p className="flex items-center gap-1"><Sparkles className="h-3 w-3" />Création automatique des photos produits… {productImages.missing} restante(s).</p>}
+      {!productImages.generating && productImages.error && <p className="text-destructive">Photos : {productImages.error}</p>}
+      {noPrice > 0 && <p className="text-destructive">{noPrice} produit(s) sans prix de vente : touchez-les pour saisir le prix.</p>}
+    </div>
+  ) : null;
+  const searchResults = search.trim() ? (
+    <div className="divide-y divide-border rounded-lg border border-border">
+      {filtered.slice(0, 12).map(p => {
+        const img = productImages.imageFor(p.name);
+        return (
+          <button key={p.key} type="button" onClick={() => openPick(p)} className="flex w-full items-center gap-3 p-2 text-left hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {img ? <img src={img} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" /> : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">{p.name.slice(0, 2).toUpperCase()}</span>}
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
+            <span className={`text-sm font-bold ${p.price > 0 ? 'text-primary' : 'text-destructive'}`}>{p.price > 0 ? formatCurrency(p.price) : 'Sans prix'}</span>
+          </button>
+        );
+      })}
+      {!filtered.length && <p className="p-3 text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+    </div>
+  ) : <p className="text-xs text-muted-foreground">Tapez le nom ou le code d’un produit : il s’affiche aussitôt.</p>;
   const total = calculatePosTotal(cart);
   const sessionSales = cash.movements.filter((m) => m.type === 'sale');
   const sessionTotal = sessionSales.reduce((s, m) => s + m.amount, 0);
