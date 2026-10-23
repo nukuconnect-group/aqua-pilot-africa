@@ -107,6 +107,7 @@ const AdminDashboard = () => {
 
   // Bruit connu déjà corrigé côté code : on ne l'affiche plus.
   const RESOLVED_ERROR_PATTERNS = [
+    'Unité supprimée', 'Suppression cheptel', 'Fournisseur supprimé', 'Transaction supprimée', 'Achat supprimé', 'Équipement supprimé',
     'Cannot stop, scanner is not running or paused',
     'postgres_changes',
     'Stethoscope is not defined',

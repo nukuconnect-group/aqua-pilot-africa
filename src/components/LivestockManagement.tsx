@@ -568,7 +568,7 @@ const LivestockManagement = () => {
     const batch = livestockBatches.find(b => b.id === id);
     try {
       await deleteBatch(id);
-      addLog('Suppression cheptel', 'Cheptel', `Lot supprimé: ${batch?.species} - ${batch?.quantity} individus`, 'warning');
+      addLog('Suppression cheptel', 'Cheptel', `Lot supprimé: ${batch?.species} - ${batch?.quantity} individus`, 'info');
     } catch (error) {
       console.error('Error deleting batch:', error);
     }

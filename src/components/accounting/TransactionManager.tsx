@@ -486,7 +486,7 @@ const TransactionManager = () => {
                           size="sm"
                           onClick={() => {
                             deleteTransaction(transaction.id);
-                            addLog('Transaction supprimée', 'Comptabilité', `Transaction supprimée: ${transaction.description}`, 'warning');
+                            addLog('Transaction supprimée', 'Comptabilité', `Transaction supprimée: ${transaction.description}`, 'info');
                           }}
                         >
                           <Trash2 className="w-4 h-4" />

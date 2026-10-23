@@ -789,7 +789,7 @@ const PurchaseManager = () => {
                             size="sm"
                             onClick={() => {
                               deletePurchase(purchase.id);
-                              addLog('Achat supprimé', 'Achats', `Achat supprimé: ${purchase.description}`, 'warning');
+                              addLog('Achat supprimé', 'Achats', `Achat supprimé: ${purchase.description}`, 'info');
                             }}
                           >
                             <Trash2 className="w-4 h-4" />
