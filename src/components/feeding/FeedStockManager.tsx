@@ -62,6 +62,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
   const [customFeedTypeName, setCustomFeedTypeName] = useState('');
   const [stockSearch, setStockSearch] = useState('');
+  const [purposeFilter, setPurposeFilter] = useState<'all' | StockPurpose>('all');
 
   const [newStock, setNewStock] = useState({
     custom_name: '',
