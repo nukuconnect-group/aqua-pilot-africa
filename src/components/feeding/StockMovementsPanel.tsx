@@ -13,6 +13,17 @@ export const applyMovement = (current: number, type: 'in' | 'out' | 'adjust', qt
 interface Mv { id: string; stock_id: string; type: 'in' | 'out' | 'adjust'; quantity: number; quantity_after: number; reason: string | null; created_at: string }
 
 const LABEL = { in: 'Entrée', out: 'Sortie', adjust: 'Inventaire' };
+const BADGE = {
+  in: 'bg-primary/10 text-primary border-primary/30',
+  out: 'bg-destructive/10 text-destructive border-destructive/30',
+  adjust: 'bg-muted text-foreground border-border',
+};
+const QTY_TONE = { in: 'text-primary', out: 'text-destructive', adjust: 'text-foreground' };
+const fmtNum = (n: number) => Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+const fmtDate = (d: string) => new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const TypeBadge: React.FC<{ type: Mv['type'] }> = ({ type }) => (
+  <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${BADGE[type]}`}>{LABEL[type]}</span>
+);
 
 const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
   const { stocks, updateStock } = useFeedStocks(unitId);
@@ -45,6 +56,8 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
   };
 
   const name = (id: string) => { const s = stocks.find((x) => x.id === id); return s ? (s.custom_name || s.feed_type) : 'Produit supprimé'; };
+  const unitOf = (id: string) => stocks.find((x) => x.id === id)?.unit || '';
+  const signed = (r: Mv) => r.type === 'in' ? `+${fmtNum(r.quantity)}` : r.type === 'out' ? `−${fmtNum(r.quantity)}` : `=${fmtNum(r.quantity)}`;
 
   if (notInstalled) return <Alert><AlertDescription>Aucun mouvement de stock à afficher pour le moment.</AlertDescription></Alert>;
 
@@ -64,14 +77,49 @@ const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
           <Input placeholder="Motif (livraison, perte…)" value={reason} onChange={(e) => setReason(e.target.value)} />
           <Button onClick={submit}>Valider</Button>
         </div>
-        {rows.length === 0 ? <p className="text-sm text-muted-foreground">Aucun mouvement enregistré.</p> : (
-          <div className="max-w-full overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="text-left text-muted-foreground border-b border-border"><th className="py-1">Date</th><th>Produit</th><th>Type</th><th className="text-right">Qté</th><th className="text-right">Stock après</th><th>Motif</th></tr></thead>
-            <tbody>{rows.map((r) => (
-              <tr key={r.id} className="border-b border-border/50"><td className="py-1">{new Date(r.created_at).toLocaleString('fr-FR')}</td><td>{name(r.stock_id)}</td><td>{LABEL[r.type]}</td>
-                <td className="text-right">{r.type === 'out' ? '-' : ''}{r.quantity}</td><td className="text-right">{r.quantity_after}</td><td>{r.reason || ''}</td></tr>
-            ))}</tbody></table></div>
-        )}
+        {rows.length === 0 ? <p className="text-sm text-muted-foreground">Aucun mouvement enregistré.</p> : (<>
+          <div className="hidden md:block max-h-[560px] overflow-auto rounded-md border border-border">
+            <table className="w-full table-fixed text-sm">
+              <colgroup><col className="w-[150px]" /><col /><col className="w-[110px]" /><col className="w-[110px]" /><col className="w-[120px]" /><col className="w-[28%]" /></colgroup>
+              <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2.5 text-left font-medium">Date</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Produit</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Type</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Quantité</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Stock après</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Motif</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">{rows.map((r) => (
+                <tr key={r.id} className="hover:bg-muted/40">
+                  <td className="px-3 py-2.5 whitespace-nowrap tabular-nums text-muted-foreground">{fmtDate(r.created_at)}</td>
+                  <td className="px-3 py-2.5 truncate font-medium" title={name(r.stock_id)}>{name(r.stock_id)}</td>
+                  <td className="px-3 py-2.5"><TypeBadge type={r.type} /></td>
+                  <td className={`px-3 py-2.5 text-right tabular-nums font-semibold ${QTY_TONE[r.type]}`}>{signed(r)} <span className="font-normal text-muted-foreground">{unitOf(r.stock_id)}</span></td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">{fmtNum(r.quantity_after)} <span className="text-muted-foreground">{unitOf(r.stock_id)}</span></td>
+                  <td className="px-3 py-2.5 truncate text-muted-foreground" title={r.reason || ''}>{r.reason || '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <ul className="md:hidden divide-y divide-border rounded-md border border-border">{rows.map((r) => (
+            <li key={r.id} className="p-3 space-y-1.5">
+              <div className="flex items-start justify-between gap-2">
+                <span className="min-w-0 truncate font-medium">{name(r.stock_id)}</span>
+                <TypeBadge type={r.type} />
+              </div>
+              <div className="flex items-center justify-between text-sm tabular-nums">
+                <span className={`font-semibold ${QTY_TONE[r.type]}`}>{signed(r)} {unitOf(r.stock_id)}</span>
+                <span className="text-muted-foreground">Après : {fmtNum(r.quantity_after)} {unitOf(r.stock_id)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="min-w-0 truncate">{r.reason || '—'}</span>
+                <span className="shrink-0 tabular-nums">{fmtDate(r.created_at)}</span>
+              </div>
+            </li>
+          ))}</ul>
+        </>)}
       </CardContent>
     </Card>
   );
