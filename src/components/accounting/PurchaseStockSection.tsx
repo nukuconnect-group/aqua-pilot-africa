@@ -57,12 +57,12 @@ const PurchaseStockSection: React.FC<Props> = ({ stocks, target, onTarget, onPic
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
-          <Label className="flex items-center gap-1"><PackagePlus className="h-4 w-4" /> Ajouter au stock</Label>
+          <Label className="flex items-center gap-1"><PackagePlus className="h-4 w-4" /> Cet achat est destiné à *</Label>
           <select aria-label="Destination du stock" className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
             value={target.purpose} onChange={(e) => onTarget({ ...EMPTY_STOCK_TARGET, purpose: e.target.value as any })}>
-            <option value="none">Ne pas ajouter (service, frais…)</option>
-            <option value="commercial">Stock commercial (à vendre)</option>
-            <option value="production">Stock de production</option>
+            <option value="none">Aucun stock (service, frais…)</option>
+            <option value="commercial">Stock commercial — à revendre</option>
+            <option value="production">Stock de production — à utiliser (aliments, intrants…)</option>
           </select>
         </div>
         {target.purpose !== 'none' && (
