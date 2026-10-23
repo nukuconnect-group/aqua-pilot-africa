@@ -18,15 +18,16 @@ export function useTreasury(unitId?: string) {
     ]);
     const failure = a.error || m.error;
     setError(failure ? 'Impossible de charger la trésorerie pour le moment. Réessayez dans un instant.' : null);
-    setState({ unitId, accounts: a.data || [], movements: (m.data || []).map((r: TreasuryMovement) => ({ ...r, amount: Number(r.amount) })) });
+    setState({ unitId, accounts: (a.data || []).filter((x: any) => !x.archived_at), movements: (m.data || []).map((r: TreasuryMovement) => ({ ...r, amount: Number(r.amount) })) });
     setLoading(false);
   }, [unitId]);
   useEffect(() => { load(); }, [load]);
-  const createAccount = async (input: { name: string; kind: 'cash' | 'bank'; code: string; currency: string; opening: number; counterpart: string; date: string }) => {
-    if (!unitId) throw new Error('Sélectionnez une unité.');
+  const createAccount = async (input: { unitId?: string; name: string; kind: 'cash' | 'bank'; code: string; currency: string; opening: number; counterpart: string; date: string }) => {
+    const target = input.unitId || unitId;
+    if (!target) throw new Error('Sélectionnez une unité.');
     if (!input.name.trim() || !Number.isFinite(input.opening) || input.opening < 0) throw new Error('Nom ou fonds initiaux invalides.');
     const { error } = await db.rpc('create_treasury_account', {
-      _unit_id: unitId, _name: input.name, _kind: input.kind, _code: input.code, _currency: input.currency,
+      _unit_id: target, _name: input.name, _kind: input.kind, _code: input.code, _currency: input.currency,
       _opening: input.opening, _counterpart: input.counterpart, _date: input.date,
     });
     if (error) throw error;
@@ -49,5 +50,11 @@ export function useTreasury(unitId?: string) {
     if (error) throw error;
     await load();
   };
-  return { accounts, movements, error, loading, createAccount, recordMovement, reload: load };
+  /** Suppression = archivage : le compte disparaît de la liste, ses mouvements et écritures restent dans l'historique. */
+  const archiveAccount = async (id: string) => {
+    const { error } = await db.from('treasury_accounts').update({ archived_at: new Date().toISOString() }).eq('id', id).eq('unit_id', unitId);
+    if (error) throw new Error(/archived_at|column|policy|permission/i.test(error.message) ? 'La suppression de comptes n’est pas encore activée sur le serveur (script docs/sql/treasury_archive.sql à exécuter).' : error.message);
+    await load();
+  };
+  return { accounts, movements, error, loading, createAccount, archiveAccount, recordMovement, reload: load };
 }
