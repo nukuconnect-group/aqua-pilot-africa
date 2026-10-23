@@ -171,6 +171,12 @@ const ProductionUnitsManagement = () => {
   };
 
   const handleSaveUnit = async () => {
+    // Refus côté client : type non couvert par l'abonnement (le serveur bloque aussi).
+    const typeChanged = !editingUnit || editingUnit.type !== newUnit.type;
+    if (typeChanged && newUnit.type && !isTypeAllowed(newUnit.type)) {
+      toast.error("Ce type d'unité n'est pas couvert par votre abonnement. Écrivez à l'administration pour étendre votre abonnement.");
+      return;
+    }
     const unitToSave = {
       ...newUnit,
       photoUrl: selectedPhoto || newUnit.photoUrl || ''
