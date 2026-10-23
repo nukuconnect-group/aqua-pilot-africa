@@ -1250,20 +1250,24 @@ const PurchaseManager = () => {
                   placeholder="kg, L, unités..."
                 />
               </div>
-              {stockTarget.purpose === 'commercial' && (
-                <div>
-                  <Label>Prix de vente unitaire *</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={stockTarget.salePrice || ''}
-                    onChange={(e) => setStockTarget({ ...stockTarget, salePrice: parseFloat(e.target.value) || 0 })}
-                    placeholder="Prix proposé à la caisse"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Ce prix sera proposé à la caisse lors des ventes.</p>
-                </div>
-              )}
+              <div>
+                <Label className="flex items-center gap-1">
+                  <Tag className="h-4 w-4" />Prix de vente unitaire{stockTarget.purpose === 'commercial' ? ' *' : ''}
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={stockTarget.salePrice || ''}
+                  onChange={(e) => setStockTarget({ ...stockTarget, salePrice: parseFloat(e.target.value) || 0 })}
+                  placeholder="Prix proposé à la caisse"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stockTarget.purpose === 'commercial'
+                    ? 'Ce prix sera proposé à la caisse lors des ventes et enregistré avec le produit.'
+                    : 'Sert si le produit entre ensuite dans le stock commercial, pour le vendre à ce prix.'}
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
