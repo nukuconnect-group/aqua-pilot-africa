@@ -832,7 +832,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
     }
 
     // Mode connecté: sauvegarder dans la base de données
-    if (!user?.id) return;
+    if (!user?.id) throw new Error('Vous devez être connecté pour créer une unité.');
 
     try {
       const { data, error } = await (supabase as any)
@@ -876,6 +876,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       await refreshCoreData('unit-created');
     } catch (err) {
       console.error('Error adding unit:', err);
+      throw err;
     }
   };
 
@@ -917,6 +918,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       await refreshCoreData('unit-updated');
     } catch (err) {
       console.error('Error updating unit:', err);
+      throw err;
     }
   };
 
