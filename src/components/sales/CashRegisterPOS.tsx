@@ -802,19 +802,33 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
                 </div>
               </div>
             ))}
-            <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => setClient(e.target.value)} />
+            <div className="relative">
+              <Input placeholder="Nom du client (facultatif)" value={client} onChange={(e) => { setClient(e.target.value); setClientOpen(true); }} onFocus={() => setClientOpen(true)} onBlur={() => window.setTimeout(() => setClientOpen(false), 150)} />
+              {clientOpen && clientMatches.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
+                  {clientMatches.map(c => (
+                    <button key={c.name + c.contact} type="button" className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                      onMouseDown={e => e.preventDefault()} onClick={() => { setClient(c.name); setContact(c.contact); setClientOpen(false); }}>
+                      <span className="truncate font-medium">{c.name}</span><span className="shrink-0 text-xs text-muted-foreground">{c.contact}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Input placeholder="Téléphone ou email du client (facultatif)" value={contact} onChange={e => setContact(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Le client est enregistré avec la vente et retrouvé à la prochaine saisie de son nom.</p>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENTS.map((p) => (
                 <Button key={p} size="sm" variant={payment === p ? 'default' : 'outline'} onClick={() => setPayment(p)}>{p}</Button>
               ))}
             </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-border"><span>Total</span><span>{formatCurrency(total)}</span></div>
+            <p className="text-xs text-muted-foreground">{paymentDestination(payment) === 'bank' ? 'Encaissé sur le compte banque de l’unité (Trésorerie).' : 'Encaissé dans la caisse de l’unité (Trésorerie).'}</p>
+            <div className="flex justify-between gap-2 text-lg font-bold pt-2 border-t border-border"><span>Total</span><span className="text-right">{formatCurrency(total)}</span></div>
+            <Button className="w-full h-12 text-base" disabled={busy || (!pendingPayment && !isValidPosCart(cart))} onClick={checkout}>{busy ? 'Encaissement…' : pendingPayment ? 'Reprendre l’encaissement' : `Encaisser · ${formatCurrency(total)}`}</Button>
           </CardContent>
         </Card>
       </div>
       </fieldset>
-      <Button className="w-full h-12 text-base" disabled={busy || (!pendingPayment && !isValidPosCart(cart))} onClick={checkout}>{busy ? 'Encaissement…' : pendingPayment ? 'Reprendre l’encaissement' : `Encaisser · ${formatCurrency(total)}`}</Button>
 
       </>)}
 
