@@ -19,7 +19,6 @@ import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSea
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Sale } from '@/hooks/useSales';
 
 interface CartLine { name: string; quantity: number; unitPrice: number }
@@ -59,7 +58,9 @@ export const parseQuickSale = (text: string, catalog: { name: string; price: num
   return { lines, client };
 };
 
-const CashRegisterPOS: React.FC = () => {
+export type PosView = 'registers' | 'checkout' | 'multi' | 'ai';
+
+const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) => void }> = ({ view = 'checkout', onNavigate }) => {
   const { toast } = useToast();
   const { formatCurrency } = useSettings();
   const { activeUnit, units = [], setActiveUnit } = useProductionUnits();
@@ -321,24 +322,51 @@ const CashRegisterPOS: React.FC = () => {
         {isAdmin && <Button variant="outline" size="sm" disabled={busy || !!pendingPayment} onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}
       </div>
 
-      <Tabs defaultValue="checkout"><TabsList><TabsTrigger value="checkout">Vendre</TabsTrigger><TabsTrigger value="history">Historique des ventes</TabsTrigger></TabsList>
-      <TabsContent value="history"><CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session.id} /></TabsContent>
-      <TabsContent value="checkout" className="space-y-3">
       {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
       {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
-      <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
 
+      {view === 'registers' && (
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {cash.sessions.map((s) => (
+              <Card key={s.id} className={`rounded-xl ${s.id === cash.session?.id ? 'border-primary' : ''}`}>
+                <CardContent className="p-4 space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-2"><span className="font-semibold truncate">{s.name || 'Caisse'}</span><Badge>Ouverte</Badge></div>
+                  <div className="flex justify-between text-muted-foreground"><span>Ouverte le</span><span>{new Date(s.opened_at).toLocaleString('fr-FR')}</span></div>
+                  <div className="flex justify-between text-muted-foreground"><span>Caissier(s) affecté(s)</span><span>{((s as any).cashier_ids || []).length}</span></div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button size="sm" onClick={() => { cash.setActiveSession(s.id); onNavigate?.('checkout'); }}>Accéder à la caisse</Button>
+                    {isAdmin && <CashierAssignDialog sessionId={s.id} current={(s as any).cashier_ids || []} onSaved={() => cash.reload()} />}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card className="rounded-xl"><CardContent className="p-3 grid gap-3 md:grid-cols-2">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Fermer la caisse</p>
+            <Input type="number" placeholder="Espèces comptées" value={counted} onChange={(e) => setCounted(e.target.value)} />
+            {counted !== '' && <p className="text-xs">Écart : <b>{formatCurrency((Number(counted) || 0) - cash.expected)}</b></p>}
+            <Button variant="destructive" size="sm" className="w-full" disabled={counted === '' || busy || !!pendingPayment} onClick={async () => {
+              const r = await cash.closeSession(Number(counted) || 0);
+              if (r.error) toast({ title: 'Clôture impossible', description: r.error, variant: 'destructive' });
+              else { setCounted(''); toast({ title: 'Caisse fermée' }); }
+            }}><Lock className="w-4 h-4 mr-1" />Clôturer</Button>
+          </div>
+          </CardContent></Card>
+          <h3 className="font-semibold text-sm">Historique des ventes en caisse</h3>
+          <CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session.id} />
+        </div>
+      )}
+      {(view === 'checkout' || view === 'ai') && (<>
+      <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
       <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
+        {view === 'checkout' ? (
         <Card className="rounded-2xl">
           <CardContent className="p-3 space-y-3">
             <div className="flex gap-2">
               <Input placeholder="Rechercher un produit ou un code" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0].name, filtered[0].price); }} />
               <Button variant="outline" onClick={() => setScanOpen(true)} aria-label="Scanner un code"><ScanLine className="w-4 h-4" /></Button>
-            </div>
-            <div className="flex gap-2">
-              <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
-              <Button variant="outline" onClick={startVoice} disabled={listening} aria-label="Dicter la vente"><Mic className={`w-4 h-4 ${listening ? 'text-destructive animate-pulse' : ''}`} /></Button>
-              <Button variant="secondary" onClick={() => handleQuick()}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
@@ -358,6 +386,16 @@ const CashRegisterPOS: React.FC = () => {
             <Button variant="outline" onClick={() => setCart(prev => [...prev, { name: search.trim(), quantity: 1, unitPrice: 0 }])}><Plus className="h-4 w-4 mr-2" />Ajouter un produit</Button>
           </CardContent>
         </Card>
+        ) : (
+        <div className="space-y-3">
+        <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
+          <p className="text-sm font-semibold">Vente par la voix ou par texte</p>
+            <div className="flex gap-2">
+              <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
+              <Button variant="outline" onClick={startVoice} disabled={listening} aria-label="Dicter la vente"><Mic className={`w-4 h-4 ${listening ? 'text-destructive animate-pulse' : ''}`} /></Button>
+              <Button variant="secondary" onClick={() => handleQuick()}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
+            </div>
+        </CardContent></Card>
         <PosAiSuggestions cart={cart} catalog={catalog} formatCurrency={formatCurrency}
           onConfirm={(lines) => {
             setCart(prev => {
@@ -372,6 +410,8 @@ const CashRegisterPOS: React.FC = () => {
             toast({ title: 'Propositions ajoutées au panier', description: 'Vérifiez puis encaissez.' });
           }} />
 
+        </div>
+        )}
         <Card className="rounded-2xl">
           <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Panier</CardTitle></CardHeader>
           <CardContent className="space-y-3">
@@ -402,6 +442,8 @@ const CashRegisterPOS: React.FC = () => {
       </fieldset>
       <Button className="w-full h-12 text-base" disabled={busy || (!pendingPayment && !isValidPosCart(cart))} onClick={checkout}>{busy ? 'Encaissement…' : pendingPayment ? 'Reprendre l’encaissement' : `Encaisser · ${formatCurrency(total)}`}</Button>
 
+      </>)}
+      {view === 'multi' && (<>
       <Card className="rounded-2xl">
         <CardContent className="p-3 grid gap-3 md:grid-cols-2">
           <div className="space-y-2">
@@ -452,16 +494,6 @@ const CashRegisterPOS: React.FC = () => {
               </>
             )}
           </div>
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">Fermer la caisse</p>
-            <Input type="number" placeholder="Espèces comptées" value={counted} onChange={(e) => setCounted(e.target.value)} />
-            {counted !== '' && <p className="text-xs">Écart : <b>{formatCurrency((Number(counted) || 0) - cash.expected)}</b></p>}
-            <Button variant="destructive" size="sm" className="w-full" disabled={counted === '' || busy || !!pendingPayment} onClick={async () => {
-              const r = await cash.closeSession(Number(counted) || 0);
-              if (r.error) toast({ title: 'Clôture impossible', description: r.error, variant: 'destructive' });
-              else { setCounted(''); toast({ title: 'Caisse fermée' }); }
-            }}><Lock className="w-4 h-4 mr-1" />Clôturer</Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -478,7 +510,7 @@ const CashRegisterPOS: React.FC = () => {
           </CardContent>
         </Card>
       )}
-      </TabsContent></Tabs>
+      </>)}
 
       <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}><DialogContent className="max-w-sm"><DialogHeader><DialogTitle>Reçu {receipt?.number}</DialogTitle></DialogHeader>
         {receipt && <div className="space-y-2 text-sm">
