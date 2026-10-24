@@ -753,7 +753,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             <div className="text-center py-10 border border-dashed rounded-md">
               <ClipboardList className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">Aucune fiche d'alimentation</p>
-              <Button size="sm" className="mt-3" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Créer une fiche</Button>
+              <Button size="sm" className="mt-3" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Créer une fiche d’alimentation</Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -828,7 +828,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
       <Dialog open={openForm} onOpenChange={o => !savingSheet && setOpenForm(o)}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-2xl max-h-[90dvh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Modifier la fiche' : 'Nouvelle fiche d\'alimentation'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Modifier la fiche' : 'Créer une fiche d’alimentation'}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <Label>Titre *</Label>
