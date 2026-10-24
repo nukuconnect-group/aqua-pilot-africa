@@ -1,3 +1,10 @@
+## Fiches avancées de nourrissage (24/10/2026)
+- [ ] Revoir les fiches modifiables et leurs exports PDF/impression
+- [ ] Période et heure réelle ; prescription, prélèvement, service et retour ; mortalité
+- [ ] Mouvements automatiques du stock de production de l’unité, sans enregistrement partiel
+- [ ] Protéger les brouillons contre les rechargements et tester les règles 20/15/5
+- [ ] Vérifier le parcours connecté et le déploiement sur la base réellement utilisée
+
 ## Module Alimentation (demande du 24/10/2026)
 - [x] Fiches d'alimentation : plusieurs infrastructures par fiche, périodes matin/midi/soir avec heure par période
 - [x] Afficher le nombre de poissons par infrastructure (cycle actif) sur les fiches et au nourrissage
