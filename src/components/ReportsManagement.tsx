@@ -28,6 +28,7 @@ import {
 } from '@/lib/reportExportUtils';
 import { toast } from 'sonner';
 import CycleFinancialReport from './reports/CycleFinancialReport';
+import CommercialPerformance from './analytics/CommercialPerformance';
 
 interface ReportPreviewData {
   id: string;
@@ -40,7 +41,7 @@ interface ReportPreviewData {
   sections: ReportData['sections'];
 }
 
-const ReportsManagement = () => {
+const ProductionReportsManagement = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedFormat, setSelectedFormat] = useState('pdf');
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
@@ -1172,4 +1173,8 @@ const ReportsManagement = () => {
   );
 };
 
+const ReportsManagement = () => {
+  const { activeUnit } = useProductionUnits();
+  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Rapports commerciaux" initialTab="report" /> : <ProductionReportsManagement />;
+};
 export default ReportsManagement;

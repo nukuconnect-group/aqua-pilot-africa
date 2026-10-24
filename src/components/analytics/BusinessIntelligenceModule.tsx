@@ -10,6 +10,7 @@ import { Brain, LineChart as LineIcon, Loader2, TrendingDown, TrendingUp, AlertT
 import { supabase } from '@/integrations/supabase/appClient';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { formatMoney } from '@/lib/currency';
+import CommercialPerformance from './CommercialPerformance';
 
 type PeriodKey = '7' | '30' | '90' | '365' | 'custom';
 const DAY = 86_400_000;
@@ -44,7 +45,7 @@ const Kpi = ({ label, value, change, invert = false }: { label: string; value: s
 
 const Empty = () => <div className="flex h-56 items-center justify-center text-sm text-muted-foreground">Aucune donnée sur cette période</div>;
 
-const BusinessIntelligenceModule = () => {
+const ProductionBusinessIntelligenceModule = () => {
   const { activeUnit } = useProductionUnits();
   const [period, setPeriod] = useState<PeriodKey>('30');
   const [customFrom, setCustomFrom] = useState(iso(new Date(Date.now() - 30 * DAY)));
@@ -268,4 +269,8 @@ const ForecastPanel = ({ unitId, unitName }: { unitId?: string; unitName?: strin
   );
 };
 
+const BusinessIntelligenceModule = () => {
+  const { activeUnit } = useProductionUnits();
+  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Intelligence & Analyse" /> : <ProductionBusinessIntelligenceModule />;
+};
 export default BusinessIntelligenceModule;
