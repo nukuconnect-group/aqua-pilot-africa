@@ -80,12 +80,12 @@ BEGIN
 
   -- Le relevé référence une infrastructure DE CYCLE (FK) : on traduit le bassin de l'unité
   -- vers l'infrastructure du cycle actif le plus récent portant le même nom ; NULL si aucune.
-  SELECT ci.id INTO v_ci_id FROM public.cycle_infrastructures ci
+  SELECT cif.id INTO v_ci_id FROM public.cycle_infrastructures cif
    WHERE EXISTS (SELECT 1 FROM public.production_cycles p
-                 WHERE p.id = ci.cycle_id AND p.unit_id::text = sh.unit_id::text)
-     AND lower(trim(ci.infrastructure_name)) = lower(trim(v_infra_name))
-   ORDER BY (EXISTS (SELECT 1 FROM public.production_cycles p2 WHERE p2.id = ci.cycle_id AND p2.status = 'active')) DESC,
-            ci.created_at DESC
+                 WHERE p.id = cif.cycle_id AND p.unit_id::text = sh.unit_id::text)
+     AND lower(trim(cif.infrastructure_name)) = lower(trim(v_infra_name))
+   ORDER BY (EXISTS (SELECT 1 FROM public.production_cycles p2 WHERE p2.id = cif.cycle_id AND p2.status = 'active')) DESC,
+            cif.created_at DESC
    LIMIT 1;
 
   INSERT INTO public.feeding_records(user_id, unit_id, infrastructure_id, date, time, feed_type, quantity, session_type, feeder_name,
