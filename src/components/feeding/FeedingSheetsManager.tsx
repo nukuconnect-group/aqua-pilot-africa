@@ -738,45 +738,53 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-sm break-words">{s.title}</h3>
-                            {pts.map((pt) => {
-                              const meta = PERIOD_META[pt.period] || PERIOD_META.matin;
-                              const Icon = meta.icon;
-                              return (
-                                <Badge key={pt.period} className={`${meta.color} text-[10px]`}>
-                                  <Icon className="w-3 h-3 mr-1" />{meta.label} {pt.time}
-                                </Badge>
-                              );
-                            })}
                             {!s.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {ids.length ? ids.map((id) => infraName(id)).join(', ') : 'Toutes infrastructures'}
+                          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                            <Fish className="w-3 h-3" />
+                            {ids.length === 1
+                              ? <>{infraName(ids[0])} · <strong className="text-foreground">{fishCounts[ids[0]] !== undefined ? `${fishCounts[ids[0]]} sujets disponibles` : 'effectif inconnu'}</strong></>
+                              : <span className="text-destructive">Infrastructure à rattacher</span>}
                           </p>
                         </div>
                         <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                          <Button size="icon" variant="ghost" title="Télécharger la fiche en PDF" aria-label="Télécharger la fiche en PDF" onClick={() => downloadSheetPdf(s)}><FileDown className="w-4 h-4" /></Button>
-                          <Button size="icon" variant="ghost" title="Imprimer la fiche du jour" onClick={() => printDailySheet(s)}><Printer className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Télécharger la fiche du jour en PDF" aria-label="Télécharger la fiche en PDF" onClick={() => downloadSheetPdf(s)}><FileDown className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Imprimer la fiche du jour" aria-label="Imprimer la fiche du jour" onClick={() => printDailySheet(s)}><Printer className="w-4 h-4" /></Button>
                           <Button size="icon" variant="ghost" title="Modifier la fiche" aria-label="Modifier la fiche" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
                           <Button size="icon" variant="ghost" title="Supprimer la fiche" aria-label="Supprimer la fiche" onClick={() => setDeleteId(s.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 break-words text-xs">
-                        <div><span className="text-muted-foreground">Quantité:</span> <strong>{s.quantity} {s.unit}</strong></div>
-                        <div><span className="text-muted-foreground">Aliment:</span> <strong>{s.feed_type}</strong></div>
-                        {ids.map((id) => (
-                          <div key={id} className="col-span-2 flex items-center gap-1">
-                            <Fish className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">{infraName(id)} :</span>
-                            <strong>{fishCounts[id] !== undefined ? `${fishCounts[id]} poisson(s)` : 'effectif inconnu'}</strong>
-                          </div>
-                        ))}
-                        {s.responsible_name && <div className="col-span-2"><span className="text-muted-foreground">Resp.:</span> {s.responsible_name}</div>}
-                        <div className="col-span-2"><span className="text-muted-foreground">Jours:</span> {(s.days || []).join(', ')}</div>
-                        {s.observations && <div className="col-span-2 text-muted-foreground italic">{s.observations}</div>}
+                      <div className="overflow-hidden rounded-md border text-xs">
+                        <div className="grid grid-cols-3 bg-muted px-2 py-1 font-medium text-muted-foreground">
+                          <span>Période</span><span className="text-center">Heure</span><span className="text-right">À servir</span>
+                        </div>
+                        {sheetPlan(s).map((pt) => {
+                          const meta = PERIOD_META[pt.period] || PERIOD_META.matin;
+                          const Icon = meta.icon;
+                          return (
+                            <div key={pt.period} className="grid grid-cols-3 border-t px-2 py-1.5">
+                              <span className="flex items-center gap-1"><Icon className="w-3 h-3" />{meta.label}</span>
+                              <span className="text-center">{pt.time}</span>
+                              <strong className="text-right">{pt.quantity} {s.unit}</strong>
+                            </div>
+                          );
+                        })}
+                        <div className="grid grid-cols-3 border-t bg-muted/50 px-2 py-1.5 font-semibold">
+                          <span className="col-span-2">Ration du jour</span><span className="text-right">{planTotal(sheetPlan(s))} {s.unit}</span>
+                        </div>
                       </div>
-                      <div className="flex gap-2 pt-2 border-t">
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => validateDistribution(s)}>
+                      <div className="grid grid-cols-2 gap-2 break-words text-xs">
+                        <div className="col-span-2"><span className="text-muted-foreground">Aliment :</span> <strong>{s.feed_type}</strong></div>
+                        {s.responsible_name && <div className="col-span-2"><span className="text-muted-foreground">Responsable :</span> {s.responsible_name}</div>}
+                        <div className="col-span-2"><span className="text-muted-foreground">Jours :</span> {(s.days || []).join(', ')}</div>
+                        {cleanObservations(s.observations) && <div className="col-span-2 text-muted-foreground italic">{cleanObservations(s.observations)}</div>}
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-2 border-t">
+                        <Button size="sm" className="flex-1" disabled={!s.is_active} onClick={() => validateDistribution(s)}>
                           <CheckCircle2 className="w-4 h-4 mr-1" /> Nourrir aujourd’hui
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => toggleActive(s)}>
+                          {s.is_active ? 'Désactiver' : 'Réactiver'}
                         </Button>
                       </div>
                     </CardContent>
