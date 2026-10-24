@@ -61,8 +61,20 @@ export async function recordSheetFeeding(db: any, userId: string, input: Feeding
     const mv = await db.from('stock_movements').insert(movements);
     if (mv.error) throw mv.error;
 
+    // Le relevé référence une infrastructure DE CYCLE (FK de feeding_records) : on traduit
+    // le bassin de l'unité vers l'infrastructure de cycle du même nom ; NULL si aucune.
+    let recordInfraId: string | null = null;
+    const cyc = await db.from('production_cycles').select('id').eq('unit_id', sheet.unit_id);
+    const cycIds = (cyc.data || []).map((c: any) => c.id);
+    if (cycIds.length) {
+      const { data: cis, error: cisError } = await db.from('cycle_infrastructures').select('id, infrastructure_name').in('cycle_id', cycIds).order('created_at', { ascending: false });
+      if (cisError) throw cisError;
+      const match = (cis || []).find((c: any) => String(c.infrastructure_name || '').trim().toLowerCase() === input.infrastructureName.trim().toLowerCase());
+      if (match) recordInfraId = match.id;
+    }
+
     const record = await db.from('feeding_records').insert([{
-      user_id: userId, unit_id: sheet.unit_id, infrastructure_id: input.infrastructureId, date: input.date, time: input.time,
+      user_id: userId, unit_id: sheet.unit_id, infrastructure_id: recordInfraId, date: input.date, time: input.time,
       feed_type: sheet.feed_type, quantity: input.served, session_type: input.period, feeder_name: sheet.responsible_name || null,
       prescribed_quantity: input.prescribed, actual_quantity: input.served, remaining_quantity: returned,
       mortality: input.mortality, behavior: input.behavior,
