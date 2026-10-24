@@ -3,8 +3,21 @@ import { infrastructureQrValue, resolveInfrastructureQr } from '../infrastructur
 
 describe('Infrastructure QR identity', () => {
   const infrastructure = { id: 'infra-1', unitId: 'unit-1', name: 'Bassin 1' };
-  it('keeps the same QR when the name changes', () => {
-    expect(infrastructureQrValue({ ...infrastructure, name: 'Bassin renommé' })).toBe(infrastructureQrValue(infrastructure));
+  it('keeps the persisted identity when the name changes and updates its readable name', () => {
+    const payload = JSON.parse(infrastructureQrValue({ ...infrastructure, name: 'Bassin renommé' }));
+    expect(payload.infrastructureId).toBe('infra-1');
+    expect(payload.unitId).toBe('unit-1');
+    expect(payload.name).toBe('Bassin renommé');
+  });
+  it('includes only the saved number, name and readable type, not private specifications', () => {
+    const payload = JSON.parse(infrastructureQrValue({ ...infrastructure, type: 'cage_flottante', specifications: { number: 'C-07', attachedBatchId: 'private-batch' } }));
+    expect(payload.number).toBe('C-07');
+    expect(payload.name).toBe('Bassin 1');
+    expect(payload.infrastructureType).toBeTruthy();
+    expect(payload.attachedBatchId).toBeUndefined();
+  });
+  it('never invents a number when none is saved', () => {
+    expect(JSON.parse(infrastructureQrValue(infrastructure)).number).toBeUndefined();
   });
   it('assigns distinct codes to distinct infrastructures', () => {
     expect(infrastructureQrValue({ ...infrastructure, id: 'infra-2' })).not.toBe(infrastructureQrValue(infrastructure));

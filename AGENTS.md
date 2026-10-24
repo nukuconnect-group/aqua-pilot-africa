@@ -1,6 +1,7 @@
 
 - AquaAssistant UI must remain in `AquaAssistantModule`; the legacy `AquaAssistant` widget is not a second implementation. This keeps one mounted assistant surface and one persisted conversation system.
-- Infrastructure QR identity is centralized in infrastructureQr and derived from persisted unit/infrastructure IDs; cycle IDs must resolve uniquely within the same unit so cards and exports share one stable code without schema changes.
+- Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
+- Feeding print/PDF windows use printWhenReady to wait for assets and rendered SVG layout instead of printing immediately or after a fixed delay.
 - Render the assistant launcher through a body portal independently of module eligibility, hiding it only while the assistant overlay is actually rendered; keep the conversation permission check so layout clipping or stale open state cannot hide the launcher or bypass access rules.
 - Centralize universal AquaAssistant eligibility in core/always-open module rules and exempt only its screen from subscription expiry; keep authenticated server calls and unit data permissions unchanged.
 - Preserve explicit tab IDs during URL resolution; permission-group IDs must not redirect sibling screens, so Stock remains a separate screen with existing feeding permissions.
@@ -15,6 +16,7 @@
 - POS checks that the selected cash session is still open before recording a sale and reports unexpected failures; this client check does not replace server-side atomic posting.
 - Stock removals use one unit-scoped selected-ID delete and a confirmation; reset snapshots the unit's displayed IDs rather than issuing an unbounded delete, preserving existing movement and financial history.
 - Stock items carry an explicit purpose (production or commercial, src/lib/stockPurpose.ts); only commercial, in-stock items reach the POS and only production items feed fish, so inputs are never sold by name or category.
+- Unit-specific stock presentation and creation/import purpose use the shared stockPurpose policy; filter without reclassifying existing items to preserve inventory history. Mandatory module restrictions remain centralized in planModules so stale configuration cannot restore excluded screens.
 - A global DOM guard (src/lib/domPatch.ts) tolerates external DOM moves (browser translation) so React no longer crashes on insertBefore/removeChild.
 - Unit = warehouse: a completed production cycle's harvest is transferred once (ref in notes) into the same unit's commercial stock; POS posts the cash movement and commercial stock deduction in one server function (pos_post_sale), idempotent per sale; the client path is only a fallback for databases without it.
 - AI POS suggestions run in the pos-ai-suggest function, which verifies the app-backend user and only returns real catalog items; the seller confirms before anything enters the cart.

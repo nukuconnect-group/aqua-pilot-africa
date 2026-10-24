@@ -1,4 +1,5 @@
 import { translateDelimitedText, translateHtmlDocument } from '@/i18n/runtime';
+import { printWhenReady } from '@/lib/printReady';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { infrastructureQrHTML, infrastructureQrValue, infrastructureQrPng, infrastructureQrTableHTML, type InfrastructureQrIdentity } from '@/lib/infrastructureQr';
@@ -317,7 +318,7 @@ export const exportFeedingToPDF = (options: ExportFeedingOptions) => {
   if (printWindow) {
     printWindow.document.write(translateHtmlDocument(html));
     printWindow.document.close();
-    printWindow.print();
+    void printWhenReady(printWindow);
   }
 };
 

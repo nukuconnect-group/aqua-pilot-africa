@@ -69,10 +69,10 @@ const MODULE_META: Record<string, { category: string; premium?: boolean; core?: 
   environment: { category: 'Technique' },
   units: { category: 'Exploitation' },
   infrastructure: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
-  livestock: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'algoculture', 'commercialisation'] },
+  livestock: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'algoculture'] },
   feeding: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment', 'algoculture'] },
   aquafeed: { category: 'Intelligence', premium: true, unitTypes: ['fabrication_aliment'] },
-  health: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment', 'algoculture', 'commercialisation'] },
+  health: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'fabrication_aliment', 'algoculture'] },
   aquahealth: { category: 'Intelligence', premium: true, unitTypes: ['ecloserie', 'grossissement', 'algoculture'] },
   production: { category: 'Exploitation', unitTypes: ['ecloserie', 'grossissement', 'transformation', 'conservation', 'fabrication_aliment', 'algoculture'] },
   accounting: { category: 'Gestion' },
@@ -367,7 +367,7 @@ export const DEFAULT_UNIT_MODULE_RULES: UnitModuleRules = (Object.keys(UNIT_TYPE
 const UNIT_TYPE_DENIED_MODULES: Partial<Record<ProductionUnitType, string[]>> = {
   fabrication_aliment: ['livestock'],
   algoculture: ['aquafeed'],
-  commercialisation: ['feeding', 'aquafeed'],
+  commercialisation: ['feeding', 'aquafeed', 'livestock', 'health', 'aquahealth'],
 };
 
 export const enforceUnitTypeRestrictions = (type: ProductionUnitType, modules: Iterable<string>) => {

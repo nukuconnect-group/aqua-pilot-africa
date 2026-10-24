@@ -1,3 +1,10 @@
+## Commercialisation et contrôle des QR (24/10/2026, 23:43 UTC)
+- [x] Compléter le QR avec nom, type et numéro enregistré s’il existe ; aucun numéro distinct dans les données contrôlées, référence persistée affichée sans invention
+- [x] Masquer Cheptel, Prophylaxie et AquaHealth IA en Commercialisation, y compris accès direct ; configuration obsolète testée
+- [x] Présenter uniquement le stock commercial, créations et imports commerciaux sans modifier les anciens articles ; brouillon production sauvegardé comme commercial vérifié
+- [x] Contrôler les placements QR des cartes et PDF ; attendre images et rendu avant impression ; PDF généré à partir d’un relevé réel et QR scanné avec nom/type/identité corrects ; 78 tests réussis
+- [ ] Vérifier les cartes et téléchargements depuis le compte connecté : navigateur redirigé vers onboarding, session historique indisponible ; contrôles isolés uniquement, aucune donnée réelle modifiée
+
 ## QR des infrastructures (24/10/2026)
 - [x] Afficher un QR stable sur chaque infrastructure et sa carte d’alimentation
 - [x] Inclure le même QR dans les PDF, impressions, Word, Excel et programmes ; CSV contient la référence du QR

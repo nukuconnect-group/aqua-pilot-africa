@@ -8,6 +8,7 @@ import StockMovementsPanel from './feeding/StockMovementsPanel';
 import StockCsvImport from './stock/StockCsvImport';
 import StockBarcodeLabels from './stock/StockBarcodeLabels';
 import ProductionUnitSelector from './ProductionUnitSelector';
+import { stocksForUnitType } from '@/lib/stockPurpose';
 
 const StockManagement: React.FC = () => {
   const { activeUnit } = useProductionUnits();
@@ -49,7 +50,7 @@ const StockManagement: React.FC = () => {
           <StockCsvImport key={activeUnit.id} unitId={activeUnit.id} onDone={() => refetch()} onViewStocks={() => setTab('stocks')} />
         </TabsContent>
         <TabsContent value="labels">
-          <StockBarcodeLabels stocks={stocks} />
+            <StockBarcodeLabels stocks={stocksForUnitType(stocks, activeUnit.type)} />
         </TabsContent>
         <TabsContent value="movements">
           <StockMovementsPanel key={`movements-${activeUnit.id}`} unitId={activeUnit.id} />

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { printWhenReady } from '@/lib/printReady';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -413,7 +414,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
     if (printWindow) {
       printWindow.document.write(html);
       printWindow.document.close();
-      printWindow.print();
+      void printWhenReady(printWindow);
     }
   };
 

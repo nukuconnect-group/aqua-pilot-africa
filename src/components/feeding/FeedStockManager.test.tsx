@@ -2,7 +2,7 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({ updateStock: vi.fn(), deleteStocks: vi.fn(), createStock: vi.fn(), toast: vi.fn(), stocks: [
+const state = vi.hoisted(() => ({ unitType: 'grossissement', updateStock: vi.fn(), deleteStocks: vi.fn(), createStock: vi.fn(), toast: vi.fn(), stocks: [
   { id: 'a', unit_id: 'unit-a', custom_name: 'Article A', feed_type: 'autre', quantity: 10, unit: 'kg', supplier: 'Fournisseur A', cost: 100, min_threshold: 0 },
   { id: 'b', unit_id: 'unit-a', custom_name: 'Article B', feed_type: 'autre', quantity: 20, unit: 'kg', min_threshold: 0 },
 ] }));
@@ -10,7 +10,7 @@ vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({
   stocks: state.stocks, loading: false, error: null, refetch: vi.fn(), ...state,
 }) }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
-vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ activeUnit: { id: 'unit-a', name: 'Unité A', type: 'fish_farming' } }) }));
+vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ activeUnit: { id: 'unit-a', name: 'Unité A', type: state.unitType } }) }));
 vi.mock('@/integrations/supabase/appClient', () => ({ supabase: { auth: { getUser: async () => ({ data: { user: null } }) } } }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'test-user' } }) }));
 vi.mock('@/hooks/useSuppliers', () => ({ useSuppliers: () => ({ suppliers: [] }) }));
@@ -44,6 +44,7 @@ const select = async (name: string) => {
   await act(async () => checkbox.click());
 };
 beforeEach(async () => {
+  state.unitType = 'grossissement';
   vi.clearAllMocks(); sessionStorage.clear(); state.createStock.mockResolvedValue({}); state.deleteStocks.mockImplementation(async ids => ids); state.updateStock.mockResolvedValue({});
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -70,7 +71,8 @@ describe('actions du stock — essais isolés sans données réelles', () => {
   it('20 sacs de 25 kg à 15 000 F le sac : 500 kg à 600 F/kg', async () => {
     await click('Ajouter stock');
     const production = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(b => b.textContent?.includes('nourrir mes poissons'));
-    await act(async () => production!.click());
+    if (!production) throw new Error('Production choice missing');
+    await act(async () => production.click());
     await input(field('Nom de l’article *'), 'Granulés 3 mm');
     await click('En sacs');
     await input(field('Nombre de sacs'), '20');
@@ -86,6 +88,24 @@ describe('actions du stock — essais isolés sans données réelles', () => {
     root = createRoot(container);
     await act(async () => root.render(<FeedStockManager unitId="unit-a" />));
     expect(field('Nom de l’article *').value).toBe('Aliment en cours');
+  });
+  it('saves a restored production draft as commercial in Commercialisation without losing quantities or cost', async () => {
+    await click('Ajouter stock');
+    const production = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(b => b.textContent?.includes('nourrir mes poissons'));
+    if (!production) throw new Error('Production choice missing');
+    await act(async () => production.click());
+    await input(field('Nom de l’article *'), 'Article en cours');
+    await click('En sacs');
+    await input(field('Nombre de sacs'), '20');
+    await click('20 kg');
+    await input(field('Prix d’un sac (F CFA)'), '10000');
+    await act(async () => root.unmount());
+    state.unitType = 'commercialisation';
+    root = createRoot(container);
+    await act(async () => root.render(<FeedStockManager unitId="unit-a" />));
+    await input(field('Prix de vente unitaire'), '700');
+    await click('Ajouter le stock');
+    expect(state.createStock).toHaveBeenCalledWith(expect.objectContaining({ stock_purpose: 'commercial', quantity: 400, cost: 500, sale_price: 700, bag_count: 20, kg_per_bag: 20 }));
   });
   it('annuler une suppression ne supprime rien', async () => {
     await click('Supprimer Article A'); await click('Annuler'); expect(state.deleteStocks).not.toHaveBeenCalled();
