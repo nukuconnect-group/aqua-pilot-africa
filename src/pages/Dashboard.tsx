@@ -44,7 +44,6 @@ import PerformanceAlertsPanel from '@/components/alerts/PerformanceAlertsPanel';
 import PerformanceAlertsConfig from '@/components/alerts/PerformanceAlertsConfig';
 import SettingsManagement from '@/components/SettingsManagement';
 import SupportModule from '@/components/SupportModule';
-import AquaAssistant from '@/components/AquaAssistant';
 import AquaAssistantModule from '@/components/AquaAssistantModule';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import SubscriptionGuard from '@/components/subscription/SubscriptionGuard';
@@ -227,8 +226,7 @@ const Dashboard: React.FC = () => {
     );
   };
 
-  // État pour afficher le module AquaAssistant en page complète
-  const [showAquaAssistantModule, setShowAquaAssistantModule] = useState(false);
+  const [assistantMounted, setAssistantMounted] = useState(activeTab === 'aqua-assistant');
   // Fenêtre de discussion par-dessus le module en cours (le module reste visible derrière).
   const [assistantOpen, setAssistantOpen] = useState(false);
   const assistantOverlayVisible = assistantOpen && activeTab !== 'aqua-assistant' && canAccessTab('aqua-assistant');
@@ -241,12 +239,8 @@ const Dashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    if (activeTab === 'aqua-assistant') {
-      setShowAquaAssistantModule(true);
-    } else {
-      setShowAquaAssistantModule(false);
-    }
-  }, [activeTab]);
+    if (activeTab === 'aqua-assistant' || assistantOpen) setAssistantMounted(true);
+  }, [activeTab, assistantOpen]);
 
   const renderContent = () => {
     // Abonnement : module non inclus -> aucun rendu du module, aucune donnée exposée.
@@ -337,7 +331,7 @@ const Dashboard: React.FC = () => {
       case 'admin':
         return <AdminDashboard />;
       case 'aqua-assistant':
-        return <AquaAssistantModule />;
+        return null;
       default:
         return (
           <>
@@ -406,6 +400,12 @@ const Dashboard: React.FC = () => {
                   </ModuleErrorBoundary>
                 </SubscriptionGuard>
               )}
+              {assistantMounted && canAccessTab('aqua-assistant') && <div className={activeTab === 'aqua-assistant' || assistantOverlayVisible ? 'contents' : 'hidden'}>
+                <AquaAssistantModule presentation={activeTab === 'aqua-assistant' ? 'page' : 'floating'} onClose={() => {
+                  setAssistantOpen(false);
+                  if (activeTab === 'aqua-assistant') handleTabChange('dashboard');
+                }} />
+              </div>}
             </div>
           </main>
         </div>
@@ -413,10 +413,7 @@ const Dashboard: React.FC = () => {
         {/* Navigation mobile en bas */}
         <MobileNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
-        {assistantOverlayVisible && (
-          <AquaAssistantModule onClose={() => setAssistantOpen(false)} />
-        )}
-        {!assistantOverlayVisible && <AssistantFloatingBubble activeTab={activeTab} onOpen={() => {
+        {!assistantOverlayVisible && activeTab !== 'aqua-assistant' && <AssistantFloatingBubble activeTab={activeTab} onOpen={() => {
           if (canAccessTab('aqua-assistant') && activeTab !== 'aqua-assistant') setAssistantOpen(true);
           else if (activeTab !== 'aqua-assistant') commitTabChange('aqua-assistant');
         }} />}
