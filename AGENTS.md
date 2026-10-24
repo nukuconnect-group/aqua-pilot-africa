@@ -1,6 +1,6 @@
 
 - AquaAssistant UI must remain in `AquaAssistantModule`; the legacy `AquaAssistant` widget is not a second implementation. This keeps one mounted assistant surface and one persisted conversation system.
-- Infrastructure QR identity is centralized in infrastructureQr and derived from persisted unit/infrastructure IDs; cycle IDs must resolve uniquely within the same unit so cards and exports share one stable code without schema changes.
+- Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
 - Feeding print/PDF windows use printWhenReady to wait for assets and rendered SVG layout instead of printing immediately or after a fixed delay.
 - Render the assistant launcher through a body portal independently of module eligibility, hiding it only while the assistant overlay is actually rendered; keep the conversation permission check so layout clipping or stale open state cannot hide the launcher or bypass access rules.
 - Centralize universal AquaAssistant eligibility in core/always-open module rules and exempt only its screen from subscription expiry; keep authenticated server calls and unit data permissions unchanged.
