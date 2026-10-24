@@ -503,61 +503,84 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     return html;
   };
 
-  /** Fiche journalière imprimable d'une seule fiche, avec effectifs et cases à remplir. */
-  const buildDailySheetHTML = (s: FeedingSheet) => {
+  const DAILY_HEAD = ['Période', 'Heure prévue', 'Heure réelle', 'Effectif', 'Prescrite', 'Prélevée', 'Servie', 'Restante', 'Mortalité', 'Comportement', 'Raison / observations'];
+
+  const dailyData = async (s: FeedingSheet) => {
+    const date = new Date().toLocaleDateString('en-CA');
+    const id = sheetInfraIds(s)[0];
+    const records = await loadDayRecords(s, date);
+    const rows = buildDailyRows(sheetPlan(s), records, id ? fishCounts[id] : undefined);
+    const sum = (key: 'served' | 'remaining' | 'taken' | 'mortality') =>
+      rows.reduce((t, r) => t + (Number(r[key]) || 0), 0);
+    return { rows, id, totals: { prescribed: planTotal(sheetPlan(s)), taken: sum('taken'), served: sum('served'), remaining: sum('remaining'), mortality: sum('mortality') }, done: records.length };
+  };
+
+  /** Fiche journalière imprimable : une infrastructure, chaque période sur sa ligne, remplie avec les nourrissages du jour. */
+  const buildDailySheetHTML = async (s: FeedingSheet) => {
     const ci = companyPrintInfo();
     const now = new Date();
-    const ids = sheetInfraIds(s);
-    const rows = sheetPeriods(s).flatMap(pt => (ids.length ? ids : ['']).map(id => ({ id, pt }))).map(({ id, pt }) => {
-      const name = id ? infraName(id) : 'Toutes infrastructures';
-      const count = id ? fishCounts[id] : undefined;
-      return `
+    const { rows, id, totals } = await dailyData(s);
+    const u = escapeHtml(s.unit);
+    const body = rows.map(r => `
         <tr>
-          <td>${escapeHtml(name)}</td><td>${escapeHtml(PERIOD_META[pt.period].label)} ${pt.time}</td><td></td>
-          <td style="text-align:center;">${count !== undefined ? count : '—'}</td>
-          <td>${escapeHtml(s.feed_type)}</td>
-          <td style="text-align:center;">${s.quantity} ${escapeHtml(s.unit)}</td>
-          <td></td><td></td><td></td><td></td><td></td>
-        </tr>`;
-    }).join('');
+          <td><strong>${PERIOD_LABELS[r.period]}</strong></td><td class="c">${r.plannedTime}</td><td class="c">${r.actualTime}</td>
+          <td class="c">${r.fish || '—'}</td><td class="c">${r.prescribed} ${u}</td><td class="c">${r.taken}</td>
+          <td class="c">${r.served}</td><td class="c">${r.remaining}</td><td class="c">${r.mortality}</td>
+          <td>${escapeHtml(r.behavior)}</td><td>${escapeHtml(r.notes)}</td>
+        </tr>`).join('');
+    const cleanNotes = cleanObservations(s.observations);
 
     return `<!doctype html><html><head><meta charset="utf-8"><title>Fiche de nourrissage — ${escapeHtml(s.title)}</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 24px; color: #1e293b; }
-        h1 { color: #0f766e; margin: 0 0 4px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
-        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
-        th { background: #f1f5f9; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #e0f2fe; color: #075985; font-size: 11px; margin: 1px; }
-        .meta { font-size: 12px; color: #475569; margin: 4px 0; }
-        .footer { margin-top: 24px; font-size: 11px; color: #64748b; text-align: center; }
+        @page { size: A4 landscape; margin: 12mm; }
+        body { font-family: Arial, sans-serif; margin: 0; color: #1e293b; }
+        h1 { color: #0f766e; margin: 8px 0 2px; font-size: 20px; letter-spacing: .3px; }
+        .sub { color: #475569; font-size: 12px; margin: 0 0 12px; }
+        .info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0 4px; }
+        .info div { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 11px; color: #475569; }
+        .info strong { display: block; color: #0f172a; font-size: 13px; margin-top: 2px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 11px; }
+        th, td { border: 1px solid #cbd5e1; padding: 7px 6px; text-align: left; vertical-align: top; }
+        th { background: #0f766e; color: #ffffff; font-weight: bold; }
+        td.c, th.c { text-align: center; }
+        tbody tr td { height: 26px; }
+        tfoot td { background: #f1f5f9; font-weight: bold; }
+        .notes { margin-top: 12px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; min-height: 40px; }
+        .footer { margin-top: 18px; font-size: 10px; color: #64748b; text-align: center; }
         ${SIGNATURES_CSS}
       </style></head><body>
       ${generateCompanyHeaderHTML(ci)}
-      <h1>Fiche de nourrissage journalière</h1>
-      <p class="meta">Unité : <strong>${escapeHtml(unitName)}</strong> — Date : ${now.toLocaleDateString('fr-FR')}</p>
-      <p class="meta">Fiche : <strong>${escapeHtml(s.title)}</strong> — Responsable : <strong>${escapeHtml(s.responsible_name || '—')}</strong></p>
-      <p class="meta">Périodes : ${sheetPeriods(s).map((pt) => `<span class="badge">${PERIOD_META[pt.period]?.label || pt.period} — ${pt.time}</span>`).join(' ')}</p>
+      <h1>FICHE DE NOURRISSAGE JOURNALIÈRE</h1>
+      <p class="sub">${escapeHtml(s.title)} — ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <div class="info">
+        <div>Unité<strong>${escapeHtml(unitName)}</strong></div>
+        <div>Infrastructure<strong>${escapeHtml(infraName(id))}</strong></div>
+        <div>Sujets disponibles<strong>${id && fishCounts[id] !== undefined ? fishCounts[id] : '—'}</strong></div>
+        <div>Aliment<strong>${escapeHtml(s.feed_type)}</strong></div>
+        <div>Ration du jour<strong>${totals.prescribed} ${u}</strong></div>
+        <div>Responsable<strong>${escapeHtml(s.responsible_name || '—')}</strong></div>
+        <div>Début de la fiche<strong>${escapeHtml(s.start_date || '—')}</strong></div>
+        <div>Jours<strong>${escapeHtml((s.days || []).map(d => d.slice(0, 3)).join(', '))}</strong></div>
+      </div>
       <table>
-        <thead>
-          <tr>
-            <th>Infrastructure</th><th>Période prévue</th><th>Heure réelle</th><th>Poissons présents</th><th>Aliment</th>
-            <th>Prescrite</th><th>Prélevée</th><th>Servie</th><th>Restante / retour</th><th>Mortalité</th><th>Observations</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
+        <thead><tr>${DAILY_HEAD.map((h, i) => `<th class="${i < 9 ? 'c' : ''}">${h}</th>`).join('')}</tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr>
+          <td colspan="4">Total de la journée</td><td class="c">${totals.prescribed} ${u}</td><td class="c">${totals.taken || ''}</td>
+          <td class="c">${totals.served || ''}</td><td class="c">${totals.remaining || ''}</td><td class="c">${totals.mortality || ''}</td><td colspan="2"></td>
+        </tr></tfoot>
       </table>
-      ${s.observations ? `<p class="meta">Consignes : ${escapeHtml(s.observations)}</p>` : ''}
+      <div class="notes"><strong>Consignes :</strong> ${escapeHtml(cleanNotes || '')}</div>
       ${SIGNATURES_HTML}
       ${generateCompanyFooterHTML(ci)}
-      <div class="footer">AquaPilote — Fiche de nourrissage journalière</div>
+      <div class="footer">Fiche de nourrissage — ${escapeHtml(unitName)} — imprimée le ${now.toLocaleString('fr-FR')}</div>
     </body></html>`;
   };
 
   const openPrintWindow = (html: string) => {
     const w = window.open('', '_blank', 'width=1024,height=768');
     if (!w) {
-      toast({ title: 'Bloqué', description: 'Autorisez les popups pour imprimer', variant: 'destructive' });
+      toast({ title: 'Bloqué', description: 'Autorisez les fenêtres pour imprimer', variant: 'destructive' });
       return;
     }
     w.document.write(html);
@@ -567,36 +590,62 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   const printProgram = (period: 'today' | 'week' | 'month') => openPrintWindow(buildProgramHTML(period));
-  const printDailySheet = (s: FeedingSheet) => openPrintWindow(buildDailySheetHTML(s));
+  const printDailySheet = async (s: FeedingSheet) => openPrintWindow(await buildDailySheetHTML(s));
 
   const downloadSheetPdf = async (s: FeedingSheet) => {
     try {
       const doc = new jsPDF({ orientation: 'landscape' });
-      let y = 16;
+      const pageW = doc.internal.pageSize.getWidth();
+      let y = 14;
       if (companyInfo.logoUrl) {
         try {
           const image = new Image(); image.crossOrigin = 'anonymous';
           await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = reject; image.src = companyInfo.logoUrl || ''; });
           const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
           const ctx = canvas.getContext('2d');
-          if (ctx) { ctx.drawImage(image, 0, 0); doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, 8, 24, 16); y = 30; }
-        } catch { /* The company's text remains even if its logo is unavailable. */ }
+          if (ctx) { ctx.drawImage(image, 0, 0); doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, 8, 22, 16); }
+        } catch { /* Le texte de l'entreprise reste affiché même sans logo. */ }
       }
-      doc.setFontSize(16); doc.text(companyInfo.name || unitName, 14, y);
-      doc.setFontSize(9); doc.text([companyInfo.address, companyInfo.phone, companyInfo.email].filter(Boolean).join(' · '), 14, y + 6);
-      doc.setFontSize(14); doc.text('Fiche de nourrissage', 14, y + 17);
-      doc.setFontSize(10); doc.text(doc.splitTextToSize(`${s.title} — Unité : ${unitName}`, 265), 14, y + 24);
-      doc.text(`Responsable : ${s.responsible_name || '—'} · Début : ${s.start_date}${s.end_date ? ` · Fin : ${s.end_date}` : ''}`, 14, y + 35);
-      const ids = sheetInfraIds(s);
+      const x = companyInfo.logoUrl ? 40 : 14;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text(companyInfo.name || unitName, x, y);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+      doc.text([companyInfo.address, companyInfo.phone, companyInfo.email].filter(Boolean).join(' · '), x, y + 5);
+      doc.setDrawColor(15, 118, 110); doc.setLineWidth(0.6); doc.line(14, 27, pageW - 14, 27);
+      y = 36;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(15, 118, 110);
+      doc.text('FICHE DE NOURRISSAGE JOURNALIÈRE', pageW / 2, y, { align: 'center' });
+      doc.setTextColor(30, 41, 59); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+      doc.text(`${s.title} — ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`, pageW / 2, y + 6, { align: 'center' });
+      const { rows, id, totals } = await dailyData(s);
       autoTable(doc, {
-        startY: y + 40, styles: { fontSize: 8 }, theme: 'grid',
-        head: [['Infrastructure', 'Effectif', 'Période', 'Heure prévue', 'Heure réelle', 'Aliment', 'Prescrite', 'Prélevée', 'Servie', 'Retour', 'Mortalité']],
-        body: sheetPeriods(s).flatMap(pt => ids.map(id => [infraName(id), fishCounts[id] ?? '—', PERIOD_META[pt.period].label, pt.time, '', s.feed_type, `${s.quantity} ${s.unit}`, '', '', '', ''])),
+        startY: y + 11, theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: { 0: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 }, 2: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 } },
+        body: [
+          ['Unité', unitName, 'Infrastructure', infraName(id)],
+          ['Sujets disponibles', id && fishCounts[id] !== undefined ? String(fishCounts[id]) : '—', 'Aliment', s.feed_type],
+          ['Ration du jour', `${totals.prescribed} ${s.unit}`, 'Responsable', s.responsible_name || '—'],
+        ],
       });
-      doc.addPage(); doc.setFontSize(12); doc.text('Consignes et validation', 14, 18);
-      doc.setFontSize(10); doc.text(doc.splitTextToSize(s.observations || '—', 265), 14, 28);
-      doc.text('Le consultant : nom et signature', 14, 100); doc.text("Le directeur de l’exploitation : nom et signature", 155, 100);
-      doc.save(`fiche-nourrissage-${s.title.replace(/[^a-zA-Z0-9À-ÿ_-]/g, '-')}.pdf`);
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 5, theme: 'grid',
+        styles: { fontSize: 8.5, cellPadding: 2.2, minCellHeight: 9, valign: 'middle' },
+        headStyles: { fillColor: [15, 118, 110], textColor: 255, halign: 'center' },
+        footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
+        columnStyles: { 9: { cellWidth: 28 }, 10: { cellWidth: 50 } },
+        head: [DAILY_HEAD],
+        body: rows.map(r => [PERIOD_LABELS[r.period], r.plannedTime, r.actualTime, r.fish || '—', `${r.prescribed} ${s.unit}`, r.taken, r.served, r.remaining, r.mortality, r.behavior, r.notes]),
+        foot: [['Total de la journée', '', '', '', `${totals.prescribed} ${s.unit}`, totals.taken ? String(totals.taken) : '', totals.served ? String(totals.served) : '', totals.remaining ? String(totals.remaining) : '', totals.mortality ? String(totals.mortality) : '', '', '']],
+      });
+      let ey = (doc as any).lastAutoTable.finalY + 8;
+      const pageH = doc.internal.pageSize.getHeight();
+      if (ey > pageH - 45) { doc.addPage(); ey = 20; }
+      doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.text('Consignes :', 14, ey);
+      doc.setFont('helvetica', 'normal'); doc.text(doc.splitTextToSize(cleanObservations(s.observations) || '—', pageW - 50), 36, ey);
+      const sy = ey + 14;
+      doc.setFont('helvetica', 'bold'); doc.text('Le Consultant', 50, sy, { align: 'center' }); doc.text("Le Directeur de l'exploitation", pageW - 60, sy, { align: 'center' });
+      doc.setDrawColor(148, 163, 184); doc.setLineWidth(0.3); doc.line(20, sy + 18, 80, sy + 18); doc.line(pageW - 90, sy + 18, pageW - 30, sy + 18);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.text('Nom et signature', 50, sy + 23, { align: 'center' }); doc.text('Nom et signature', pageW - 60, sy + 23, { align: 'center' });
+      doc.save(`fiche-nourrissage-${s.title.replace(/[^a-zA-Z0-9À-ÿ_-]/g, '-')}-${new Date().toLocaleDateString('en-CA')}.pdf`);
     } catch { toast({ title: 'Téléchargement PDF impossible', variant: 'destructive' }); }
   };
 
