@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const sheet = { id: 'sheet-a', user_id: 'user-a', unit_id: 'unit-a', title: 'Fiche test', infrastructure_ids: ['infra-a'], period: 'matin', time: '07:00', feed_type: 'Aliment test', quantity: 20, unit: 'kg', frequency: 'daily', days: ['samedi'], start_date: '2026-10-24', is_active: true };
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), toast: vi.fn(), refetch: vi.fn(), noInfrastructure: false }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), toast: vi.fn(), refetch: vi.fn(), noInfrastructure: false, records: [] as any[] }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'user-a' } }) }));
 vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ infrastructures: mocks.noInfrastructure ? [] : [{ id: 'infra-a', unitId: 'unit-a', name: 'Infrastructure test' }] }) }));
 vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ companyInfo: {} }) }));
@@ -12,8 +12,8 @@ vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [{ id:
 vi.mock('@/integrations/supabase/appClient', () => ({ supabase: {
   rpc: mocks.rpc,
   from: (table: string) => {
-    const result = { data: table === 'feeding_sheets' ? [sheet] : [], error: null };
-    const chain = { select: () => chain, eq: () => chain, order: async () => result, then: (resolve: (r: unknown) => unknown) => Promise.resolve(result).then(resolve) };
+    const result = { data: table === 'feeding_sheets' ? [sheet] : table === 'feeding_records' ? [...mocks.records] : [], error: null };
+    const chain = { select: () => chain, eq: (key: string, value: string) => { if (table === 'feeding_records') result.data = result.data.filter((r: any) => r[key] === value); return chain; }, order: async () => result, then: (resolve: (r: unknown) => unknown) => Promise.resolve(result).then(resolve) };
     return chain;
   },
 } }));
@@ -31,9 +31,26 @@ const click = async (text: string) => {
   if (!button) throw new Error(`Action introuvable : ${text}`);
   await act(async () => button.click());
 };
-afterEach(async () => { await act(async () => root?.unmount()); container?.remove(); sessionStorage.clear(); mocks.noInfrastructure = false; vi.clearAllMocks(); });
+afterEach(async () => { await act(async () => root?.unmount()); container?.remove(); sessionStorage.clear(); mocks.noInfrastructure = false; mocks.records = []; vi.clearAllMocks(); });
 
 describe('enregistrement depuis la fiche', () => {
+  it('bloque un second nourrissage de la même période et garde la journée suivante distincte', async () => {
+    mocks.records = [{ id: 'record-a', unit_id: 'unit-a', infrastructure_id: 'infra-a', date: '2026-10-24', session_type: 'matin', actual_quantity: 15 }];
+    await mount();
+    const date = document.querySelector<HTMLInputElement>('#feeding-day');
+    if (!date) throw new Error('Date absente');
+    const change = async (value: string) => act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(date, value);
+      date.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await change('2026-10-24');
+    const doneButton = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Journée remplie'));
+    expect(doneButton?.disabled).toBe(true);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    await change('2026-10-31');
+    const feedButton = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Nourrir aujourd’hui'));
+    expect(feedButton?.disabled).toBe(false);
+  });
   it('empêche la création sans infrastructure et ne lance aucune écriture', async () => {
     mocks.noInfrastructure = true;
     await mount(); await click('Créer une fiche d’alimentation');

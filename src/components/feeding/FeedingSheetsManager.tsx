@@ -94,7 +94,7 @@ const emptyForm = (unitId: string): Partial<FeedingSheet> => ({
   unit: 'kg',
   responsible_name: '',
   observations: '',
-  frequency: 'daily',
+  frequency: 'weekly',
   days: [...DAYS],
   start_date: localDate(),
   end_date: dateAfter(localDate(), 6),
@@ -244,7 +244,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     }
     setEditing(null);
     // Reopening a new sheet preserves its unfinished draft.
-    if (editing) { setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); }
+    if (editing) { setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); setDayPlans({}); }
     setPlanDay('common');
     setOpenForm(true);
   };
@@ -318,7 +318,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const toggleActive = async (s: FeedingSheet) => {
     if (!s.is_active) {
       const id = sheetInfraIds(s)[0];
-      const conflict = id ? findInfrastructureConflict(sheets, id, localDate(), s.id) : null;
+      const conflict = id ? findInfrastructureConflict(sheets, id, s.start_date, s.id, s.end_date) : null;
       if (conflict) {
         toast({ title: 'Infrastructure déjà utilisée', description: `Désactivez d’abord la fiche « ${conflict.title} ».`, variant: 'destructive' });
         return;
@@ -404,7 +404,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       const requestId = feedForm.requestId || crypto.randomUUID();
       setFeedForm(previous => ({ ...previous, requestId }));
       if (sheetInfraIds(s)[0] !== infraId || sheetInfraIds(s).length !== 1) {
-        const conflict = findInfrastructureConflict(sheets, infraId, feedForm.date, s.id);
+        const conflict = findInfrastructureConflict(sheets, infraId, s.start_date, s.id, s.end_date);
         if (conflict) throw new Error(`${infraName(infraId)} figure déjà sur la fiche active « ${conflict.title} ».`);
         const { error } = await (supabase as any).from('feeding_sheets').update({ infrastructure_id: infraId }).eq('id', s.id).eq('unit_id', unitId);
         if (error) throw error;
@@ -613,7 +613,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   const printProgram = (period: 'today' | 'week' | 'month') => openPrintWindow(buildProgramHTML(period));
-  const printDailySheet = async (s: FeedingSheet) => openPrintWindow(await buildDailySheetHTML(s));
+  const printDailySheet = async (s: FeedingSheet) => {
+    try { openPrintWindow(await buildDailySheetHTML(s)); }
+    catch { toast({ title: 'Impression impossible', description: 'Les nourrissages de cette journée n’ont pas pu être chargés.', variant: 'destructive' }); }
+  };
 
   const downloadSheetPdf = async (s: FeedingSheet) => {
     try {
@@ -924,7 +927,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             </div>
             <div>
               <Label>Date de début</Label>
-              <Input type="date" value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} />
+              <Input type="date" value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value, end_date: e.target.value && form.frequency === 'weekly' ? dateAfter(e.target.value, 6) : form.end_date })} />
             </div>
             <div><Label htmlFor="sheet-end">Date de fin</Label><Input id="sheet-end" type="date" min={form.start_date} value={form.end_date || ""} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
             <div className="sm:col-span-2">
@@ -982,7 +985,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                         <Select onValueChange={attachFeedInfrastructure}>
                           <SelectTrigger id="feed-attach" className="mt-1"><SelectValue placeholder="Sélectionner l’infrastructure" /></SelectTrigger>
                           <SelectContent>{unitInfras.map(i => {
-                            const used = findInfrastructureConflict(sheets, i.id, feedForm.date, feeding.id);
+                            const used = findInfrastructureConflict(sheets, i.id, feeding.start_date, feeding.id, feeding.end_date);
                             return <SelectItem key={i.id} value={i.id} disabled={!!used}>{i.name}{used ? ` · déjà sur « ${used.title} »` : ''}</SelectItem>;
                           })}</SelectContent>
                         </Select>
