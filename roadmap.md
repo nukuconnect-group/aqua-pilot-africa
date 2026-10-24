@@ -1,4 +1,5 @@
 ## Fiches avancées de nourrissage (24/10/2026)
+- [ ] Nouvelle précision : exactement une infrastructure par fiche ; création bloquée sans infrastructure ; effectifs disponibles sur les infrastructures
 - [x] Revoir les fiches modifiables et leurs exports PDF/impression
 - [x] Période et heure réelle ; prescription, prélèvement, service et retour ; mortalité
 - [x] Préparer l’enregistrement atomique et idempotent des mouvements, mortalités et comptabilité dans docs/sql/feeding_distribution.sql ; interface sans repli partiel

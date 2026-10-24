@@ -52,6 +52,15 @@ export function normalizeInfrastructureIds(sheet: {
   return sheet.infrastructure_id ? [sheet.infrastructure_id] : [];
 }
 
+/** New and edited feeding sheets must target one existing infrastructure. */
+export function requireSingleInfrastructure(ids: string[], availableIds: string[]): string {
+  if (!availableIds.length) throw new Error('Vous n’avez aucune infrastructure dans cette unité. Créez une infrastructure avant sa fiche de nourrissage.');
+  if (ids.length !== 1 || !availableIds.includes(ids[0])) {
+    throw new Error('Une fiche de nourrissage doit être rattachée à une seule infrastructure de cette unité.');
+  }
+  return ids[0];
+}
+
 interface UnitInfraLike {
   id: string;
   name: string;
