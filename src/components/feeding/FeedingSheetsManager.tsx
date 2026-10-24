@@ -36,7 +36,7 @@ import {
 } from '@/lib/feedingSheetPlan';
 import { recordSheetFeeding } from '@/lib/recordSheetFeeding';
 import InfrastructureQRCode from '@/components/infrastructure/InfrastructureQRCode';
-import { resolveInfrastructureQr, infrastructureQrHTML, infrastructureQrPng } from '@/lib/infrastructureQr';
+import { resolveInfrastructureQr, infrastructureQrHTML, infrastructureQrPng, infrastructureQrCaption } from '@/lib/infrastructureQr';
 
 interface FeedingSheet {
   id: string;
@@ -653,10 +653,17 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       doc.text(`${s.title} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`, pageW / 2, y + 6, { align: 'center' });
       const { rows, id, totals } = await dailyData(s);
       const qr = sheetQr(s);
-      if (qr) doc.addImage(await infrastructureQrPng(qr), 'PNG', pageW - 40, y + 11, 26, 26);
+      let qrBottom = 0;
+      if (qr) {
+        doc.addImage(await infrastructureQrPng(qr), 'PNG', pageW - 50, y + 11, 36, 36);
+        const caption = doc.splitTextToSize(infrastructureQrCaption(qr), 36);
+        doc.setFontSize(6.5);
+        doc.text(caption, pageW - 32, y + 50, { align: 'center' });
+        qrBottom = y + 50 + caption.length * 2.5;
+      }
       autoTable(doc, {
         startY: y + 11, theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
-        margin: { left: 14, right: qr ? 46 : 14 },
+        margin: { left: 14, right: qr ? 56 : 14 },
         columnStyles: { 0: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 }, 2: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 } },
         body: [
           ['Unité', unitName, 'Infrastructure', infraName(id)],
@@ -665,7 +672,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
         ],
       });
       autoTable(doc, {
-        startY: Math.max((doc as any).lastAutoTable.finalY, qr ? y + 37 : 0) + 5, theme: 'grid',
+        startY: Math.max((doc as any).lastAutoTable.finalY, qrBottom) + 5, theme: 'grid',
         styles: { fontSize: 8.5, cellPadding: 2.2, minCellHeight: 9, valign: 'middle' },
         headStyles: { fillColor: [15, 118, 110], textColor: 255, halign: 'center' },
         footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
