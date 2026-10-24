@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
