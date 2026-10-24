@@ -30,7 +30,7 @@ export function resolveInfrastructureQr(
 }
 
 export const infrastructureQrSvg = (infrastructure: InfrastructureQrIdentity, size = 112) =>
-  renderToStaticMarkup(<QRCodeSVG value={infrastructureQrValue(infrastructure)} size={size} level="M" marginSize={4} />);
+  renderToStaticMarkup(<QRCodeSVG xmlns="http://www.w3.org/2000/svg" value={infrastructureQrValue(infrastructure)} size={size} level="M" marginSize={4} />);
 
 export const infrastructureQrDataUri = (infrastructure: InfrastructureQrIdentity) =>
   `data:image/svg+xml;charset=utf-8,${encodeURIComponent(infrastructureQrSvg(infrastructure, 320))}`;
