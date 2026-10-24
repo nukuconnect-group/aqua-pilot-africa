@@ -69,7 +69,8 @@ describe('actions du stock — essais isolés sans données réelles', () => {
   });
   it('20 sacs de 25 kg à 15 000 F le sac : 500 kg à 600 F/kg', async () => {
     await click('Ajouter stock');
-    await click('Stock de production'.length ? [...document.querySelectorAll('[role="dialog"] button')].find(b => b.textContent?.startsWith('Stock de production') || b.textContent?.includes('nourrir'))!.textContent!.trim() : '');
+    const production = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(b => b.textContent?.includes('nourrir mes poissons'));
+    await act(async () => production!.click());
     await input(field('Nom de l’article *'), 'Granulés 3 mm');
     await click('En sacs');
     await input(field('Nombre de sacs'), '20');
