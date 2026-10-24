@@ -1,5 +1,6 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
@@ -385,7 +386,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating' }: { onClose?:
 
   const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
 
-  return (
+  const surface = (
     <section
       aria-label="AquaAssistant, assistant de gestion aquacole"
       className={isPage ? 'relative flex h-[max(460px,calc(100dvh-12rem))] w-full min-w-0 flex-col overflow-hidden bg-background' : isFullscreen
@@ -502,6 +503,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating' }: { onClose?:
       </div></div>}
     </section>
   );
+  return isPage ? surface : createPortal(surface, document.body);
 };
 
 export default AquaAssistantModule;
