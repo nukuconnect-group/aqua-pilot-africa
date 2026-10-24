@@ -20,14 +20,14 @@ BEGIN
  SELECT * INTO s FROM public.feeding_sheets WHERE id=_sheet_id FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Fiche inaccessible'; END IF;
  IF NOT (s.user_id=auth.uid() OR public.team_member_has_unit_access(s.user_id,s.unit_id)) THEN RAISE EXCEPTION 'Accès refusé'; END IF;
- IF _date IS NULL OR _time IS NULL OR _period NOT IN ('matin','midi','soir') THEN RAISE EXCEPTION 'Date, heure et période requises'; END IF;
+ IF _date IS NULL OR _time IS NULL OR _period IS NULL OR _period NOT IN ('matin','midi','soir') THEN RAISE EXCEPTION 'Date, heure et période requises'; END IF;
  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(s.period_times,jsonb_build_array(jsonb_build_object('period',s.period)))) p WHERE p->>'period'=_period) THEN RAISE EXCEPTION 'Période non prévue sur cette fiche'; END IF;
- IF jsonb_typeof(_lines)<>'array' OR jsonb_array_length(_lines)=0 THEN RAISE EXCEPTION 'Infrastructure requise'; END IF;
+ IF _lines IS NULL OR jsonb_typeof(_lines)<>'array' OR jsonb_array_length(_lines)=0 THEN RAISE EXCEPTION 'Infrastructure requise'; END IF;
  IF (SELECT count(*) FROM jsonb_array_elements(_lines)) <> (SELECT count(DISTINCT l->>'infrastructure_id') FROM jsonb_array_elements(_lines) l) THEN RAISE EXCEPTION 'Infrastructure répétée'; END IF;
  FOR line IN SELECT * FROM jsonb_array_elements(_lines) LOOP
    iid:=(line->>'infrastructure_id')::uuid;
    IF NOT EXISTS(SELECT 1 FROM public.unit_infrastructures WHERE id=iid AND unit_id=s.unit_id) THEN RAISE EXCEPTION 'Infrastructure étrangère à cette unité'; END IF;
-   IF cardinality(COALESCE(s.infrastructure_ids,ARRAY[s.infrastructure_id]))>0 AND NOT iid=ANY(COALESCE(s.infrastructure_ids,ARRAY[s.infrastructure_id])) THEN RAISE EXCEPTION 'Infrastructure non rattachée à cette fiche'; END IF;
+   IF cardinality(array_remove(COALESCE(s.infrastructure_ids,ARRAY[s.infrastructure_id]),NULL))>0 AND NOT iid=ANY(COALESCE(s.infrastructure_ids,ARRAY[s.infrastructure_id])) THEN RAISE EXCEPTION 'Infrastructure non rattachée à cette fiche'; END IF;
    taken:=(line->>'taken')::numeric; served:=(line->>'served')::numeric; dead:=(line->>'mortality')::integer;
    IF taken IS NULL OR served IS NULL OR dead IS NULL OR taken<0 OR served<0 OR served>taken OR dead<0 THEN RAISE EXCEPTION 'Quantités ou mortalité invalides'; END IF;
    total_taken:=total_taken+taken; total_served:=total_served+served;

@@ -26,7 +26,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { generateCompanyHeaderHTML, generateCompanyFooterHTML, type CompanyInfoForPrint } from '@/lib/companyHeaderUtils';
 import {
   PERIOD_ORDER, normalizePeriodTimes, normalizeInfrastructureIds,
-  computeFishCounts, isMissingColumnError,
+  computeFishCounts,
   type PeriodTime,
 } from '@/lib/feedingSheetUtils';
 

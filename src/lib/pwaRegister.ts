@@ -1,8 +1,8 @@
 /**
  * Enregistrement unique du service worker hors connexion (/sw.js, généré par vite-plugin-pwa).
  * Jamais en dev ni dans les aperçus Lovable ; ?sw=off désactive tout et nettoie.
- * Les mises à jour s'installent en arrière-plan et ne s'appliquent que quand
- * l'application n'est pas à l'écran, pour ne jamais effacer une saisie en cours.
+ * Les mises à jour s'installent en arrière-plan sans rechargement forcé.
+ * La nouvelle interface est chargée à la prochaine ouverture volontaire.
  */
 
 const PROJECT_ID = 'b2c5432d-e362-4fa8-8b60-f39686099c32';
