@@ -17,7 +17,7 @@ DECLARE
   sh public.feeding_sheets;
   ln jsonb;
   v_infra text; v_infra_name text;
-  v_taken numeric; v_served numeric; v_returned numeric; v_mort int;
+  v_taken numeric; v_served numeric; v_returned numeric; v_mort int; v_ci_id uuid;
   v_ref text := '[ref:' || _request_id || ']';
   v_left_take numeric; v_left_cons numeric;
   st record; v_take numeric; v_cons numeric; v_avail numeric;
@@ -78,9 +78,19 @@ BEGIN
   END LOOP;
   IF v_left_take > 0 THEN RAISE EXCEPTION 'Stock de production insuffisant pour « % » : il manque % %', sh.feed_type, v_left_take, sh.unit; END IF;
 
+  -- Le relevé référence une infrastructure DE CYCLE (FK) : on traduit le bassin de l'unité
+  -- vers l'infrastructure du cycle actif le plus récent portant le même nom ; NULL si aucune.
+  SELECT cif.id INTO v_ci_id FROM public.cycle_infrastructures cif
+   WHERE EXISTS (SELECT 1 FROM public.production_cycles p
+                 WHERE p.id = cif.cycle_id AND p.unit_id::text = sh.unit_id::text)
+     AND lower(trim(cif.infrastructure_name)) = lower(trim(v_infra_name))
+   ORDER BY (EXISTS (SELECT 1 FROM public.production_cycles p2 WHERE p2.id = cif.cycle_id AND p2.status = 'active')) DESC,
+            cif.created_at DESC
+   LIMIT 1;
+
   INSERT INTO public.feeding_records(user_id, unit_id, infrastructure_id, date, time, feed_type, quantity, session_type, feeder_name,
      prescribed_quantity, actual_quantity, remaining_quantity, mortality, behavior, notes)
-  VALUES (v_uid, sh.unit_id, v_infra::uuid, _date, _time::time, sh.feed_type, v_served, _period, sh.responsible_name,
+  VALUES (v_uid, sh.unit_id, v_ci_id, _date, _time::time, sh.feed_type, v_served, _period, sh.responsible_name,
      COALESCE((ln->>'prescribed')::numeric, sh.quantity), v_served, v_returned, v_mort, _behavior,
      concat_ws(' · ', 'Prélevé ' || v_taken || ' ' || sh.unit, NULLIF(trim(COALESCE(_notes,'')),''), v_ref));
 
