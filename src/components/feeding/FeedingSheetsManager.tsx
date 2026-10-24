@@ -145,6 +145,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const [editing, setEditing] = useSessionDraft<FeedingSheet | null>(`${draftKey}:editing`, null);
   const [form, setForm] = useSessionDraft<Partial<FeedingSheet>>(`${draftKey}:form`, emptyForm(unitId));
   const [periods, setPeriods] = useSessionDraft<PeriodState>(`${draftKey}:periods`, defaultPeriods());
+  // Saisie en sacs : 0 = saisie directe ; sinon poids d'un sac (kg). Les quantités restent enregistrées en kg.
+  const [bagKg, setBagKg] = useSessionDraft<number>(`${draftKey}:bagKg`, 0);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterInfra, setFilterInfra] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState(localDate);
@@ -751,7 +753,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             <div className="text-center py-10 border border-dashed rounded-md">
               <ClipboardList className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">Aucune fiche d'alimentation</p>
-              <Button size="sm" className="mt-3" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Créer une fiche</Button>
+              <Button size="sm" className="mt-3" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Créer une fiche d’alimentation</Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -826,7 +828,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
       <Dialog open={openForm} onOpenChange={o => !savingSheet && setOpenForm(o)}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-2xl max-h-[90dvh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Modifier la fiche' : 'Nouvelle fiche d\'alimentation'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Modifier la fiche' : 'Créer une fiche d’alimentation'}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <Label>Titre *</Label>
@@ -863,11 +865,21 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
               <p className="text-[11px] text-muted-foreground mt-1">Nom de l’article du Stock de production, déduit automatiquement au nourrissage.</p>
             </div>
             <div className="sm:col-span-2">
-              <Label>Périodes, heures et quantités à servir *</Label>
+              <Label>Périodes, heures et quantités prescrites *</Label>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Saisir la quantité prescrite en :</span>
+                <Button type="button" size="sm" variant={!bagKg ? 'default' : 'outline'} onClick={() => setBagKg(0)}>{form.unit === 'g' ? 'g' : 'kg'}</Button>
+                <Button type="button" size="sm" variant={bagKg ? 'default' : 'outline'} onClick={() => { setBagKg(bagKg || 20); setForm({ ...form, unit: 'kg' }); }}>Sacs</Button>
+                {!!bagKg && (<>
+                  <span className="text-muted-foreground">Le sac contient combien de kg ?</span>
+                  {[10, 15, 20, 25].map(w => <Button key={w} type="button" size="sm" variant={bagKg === w ? 'default' : 'outline'} className="h-7 px-2" onClick={() => setBagKg(w)}>{w} kg</Button>)}
+                  <Input type="number" min="0.5" step="0.5" aria-label="Kg par sac" className="h-8 w-20" value={bagKg} onChange={e => setBagKg(Number(e.target.value) || 0)} />
+                </>)}
+              </div>
               <Select value={planDay} onValueChange={setPlanDay}><SelectTrigger className="mt-2"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="common">Horaires et doses communs</SelectItem>{(form.days || DAYS).map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent></Select>
               <div className="mt-1 overflow-hidden rounded-md border">
                 <div className="hidden grid-cols-[1fr_1fr_1fr] gap-2 bg-muted px-3 py-2 text-xs font-medium text-muted-foreground sm:grid">
-                  <span>Période</span><span>Heure prévue</span><span>Quantité à servir ({form.unit || 'kg'})</span>
+                  <span>Période</span><span>Heure prévue</span><span>Quantité prescrite ({bagKg ? 'sacs' : form.unit || 'kg'})</span>
                 </div>
                 {PERIOD_ORDER.map((p) => {
                   const meta = PERIOD_META[p];
@@ -890,13 +902,26 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                       </Button>
                       <Input type="time" aria-label={`Heure ${meta.label}`} disabled={!state.enabled} value={state.time} onChange={(e) => update({ time: e.target.value })} />
                       <Input type="number" min="0" step="0.01" inputMode="decimal" aria-label={`Quantité ${meta.label}`} disabled={!state.enabled}
-                        placeholder="Quantité" value={state.quantity ?? ''} onChange={(e) => update({ quantity: e.target.value })} />
+                        placeholder={bagKg ? 'Sacs' : 'Quantité prescrite'}
+                        value={bagKg ? (state.quantity ? String(+(Number(state.quantity) / bagKg).toFixed(3)) : '') : (state.quantity ?? '')}
+                        onChange={(e) => update({ quantity: bagKg && e.target.value !== '' ? String(+(Number(e.target.value) * bagKg).toFixed(3)) : e.target.value })} />
                     </div>
                   );
                 })}
-                <div className="flex justify-between border-t bg-muted/50 px-3 py-2 text-sm font-semibold">
-                  <span>Ration du jour</span><span>{planTotal(planDay === 'common' ? periodsToPlan(periods) : dayPlans[planDay] || periodsToPlan(periods))} {form.unit || 'kg'}</span>
-                </div>
+                {(() => {
+                  const total = planTotal(planDay === 'common' ? periodsToPlan(periods) : dayPlans[planDay] || periodsToPlan(periods));
+                  const unit = form.unit || 'kg';
+                  const stock = (stocks || []).find((x: any) => (x.custom_name || x.feed_type) === form.feed_type);
+                  const costKg = Number(stock?.cost) || 0;
+                  const kg = unit === 'g' ? total / 1000 : total;
+                  return (
+                    <div className="flex flex-wrap justify-between gap-2 border-t bg-muted/50 px-3 py-2 text-sm font-semibold">
+                      <span>Ration du jour prescrite</span>
+                      <span>{total.toLocaleString('fr-FR')} {unit}{bagKg ? ` (${+(total / bagKg).toFixed(2)} sacs de ${bagKg} kg)` : ''}
+                        {costKg > 0 && unit !== 'sacs' && <> · coût {Math.round(kg * costKg).toLocaleString('fr-FR')} F CFA</>}</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             <div>
@@ -906,7 +931,6 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 <SelectContent>
                   <SelectItem value="kg">kg</SelectItem>
                   <SelectItem value="g">g</SelectItem>
-                  <SelectItem value="sacs">sacs</SelectItem>
                 </SelectContent>
               </Select>
             </div>

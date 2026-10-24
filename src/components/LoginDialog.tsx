@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2, Shield, AlertTriangle, Key, Mail, Lock, User, Fish, Waves, ArrowRight, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import OfflineAuthNotice, { OFFLINE_AUTH_MESSAGE } from '@/components/auth/OfflineAuthNotice';
 import { useSettings } from '@/contexts/SettingsContext';
 import fishColumnsMobile from '@/assets/fish-columns-mobile.jpg';
 import aquaPilotLogo from '@/assets/aquapilote-logo.png';
@@ -115,6 +116,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      toast({ title: 'Connexion Internet requise', description: OFFLINE_AUTH_MESSAGE, variant: 'destructive' });
+      return;
+    }
     
     if (showResetPassword) {
       const email = formData.email.trim().toLowerCase();
@@ -511,6 +516,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+                <OfflineAuthNotice />
                 {/* Full name (registration) */}
                 {isRegistering && !showResetPassword && (
                   <div className="space-y-2">

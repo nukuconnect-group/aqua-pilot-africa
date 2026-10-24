@@ -19,6 +19,7 @@ const UNIT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 };
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import OfflineAuthNotice, { OFFLINE_AUTH_MESSAGE } from '@/components/auth/OfflineAuthNotice';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { useSettings } from '@/contexts/SettingsContext';
 import aquapiloteLogo from '@/assets/aquapilote-logo.png';
@@ -291,6 +292,10 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      toast({ title: 'Connexion Internet requise', description: OFFLINE_AUTH_MESSAGE, variant: 'destructive' });
+      return;
+    }
     const validationErrors = getFormErrors();
     if (validationErrors.length > 0) {
       setFormErrors(validationErrors);
@@ -429,6 +434,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
               </div>
 
               <form onSubmit={currentStep === 4 ? handleSubmit : (e) => { e.preventDefault(); goNext(); }} noValidate className="space-y-3">
+                <OfflineAuthNotice />
                 {currentStep === 1 && <>
                 {/* Nom + Prénom */}
                 <div className="grid grid-cols-2 gap-3">
