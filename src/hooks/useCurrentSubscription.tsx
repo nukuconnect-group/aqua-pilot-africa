@@ -33,14 +33,18 @@ export const useCurrentSubscription = () => {
   const { user, isDemoMode } = useAuth();
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+  // Only the first read for an account shows a loading state: periodic and focus
+  // refreshes run silently so guarded screens (and their unsaved forms) stay mounted.
+  const loadedFor = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user || isDemoMode) {
       setSubscription(null);
       setLoading(false);
+      loadedFor.current = null;
       return;
     }
-    setLoading(true);
+    if (loadedFor.current !== user.id) setLoading(true);
     const { data, error } = await supabase.rpc('get_current_subscription', {
       _user_id: user.id,
     });
@@ -62,6 +66,7 @@ export const useCurrentSubscription = () => {
         ...subscriptionAccess(s),
       });
     }
+    loadedFor.current = user.id;
     setLoading(false);
   }, [user?.id, isDemoMode]);
 

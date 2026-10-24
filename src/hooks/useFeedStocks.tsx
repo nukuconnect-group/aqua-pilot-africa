@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthReady } from '@/hooks/useAuthReady';
@@ -32,6 +32,7 @@ export const useFeedStocks = (unitId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const loadedKey = useRef<string | null>(null);
   const { isReady, isAuthenticated } = useAuthReady();
 
   const fetchStocks = useCallback(async () => {
@@ -46,7 +47,8 @@ export const useFeedStocks = (unitId?: string) => {
     }
 
     try {
-      setLoading(true);
+      // Refreshes after a save keep the screen (and any open form) mounted.
+      if (loadedKey.current !== (unitId ?? '')) setLoading(true);
       setError(null);
       
       let query = supabase
@@ -67,6 +69,7 @@ export const useFeedStocks = (unitId?: string) => {
       
       if (data) {
         setStocks(data as FeedStock[]);
+        loadedKey.current = unitId ?? '';
       }
     } catch (err: any) {
       console.error('Error fetching feed stocks:', err);
