@@ -154,10 +154,12 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   );
 
   const infraName = (id?: string | null) =>
-    id ? (unitInfras.find((i) => i.id === id)?.name || '—') : 'Toutes';
+    id ? (unitInfras.find((i) => i.id === id)?.name || 'Infrastructure introuvable') : 'Aucune infrastructure';
 
   const sheetInfraIds = (s: FeedingSheet) => normalizeInfrastructureIds(s);
-  const sheetPeriods = (s: FeedingSheet) => normalizePeriodTimes(s);
+  const sheetPlan = (s: FeedingSheet) => readSheetPlan(s);
+  const sheetPeriods = (s: FeedingSheet): PeriodTime[] => sheetPlan(s).map(({ period, time }) => ({ period, time }));
+  const periodQty = (s: FeedingSheet, period: string) => sheetPlan(s).find(p => p.period === period)?.quantity ?? 0;
 
   const fetchSheets = async () => {
     if (!user) return;
