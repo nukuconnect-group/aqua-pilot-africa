@@ -7,9 +7,31 @@
  * conservé dans un repère lisible en fin des observations, retiré à l'affichage.
  */
 import { PERIOD_ORDER, type PeriodTime } from './feedingSheetUtils';
+import { addDays, format, isValid, parseISO } from 'date-fns';
 
 export type Period = PeriodTime['period'];
 export interface PeriodPlan { period: Period; time: string; quantity: number }
+export const WEEK_DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+export type DayPlans = Record<string, PeriodPlan[]>;
+export const localDate = () => format(new Date(), 'yyyy-MM-dd');
+export const dateAfter = (date: string, days: number) => format(addDays(parseISO(date), days), 'yyyy-MM-dd');
+export const weekdayOf = (date: string) => {
+  const value = parseISO(date);
+  return isValid(value) ? WEEK_DAYS[(value.getDay() + 6) % 7] : '';
+};
+export function isSheetScheduled(sheet: { is_active: boolean; start_date?: string | null; end_date?: string | null; days?: string[] }, date: string) {
+  return isValid(parseISO(date)) && sheet.is_active && (!sheet.start_date || date >= sheet.start_date) &&
+    (!sheet.end_date || date <= sheet.end_date) && (!sheet.days?.length || sheet.days.includes(weekdayOf(date)));
+}
+export function validateSchedule(start: string, end?: string | null, days?: string[]) {
+  if (!isValid(parseISO(start))) throw new Error('Précisez la date de début du programme.');
+  if (end && (!isValid(parseISO(end)) || end < start)) throw new Error('La date de fin doit être égale ou postérieure à la date de début.');
+  if (!days?.length) throw new Error('Choisissez au moins un jour de nourrissage.');
+}
+export function readDayPlans(observations?: string | null): DayPlans {
+  const match = String(observations || '').match(MARKER);
+  try { return match ? JSON.parse(match[1]).days || {} : {}; } catch { return {}; }
+}
 
 const MARKER = /\n?\[\[plan-nourrissage:(\{.*?\})\]\]\s*$/s;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -23,7 +45,7 @@ export function cleanObservations(observations?: string | null): string {
 /** Plan normalisé : repère enregistré, sinon period_times, sinon période/heure/quantité historiques. */
 export function readSheetPlan(sheet: {
   observations?: string | null; period_times?: unknown; period?: string | null; time?: string | null; quantity?: number | null;
-}): PeriodPlan[] {
+}, date?: string): PeriodPlan[] {
   const fallbackQty = Math.max(0, Number(sheet.quantity) || 0);
   const fromList = (raw: unknown, defaultQty: number): PeriodPlan[] => {
     if (!Array.isArray(raw)) return [];
@@ -37,7 +59,10 @@ export function readSheetPlan(sheet: {
   const match = String(sheet.observations || '').match(MARKER);
   if (match) {
     try {
-      const parsed = fromList(JSON.parse(match[1]).periods, 0);
+      const saved = JSON.parse(match[1]);
+      const custom = date ? fromList(saved.days?.[weekdayOf(date)], 0) : [];
+      if (custom.length) return custom;
+      const parsed = fromList(saved.periods, 0);
       if (parsed.length) return parsed;
     } catch { /* repère illisible : repli sur les champs historiques */ }
   }
@@ -61,10 +86,11 @@ export function validatePlan(plan: PeriodPlan[]): PeriodPlan[] {
 export const planTotal = (plan: PeriodPlan[]) => Math.round(plan.reduce((s, p) => s + (Number(p.quantity) || 0), 0) * 1000) / 1000;
 
 /** Champs à enregistrer, compatibles avec la base existante. */
-export function buildSheetFields(plan: PeriodPlan[], observations?: string | null) {
+export function buildSheetFields(plan: PeriodPlan[], observations?: string | null, days: DayPlans = {}) {
   const valid = validatePlan(plan);
   const notes = cleanObservations(observations);
-  const marker = `[[plan-nourrissage:${JSON.stringify({ periods: valid })}]]`;
+  const validatedDays = Object.fromEntries(Object.entries(days).filter(([day]) => WEEK_DAYS.includes(day)).map(([day, values]) => [day, validatePlan(values)]));
+  const marker = `[[plan-nourrissage:${JSON.stringify({ periods: valid, ...(Object.keys(validatedDays).length ? { days: validatedDays } : {}) })}]]`;
   return {
     period: valid[0].period,
     time: valid[0].time,
@@ -87,9 +113,9 @@ const sheetInfra = (s: SheetLike): string[] => {
  * Une infrastructure ne peut figurer que sur une seule fiche active à la fois.
  * Retourne la fiche active qui l'utilise déjà (hors fiche modifiée), si elle couvre la date de début.
  */
-export function findInfrastructureConflict(sheets: SheetLike[], infrastructureId: string, startDate: string, excludeId?: string | null): SheetLike | null {
+export function findInfrastructureConflict(sheets: SheetLike[], infrastructureId: string, startDate: string, excludeId?: string | null, endDate?: string | null): SheetLike | null {
   return sheets.find(s => s.id !== excludeId && s.is_active && sheetInfra(s).includes(infrastructureId) &&
-    (!s.end_date || s.end_date >= startDate)) || null;
+    (!s.end_date || s.end_date >= startDate) && (!endDate || !s.start_date || s.start_date <= endDate)) || null;
 }
 
 /** Répartition FIFO d'un prélèvement : la quantité servie est consommée d'abord, le reste revient au stock. */
