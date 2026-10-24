@@ -1830,9 +1830,11 @@ export type Database = {
           frequency: string
           id: string
           infrastructure_id: string | null
+          infrastructure_ids: string[] | null
           is_active: boolean
           observations: string | null
           period: string
+          period_times: Json | null
           quantity: number
           responsible_name: string | null
           start_date: string
@@ -1852,9 +1854,11 @@ export type Database = {
           frequency?: string
           id?: string
           infrastructure_id?: string | null
+          infrastructure_ids?: string[] | null
           is_active?: boolean
           observations?: string | null
           period?: string
+          period_times?: Json | null
           quantity?: number
           responsible_name?: string | null
           start_date?: string
@@ -1874,9 +1878,11 @@ export type Database = {
           frequency?: string
           id?: string
           infrastructure_id?: string | null
+          infrastructure_ids?: string[] | null
           is_active?: boolean
           observations?: string | null
           period?: string
+          period_times?: Json | null
           quantity?: number
           responsible_name?: string | null
           start_date?: string

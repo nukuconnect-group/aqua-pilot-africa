@@ -50,6 +50,13 @@
       "when": 1792799060021,
       "tag": "0006_guard_unit_type_and_admin_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792835689084,
+      "tag": "0007_feeding_sheets_multi_infrastructure_periods",
+      "breakpoints": true
     }
   ]
 }
