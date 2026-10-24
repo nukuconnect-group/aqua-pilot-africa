@@ -15,6 +15,7 @@
 - POS checks that the selected cash session is still open before recording a sale and reports unexpected failures; this client check does not replace server-side atomic posting.
 - Stock removals use one unit-scoped selected-ID delete and a confirmation; reset snapshots the unit's displayed IDs rather than issuing an unbounded delete, preserving existing movement and financial history.
 - Stock items carry an explicit purpose (production or commercial, src/lib/stockPurpose.ts); only commercial, in-stock items reach the POS and only production items feed fish, so inputs are never sold by name or category.
+- Unit-specific stock presentation and creation/import purpose use the shared stockPurpose policy; filter without reclassifying existing items to preserve inventory history. Mandatory module restrictions remain centralized in planModules so stale configuration cannot restore excluded screens.
 - A global DOM guard (src/lib/domPatch.ts) tolerates external DOM moves (browser translation) so React no longer crashes on insertBefore/removeChild.
 - Unit = warehouse: a completed production cycle's harvest is transferred once (ref in notes) into the same unit's commercial stock; POS posts the cash movement and commercial stock deduction in one server function (pos_post_sale), idempotent per sale; the client path is only a fallback for databases without it.
 - AI POS suggestions run in the pos-ai-suggest function, which verifies the app-backend user and only returns real catalog items; the seller confirms before anything enters the cart.

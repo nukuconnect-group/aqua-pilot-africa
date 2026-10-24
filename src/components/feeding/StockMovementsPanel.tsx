@@ -6,7 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { useToast } from '@/hooks/use-toast';
-import { getStockPurpose } from '@/lib/stockPurpose';
+import { getStockPurpose, stocksForUnitType } from '@/lib/stockPurpose';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 
 export const applyMovement = (current: number, type: 'in' | 'out' | 'adjust', qty: number) =>
   type === 'in' ? current + qty : type === 'out' ? current - qty : qty;
@@ -27,7 +28,9 @@ const TypeBadge: React.FC<{ type: Mv['type'] }> = ({ type }) => (
 );
 
 const StockMovementsPanel: React.FC<{ unitId: string }> = ({ unitId }) => {
-  const { stocks, updateStock } = useFeedStocks(unitId);
+  const { stocks: allStocks, updateStock } = useFeedStocks(unitId);
+  const { activeUnit } = useProductionUnits();
+  const stocks = stocksForUnitType(allStocks, activeUnit?.type);
   const { toast } = useToast();
   const db = supabase as any;
   const [stockId, setStockId] = useState('');

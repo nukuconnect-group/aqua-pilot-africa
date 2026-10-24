@@ -15,6 +15,15 @@ export const getStockPurpose = (s: { stock_purpose?: string | null; notes?: stri
 export const isCommercialStock = (s: { stock_purpose?: string | null; notes?: string | null }) =>
   getStockPurpose(s) === 'commercial';
 
+/** Commercialisation has only commercial inventory; never reclassify stored production items. */
+export const isCommercialOnlyUnit = (unitType?: string | null) => unitType === 'commercialisation';
+
+export const stocksForUnitType = <T extends { stock_purpose?: string | null; notes?: string | null }>(stocks: T[], unitType?: string | null): T[] =>
+  isCommercialOnlyUnit(unitType) ? stocks.filter(isCommercialStock) : stocks;
+
+export const stockPurposeForUnit = (unitType: string | null | undefined, purpose: StockPurpose | '' | null): StockPurpose | '' | null =>
+  isCommercialOnlyUnit(unitType) ? 'commercial' : purpose;
+
 const stripTag = (notes?: string | null) => (notes || '').replace(COMMERCIAL_TAG, '').trim();
 export const cleanStockNotes = stripTag;
 

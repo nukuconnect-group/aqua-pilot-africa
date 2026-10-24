@@ -33,7 +33,7 @@ import { notificationHelpers } from '@/lib/notificationService';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { getUnitTerms } from '@/lib/unitContext';
 import { Checkbox } from '@/components/ui/checkbox';
-import { getStockPurpose, getSalePrice, cleanStockNotes, STOCK_PURPOSE_LABELS, type StockPurpose } from '@/lib/stockPurpose';
+import { getStockPurpose, getSalePrice, cleanStockNotes, STOCK_PURPOSE_LABELS, isCommercialOnlyUnit, stocksForUnitType, stockPurposeForUnit, type StockPurpose } from '@/lib/stockPurpose';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { useSessionDraft } from '@/hooks/useSessionDraft';
 import { useAuth } from '@/contexts/AuthContext';
@@ -80,7 +80,9 @@ interface FeedStockManagerProps {
 const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   const { activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
-  const { stocks, loading, error, refetch, createStock, updateStock, deleteStocks } = useFeedStocks(unitId);
+  const { stocks: allStocks, loading, error, refetch, createStock, updateStock, deleteStocks } = useFeedStocks(unitId);
+  const commercialOnly = isCommercialOnlyUnit(activeUnit?.type);
+  const stocks = React.useMemo(() => stocksForUnitType(allStocks, activeUnit?.type), [allStocks, activeUnit?.type]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deletion, setDeletion] = useState<{ ids: string[]; reset: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -103,6 +105,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   const [purposeFilter, setPurposeFilter] = useState<'all' | StockPurpose>('all');
   const [manualSupplier, setManualSupplier] = useState(false);
   const [newStock, setNewStock] = useSessionDraft<StockForm>(`${draftKey}:form`, EMPTY_STOCK);
+  const effectivePurpose = stockPurposeForUnit(activeUnit?.type, newStock.stock_purpose);
 
   const { suppliers } = useSuppliers();
   const unitSuppliers = suppliers.filter(s => s.status !== 'inactive' && (!s.unitId || s.unitId === unitId));
@@ -163,7 +166,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         });
         return;
       }
-      if (!newStock.stock_purpose) {
+      if (!effectivePurpose) {
         toast({ title: 'Destination du stock requise', description: 'Indiquez s’il s’agit d’un stock commercial (à vendre) ou d’un stock de production.', variant: 'destructive' });
         return;
       }
@@ -213,8 +216,8 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         min_threshold: newStock.min_threshold ?? 50,
         bag_count: newStock.bag_count || null,
         kg_per_bag: newStock.kg_per_bag || null,
-        stock_purpose: newStock.stock_purpose as StockPurpose,
-        sale_price: newStock.stock_purpose === 'commercial' ? (newStock.sale_price || null) : null
+        stock_purpose: effectivePurpose as StockPurpose,
+        sale_price: effectivePurpose === 'commercial' ? (newStock.sale_price || null) : null
       };
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -320,7 +323,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   };
 
   const filteredStocks = stocks.filter((stock) => {
-    if (purposeFilter !== 'all' && getStockPurpose(stock) !== purposeFilter) return false;
+    if (!commercialOnly && purposeFilter !== 'all' && getStockPurpose(stock) !== purposeFilter) return false;
     const query = stockSearch.trim().toLowerCase();
     if (!query) return true;
     return [stock.custom_name, stock.feed_type, stock.supplier, stock.notes]
@@ -421,8 +424,8 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
       {error && <div role="alert" className="rounded-md border border-destructive/40 p-4 text-sm"><p>Impossible de charger les articles de cette unité.</p><Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Réessayer</Button></div>}
       {!error && stocks.length === 0 && <p className="text-sm text-muted-foreground">Aucun article enregistré dans cette unité.</p>}
       {/* Récapitulatif séparé : stock de production (pour nourrir) et stock commercial (pour vendre) */}
-      <div className="grid gap-3 md:grid-cols-2">
-        {(['production', 'commercial'] as const).map((purpose) => {
+      <div className={commercialOnly ? 'grid gap-3' : 'grid gap-3 md:grid-cols-2'}>
+        {(commercialOnly ? ['commercial'] as const : ['production', 'commercial'] as const).map((purpose) => {
           const list = stocks.filter((s) => getStockPurpose(s) === purpose);
           const value = list.reduce((t, s) => t + Number(s.quantity) * (Number(s.cost) || 0), 0);
           const saleValue = list.reduce((t, s) => t + Number(s.quantity) * (Number((s as any).sale_price) || 0), 0);
@@ -529,7 +532,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
             {/* Formulaire simplifié - champs essentiels uniquement */}
             <div className="space-y-4">
               <div className="rounded-lg border border-border p-3 space-y-2">
-                <Label className="text-sm">Ce stock est destiné à… *</Label>
+                {!commercialOnly && <><Label className="text-sm">Ce stock est destiné à… *</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {(['production', 'commercial'] as StockPurpose[]).map(p => (
                     <Button key={p} type="button" variant={newStock.stock_purpose === p ? 'default' : 'outline'} className="h-auto py-2 flex-col items-start text-left whitespace-normal" onClick={() => setNewStock(prev => ({ ...prev, stock_purpose: p }))}>
@@ -537,8 +540,8 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                       <span className="text-xs opacity-80">{p === 'production' ? 'Aliments et intrants pour nourrir mes poissons. Non vendu en caisse.' : 'Poissons, alevins, aliments ou produits à vendre en caisse.'}</span>
                     </Button>
                   ))}
-                </div>
-                {newStock.stock_purpose === 'commercial' && (
+                </div></>}
+                {effectivePurpose === 'commercial' && (
                   <div>
                     <Label className="text-sm">Prix de vente unitaire</Label>
                     <Input type="number" min="0" value={newStock.sale_price || ''} onChange={e => setNewStock(prev => ({ ...prev, sale_price: parseFloat(e.target.value) || 0 }))} className="text-sm" placeholder="Prix proposé en caisse" />
@@ -781,7 +784,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                 <Button 
                   onClick={handleSaveStock} 
                   className="flex-1 min-h-[44px]"
-                  disabled={!newStock.stock_purpose || !(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
+                  disabled={!effectivePurpose || !(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
                 >
                   {editingStock ? 'Modifier' : 'Ajouter'} le stock
                 </Button>
@@ -789,7 +792,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                   <Button
                     variant="secondary"
                     className="min-h-[44px]"
-                    disabled={!newStock.stock_purpose || !(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
+                    disabled={!effectivePurpose || !(newStock.feed_type || newStock.custom_name.trim()) || !Number.isFinite(newStock.quantity) || newStock.quantity < 0 || (!editingStock && newStock.quantity === 0)}
                     onClick={async () => {
                       await handleSaveStock();
                       // handleSaveStock closes the dialog ; rouvre immédiatement
@@ -831,13 +834,13 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         </TabsList>
         
         <TabsContent value="stocks" className="space-y-4">
-          <div className="inline-flex rounded-lg border border-border p-1 gap-1" role="group" aria-label="Type de stock">
+          {!commercialOnly && <div className="inline-flex rounded-lg border border-border p-1 gap-1" role="group" aria-label="Type de stock">
             {([['all', 'Tous'], ['production', 'Stock de production'], ['commercial', 'Stock commercial']] as const).map(([v, l]) => (
               <Button key={v} size="sm" variant={purposeFilter === v ? 'default' : 'ghost'} onClick={() => setPurposeFilter(v)}>
                 {l} ({v === 'all' ? stocks.length : stocks.filter(s => getStockPurpose(s) === v).length})
               </Button>
             ))}
-          </div>
+          </div>}
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm"><Checkbox aria-label="Sélectionner tous les articles affichés" disabled={!filteredStocks.length || deleting} checked={filteredStocks.length > 0 && filteredStocks.every(stock => selectedIds.includes(stock.id))} onCheckedChange={checked => setSelectedIds(ids => checked ? [...new Set([...ids, ...filteredStocks.map(stock => stock.id)])] : ids.filter(id => !filteredStocks.some(stock => stock.id === id)))} />Tout sélectionner{stockSearch ? ' (résultats)' : ''}</label>
             <span className="text-sm text-muted-foreground">{selectedIds.length} sélectionné(s)</span>
