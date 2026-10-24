@@ -35,6 +35,7 @@ import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUni
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/appClient';
 import { isUnitTypeAllowed } from '@/lib/unitTypeAccess';
+import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { useLogs } from '@/contexts/LogsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -60,6 +61,7 @@ const ProductionUnitsManagement = () => {
   // null = pas de restriction (comptes anciens sans liste enregistrée).
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const { subscription, loading: subscriptionLoading } = useCurrentSubscription();
   const [allowedTypes, setAllowedTypes] = useState<string[] | null>(null);
   const [typesLoaded, setTypesLoaded] = useState(false);
 
@@ -85,7 +87,7 @@ const ProductionUnitsManagement = () => {
     return () => { cancelled = true; };
   }, [user?.id, isAdmin]);
 
-  const isTypeAllowed = (type: string) => isUnitTypeAllowed(allowedTypes, type, isAdmin);
+  const isTypeAllowed = (type: string) => isUnitTypeAllowed(allowedTypes, type, isAdmin, subscription);
   
   const [newUnit, setNewUnit] = useState({
     name: '',
@@ -181,8 +183,12 @@ const ProductionUnitsManagement = () => {
   };
 
   const handleSaveUnit = async () => {
-    if (!isAdmin && !typesLoaded) {
+    if (!isAdmin && (subscriptionLoading || (!subscription?.isTrial && !typesLoaded))) {
       toast.error("Les types d’unités autorisés n’ont pas encore pu être vérifiés. Réessayez en rouvrant ce module.");
+      return;
+    }
+    if (!isAdmin && subscription && !subscription.isActive) {
+      toast.error("Votre essai ou abonnement est terminé. Souscrivez à un abonnement payant pour réactiver vos unités. Vos données sont conservées.");
       return;
     }
     // Refus côté client : type non couvert par l'abonnement (le serveur bloque aussi).
@@ -324,7 +330,7 @@ const ProductionUnitsManagement = () => {
                       })}
                     </SelectContent>
                   </Select>
-                  {allowedTypes && allowedTypes.length > 0 && !isAdmin && (
+                  {allowedTypes && allowedTypes.length > 0 && !isAdmin && !subscription?.isTrial && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Votre abonnement couvre : {allowedTypes.map((v) => unitTypes.find((ut) => ut.value === v)?.label || v).join(', ')}.
                       Pour créer un autre type d'unité, écrivez à l'administration afin d'étendre votre abonnement.

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
+import { subscriptionAccess } from '@/lib/subscriptionAccess';
 
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'suspended' | 'cancelled';
 
@@ -58,9 +59,7 @@ export const useCurrentSubscription = () => {
         end_date: s.end_date,
         days_remaining: s.days_remaining ?? 0,
         total_days: totalDays,
-        isTrial: s.status === 'trial',
-        isExpired: s.status === 'expired' || s.status === 'cancelled' || s.status === 'suspended',
-        isActive: s.status === 'active' || s.status === 'trial',
+        ...subscriptionAccess(s),
       });
     }
     setLoading(false);
@@ -68,6 +67,13 @@ export const useCurrentSubscription = () => {
 
   useEffect(() => {
     load();
+    const interval = window.setInterval(load, 60000);
+    const onFocus = () => { void load(); };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [load]);
 
   return { subscription, loading, reload: load };

@@ -8,7 +8,7 @@ vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { role: 'user
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 
 describe('AquaAssistant et abonnement expiré', () => {
-  it.each([['aqua-assistant', true], ['sales', false]])('accès au module %s : %s', async (moduleId, accessible) => {
+  it.each([['aqua-assistant', true], ['sales', false], ['units', false], ['support', true], ['settings', true]])('accès au module %s : %s', async (moduleId, accessible) => {
     const container = document.createElement('div');
     const root = createRoot(container);
     let mounted = false;
