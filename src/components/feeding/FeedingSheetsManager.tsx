@@ -34,6 +34,8 @@ import {
   buildDailyRows, PERIOD_LABELS, localDate, dateAfter, isSheetScheduled, validateSchedule, readDayPlans, WEEK_DAYS, type DayPlans, type PeriodPlan,
 } from '@/lib/feedingSheetPlan';
 import { recordSheetFeeding } from '@/lib/recordSheetFeeding';
+import InfrastructureQRCode from '@/components/infrastructure/InfrastructureQRCode';
+import { resolveInfrastructureQr, infrastructureQrHTML, infrastructureQrPng } from '@/lib/infrastructureQr';
 
 interface FeedingSheet {
   id: string;
@@ -166,6 +168,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     id ? (unitInfras.find((i) => i.id === id)?.name || 'Infrastructure introuvable') : 'Aucune infrastructure';
 
   const sheetInfraIds = (s: FeedingSheet) => normalizeInfrastructureIds(s);
+  const sheetQr = (s: FeedingSheet) => {
+    const ids = sheetInfraIds(s);
+    return ids.length === 1 ? resolveInfrastructureQr(unitId, ids[0], unitInfras) : undefined;
+  };
   const sheetPlan = (s: FeedingSheet, date = selectedDate) => readSheetPlan(s, date);
   const sheetPeriods = (s: FeedingSheet): PeriodTime[] => sheetPlan(s).map(({ period, time }) => ({ period, time }));
   const periodQty = (s: FeedingSheet, period: string) => sheetPlan(s).find(p => p.period === period)?.quantity ?? 0;
@@ -510,7 +516,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           ${rows.length === 0 ? `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px;">Aucune fiche active pour cette période</td></tr>` : rows.map(s => `
             <tr>
               <td><strong>${escapeHtml(s.title)}</strong></td>
-              <td>${escapeHtml(infrasLabel(s))}</td>
+              <td>${escapeHtml(infrasLabel(s))}${infrastructureQrHTML(sheetQr(s))}</td>
               <td>${sheetPlan(s).map((pt) => `<span class="badge">${PERIOD_META[pt.period]?.label || pt.period} ${pt.time} · ${pt.quantity} ${escapeHtml(s.unit)}</span>`).join(' ')}</td>
               <td>${escapeHtml(s.feed_type)}</td>
               <td>${planTotal(sheetPlan(s))} ${escapeHtml(s.unit)} / jour</td>
@@ -577,6 +583,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       ${generateCompanyHeaderHTML(ci)}
       <h1>FICHE DE NOURRISSAGE JOURNALIÈRE</h1>
       <p class="sub">${escapeHtml(s.title)} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      ${infrastructureQrHTML(sheetQr(s))}
       <div class="info">
         <div>Unité<strong>${escapeHtml(unitName)}</strong></div>
         <div>Infrastructure<strong>${escapeHtml(infraName(id))}</strong></div>
@@ -645,8 +652,11 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       doc.setTextColor(30, 41, 59); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
       doc.text(`${s.title} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`, pageW / 2, y + 6, { align: 'center' });
       const { rows, id, totals } = await dailyData(s);
+      const qr = sheetQr(s);
+      if (qr) doc.addImage(await infrastructureQrPng(qr), 'PNG', pageW - 40, y + 11, 26, 26);
       autoTable(doc, {
         startY: y + 11, theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
+        margin: { left: 14, right: qr ? 46 : 14 },
         columnStyles: { 0: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 }, 2: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 } },
         body: [
           ['Unité', unitName, 'Infrastructure', infraName(id)],
@@ -655,7 +665,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
         ],
       });
       autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 5, theme: 'grid',
+        startY: Math.max((doc as any).lastAutoTable.finalY, qr ? y + 37 : 0) + 5, theme: 'grid',
         styles: { fontSize: 8.5, cellPadding: 2.2, minCellHeight: 9, valign: 'middle' },
         headStyles: { fillColor: [15, 118, 110], textColor: 255, halign: 'center' },
         footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
@@ -759,6 +769,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredSheets.map(s => {
                 const ids = sheetInfraIds(s);
+                const qr = ids.length === 1 ? sheetQr(s) : undefined;
                 return (
                   <Card key={s.id} className={`border-l-4 ${s.is_active ? 'border-l-primary' : 'border-l-border opacity-70'}`}>
                     <CardContent className="p-4 space-y-2">
@@ -783,6 +794,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                         </div>
                       </div>
                       <div className="overflow-hidden rounded-md border text-xs">
+                        {qr && <div className="flex justify-center border-b py-2"><InfrastructureQRCode infrastructure={qr} /></div>}
                         <div className="grid grid-cols-3 bg-muted px-2 py-1 font-medium text-muted-foreground">
                           <span>Période</span><span className="text-center">Heure</span><span className="text-right">À servir</span>
                         </div>

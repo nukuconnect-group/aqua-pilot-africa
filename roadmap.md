@@ -1,3 +1,9 @@
+## QR des infrastructures (24/10/2026)
+- [x] Afficher un QR stable sur chaque infrastructure et sa carte d’alimentation
+- [x] Inclure le même QR dans les PDF, impressions, Word, Excel et programmes ; CSV contient la référence du QR
+- [x] Tester l’identité par unité : 37 tests réussis ; QR et conversion PNG/PDF vérifiés isolément avec une infrastructure réelle, sans écriture
+- [ ] Vérifier le téléchargement depuis les écrans du compte réel : navigateur sur onboarding, session réelle indisponible
+
 ## Vérifications demandées avec le compte connecté (24/10/2026, 13:13 UTC)
 - [ ] Vérifier le maintien de l’accès hors ligne et des saisies au retour dans l’application avec le compte réel — session du backend historique non disponible au navigateur de test ; génération automatique de la session personnelle refusée (aucun compte correspondant sur le backend géré).
 - [ ] Tester matin, midi et soir sur une journée, relire les enregistrements et vérifier le PDF depuis le compte réel — même blocage ; ne pas créer de nourrissages fictifs dans les données de production.

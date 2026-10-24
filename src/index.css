@@ -27,6 +27,11 @@ html.large-text .text-2xl { font-size: 1.75rem; }
 @tailwind components;
 @tailwind utilities;
 
+/* QR codes retain a scan-safe print palette in either application theme. */
+:root { --qr-paper: #ffffff; --qr-ink: #000000; }
+.infrastructure-qr > path:first-of-type { fill: var(--qr-paper); }
+.infrastructure-qr > path:last-of-type { fill: var(--qr-ink); }
+
 /* Reset global pour éviter les espaces sur mobile */
 *, *::before, *::after {
   box-sizing: border-box;

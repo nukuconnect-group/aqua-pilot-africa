@@ -1,6 +1,7 @@
 import { translateDelimitedText, translateHtmlDocument } from '@/i18n/runtime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { infrastructureQrHTML, infrastructureQrValue, infrastructureQrPng, infrastructureQrTableHTML, type InfrastructureQrIdentity } from '@/lib/infrastructureQr';
 
 interface FeedingRecordForExport {
   id: string;
@@ -20,6 +21,8 @@ interface FeedingRecordForExport {
 }
 
 interface ExportFeedingOptions {
+  infrastructureQr?: InfrastructureQrIdentity;
+  qrImageSrc?: string;
   record: FeedingRecordForExport;
   unitName: string;
   cycleName?: string;
@@ -215,6 +218,7 @@ export const generateDetailedFeedingHTML = (options: ExportFeedingOptions): stri
 
         <div class="info-section">
           <h3>📅 Informations Générales</h3>
+          ${infrastructureQrHTML(options.infrastructureQr, options.qrImageSrc)}
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">Date</div>
@@ -317,8 +321,8 @@ export const exportFeedingToPDF = (options: ExportFeedingOptions) => {
   }
 };
 
-export const exportFeedingToWord = (options: ExportFeedingOptions) => {
-  const html = generateDetailedFeedingHTML(options);
+export const exportFeedingToWord = async (options: ExportFeedingOptions) => {
+  const html = generateDetailedFeedingHTML({ ...options, qrImageSrc: options.infrastructureQr ? await infrastructureQrPng(options.infrastructureQr) : undefined });
   const blob = new Blob([`
     <!DOCTYPE html>
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
@@ -351,7 +355,7 @@ export const exportFeedingToWord = (options: ExportFeedingOptions) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportFeedingToExcel = (options: ExportFeedingOptions) => {
+export const exportFeedingToExcel = async (options: ExportFeedingOptions) => {
   const { record, unitName, cycleName } = options;
   const details = parseNotesForDetails(record.notes || '');
   
@@ -360,6 +364,8 @@ export const exportFeedingToExcel = (options: ExportFeedingOptions) => {
     [''],
     ['Unité', unitName],
     ['Cycle', cycleName || '-'],
+    ['Infrastructure', options.infrastructureQr?.name || '-'],
+    ['QR infrastructure', options.infrastructureQr ? infrastructureQrValue(options.infrastructureQr) : ''],
     [''],
     ['INFORMATIONS GÉNÉRALES'],
     ['Date', formatDate(record.date)],
@@ -383,8 +389,8 @@ export const exportFeedingToExcel = (options: ExportFeedingOptions) => {
     [record.notes || '-']
   ];
   
-  const csvContent = rows.map(row => row.join('\t')).join('\n');
-  const blob = new Blob(['\ufeff' + translateDelimitedText(csvContent), ], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const figure = options.infrastructureQr ? infrastructureQrHTML(options.infrastructureQr, await infrastructureQrPng(options.infrastructureQr)) : '';
+  const blob = new Blob(['\ufeff' + translateHtmlDocument(infrastructureQrTableHTML(rows, figure))], { type: 'application/vnd.ms-excel;charset=utf-8' });
   
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -400,7 +406,7 @@ export const exportFeedingToCSV = (options: ExportFeedingOptions) => {
   const { record, unitName, cycleName } = options;
   const details = parseNotesForDetails(record.notes || '');
   
-  const headers = ['Date', 'Heure', 'Unité', 'Cycle', 'Type Aliment', 'Qté Prescrite', 'Qté Servie', 'Température', 'Comportement', 'Mortalité', 'Responsable', 'Session', 'Notes'];
+  const headers = ['Date', 'Heure', 'Unité', 'Cycle', 'Type Aliment', 'Qté Prescrite', 'Qté Servie', 'Température', 'Comportement', 'Mortalité', 'Responsable', 'Session', 'Notes', 'Infrastructure', 'QR infrastructure'];
   const values = [
     record.date,
     record.time || '',
@@ -414,10 +420,12 @@ export const exportFeedingToCSV = (options: ExportFeedingOptions) => {
     details.mortality || '',
     details.feederName || '',
     details.session || '',
-    (record.notes || '').replace(/\n/g, ' ')
+    (record.notes || '').replace(/\n/g, ' '),
+    options.infrastructureQr?.name || '',
+    options.infrastructureQr ? infrastructureQrValue(options.infrastructureQr) : ''
   ];
   
-  const csvContent = [headers.join(','), values.map(v => `"${v}"`).join(',')].join('\n');
+  const csvContent = [headers.join(','), values.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')].join('\n');
   const blob = new Blob(['\ufeff' + translateDelimitedText(csvContent)], { type: 'text/csv;charset=utf-8' });
   
   const url = URL.createObjectURL(blob);

@@ -18,6 +18,8 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { generateFeedingPlanHTML, generateFeedingSheetHTML, printHTML, downloadHTML } from '@/lib/feedingPrintUtils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { resolveInfrastructureQr } from '@/lib/infrastructureQr';
 
 interface FeedingPlanSchedulerProps {
   unitId: string;
@@ -51,6 +53,7 @@ const createEmptySheetRow = (): FeedingSheetRow => ({
 const FeedingPlanScheduler = ({ unitId, unitName, cycleId, cycleName }: FeedingPlanSchedulerProps) => {
   const { plans, loading, createPlan, updatePlan, deletePlan } = useFeedingPlans(unitId, cycleId);
   const { infrastructures } = useCycleInfrastructures(cycleId || '');
+  const { infrastructures: unitInfrastructures } = useProductionUnits();
   const { stocks: allUnitStocks } = useFeedStocks(unitId);
   const stocks = useMemo(() => allUnitStocks.filter(s => !isCommercialStock(s)), [allUnitStocks]);
   const { toast } = useToast();
@@ -100,12 +103,13 @@ const FeedingPlanScheduler = ({ unitId, unitName, cycleId, cycleName }: FeedingP
   const feedingSheetRows = useMemo(() => plans.map((plan) => ({
     time: plan.time,
     infrastructureName: infrastructures.find((infra) => infra.id === plan.infrastructure_id)?.infrastructure_name,
+    infrastructureQr: resolveInfrastructureQr(unitId, plan.infrastructure_id, unitInfrastructures, infrastructures),
     feedType: plan.feed_type,
     quantity: plan.quantity,
     unit: plan.unit,
     days: plan.days,
     notes: plan.notes,
-  })), [plans, infrastructures]);
+  })), [plans, infrastructures, unitInfrastructures, unitId]);
 
   const handleDownloadSheet = () => {
     const html = generateFeedingSheetHTML(feedingSheetRows, unitName, 'Fiche de nourrissage');
@@ -308,7 +312,7 @@ Utilise seulement du texte brut.`;
   };
 
   const handlePrint = () => {
-    const html = generateFeedingPlanHTML(plans, unitName);
+    const html = generateFeedingPlanHTML(plans.map(plan => ({ ...plan, infrastructureQr: resolveInfrastructureQr(unitId, plan.infrastructure_id, unitInfrastructures, infrastructures) })), unitName);
     printHTML(html);
   };
 

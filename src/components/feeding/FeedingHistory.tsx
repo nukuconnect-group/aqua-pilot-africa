@@ -27,6 +27,9 @@ import {
   exportFeedingToExcel,
   exportFeedingToCSV
 } from '@/lib/feedingExportUtils';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
+import { resolveInfrastructureQr } from '@/lib/infrastructureQr';
 
 interface FeedingSession {
   id: string;
@@ -41,6 +44,7 @@ interface FeedingSession {
 }
 
 interface FeedingRecord {
+  infrastructure_id?: string | null;
   id: string;
   date: string;
   time: string;
@@ -80,6 +84,8 @@ const DEFAULT_SESSION_TYPES = [
 ];
 
 const FeedingHistory = ({ records, onEdit, onDelete, onPrint, onAddSession, unitName = '', cycleName }: FeedingHistoryProps) => {
+  const { infrastructures } = useProductionUnits();
+  const { infrastructures: cycleInfrastructures } = useCycleInfrastructures(undefined, true);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [editingRecord, setEditingRecord] = useState<FeedingRecord | null>(null);
   const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
@@ -143,6 +149,7 @@ const FeedingHistory = ({ records, onEdit, onDelete, onPrint, onAddSession, unit
 
   const handleExport = (record: FeedingRecord, format: 'pdf' | 'word' | 'excel' | 'csv') => {
     const exportOptions = {
+      infrastructureQr: resolveInfrastructureQr(record.unitId, record.infrastructure_id, infrastructures, cycleInfrastructures),
       record: {
         ...record,
         feed_type: record.feed_type || record.feedType,
