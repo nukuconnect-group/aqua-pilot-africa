@@ -439,7 +439,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   const infrasLabel = (s: FeedingSheet) => {
     const ids = sheetInfraIds(s);
-    return ids.length ? ids.map((id) => infraName(id)).join(', ') : 'Toutes';
+    return ids.length ? ids.map((id) => infraName(id)).join(', ') : 'Aucune infrastructure';
   };
 
   const buildProgramHTML = (period: 'today' | 'week' | 'month') => {
@@ -477,8 +477,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       <table>
         <thead>
           <tr>
-            <th>Fiche</th><th>Infrastructures</th><th>Périodes</th>
-            <th>Type d'aliment</th><th>Quantité</th><th>Responsable</th><th>Jours</th><th>Observations</th>
+            <th>Fiche</th><th>Infrastructure</th><th>Périodes et quantités</th>
+            <th>Type d'aliment</th><th>Ration du jour</th><th>Responsable</th><th>Jours</th><th>Observations</th>
           </tr>
         </thead>
         <tbody>
@@ -486,12 +486,12 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             <tr>
               <td><strong>${escapeHtml(s.title)}</strong></td>
               <td>${escapeHtml(infrasLabel(s))}</td>
-              <td>${sheetPeriods(s).map((pt) => `<span class="badge">${PERIOD_META[pt.period]?.label || pt.period} ${pt.time}</span>`).join(' ')}</td>
+              <td>${sheetPlan(s).map((pt) => `<span class="badge">${PERIOD_META[pt.period]?.label || pt.period} ${pt.time} · ${pt.quantity} ${escapeHtml(s.unit)}</span>`).join(' ')}</td>
               <td>${escapeHtml(s.feed_type)}</td>
-              <td>${s.quantity} ${escapeHtml(s.unit)}</td>
+              <td>${planTotal(sheetPlan(s))} ${escapeHtml(s.unit)} / jour</td>
               <td>${escapeHtml(s.responsible_name || '—')}</td>
               <td>${escapeHtml((s.days || []).join(', '))}</td>
-              <td>${escapeHtml(s.observations || '')}</td>
+              <td>${escapeHtml(cleanObservations(s.observations))}</td>
             </tr>
           `).join('')}
         </tbody>
