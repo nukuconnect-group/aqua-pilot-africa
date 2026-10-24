@@ -1,4 +1,5 @@
 ## Commercialisation et contrôle des QR (24/10/2026, 23:43 UTC)
+- [ ] Compléter le QR avec le numéro réel, le nom et le type de l’infrastructure, sans inventer de numéro
 - [ ] Masquer Cheptel, Prophylaxie et AquaHealth IA en Commercialisation, y compris accès direct
 - [ ] Présenter uniquement le stock commercial, créations et imports commerciaux sans modifier les anciens articles
 - [ ] Contrôler les QR des cartes et PDF ; corriger les omissions et exécuter les tests
