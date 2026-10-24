@@ -1,4 +1,6 @@
 ## Programme daté et accueil succinct (24/10/2026)
+- [ ] Corriger les réactualisations au retour à l’écran et garder les mises à jour en arrière-plan
+- [ ] Vérifier l’accès hors connexion et préciser la limite de première connexion/création de compte
 - [ ] Accueil AquaAssistant court avec le nom réel de la ferme
 - [ ] Programme sur une semaine ou dates libres, quantités/heures par jour
 - [ ] Fiche journalière cumulant les périodes, suivi et PDF par date
