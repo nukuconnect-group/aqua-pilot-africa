@@ -116,6 +116,8 @@
 - [x] Écritures : préciser le type de stock ; aliments consommés = charge (coût × quantité)
 
 ## Vérification du refus des types d’unités
+- [ ] Autoriser tous les types pendant l’essai actif et appliquer les restrictions aux abonnements payants
+- [ ] Bloquer les unités à expiration sans paiement et afficher l’invitation à souscrire sans supprimer les données
 - [x] Vérifier la règle existante : quatre tests réussis, dont grossissement autorisé et fabrication d’aliment refusée
 - [x] Corriger le faux succès après un refus de création ou modification et conserver le message du refus
 - [x] Bloquer la sauvegarde tant que la lecture des types autorisés n’a pas réussi
