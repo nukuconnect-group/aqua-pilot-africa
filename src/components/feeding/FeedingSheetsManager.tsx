@@ -434,8 +434,6 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     hideStampOnDocuments: companyInfo.hideStampOnDocuments,
   });
 
-  const periodsLabel = (s: FeedingSheet) =>
-    sheetPeriods(s).map((pt) => `${PERIOD_META[pt.period]?.label || pt.period} ${pt.time}`).join(' · ');
 
   const infrasLabel = (s: FeedingSheet) => {
     const ids = sheetInfraIds(s);
