@@ -416,9 +416,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
         {saveError && <p role="alert" className="text-sm text-destructive sm:col-span-2">{saveError}</p>}
         <div className="sm:col-span-2 flex flex-wrap gap-2">
           <Button onClick={handleSave} disabled={saving} className="flex-1">
-            {saving ? 'Enregistrement…' :
-            {infrastructure ? 'Mettre à jour' : 'Créer l\'infrastructure'}
-            }
+            {saving ? 'Enregistrement…' : infrastructure ? 'Mettre à jour' : 'Créer l\'infrastructure'}
           </Button>
           <Button variant="outline" onClick={() => {
             setShowDialog(false);

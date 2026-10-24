@@ -14,7 +14,8 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 
 const DepreciationManager = () => {
   const { 
-    depreciableAssets, 
+    depreciableAssets: allDepreciableAssets,
+    infrastructures,
     units,
     activeUnit,
     currency,
@@ -25,6 +26,7 @@ const DepreciationManager = () => {
     convertCurrency
   } = useProductionUnits();
   const { addLog } = useLogs();
+  const depreciableAssets = allDepreciableAssets.filter(asset => activeUnit?.id && asset.unitId === activeUnit.id);
 
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
@@ -284,6 +286,7 @@ const DepreciationManager = () => {
                       </span>
                     </div>
                     <h4 className="font-medium">{asset.name}</h4>
+                    {infrastructures.some(infra => infra.unitId === asset.unitId && infra.specifications?.depreciationAssetId === asset.id) && <p className="text-xs text-primary">Infrastructure rattachée</p>}
                     <p className="text-sm text-gray-600">
                       Méthode: {asset.depreciationMethod === 'linear' ? 'Linéaire' : 'Accélérée'}
                       • Durée: {asset.usefulLife} ans
@@ -437,6 +440,7 @@ const DepreciationManager = () => {
                 <Label>Unité d'affectation</Label>
                 <Select
                   value={newAsset.unitId}
+                  disabled={Boolean(editingAsset && infrastructures.some(infra => infra.specifications?.depreciationAssetId === editingAsset.id))}
                   onValueChange={(value) => setNewAsset({...newAsset, unitId: value})}
                 >
                   <SelectTrigger>

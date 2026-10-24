@@ -13,6 +13,19 @@ DECLARE
   asset_currency text;
 BEGIN
   config := NEW.specifications->'depreciation';
+  IF TG_OP = 'UPDATE' AND OLD.specifications->>'depreciationAssetId' IS NOT NULL THEN
+    NEW.specifications := jsonb_set(NEW.specifications,'{depreciationAssetId}',OLD.specifications->'depreciationAssetId');
+    IF NEW.unit_id IS DISTINCT FROM OLD.unit_id THEN
+      RAISE EXCEPTION 'Conservez l’unité de l’infrastructure liée à un amortissement';
+    END IF;
+    IF config IS NOT DISTINCT FROM OLD.specifications->'depreciation' THEN
+      IF NEW.name IS DISTINCT FROM OLD.name THEN
+        UPDATE public.depreciable_assets SET name=NEW.name WHERE id=(OLD.specifications->>'depreciationAssetId')::uuid AND user_id=NEW.user_id;
+      END IF;
+      RETURN NEW;
+    END IF;
+    IF config IS NULL OR config = 'null'::jsonb THEN RAISE EXCEPTION 'Conservez le rattachement de l’amortissement'; END IF;
+  END IF;
   IF config IS NULL OR config = 'null'::jsonb THEN RETURN NEW; END IF;
   IF auth.uid() IS NULL OR auth.uid() <> NEW.user_id THEN
     RAISE EXCEPTION 'Amortissement réservé au propriétaire de l’infrastructure';

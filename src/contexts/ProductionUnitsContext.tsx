@@ -166,8 +166,8 @@ interface ProductionUnitsContextType {
   updateUnit: (id: string, updates: Partial<ProductionUnit>) => void;
   deleteUnit: (id: string) => void;
   getUnitInfrastructures: (unitId: string) => Infrastructure[];
-  addInfrastructure: (infrastructure: Omit<Infrastructure, 'id'>) => void;
-  updateInfrastructure: (id: string, updates: Partial<Infrastructure>) => void;
+  addInfrastructure: (infrastructure: Omit<Infrastructure, 'id'>) => Promise<void>;
+  updateInfrastructure: (id: string, updates: Partial<Infrastructure>) => Promise<void>;
   deleteInfrastructure: (id: string) => void;
   getUnitEquipment: (unitId: string) => Equipment[];
   addEquipment: (equipment: Omit<Equipment, 'id'>) => void;
@@ -220,8 +220,8 @@ const EMPTY_PRODUCTION_UNITS_CONTEXT: ProductionUnitsContextType = {
   updateUnit: () => undefined,
   deleteUnit: () => undefined,
   getUnitInfrastructures: () => [],
-  addInfrastructure: () => undefined,
-  updateInfrastructure: () => undefined,
+  addInfrastructure: async () => undefined,
+  updateInfrastructure: async () => undefined,
   deleteInfrastructure: () => undefined,
   getUnitEquipment: () => [],
   addEquipment: () => undefined,
@@ -969,7 +969,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       return;
     }
 
-    if (!user?.id) return;
+    if (!user?.id) throw new Error('Connexion nécessaire pour enregistrer l’infrastructure.');
 
     try {
       const { data, error } = await (supabase as any)
@@ -1004,6 +1004,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       await refreshCoreData('infrastructure-created');
     } catch (err) {
       console.error('Error adding infrastructure:', err);
+      throw err;
     }
   };
 
@@ -1039,6 +1040,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       await refreshCoreData('infrastructure-updated');
     } catch (err) {
       console.error('Error updating infrastructure:', err);
+      throw err;
     }
   };
 
@@ -1648,6 +1650,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       if (updates.usefulLife !== undefined) dbUpdates.useful_life = updates.usefulLife;
       if (updates.currentValue !== undefined) dbUpdates.current_value = updates.currentValue;
       if (updates.accumulatedDepreciation !== undefined) dbUpdates.accumulated_depreciation = updates.accumulatedDepreciation;
+      if (updates.unitId !== undefined) dbUpdates.unit_id = updates.unitId;
       if (updates.status !== undefined) dbUpdates.status = updates.status;
 
       const { error } = await (supabase as any)
@@ -1695,7 +1698,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
     const purchaseDate = new Date(asset.purchaseDate);
     const currentDate = new Date();
-    const yearsElapsed = (currentDate.getTime() - purchaseDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    const yearsElapsed = Math.max(0, (currentDate.getTime() - purchaseDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
     if (asset.depreciationMethod === 'linear') {
       const annualDepreciation = asset.purchasePrice / asset.usefulLife;

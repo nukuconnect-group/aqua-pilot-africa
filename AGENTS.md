@@ -1,5 +1,8 @@
 
 - AquaAssistant UI must remain in `AquaAssistantModule`; the legacy `AquaAssistant` widget is not a second implementation. This keeps one mounted assistant surface and one persisted conversation system.
+- Dashboard keeps one assistant instance outside the keyed module subtree, with explicit page/floating presentation; switching entry paths preserves its conversation and input.
+- Commercial analytics, intelligence and reports share CommercialPerformance and commercialAnalytics with account/unit query keys; forecasts are deterministic estimates from completed real months and sales-minus-purchases is never called net profit.
+- Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
 - Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
 - Feeding print/PDF windows use printWhenReady to wait for assets and rendered SVG layout instead of printing immediately or after a fixed delay.
 - Render the assistant launcher through a body portal independently of module eligibility, hiding it only while the assistant overlay is actually rendered; keep the conversation permission check so layout clipping or stale open state cannot hide the launcher or bypass access rules.
