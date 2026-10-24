@@ -386,7 +386,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
         if (error) throw error;
       }
       const result = await recordSheetFeeding(supabase, user.id, {
-        sheet: { ...s, infrastructure_id: infraId }, infrastructureId: infraId, infrastructureName: infraName(infraId), requestId,
+        sheet: s, infrastructureId: infraId, infrastructureName: infraName(infraId), requestId,
         date: feedForm.date, time: feedForm.time, period: feedForm.period as PeriodPlan['period'],
         prescribed: periodQty(s, feedForm.period), taken, served, mortality, behavior: feedForm.behavior,
         notes: [feedForm.reason, feedForm.notes].map(v => v.trim()).filter(Boolean).join(' · '),
