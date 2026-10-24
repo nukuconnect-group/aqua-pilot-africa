@@ -25,10 +25,15 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { generateCompanyHeaderHTML, generateCompanyFooterHTML, type CompanyInfoForPrint } from '@/lib/companyHeaderUtils';
 import {
-  PERIOD_ORDER, normalizePeriodTimes, normalizeInfrastructureIds,
+  PERIOD_ORDER, normalizeInfrastructureIds,
   computeFishCounts, requireSingleInfrastructure,
   type PeriodTime,
 } from '@/lib/feedingSheetUtils';
+import {
+  readSheetPlan, buildSheetFields, cleanObservations, findInfrastructureConflict, planTotal,
+  buildDailyRows, PERIOD_LABELS, type PeriodPlan,
+} from '@/lib/feedingSheetPlan';
+import { recordSheetFeeding } from '@/lib/recordSheetFeeding';
 
 interface FeedingSheet {
   id: string;
@@ -65,13 +70,18 @@ interface Props {
   unitName: string;
 }
 
-type PeriodState = Record<'matin' | 'midi' | 'soir', { enabled: boolean; time: string }>;
+type PeriodState = Record<'matin' | 'midi' | 'soir', { enabled: boolean; time: string; quantity?: string }>;
 
 const defaultPeriods = (): PeriodState => ({
-  matin: { enabled: true, time: '07:00' },
-  midi: { enabled: false, time: '12:00' },
-  soir: { enabled: false, time: '18:00' },
+  matin: { enabled: true, time: '07:00', quantity: '' },
+  midi: { enabled: true, time: '12:00', quantity: '' },
+  soir: { enabled: true, time: '17:00', quantity: '' },
 });
+
+const periodsToPlan = (periods: PeriodState): PeriodPlan[] =>
+  PERIOD_ORDER.filter(p => periods[p].enabled).map(p => ({
+    period: p, time: periods[p].time, quantity: Number(String(periods[p].quantity ?? '').replace(',', '.')) || 0,
+  }));
 
 const emptyForm = (unitId: string): Partial<FeedingSheet> => ({
   unit_id: unitId,
