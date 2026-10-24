@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
@@ -49,8 +49,10 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [userOverrides, setUserOverrides] = useState<UserModuleOverrides>({});
   const [unitRules, setUnitRules] = useState<UnitModuleRules | undefined>();
 
+  const plansLoaded = useRef(false);
   const load = useCallback(async () => {
-    setLoadingPlans(true);
+    // Background refreshes keep the current rules instead of flashing a loading state.
+    if (!plansLoaded.current) setLoadingPlans(true);
     const [result, rules, overrides] = await Promise.all([
       loadPlanConfigs(),
       loadUnitModuleRules(),
@@ -60,6 +62,7 @@ export const ModuleAccessProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setSource(result.source);
     setUnitRules(rules);
     setUserOverrides(overrides);
+    plansLoaded.current = true;
     setLoadingPlans(false);
   }, [user?.id]);
 
