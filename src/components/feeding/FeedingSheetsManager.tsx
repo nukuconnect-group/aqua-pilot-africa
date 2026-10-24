@@ -338,61 +338,77 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const stocks = useMemo(() => allUnitStocks.filter(s => !isCommercialStock(s)), [allUnitStocks]);
 
   const validateDistribution = (s: FeedingSheet) => {
-    const ids = sheetInfraIds(s);
-    try { requireSingleInfrastructure(ids, unitInfras.map(i => i.id)); }
-    catch (error) { toast({ title: 'Fiche à corriger', description: (error as Error).message, variant: 'destructive' }); return; }
-    const lines: Record<string, FeedLine> = {};
-    ids.forEach(id => {
-      lines[id] = { taken: String(s.quantity), dose: String(s.quantity), mortality: '0' };
-    });
-    setFeedLines(lines);
-    setFeedForm({ behavior: 'normal', reason: '', notes: '', period: sheetPeriods(s)[0].period,
+    const ids = sheetInfraIds(s).filter(id => unitInfras.some(i => i.id === id));
+    // Fiche ancienne sans infrastructure valide : l'utilisateur la rattache explicitement dans la fenêtre.
+    const infraId = ids.length === 1 ? ids[0] : '';
+    const first = sheetPlan(s)[0];
+    setFeedLines({ [infraId]: { taken: String(first.quantity), dose: String(first.quantity), mortality: '0' } });
+    setFeedForm({ behavior: 'normal', reason: '', notes: '', period: first.period,
       time: new Date().toTimeString().slice(0, 5), date: new Date().toLocaleDateString('en-CA'), requestId: crypto.randomUUID() });
     setFeeding(s);
+  };
+
+  const changeFeedPeriod = (period: string) => {
+    if (!feeding) return;
+    const qty = String(periodQty(feeding, period));
+    setFeedForm({ ...feedForm, period });
+    setFeedLines(Object.fromEntries(Object.entries(feedLines).map(([id, l]) => [id, { ...l, taken: qty, dose: qty }])));
+  };
+
+  const attachFeedInfrastructure = (infraId: string) => {
+    const line = Object.values(feedLines)[0] || { taken: '0', dose: '0', mortality: '0' };
+    setFeedLines({ [infraId]: line });
   };
 
   const confirmFeeding = async () => {
     const s = feeding;
     if (!user || !s || savingFeed) return;
     try {
-      const lines = Object.entries(feedLines).map(([infrastructure_id, line]) => ({
-        infrastructure_id, ...feedingBalance(Number(line.taken), Number(line.dose)), mortality: Number(line.mortality),
-      }));
-      requireSingleInfrastructure(lines.map(l => l.infrastructure_id), unitInfras.map(i => i.id));
-      requireSingleInfrastructure(sheetInfraIds(s), unitInfras.map(i => i.id));
-      if (lines[0]?.infrastructure_id !== sheetInfraIds(s)[0]) throw new Error('L’infrastructure ne correspond pas à la fiche.');
-      if (!lines.length || lines.some(l => !l.infrastructure_id || !Number.isInteger(l.mortality) || l.mortality < 0) ||
-          !/^([01]\d|2[0-3]):[0-5]\d$/.test(feedForm.time) || !feedForm.date) {
-        throw new Error('Précisez la date, l’heure réelle, l’infrastructure et une mortalité entière positive ou nulle.');
-      }
-      const totalTaken = lines.reduce((sum, l) => sum + l.taken, 0);
-      const totalServed = lines.reduce((sum, l) => sum + l.served, 0);
-      if (totalTaken <= 0) throw new Error('La quantité prélevée doit être positive.');
-      if (feedForm.behavior !== 'normal' && !feedForm.reason.trim()) throw new Error('Précisez la raison de la non-consommation.');
-      const matchingStocks = stocks.filter(x => matchesFeedingStock(x, unitId, s.feed_type) && x.unit === s.unit);
-      if (matchingStocks.reduce((sum, x) => sum + Number(x.quantity), 0) < totalTaken) {
-        throw new Error('Stock de production insuffisant pour ce prélèvement dans cette unité.');
+      const [infraId, line] = Object.entries(feedLines)[0] || ['', null];
+      if (!line) throw new Error('Saisie incomplète.');
+      if (!infraId || !unitInfras.some(i => i.id === infraId)) throw new Error('Choisissez l’infrastructure de cette fiche avant de nourrir.');
+      const { taken, served, returned } = feedingBalance(Number(line.taken), Number(line.dose));
+      const mortality = Number(line.mortality || 0);
+      if (!Number.isInteger(mortality) || mortality < 0) throw new Error('La mortalité doit être un nombre entier positif ou nul.');
+      if (fishCounts[infraId] !== undefined && mortality > fishCounts[infraId]) throw new Error(`La mortalité dépasse l’effectif disponible (${fishCounts[infraId]} poissons).`);
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(feedForm.time) || !feedForm.date) throw new Error('Précisez la date et l’heure réelle du nourrissage.');
+      if (taken <= 0) throw new Error('La quantité prélevée doit être positive.');
+      if ((feedForm.behavior !== 'normal' || returned > 0) && !feedForm.reason.trim()) {
+        throw new Error('Précisez pourquoi les poissons n’ont pas tout mangé.');
       }
       setSavingFeed(true);
       const requestId = feedForm.requestId || crypto.randomUUID();
       setFeedForm(previous => ({ ...previous, requestId }));
-      const { error } = await (supabase as any).rpc('record_sheet_feeding', {
-        _sheet_id: s.id, _request_id: requestId, _date: feedForm.date, _time: feedForm.time,
-        _period: feedForm.period, _lines: lines, _behavior: feedForm.behavior,
-        _notes: [feedForm.reason, feedForm.notes].filter(Boolean).join(' · '),
-      });
-      if (error) {
-        if (error.code === 'PGRST202' || error.code === '42883') {
-          throw new Error('L’enregistrement sécurisé du nourrissage n’est pas encore disponible pour votre compte. Votre saisie est conservée ; aucun stock n’a été modifié.');
-        }
-        throw error;
+      if (sheetInfraIds(s)[0] !== infraId || sheetInfraIds(s).length !== 1) {
+        const conflict = findInfrastructureConflict(sheets, infraId, feedForm.date, s.id);
+        if (conflict) throw new Error(`${infraName(infraId)} figure déjà sur la fiche active « ${conflict.title} ».`);
+        const { error } = await (supabase as any).from('feeding_sheets').update({ infrastructure_id: infraId }).eq('id', s.id).eq('unit_id', unitId);
+        if (error) throw error;
       }
-      toast({ title: 'Nourrissage enregistré', description: `${totalTaken} ${s.unit} prélevés · ${totalServed} ${s.unit} servis · ${totalTaken - totalServed} ${s.unit} retournés au stock` });
+      const result = await recordSheetFeeding(supabase, user.id, {
+        sheet: { ...s, infrastructure_id: infraId }, infrastructureId: infraId, infrastructureName: infraName(infraId), requestId,
+        date: feedForm.date, time: feedForm.time, period: feedForm.period as PeriodPlan['period'],
+        prescribed: periodQty(s, feedForm.period), taken, served, mortality, behavior: feedForm.behavior,
+        notes: [feedForm.reason, feedForm.notes].map(v => v.trim()).filter(Boolean).join(' · '),
+      });
+      toast({
+        title: result.status === 'already_saved' ? 'Nourrissage déjà enregistré' : 'Nourrissage enregistré',
+        description: `${taken} ${s.unit} prélevés · ${served} ${s.unit} servis · ${returned} ${s.unit} retournés au stock${mortality ? ` · ${mortality} mort(s)` : ''}`,
+      });
       setFeeding(null); setFeedLines({});
-      await Promise.all([loadFishCounts(), refreshStocks()]);
+      await Promise.all([loadFishCounts(), refreshStocks(), fetchSheets()]);
     } catch (e: any) {
-      toast({ title: 'Nourrissage non enregistré', description: e.message || 'Votre saisie est conservée.', variant: 'destructive' });
+      toast({ title: 'Nourrissage non enregistré', description: `${e.message || 'Erreur inconnue'} Votre saisie est conservée.`, variant: 'destructive' });
     } finally { setSavingFeed(false); }
+  };
+
+  /** Nourrissages réels du jour pour l'infrastructure de la fiche. */
+  const loadDayRecords = async (s: FeedingSheet, date: string) => {
+    const id = sheetInfraIds(s)[0];
+    if (!id) return [];
+    const { data } = await (supabase as any).from('feeding_records').select('*')
+      .eq('unit_id', unitId).eq('infrastructure_id', id).eq('date', date).order('time', { ascending: true });
+    return data || [];
   };
 
   // ---------- Impression / export ----------
