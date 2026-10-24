@@ -1,3 +1,7 @@
+## Vérifications demandées avec le compte connecté (24/10/2026, 13:13 UTC)
+- [ ] Vérifier le maintien de l’accès hors ligne et des saisies au retour dans l’application avec le compte réel — session du backend historique non disponible au navigateur de test ; génération automatique de la session personnelle refusée (aucun compte correspondant sur le backend géré).
+- [ ] Tester matin, midi et soir sur une journée, relire les enregistrements et vérifier le PDF depuis le compte réel — même blocage ; ne pas créer de nourrissages fictifs dans les données de production.
+
 ## Programme daté et accueil succinct (24/10/2026)
 - [x] Retirer la réinitialisation automatique des écrans lents et l’activation forcée des mises à jour ; contrôles en arrière-plan, pas au retour de focus
 - [x] Préciser la limite : première connexion/création de compte exigent Internet ; aucun accès hors ligne simulé
