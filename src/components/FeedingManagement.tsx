@@ -240,6 +240,7 @@ const FeedingManagement = () => {
       }
     } catch (error) {
       console.error('Error saving feeding record:', error);
+      throw error;
     }
   };
 

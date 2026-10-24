@@ -6,6 +6,7 @@ import {
   applyMortality,
   splitMortality,
   isMissingColumnError,
+  requireSingleInfrastructure,
 } from '../feedingSheetUtils';
 
 describe('normalizePeriodTimes', () => {
@@ -47,6 +48,24 @@ describe('normalizeInfrastructureIds', () => {
   it('replie sur infrastructure_id hérité', () => {
     expect(normalizeInfrastructureIds({ infrastructure_id: 'c' })).toEqual(['c']);
     expect(normalizeInfrastructureIds({})).toEqual([]);
+  });
+});
+
+describe('fiche par infrastructure', () => {
+  it('rattache exactement une infrastructure disponible', () => {
+    expect(requireSingleInfrastructure(['i1'], ['i1', 'i2'])).toBe('i1');
+  });
+  it('refuse deux infrastructures sur la même fiche', () => {
+    expect(() => requireSingleInfrastructure(['i1', 'i2'], ['i1', 'i2'])).toThrow();
+  });
+  it('refuse une fiche sans infrastructure sélectionnée', () => {
+    expect(() => requireSingleInfrastructure([], ['i1'])).toThrow();
+  });
+  it('refuse la création lorsque l’unité ne possède aucune infrastructure', () => {
+    expect(() => requireSingleInfrastructure([], [])).toThrow('Vous n’avez aucune infrastructure');
+  });
+  it('refuse une infrastructure d’une autre unité', () => {
+    expect(() => requireSingleInfrastructure(['other-unit'], ['i1'])).toThrow();
   });
 });
 

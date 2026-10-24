@@ -1,3 +1,12 @@
+## Fiches avancées de nourrissage (24/10/2026)
+- [x] Nouvelle précision : exactement une infrastructure par fiche ; création bloquée sans infrastructure ; effectifs disponibles sur les infrastructures ; anciennes fiches multiples conservées mais correction requise avant nourrissage
+- [x] Revoir les fiches modifiables et leurs exports PDF/impression
+- [x] Période et heure réelle ; prescription, prélèvement, service et retour ; mortalité
+- [x] Préparer l’enregistrement atomique et idempotent des mouvements, mortalités et comptabilité dans docs/sql/feeding_distribution.sql ; interface sans repli partiel
+- [x] Protéger les brouillons contre les rechargements ; arrêter les rechargements forcés pendant les mises à jour ; tests ciblés réussis dont 20/15/5, infrastructure unique et refus sans perte de saisie
+- [ ] Activer record_sheet_feeding sur la base historique de l’application : outil de migration disponible lié à une autre base, aucun accès d’administration à la base réelle ; aucun déploiement revendiqué
+- [ ] Vérifier le nourrissage connecté et le PDF réel : navigateur affiche la connexion, session de la base historique indisponible ; aucun stock réel modifié
+
 ## Module Alimentation (demande du 24/10/2026)
 - [x] Fiches d'alimentation : plusieurs infrastructures par fiche, périodes matin/midi/soir avec heure par période
 - [x] Afficher le nombre de poissons par infrastructure (cycle actif) sur les fiches et au nourrissage

@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSettings } from '@/contexts/SettingsContext';
 import { getUnitTerms, getInfrastructureTypeLabel as getInfraLabel } from '@/lib/unitContext';
+import { computeFishCounts } from '@/lib/feedingSheetUtils';
 
 interface InfrastructureCardProps {
   infrastructure: Infrastructure;
@@ -73,6 +74,14 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
   const associatedCycle = cycleInfra 
     ? cycles.find(c => c.id === cycleInfra.cycle_id)
     : null;
+
+  const activeCycleIds = new Set(cycles.filter(c => c.unit_id === infrastructure.unitId && c.status === 'active').map(c => c.id));
+  const countedInfras = cycleInfras.filter(ci => activeCycleIds.has(ci.cycle_id));
+  const availableSubjects = computeFishCounts([infrastructure], countedInfras, allBatches)[infrastructure.id] || 0;
+  const directBatchQuantity = attachedBatch && attachedBatch.unit_id === infrastructure.unitId && !['sold', 'harvested'].includes(attachedBatch.status)
+    ? Math.max(0, Number(attachedBatch.quantity) || 0) : 0;
+  const hasCountedInfra = countedInfras.some(ci => ci.infrastructure_name.trim().toLowerCase() === infrastructure.name.trim().toLowerCase());
+  const subjects = hasCountedInfra ? availableSubjects : directBatchQuantity;
 
   const [batchFormData, setBatchFormData] = useState({
     species: '',
@@ -271,6 +280,11 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
         <CardContent className="flex-1 flex flex-col p-3 sm:p-4 pt-0">
           {/* Infos principales */}
           <div className="space-y-2 text-xs sm:text-sm flex-1">
+            {unitTerms.features.feedingSheets && <div className="flex items-center gap-2">
+              <Fish className="w-4 h-4 shrink-0 text-primary" />
+              <span className="text-muted-foreground">Sujets disponibles :</span>
+              <strong>{subjects.toLocaleString('fr-FR')}</strong>
+            </div>}
             <div className="flex items-center gap-2 text-muted-foreground">
               <Ruler className="w-3 h-3 flex-shrink-0" />
               <span>Capacité: {infrastructure.capacity.toLocaleString()}</span>

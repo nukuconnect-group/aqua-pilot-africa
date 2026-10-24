@@ -1,8 +1,8 @@
 /**
  * Enregistrement unique du service worker hors connexion (/sw.js, généré par vite-plugin-pwa).
  * Jamais en dev ni dans les aperçus Lovable ; ?sw=off désactive tout et nettoie.
- * Les mises à jour s'installent en arrière-plan et ne s'appliquent que quand
- * l'application n'est pas à l'écran, pour ne jamais effacer une saisie en cours.
+ * Les mises à jour s'installent en arrière-plan sans rechargement forcé.
+ * La nouvelle interface est chargée à la prochaine ouverture volontaire.
  */
 
 const PROJECT_ID = 'b2c5432d-e362-4fa8-8b60-f39686099c32';
@@ -50,17 +50,7 @@ export function registerAppServiceWorker() {
       })
       .catch(() => { /* hors connexion indisponible : l'application reste utilisable en ligne */ });
   });
-  let pendingReload = false;
-  let refreshing = false;
-  const applyWhenHidden = () => {
-    if (pendingReload && !refreshing && document.visibilityState === 'hidden') {
-      refreshing = true;
-      window.location.reload();
-    }
-  };
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    pendingReload = true;
-    applyWhenHidden();
-  });
-  document.addEventListener('visibilitychange', applyWhenHidden);
+  // The new worker may control the page in the background, but never reload it.
+  // Hiding the tab is not proof that edits were saved. The new app shell is used
+  // on the next navigation/reopening initiated by the user.
 }
