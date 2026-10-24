@@ -1,6 +1,7 @@
 import { translateHtmlDocument } from '@/i18n/runtime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { infrastructureQrHTML, type InfrastructureQrIdentity } from '@/lib/infrastructureQr';
 
 const escapeHtml = (value: string) =>
   value
@@ -75,6 +76,7 @@ export const generateFeedingRecordHTML = (record: any, unitName: string) => {
       
       <div class="section">
         <h2>Informations générales</h2>
+        ${infrastructureQrHTML(record.infrastructureQr)}
         <div class="info-row">
           <span class="info-label">Date et heure:</span>
           <span>${record.date} à ${record.time || 'N/A'}</span>
@@ -202,6 +204,7 @@ export const generateFeedingPlanHTML = (plans: any[], unitName: string) => {
           <tr>
             <th>Heure</th>
             <th>Type d'aliment</th>
+            <th>QR infrastructure</th>
             <th>Quantité</th>
             <th>Jours</th>
           </tr>
@@ -211,12 +214,13 @@ export const generateFeedingPlanHTML = (plans: any[], unitName: string) => {
             <tr>
               <td><strong>${plan.time}</strong></td>
               <td>${plan.feed_type}</td>
+              <td>${infrastructureQrHTML(plan.infrastructureQr)}</td>
               <td>${plan.quantity} ${plan.unit}</td>
               <td class="days">${plan.days.join(', ')}</td>
             </tr>
             ${plan.notes ? `
             <tr>
-              <td colspan="4" style="padding-left: 30px; font-size: 12px; color: #666;">
+              <td colspan="5" style="padding-left: 30px; font-size: 12px; color: #666;">
                 Note: ${plan.notes}
               </td>
             </tr>
@@ -238,6 +242,7 @@ export const generateFeedingSheetHTML = (
   rows: Array<{
     time: string;
     infrastructureName?: string;
+    infrastructureQr?: InfrastructureQrIdentity;
     feedType: string;
     quantity: number;
     unit: string;
@@ -316,7 +321,7 @@ export const generateFeedingSheetHTML = (
           ${rows.map((row) => `
             <tr>
               <td><strong>${escapeHtml(row.time || '-')}</strong></td>
-              <td>${escapeHtml(row.infrastructureName || 'Toutes')}</td>
+              <td>${escapeHtml(row.infrastructureName || 'Toutes')}${infrastructureQrHTML(row.infrastructureQr)}</td>
               <td>${escapeHtml(row.feedType || '-')}</td>
               <td><strong>${row.quantity || 0}</strong> ${escapeHtml(row.unit || 'kg')}</td>
               <td>${row.days.map((day) => `<span class="pill">${escapeHtml(day)}</span>`).join('')}</td>

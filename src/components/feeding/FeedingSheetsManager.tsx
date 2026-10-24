@@ -766,6 +766,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredSheets.map(s => {
                 const ids = sheetInfraIds(s);
+                const qr = ids.length === 1 ? sheetQr(s) : undefined;
                 return (
                   <Card key={s.id} className={`border-l-4 ${s.is_active ? 'border-l-primary' : 'border-l-border opacity-70'}`}>
                     <CardContent className="p-4 space-y-2">
@@ -790,6 +791,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                         </div>
                       </div>
                       <div className="overflow-hidden rounded-md border text-xs">
+                        {qr && <div className="flex justify-center border-b py-2"><InfrastructureQRCode infrastructure={qr} /></div>}
                         <div className="grid grid-cols-3 bg-muted px-2 py-1 font-medium text-muted-foreground">
                           <span>Période</span><span className="text-center">Heure</span><span className="text-right">À servir</span>
                         </div>

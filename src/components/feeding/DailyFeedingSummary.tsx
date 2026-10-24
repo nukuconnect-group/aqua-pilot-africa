@@ -31,6 +31,9 @@ import {
 import { FeedingRecord } from '@/hooks/useFeedingRecords';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
+import { resolveInfrastructureQr, infrastructureQrHTML, infrastructureQrValue, infrastructureQrPng } from '@/lib/infrastructureQr';
 
 interface DailyFeedingSummaryProps {
   records: FeedingRecord[];
@@ -57,6 +60,9 @@ const BEHAVIOR_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedingSummaryProps) => {
+  const { infrastructures } = useProductionUnits();
+  const { infrastructures: cycleInfrastructures } = useCycleInfrastructures(undefined, true);
+  const recordQr = (record: FeedingRecord) => resolveInfrastructureQr(record.unit_id || '', record.infrastructure_id, infrastructures, cycleInfrastructures);
   const [expandedDates, setExpandedDates] = React.useState<Set<string>>(new Set());
 
   // Grouper par date
@@ -146,7 +152,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
   };
 
   // Export functions for daily records
-  const generateDailyHTML = (date: string, dayRecords: FeedingRecord[]) => {
+  const generateDailyHTML = (date: string, dayRecords: FeedingRecord[], qrImages: Record<string, string> = {}) => {
     const summary = getDaySummary(dayRecords);
     
     const sessionsHTML = dayRecords.map(record => {
@@ -155,6 +161,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
       
       return `
         <div class="session-card">
+          ${infrastructureQrHTML(recordQr(record), qrImages[record.id])}
           <div class="session-header">
             <span class="session-badge">${sessionInfo.icon} ${sessionInfo.label} - ${record.time || '--:--'}</span>
           </div>
@@ -410,8 +417,13 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
     }
   };
 
-  const exportToWord = (date: string, dayRecords: FeedingRecord[]) => {
-    const html = generateDailyHTML(date, dayRecords);
+  const exportToWord = async (date: string, dayRecords: FeedingRecord[]) => {
+    const qrImages: Record<string, string> = {};
+    for (const record of dayRecords) {
+      const qr = recordQr(record);
+      if (qr) qrImages[record.id] = await infrastructureQrPng(qr);
+    }
+    const html = generateDailyHTML(date, dayRecords, qrImages);
     const blob = new Blob([`
       <!DOCTYPE html>
       <html xmlns:o="urn:schemas-microsoft-com:office:office" 
@@ -446,7 +458,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
       ['Nourrisseurs', summary.feeders.join(', ')],
       [''],
       ['DÉTAIL DES SESSIONS'],
-      ['Session', 'Heure', 'Nourrisseur', 'Type aliment', 'Qté prescrite (kg)', 'Qté servie (kg)', 'Qté restante (kg)', 'Température (°C)', 'Mortalité', 'Comportement', 'Notes'],
+      ['Session', 'Heure', 'Nourrisseur', 'Type aliment', 'Qté prescrite (kg)', 'Qté servie (kg)', 'Qté restante (kg)', 'Température (°C)', 'Mortalité', 'Comportement', 'Notes', 'Infrastructure', 'QR infrastructure'],
       ...dayRecords.map(r => {
         const sessionInfo = getSessionInfo(r);
         const behaviorInfo = getBehaviorInfo(r.behavior);
@@ -461,7 +473,9 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
           r.temperature?.toString() || '-',
           r.mortality?.toString() || '0',
           behaviorInfo?.label || r.behavior || '-',
-          (r.notes || '').replace(/\n/g, ' ')
+          (r.notes || '').replace(/\n/g, ' '),
+          recordQr(r)?.name || '',
+          recordQr(r) ? infrastructureQrValue(recordQr(r) as NonNullable<ReturnType<typeof recordQr>>) : ''
         ];
       })
     ];
@@ -480,7 +494,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
   };
 
   const exportToCSV = (date: string, dayRecords: FeedingRecord[]) => {
-    const headers = ['Date', 'Heure', 'Session', 'Nourrisseur', 'Type aliment', 'Qté prescrite (kg)', 'Qté servie (kg)', 'Qté restante (kg)', 'Température (°C)', 'Mortalité', 'Comportement', 'Notes'];
+    const headers = ['Date', 'Heure', 'Session', 'Nourrisseur', 'Type aliment', 'Qté prescrite (kg)', 'Qté servie (kg)', 'Qté restante (kg)', 'Température (°C)', 'Mortalité', 'Comportement', 'Notes', 'Infrastructure', 'QR infrastructure'];
     
     const csvRows = dayRecords.map(r => {
       const sessionInfo = getSessionInfo(r);
@@ -497,8 +511,10 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
         r.temperature?.toString() || '',
         r.mortality?.toString() || '0',
         behaviorInfo?.label || r.behavior || '',
-        (r.notes || '').replace(/\n/g, ' ').replace(/,/g, ';')
-      ].map(v => `"${v}"`).join(',');
+        (r.notes || '').replace(/\n/g, ' ').replace(/,/g, ';'),
+        recordQr(r)?.name || '',
+        recordQr(r) ? infrastructureQrValue(recordQr(r) as NonNullable<ReturnType<typeof recordQr>>) : ''
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
     });
     
     const csvContent = [headers.join(','), ...csvRows].join('\n');
