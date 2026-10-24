@@ -804,45 +804,24 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
               <Input value={form.title || ''} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ex: Alimentation matin — Bac 1" />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="sheet-infrastructure">Infrastructure rattachée *</Label>
+              <Label htmlFor="sheet-infrastructure">Infrastructure rattachée * (une seule par fiche)</Label>
               <Select value={(form.infrastructure_ids || []).length === 1 ? form.infrastructure_ids?.[0] : undefined} onValueChange={id => setForm({ ...form, infrastructure_id: id, infrastructure_ids: [id] })}>
                 <SelectTrigger id="sheet-infrastructure"><SelectValue placeholder="Sélectionner une infrastructure" /></SelectTrigger>
-                <SelectContent>{unitInfras.map(i => <SelectItem key={i.id} value={i.id}>{i.name} · {fishCounts[i.id] !== undefined ? `${fishCounts[i.id]} sujets disponibles` : 'effectif indisponible'}</SelectItem>)}</SelectContent>
+                <SelectContent>{unitInfras.map(i => {
+                  const used = conflictFor(i.id);
+                  return (
+                    <SelectItem key={i.id} value={i.id} disabled={!!used && form.is_active !== false}>
+                      {i.name} · {fishCounts[i.id] !== undefined ? `${fishCounts[i.id]} sujets` : 'effectif indisponible'}{used ? ` · déjà sur « ${used.title} »` : ''}
+                    </SelectItem>
+                  );
+                })}</SelectContent>
               </Select>
               {!unitInfras.length && <p role="alert" className="mt-2 text-sm text-destructive">Vous n’avez aucune infrastructure dans cette unité. Créez-en une avant sa fiche de nourrissage.</p>}
+              {unitInfras.length > 0 && unitInfras.every(i => conflictFor(i.id)) && (
+                <p role="alert" className="mt-2 text-sm text-destructive">Toutes vos infrastructures ont déjà une fiche active. Désactivez une fiche pour en créer une nouvelle.</p>
+              )}
               {(form.infrastructure_ids || []).length > 1 && <p role="alert" className="mt-2 text-sm text-destructive">Cette ancienne fiche regroupe plusieurs infrastructures. Sélectionnez une seule infrastructure avant de l’enregistrer.</p>}
               {(form.infrastructure_ids || []).length === 1 && <p className="mt-2 text-sm text-muted-foreground">Sujets disponibles : <strong className="text-foreground">{fishCounts[form.infrastructure_ids?.[0] || ''] ?? 'Effectif indisponible'}</strong></p>}
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Périodes de nourrissage *</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
-                {PERIOD_ORDER.map((p) => {
-                  const meta = PERIOD_META[p];
-                  const Icon = meta.icon;
-                  const state = periods[p];
-                  return (
-                    <div key={p} className={`rounded-md border p-2 ${state.enabled ? 'border-primary' : ''}`}>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={state.enabled ? 'default' : 'outline'}
-                        className="w-full"
-                        onClick={() => setPeriods({ ...periods, [p]: { ...state, enabled: !state.enabled } })}
-                      >
-                        <Icon className="w-3 h-3 mr-1" /> {meta.label}
-                      </Button>
-                      {state.enabled && (
-                        <Input
-                          type="time"
-                          className="mt-2"
-                          value={state.time}
-                          onChange={(e) => setPeriods({ ...periods, [p]: { ...state, time: e.target.value } })}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
             <div>
               <Label>Type d'aliment *</Label>
@@ -852,11 +831,34 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                   <option key={n as string} value={n as string} />
                 ))}
               </datalist>
-              <p className="text-[11px] text-muted-foreground mt-1">Utilisez le nom de l’article du module Stock pour qu’il soit déduit automatiquement.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Nom de l’article du Stock de production, déduit automatiquement au nourrissage.</p>
             </div>
-            <div>
-              <Label>Quantité prescrite (par infrastructure et période)</Label>
-              <Input type="number" step="0.01" value={form.quantity || 0} onChange={e => setForm({ ...form, quantity: parseFloat(e.target.value) })} />
+            <div className="sm:col-span-2">
+              <Label>Périodes, heures et quantités à servir *</Label>
+              <div className="mt-1 overflow-hidden rounded-md border">
+                <div className="hidden grid-cols-[1fr_1fr_1fr] gap-2 bg-muted px-3 py-2 text-xs font-medium text-muted-foreground sm:grid">
+                  <span>Période</span><span>Heure prévue</span><span>Quantité à servir ({form.unit || 'kg'})</span>
+                </div>
+                {PERIOD_ORDER.map((p) => {
+                  const meta = PERIOD_META[p];
+                  const Icon = meta.icon;
+                  const state = periods[p];
+                  const update = (patch: Partial<PeriodState[typeof p]>) => setPeriods({ ...periods, [p]: { ...state, ...patch } });
+                  return (
+                    <div key={p} className="grid grid-cols-1 items-center gap-2 border-t px-3 py-2 sm:grid-cols-[1fr_1fr_1fr]">
+                      <Button type="button" size="sm" variant={state.enabled ? 'default' : 'outline'} aria-pressed={state.enabled} onClick={() => update({ enabled: !state.enabled })}>
+                        <Icon className="w-3 h-3 mr-1" /> {meta.label}{state.enabled ? '' : ' (non prévu)'}
+                      </Button>
+                      <Input type="time" aria-label={`Heure ${meta.label}`} disabled={!state.enabled} value={state.time} onChange={(e) => update({ time: e.target.value })} />
+                      <Input type="number" min="0" step="0.01" inputMode="decimal" aria-label={`Quantité ${meta.label}`} disabled={!state.enabled}
+                        placeholder="Quantité" value={state.quantity ?? ''} onChange={(e) => update({ quantity: e.target.value })} />
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between border-t bg-muted/50 px-3 py-2 text-sm font-semibold">
+                  <span>Ration du jour</span><span>{planTotal(periodsToPlan(periods))} {form.unit || 'kg'}</span>
+                </div>
+              </div>
             </div>
             <div>
               <Label>Unité</Label>
