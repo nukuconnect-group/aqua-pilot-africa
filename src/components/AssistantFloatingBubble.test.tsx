@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'user-a' } }) }));
+vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ companyInfo: { name: '' } }) }));
 import AssistantFloatingBubble from './AssistantFloatingBubble';
 
 const container = document.createElement('div');

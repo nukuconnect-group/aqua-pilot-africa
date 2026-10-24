@@ -169,15 +169,11 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const bodyBlocked = document.body.style.pointerEvents === 'none';
-      const loadingText = document.querySelector('[data-module-content]')?.textContent?.toLowerCase() || '';
-      const seemsStuckLoading = loadingText.includes('chargement') && loadingText.length < 180;
-
       const overlayOpen = hasOpenTransientOverlay();
 
-      if (!overlayOpen && (bodyBlocked || seemsStuckLoading)) {
-        recordDiagnostic('watchdog', 'controlled module reset', { activeTab, bodyBlocked, seemsStuckLoading });
+      if (!overlayOpen && bodyBlocked) {
+        recordDiagnostic('watchdog', 'release orphaned page lock', { activeTab, bodyBlocked });
         cleanupBlockingOverlays(`watchdog:${activeTab}`);
-        setModuleResetKey((key) => key + 1);
       }
     }, 4500);
     return () => window.clearTimeout(timeout);

@@ -31,7 +31,7 @@ import {
 } from '@/lib/feedingSheetUtils';
 import {
   readSheetPlan, buildSheetFields, cleanObservations, findInfrastructureConflict, planTotal,
-  buildDailyRows, PERIOD_LABELS, type PeriodPlan,
+  buildDailyRows, PERIOD_LABELS, localDate, dateAfter, isSheetScheduled, validateSchedule, readDayPlans, WEEK_DAYS, type DayPlans, type PeriodPlan,
 } from '@/lib/feedingSheetPlan';
 import { recordSheetFeeding } from '@/lib/recordSheetFeeding';
 
@@ -58,7 +58,7 @@ interface FeedingSheet {
   created_at?: string;
 }
 
-const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const DAYS = WEEK_DAYS;
 const PERIOD_META: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
   matin: { label: 'Matin', icon: Sunrise, color: 'bg-secondary text-secondary-foreground' },
   midi: { label: 'Midi', icon: Sun, color: 'bg-accent text-accent-foreground' },
@@ -94,9 +94,10 @@ const emptyForm = (unitId: string): Partial<FeedingSheet> => ({
   unit: 'kg',
   responsible_name: '',
   observations: '',
-  frequency: 'daily',
+  frequency: 'weekly',
   days: [...DAYS],
-  start_date: new Date().toISOString().split('T')[0],
+  start_date: localDate(),
+  end_date: dateAfter(localDate(), 6),
   is_active: true,
 });
 
@@ -146,6 +147,12 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const [periods, setPeriods] = useSessionDraft<PeriodState>(`${draftKey}:periods`, defaultPeriods());
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterInfra, setFilterInfra] = useState<string>('all');
+  const [selectedDate, setSelectedDate] = useState(localDate);
+  const [dayRecords, setDayRecords] = useState<any[]>([]);
+  const [recordsReady, setRecordsReady] = useState(false);
+  const [dailySheet, setDailySheet] = useState<FeedingSheet | null>(null);
+  const [dayPlans, setDayPlans] = useSessionDraft<DayPlans>(`${draftKey}:day-plans`, {});
+  const [planDay, setPlanDay] = useState('common');
   const [fishCounts, setFishCounts] = useState<Record<string, number>>({});
 
   const unitInfras = useMemo(
@@ -157,7 +164,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     id ? (unitInfras.find((i) => i.id === id)?.name || 'Infrastructure introuvable') : 'Aucune infrastructure';
 
   const sheetInfraIds = (s: FeedingSheet) => normalizeInfrastructureIds(s);
-  const sheetPlan = (s: FeedingSheet) => readSheetPlan(s);
+  const sheetPlan = (s: FeedingSheet, date = selectedDate) => readSheetPlan(s, date);
   const sheetPeriods = (s: FeedingSheet): PeriodTime[] => sheetPlan(s).map(({ period, time }) => ({ period, time }));
   const periodQty = (s: FeedingSheet, period: string) => sheetPlan(s).find(p => p.period === period)?.quantity ?? 0;
 
@@ -181,6 +188,15 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   /** Effectif de poissons par infrastructure, basé sur les cycles actifs de l'unité. */
+  const fetchDayRecords = async () => {
+    setRecordsReady(false);
+    const { data, error } = await (supabase as any).from('feeding_records').select('*').eq('unit_id', unitId).eq('date', selectedDate).order('time', { ascending: true });
+    if (error) { setDayRecords([]); toast({ title: 'Suivi journalier indisponible', description: 'Réessayez avant de nourrir.', variant: 'destructive' }); return; }
+    setDayRecords(data || []); setRecordsReady(true);
+  };
+  const recordsFor = (s: FeedingSheet) => dayRecords.filter(r => r.infrastructure_id === sheetInfraIds(s)[0]);
+  const periodDone = (s: FeedingSheet, period: string) => recordsFor(s).some(r => r.session_type === period);
+
   const loadFishCounts = async () => {
     if (!user) return;
     try {
@@ -219,6 +235,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   useEffect(() => { fetchSheets(); }, [user?.id, unitId]);
+  useEffect(() => { if (user) fetchDayRecords(); }, [user?.id, unitId, selectedDate]);
   useEffect(() => { loadFishCounts(); }, [user?.id, unitId, unitInfras.length]);
 
   const openCreate = () => {
@@ -227,23 +244,24 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     }
     setEditing(null);
     // Reopening a new sheet preserves its unfinished draft.
-    if (editing) { setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); }
+    if (editing) { setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); setDayPlans({}); }
+    setPlanDay('common');
     setOpenForm(true);
   };
 
   const openEdit = (s: FeedingSheet) => {
-    setEditing(s);
+    setEditing(s); setDayPlans(readDayPlans(s.observations)); setPlanDay('common');
     setForm({ ...s, infrastructure_ids: sheetInfraIds(s), observations: cleanObservations(s.observations) });
     const next = defaultPeriods();
     (Object.keys(next) as Array<keyof PeriodState>).forEach((p) => { next[p].enabled = false; });
-    sheetPlan(s).forEach((pt) => { next[pt.period] = { enabled: true, time: pt.time, quantity: String(pt.quantity || '') }; });
+    readSheetPlan(s).forEach((pt) => { next[pt.period] = { enabled: true, time: pt.time, quantity: String(pt.quantity || '') }; });
     setPeriods(next);
     setOpenForm(true);
   };
 
   /** Fiche active qui utilise déjà cette infrastructure (une seule fiche active par infrastructure). */
   const conflictFor = (infraId?: string | null) =>
-    infraId ? findInfrastructureConflict(sheets, infraId, form.start_date || new Date().toLocaleDateString('en-CA'), editing?.id) : null;
+    infraId ? findInfrastructureConflict(sheets, infraId, form.start_date || localDate(), editing?.id, form.end_date) : null;
 
   const submit = async () => {
     if (!user || savingSheet) return;
@@ -260,7 +278,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       return;
     }
     let fields: ReturnType<typeof buildSheetFields>;
-    try { fields = buildSheetFields(periodsToPlan(periods), form.observations); }
+    try { validateSchedule(form.start_date || localDate(), form.end_date, form.days); fields = buildSheetFields(periodsToPlan(periods), form.observations, dayPlans); }
     catch (error) { toast({ title: 'Périodes à compléter', description: (error as Error).message, variant: 'destructive' }); return; }
     setSavingSheet(true);
     try {
@@ -276,7 +294,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
         responsible_name: form.responsible_name?.trim() || null,
         frequency: form.frequency || 'daily',
         days: form.days && form.days.length ? form.days : DAYS,
-        start_date: form.start_date || new Date().toLocaleDateString('en-CA'),
+        start_date: form.start_date || localDate(),
         end_date: form.end_date || null,
         is_active: form.is_active !== false,
       };
@@ -289,7 +307,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       }
       toast({ title: editing ? 'Fiche mise à jour' : 'Fiche créée', description: `${infraName(infraIds[0])} · ${fields.quantity} ${payload.unit} par jour` });
       setOpenForm(false);
-      setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); setEditing(null);
+      setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); setDayPlans({}); setEditing(null);
       fetchSheets();
     } catch (e: any) {
       console.error(e);
@@ -300,7 +318,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const toggleActive = async (s: FeedingSheet) => {
     if (!s.is_active) {
       const id = sheetInfraIds(s)[0];
-      const conflict = id ? findInfrastructureConflict(sheets, id, new Date().toLocaleDateString('en-CA'), s.id) : null;
+      const conflict = id ? findInfrastructureConflict(sheets, id, s.start_date, s.id, s.end_date) : null;
       if (conflict) {
         toast({ title: 'Infrastructure déjà utilisée', description: `Désactivez d’abord la fiche « ${conflict.title} ».`, variant: 'destructive' });
         return;
@@ -331,20 +349,23 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const [feedLines, setFeedLines] = useSessionDraft<Record<string, FeedLine>>(`${draftKey}:lines`, {});
   const [feedForm, setFeedForm] = useSessionDraft(`${draftKey}:distribution`, {
     behavior: 'normal', reason: '', notes: '', period: 'matin', time: '',
-    date: new Date().toLocaleDateString('en-CA'), requestId: '',
+    date: localDate(), requestId: '',
   });
   const [savingFeed, setSavingFeed] = useState(false);
   const { stocks: allUnitStocks, refetch: refreshStocks } = useFeedStocks(unitId);
   const stocks = useMemo(() => allUnitStocks.filter(s => !isCommercialStock(s)), [allUnitStocks]);
 
-  const validateDistribution = (s: FeedingSheet) => {
+  const validateDistribution = (s: FeedingSheet, chosenPeriod?: string) => {
+    if (!recordsReady || !isSheetScheduled(s, selectedDate)) return;
+    const pending = sheetPlan(s).filter(p => !periodDone(s, p.period));
+    const first = pending.find(p => p.period === chosenPeriod) || pending[0];
+    if (!first) return;
     const ids = sheetInfraIds(s).filter(id => unitInfras.some(i => i.id === id));
     // Fiche ancienne sans infrastructure valide : l'utilisateur la rattache explicitement dans la fenêtre.
     const infraId = ids.length === 1 ? ids[0] : '';
-    const first = sheetPlan(s)[0];
     setFeedLines({ [infraId]: { taken: String(first.quantity), dose: String(first.quantity), mortality: '0' } });
     setFeedForm({ behavior: 'normal', reason: '', notes: '', period: first.period,
-      time: new Date().toTimeString().slice(0, 5), date: new Date().toLocaleDateString('en-CA'), requestId: crypto.randomUUID() });
+      time: new Date().toTimeString().slice(0, 5), date: selectedDate, requestId: crypto.randomUUID() });
     setFeeding(s);
   };
 
@@ -366,6 +387,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     try {
       const [infraId, line] = Object.entries(feedLines)[0] || ['', null];
       if (!line) throw new Error('Saisie incomplète.');
+      if (!isSheetScheduled(s, feedForm.date)) throw new Error('Cette date ne fait pas partie du programme actif.');
+      const existing = await loadDayRecords(s, feedForm.date);
+      if (existing.some((r: any) => r.session_type === feedForm.period)) throw new Error('Cette période est déjà nourrie pour cette journée.');
       if (!infraId || !unitInfras.some(i => i.id === infraId)) throw new Error('Choisissez l’infrastructure de cette fiche avant de nourrir.');
       const { taken, served, returned } = feedingBalance(Number(line.taken), Number(line.dose));
       const mortality = Number(line.mortality || 0);
@@ -380,7 +404,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       const requestId = feedForm.requestId || crypto.randomUUID();
       setFeedForm(previous => ({ ...previous, requestId }));
       if (sheetInfraIds(s)[0] !== infraId || sheetInfraIds(s).length !== 1) {
-        const conflict = findInfrastructureConflict(sheets, infraId, feedForm.date, s.id);
+        const conflict = findInfrastructureConflict(sheets, infraId, s.start_date, s.id, s.end_date);
         if (conflict) throw new Error(`${infraName(infraId)} figure déjà sur la fiche active « ${conflict.title} ».`);
         const { error } = await (supabase as any).from('feeding_sheets').update({ infrastructure_id: infraId }).eq('id', s.id).eq('unit_id', unitId);
         if (error) throw error;
@@ -396,7 +420,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
         description: `${taken} ${s.unit} prélevés · ${served} ${s.unit} servis · ${returned} ${s.unit} retournés au stock${mortality ? ` · ${mortality} mort(s)` : ''}`,
       });
       setFeeding(null); setFeedLines({});
-      await Promise.all([loadFishCounts(), refreshStocks(), fetchSheets()]);
+      await Promise.all([loadFishCounts(), refreshStocks(), fetchSheets(), fetchDayRecords()]);
     } catch (e: any) {
       toast({ title: 'Nourrissage non enregistré', description: `${e.message || 'Erreur inconnue'} Votre saisie est conservée.`, variant: 'destructive' });
     } finally { setSavingFeed(false); }
@@ -406,8 +430,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const loadDayRecords = async (s: FeedingSheet, date: string) => {
     const id = sheetInfraIds(s)[0];
     if (!id) return [];
-    const { data } = await (supabase as any).from('feeding_records').select('*')
+    const { data, error } = await (supabase as any).from('feeding_records').select('*')
       .eq('unit_id', unitId).eq('infrastructure_id', id).eq('date', date).order('time', { ascending: true });
+    if (error) throw error;
     return data || [];
   };
 
@@ -448,8 +473,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     let periodLabel = "Programme d'alimentation";
     let rows: FeedingSheet[] = [];
     if (period === 'today') {
-      periodLabel = `Programme du ${now.toLocaleDateString('fr-FR')}`;
-      rows = activeSheets.filter(s => s.days.includes(todayName));
+      periodLabel = `Programme du ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR')}`;
+      rows = activeSheets.filter(s => isSheetScheduled(s, selectedDate));
     } else if (period === 'week') {
       periodLabel = `Programme hebdomadaire — semaine du ${now.toLocaleDateString('fr-FR')}`;
       rows = activeSheets;
@@ -504,7 +529,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const DAILY_HEAD = ['Période', 'Heure prévue', 'Heure réelle', 'Effectif', 'Prescrite', 'Prélevée', 'Servie', 'Restante', 'Mortalité', 'Comportement', 'Raison / observations'];
 
   const dailyData = async (s: FeedingSheet) => {
-    const date = new Date().toLocaleDateString('en-CA');
+    const date = selectedDate;
     const id = sheetInfraIds(s)[0];
     const records = await loadDayRecords(s, date);
     const rows = buildDailyRows(sheetPlan(s), records, id ? fishCounts[id] : undefined);
@@ -549,7 +574,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       </style></head><body>
       ${generateCompanyHeaderHTML(ci)}
       <h1>FICHE DE NOURRISSAGE JOURNALIÈRE</h1>
-      <p class="sub">${escapeHtml(s.title)} — ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <p class="sub">${escapeHtml(s.title)} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
       <div class="info">
         <div>Unité<strong>${escapeHtml(unitName)}</strong></div>
         <div>Infrastructure<strong>${escapeHtml(infraName(id))}</strong></div>
@@ -588,7 +613,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   const printProgram = (period: 'today' | 'week' | 'month') => openPrintWindow(buildProgramHTML(period));
-  const printDailySheet = async (s: FeedingSheet) => openPrintWindow(await buildDailySheetHTML(s));
+  const printDailySheet = async (s: FeedingSheet) => {
+    try { openPrintWindow(await buildDailySheetHTML(s)); }
+    catch { toast({ title: 'Impression impossible', description: 'Les nourrissages de cette journée n’ont pas pu être chargés.', variant: 'destructive' }); }
+  };
 
   const downloadSheetPdf = async (s: FeedingSheet) => {
     try {
@@ -613,7 +641,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(15, 118, 110);
       doc.text('FICHE DE NOURRISSAGE JOURNALIÈRE', pageW / 2, y, { align: 'center' });
       doc.setTextColor(30, 41, 59); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-      doc.text(`${s.title} — ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`, pageW / 2, y + 6, { align: 'center' });
+      doc.text(`${s.title} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`, pageW / 2, y + 6, { align: 'center' });
       const { rows, id, totals } = await dailyData(s);
       autoTable(doc, {
         startY: y + 11, theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -643,7 +671,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       doc.setFont('helvetica', 'bold'); doc.text('Le Consultant', 50, sy, { align: 'center' }); doc.text("Le Directeur de l'exploitation", pageW - 60, sy, { align: 'center' });
       doc.setDrawColor(148, 163, 184); doc.setLineWidth(0.3); doc.line(20, sy + 18, 80, sy + 18); doc.line(pageW - 90, sy + 18, pageW - 30, sy + 18);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.text('Nom et signature', 50, sy + 23, { align: 'center' }); doc.text('Nom et signature', pageW - 60, sy + 23, { align: 'center' });
-      doc.save(`fiche-nourrissage-${s.title.replace(/[^a-zA-Z0-9À-ÿ_-]/g, '-')}-${new Date().toLocaleDateString('en-CA')}.pdf`);
+      doc.save(`fiche-nourrissage-${s.title.replace(/[^a-zA-Z0-9À-ÿ_-]/g, '-')}-${selectedDate}.pdf`);
     } catch { toast({ title: 'Téléchargement PDF impossible', variant: 'destructive' }); }
   };
 
@@ -698,7 +726,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor="feeding-day">Journée</Label><Input id="feeding-day" type="date" className="w-44" value={selectedDate} onChange={e => setSelectedDate(e.target.value || localDate())} />
             <Button size="sm" variant="outline" onClick={() => printProgram('today')}>
               <Printer className="w-4 h-4 mr-1" /> Programme du jour
             </Button>
@@ -762,7 +791,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                             <div key={pt.period} className="grid grid-cols-3 border-t px-2 py-1.5">
                               <span className="flex items-center gap-1"><Icon className="w-3 h-3" />{meta.label}</span>
                               <span className="text-center">{pt.time}</span>
-                              <strong className="text-right">{pt.quantity} {s.unit}</strong>
+                              <strong className="text-right">{pt.quantity} {s.unit}{periodDone(s, pt.period) && <span className="block text-primary font-normal">Nourri</span>}</strong>
                             </div>
                           );
                         })}
@@ -773,13 +802,15 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                       <div className="grid grid-cols-2 gap-2 break-words text-xs">
                         <div className="col-span-2"><span className="text-muted-foreground">Aliment :</span> <strong>{s.feed_type}</strong></div>
                         {s.responsible_name && <div className="col-span-2"><span className="text-muted-foreground">Responsable :</span> {s.responsible_name}</div>}
+                        <div className="col-span-2"><span className="text-muted-foreground">Programme :</span> {s.start_date} → {s.end_date || "sans fin"}</div>
                         <div className="col-span-2"><span className="text-muted-foreground">Jours :</span> {(s.days || []).join(', ')}</div>
                         {cleanObservations(s.observations) && <div className="col-span-2 text-muted-foreground italic">{cleanObservations(s.observations)}</div>}
                       </div>
                       <div className="flex flex-wrap gap-2 pt-2 border-t">
-                        <Button size="sm" className="flex-1" disabled={!s.is_active} onClick={() => validateDistribution(s)}>
-                          <CheckCircle2 className="w-4 h-4 mr-1" /> Nourrir aujourd’hui
+                        <Button size="sm" className="flex-1" disabled={!recordsReady || !isSheetScheduled(s, selectedDate) || sheetPlan(s).every(p => periodDone(s, p.period))} onClick={() => validateDistribution(s)}>
+                          <CheckCircle2 className="w-4 h-4 mr-1" /> {sheetPlan(s).every(p => periodDone(s, p.period)) ? "Journée remplie" : "Nourrir aujourd’hui"}
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => setDailySheet(s)}>Fiche du jour</Button>
                         <Button size="sm" variant="outline" onClick={() => toggleActive(s)}>
                           {s.is_active ? 'Désactiver' : 'Réactiver'}
                         </Button>
@@ -833,6 +864,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             </div>
             <div className="sm:col-span-2">
               <Label>Périodes, heures et quantités à servir *</Label>
+              <Select value={planDay} onValueChange={setPlanDay}><SelectTrigger className="mt-2"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="common">Horaires et doses communs</SelectItem>{(form.days || DAYS).map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent></Select>
               <div className="mt-1 overflow-hidden rounded-md border">
                 <div className="hidden grid-cols-[1fr_1fr_1fr] gap-2 bg-muted px-3 py-2 text-xs font-medium text-muted-foreground sm:grid">
                   <span>Période</span><span>Heure prévue</span><span>Quantité à servir ({form.unit || 'kg'})</span>
@@ -840,8 +872,17 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 {PERIOD_ORDER.map((p) => {
                   const meta = PERIOD_META[p];
                   const Icon = meta.icon;
-                  const state = periods[p];
-                  const update = (patch: Partial<PeriodState[typeof p]>) => setPeriods({ ...periods, [p]: { ...state, ...patch } });
+                  const customPlan = dayPlans[planDay];
+                  const customPeriod = customPlan?.find(pt => pt.period === p);
+                  const state = planDay === 'common' || !customPlan ? periods[p] : { enabled: !!customPeriod, time: customPeriod?.time || periods[p].time, quantity: customPeriod ? String(customPeriod.quantity) : '' };
+                  const update = (patch: Partial<PeriodState[typeof p]>) => {
+                    if (planDay === 'common') { setPeriods({ ...periods, [p]: { ...state, ...patch } }); return; }
+                    const updated = { ...state, ...patch };
+                    const base = customPlan || periodsToPlan(periods);
+                    const next = base.filter(pt => pt.period !== p);
+                    if (updated.enabled) next.push({ period: p, time: updated.time, quantity: Number(updated.quantity) || 0 });
+                    setDayPlans({ ...dayPlans, [planDay]: next });
+                  };
                   return (
                     <div key={p} className="grid grid-cols-1 items-center gap-2 border-t px-3 py-2 sm:grid-cols-[1fr_1fr_1fr]">
                       <Button type="button" size="sm" variant={state.enabled ? 'default' : 'outline'} aria-pressed={state.enabled} onClick={() => update({ enabled: !state.enabled })}>
@@ -854,7 +895,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                   );
                 })}
                 <div className="flex justify-between border-t bg-muted/50 px-3 py-2 text-sm font-semibold">
-                  <span>Ration du jour</span><span>{planTotal(periodsToPlan(periods))} {form.unit || 'kg'}</span>
+                  <span>Ration du jour</span><span>{planTotal(planDay === 'common' ? periodsToPlan(periods) : dayPlans[planDay] || periodsToPlan(periods))} {form.unit || 'kg'}</span>
                 </div>
               </div>
             </div>
@@ -875,10 +916,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             </div>
             <div>
               <Label>Fréquence</Label>
-              <Select value={form.frequency as string} onValueChange={v => setForm({ ...form, frequency: v as any })}>
+              <Select value={form.frequency as string} onValueChange={v => setForm({ ...form, frequency: v as any, end_date: v === 'weekly' ? dateAfter(form.start_date || localDate(), 6) : v === 'monthly' ? dateAfter(form.start_date || localDate(), 29) : form.end_date })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">Journalière</SelectItem>
+                  <SelectItem value="daily">Dates personnalisées</SelectItem>
                   <SelectItem value="weekly">Hebdomadaire</SelectItem>
                   <SelectItem value="monthly">Mensuelle</SelectItem>
                 </SelectContent>
@@ -886,8 +927,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             </div>
             <div>
               <Label>Date de début</Label>
-              <Input type="date" value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} />
+              <Input type="date" value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value, end_date: e.target.value && form.frequency === 'weekly' ? dateAfter(e.target.value, 6) : form.end_date })} />
             </div>
+            <div><Label htmlFor="sheet-end">Date de fin</Label><Input id="sheet-end" type="date" min={form.start_date} value={form.end_date || ""} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
             <div className="sm:col-span-2">
               <Label>Jours de la semaine</Label>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -943,7 +985,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                         <Select onValueChange={attachFeedInfrastructure}>
                           <SelectTrigger id="feed-attach" className="mt-1"><SelectValue placeholder="Sélectionner l’infrastructure" /></SelectTrigger>
                           <SelectContent>{unitInfras.map(i => {
-                            const used = findInfrastructureConflict(sheets, i.id, feedForm.date, feeding.id);
+                            const used = findInfrastructureConflict(sheets, i.id, feeding.start_date, feeding.id, feeding.end_date);
                             return <SelectItem key={i.id} value={i.id} disabled={!!used}>{i.name}{used ? ` · déjà sur « ${used.title} »` : ''}</SelectItem>;
                           })}</SelectContent>
                         </Select>
@@ -953,10 +995,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                       <div><Label>Période</Label>
                         <Select value={feedForm.period} onValueChange={changeFeedPeriod}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>{sheetPlan(feeding).map(pt => <SelectItem key={pt.period} value={pt.period}>{PERIOD_LABELS[pt.period]} — prévu {pt.time} · {pt.quantity} {feeding.unit}</SelectItem>)}</SelectContent>
+                          <SelectContent>{sheetPlan(feeding).map(pt => <SelectItem key={pt.period} value={pt.period} disabled={periodDone(feeding, pt.period)}>{PERIOD_LABELS[pt.period]} — prévu {pt.time} · {pt.quantity} {feeding.unit}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
-                      <div><Label>Date</Label><Input type="date" value={feedForm.date} onChange={e => setFeedForm({ ...feedForm, date: e.target.value })} /></div>
+                      <div><Label>Date</Label><Input type="date" readOnly value={feedForm.date} /></div>
                       <div><Label>Heure réelle *</Label><Input type="time" value={feedForm.time} onChange={e => setFeedForm({ ...feedForm, time: e.target.value })} /></div>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -993,7 +1035,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                   </div>
                 );
               })}
-              <div><Label>Observations</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
+              <div><Label>Observations, maladies et autres constats</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
               <div className="border-t pt-3 text-sm">
                 <span className="text-muted-foreground">Stock de production · {unitName} · {feeding.feed_type} :</span>{' '}
                 <strong>{stocks.filter(x => matchesFeedingStock(x, unitId, feeding.feed_type) && x.unit === feeding.unit).reduce((sum, x) => sum + Number(x.quantity), 0).toLocaleString('fr-FR')} {feeding.unit} disponibles</strong>
@@ -1006,6 +1048,24 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!dailySheet} onOpenChange={open => !open && setDailySheet(null)}>
+        <DialogContent className="max-w-5xl max-h-[90dvh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Fiche journalière — {dailySheet?.title}</DialogTitle></DialogHeader>
+          {dailySheet && <div className="space-y-4">
+            <p className="text-sm font-medium">{new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {infrasLabel(dailySheet)}</p>
+            {!isSheetScheduled(dailySheet, selectedDate) && <p className="text-sm text-muted-foreground">Aucun nourrissage prévu pour cette date.</p>}
+            <div className="overflow-x-auto"><table className="w-full text-xs"><thead className="bg-muted"><tr>{['Période / heure', 'Prescrite', 'Servie', 'Restante', 'Mortalité', 'Observations', 'État'].map(h => <th key={h} className="p-2 text-left">{h}</th>)}</tr></thead><tbody>
+              {buildDailyRows(sheetPlan(dailySheet), recordsFor(dailySheet), fishCounts[sheetInfraIds(dailySheet)[0]]).map(row => <tr key={row.period} className="border-b">
+                <td className="p-2">{PERIOD_LABELS[row.period]} · {row.plannedTime}{row.actualTime && <span className="block text-muted-foreground">Nourri à {row.actualTime}</span>}</td><td className="p-2">{row.prescribed} {dailySheet.unit}</td><td className="p-2">{row.served || '—'}</td><td className="p-2">{row.remaining || '—'}</td><td className="p-2">{row.mortality || '—'}</td><td className="p-2 min-w-40">{row.behavior} {row.notes}</td>
+                <td className="p-2">{row.served !== '' ? <Badge variant="secondary">Nourri</Badge> : <Button size="sm" disabled={!recordsReady || !isSheetScheduled(dailySheet, selectedDate)} onClick={() => { validateDistribution(dailySheet, row.period); setDailySheet(null); }}>Nourrir</Button>}</td>
+              </tr>)}
+            </tbody></table></div>
+            <p className="text-sm font-semibold">Total prescrit : {planTotal(sheetPlan(dailySheet))} {dailySheet.unit} · Servi : {buildDailyRows(sheetPlan(dailySheet), recordsFor(dailySheet)).reduce((sum, row) => sum + Number(row.served || 0), 0)} {dailySheet.unit}</p>
+            <div className="flex gap-2"><Button variant="outline" onClick={() => downloadSheetPdf(dailySheet)}><FileDown className="w-4 h-4 mr-2" />PDF</Button><Button variant="outline" onClick={() => printDailySheet(dailySheet)}><Printer className="w-4 h-4 mr-2" />Imprimer</Button></div>
+          </div>}
         </DialogContent>
       </Dialog>
 

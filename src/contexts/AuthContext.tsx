@@ -145,6 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) {
         if (import.meta.env.DEV) console.error('Error fetching profile:', profileError);
+        // Do not replace an already loaded account after a transient network failure.
+        return;
       }
 
       // Get roles
@@ -155,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (rolesError) {
         if (import.meta.env.DEV) console.error('Error fetching roles:', rolesError);
+        return;
       }
 
       // Check if user is a team member (by user_id - more secure than email)
@@ -224,7 +227,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }, 0);
         } else if (!isDemoMode) {
-          setUser(null);
+          // A reconnect/refresh failure is not an explicit sign-out. Preserve the
+          // mounted screen; server calls still require the application's session.
+          if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') setUser(null);
           setIsLoading(false);
         }
 

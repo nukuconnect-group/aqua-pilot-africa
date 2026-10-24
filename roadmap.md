@@ -1,3 +1,12 @@
+## Programme daté et accueil succinct (24/10/2026)
+- [x] Retirer la réinitialisation automatique des écrans lents et l’activation forcée des mises à jour ; contrôles en arrière-plan, pas au retour de focus
+- [x] Préciser la limite : première connexion/création de compte exigent Internet ; aucun accès hors ligne simulé
+- [x] Accueil AquaAssistant court avec le nom réel de la ferme
+- [x] Programme sur une semaine ou dates libres, quantités/heures par jour
+- [x] Fiche journalière cumulant les périodes, suivi et PDF par date
+- [x] Tests ciblés réussis ; aperçu /auth conserve la page après focus et coupure/reconnexion, aucun stock réel modifié
+- [ ] Vérifier nourrissage, PDF, retour au premier plan et accès hors connexion avec le compte réel : session de la base historique indisponible, aperçu sur /auth
+
 ## Corrections Alimentation et chatbot (24/10/2026, 10:30)
 - [x] Création de fiche acceptée par la base réelle (une infrastructure, quantités et heures matin/midi/soir)
 - [x] Une infrastructure sur une seule fiche active ; désactiver l’autre fiche pour la réutiliser

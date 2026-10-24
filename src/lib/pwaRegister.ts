@@ -36,17 +36,22 @@ export function registerAppServiceWorker() {
     isRefusedHost() ||
     new URLSearchParams(window.location.search).has('sw', 'off');
   if (refused) {
-    window.addEventListener('load', unregisterAppWorkers);
+    unregisterAppWorkers();
     return;
   }
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js', { updateViaCache: 'none' })
       .then((registration) => {
-        registration.update();
-        setInterval(() => registration.update(), 2 * 60 * 1000);
-        window.addEventListener('focus', () => registration.update());
-        window.addEventListener('online', () => registration.update());
+        let lastCheck = 0;
+        const check = () => {
+          if (!navigator.onLine || Date.now() - lastCheck < 60 * 60 * 1000) return;
+          lastCheck = Date.now();
+          void registration.update().catch(() => { /* Retry on a later connection. */ });
+        };
+        check();
+        setInterval(check, 60 * 60 * 1000);
+        window.addEventListener('online', check);
       })
       .catch(() => { /* hors connexion indisponible : l'application reste utilisable en ligne */ });
   });

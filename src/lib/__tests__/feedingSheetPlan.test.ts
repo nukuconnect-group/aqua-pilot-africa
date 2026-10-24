@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allocateFeeding, buildDailyRows, buildSheetFields, cleanObservations, findInfrastructureConflict, readSheetPlan } from '../feedingSheetPlan';
+import { allocateFeeding, buildDailyRows, buildSheetFields, cleanObservations, findInfrastructureConflict, readSheetPlan, isSheetScheduled, validateSchedule, dateAfter } from '../feedingSheetPlan';
 
 describe('plan de fiche de nourrissage', () => {
   it('enregistre matin, midi et soir avec heure et quantité dans les champs existants', () => {
@@ -45,6 +45,38 @@ describe('prélèvement et retour au stock', () => {
 });
 
 describe('fiche journalière', () => {
+  it('un programme d’une semaine inclut les sept dates mais pas le lendemain', () => {
+    const start = '2026-10-26';
+    const end = dateAfter(start, 6);
+    expect(end).toBe('2026-11-01');
+    const sheet = { is_active: true, start_date: start, end_date: end, days: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] };
+    for (let offset = 0; offset < 7; offset++) expect(isSheetScheduled(sheet, dateAfter(start, offset))).toBe(true);
+    expect(isSheetScheduled(sheet, '2026-11-02')).toBe(false);
+    expect(isSheetScheduled(sheet, '2026-10-25')).toBe(false);
+  });
+  it('respecte les jours choisis et refuse une plage inversée', () => {
+    expect(isSheetScheduled({ is_active: true, days: ['lundi'] }, '2026-10-27')).toBe(false);
+    expect(() => validateSchedule('2026-10-27', '2026-10-26', ['lundi'])).toThrow();
+    expect(() => validateSchedule('2026-10-26', '2026-11-01', [])).toThrow();
+  });
+  it('sauvegarde les doses propres au lundi sans modifier celles du mardi', () => {
+    const fields = buildSheetFields([{ period: 'matin', time: '07:00', quantity: 20 }], 'Consignes', {
+      lundi: [{ period: 'matin', time: '08:00', quantity: 15 }, { period: 'soir', time: '18:00', quantity: 5 }],
+    });
+    expect(readSheetPlan(fields, '2026-10-26')).toEqual([{ period: 'matin', time: '08:00', quantity: 15 }, { period: 'soir', time: '18:00', quantity: 5 }]);
+    expect(readSheetPlan(fields, '2026-10-27')).toEqual([{ period: 'matin', time: '07:00', quantity: 20 }]);
+  });
+  it('les matin, midi et soir complètent les mêmes lignes sans effacer les précédentes', () => {
+    const plan = [{ period: 'matin' as const, time: '07:00', quantity: 20 }, { period: 'midi' as const, time: '12:00', quantity: 10 }, { period: 'soir' as const, time: '18:00', quantity: 5 }];
+    const rows = buildDailyRows(plan, [{ session_type: 'matin', actual_quantity: 15, remaining_quantity: 5 }, { session_type: 'midi', actual_quantity: 10 }, { session_type: 'soir', actual_quantity: 4, remaining_quantity: 1 }]);
+    expect(rows.map(row => row.served)).toEqual(['15', '10', '4']);
+    expect(buildDailyRows(plan, []).map(row => row.served)).toEqual(['', '', '']);
+  });
+  it('autorise deux programmes successifs sans chevauchement', () => {
+    const sheets = [{ id: 'next', title: 'Semaine suivante', is_active: true, infrastructure_id: 'i1', start_date: '2026-11-02', end_date: '2026-11-08' }];
+    expect(findInfrastructureConflict(sheets, 'i1', '2026-10-26', undefined, '2026-11-01')).toBeNull();
+    expect(findInfrastructureConflict(sheets, 'i1', '2026-11-01', undefined, '2026-11-02')?.id).toBe('next');
+  });
   it('remplit la période nourrie et laisse les autres à compléter', () => {
     const rows = buildDailyRows([{ period: 'matin', time: '07:00', quantity: 20 }, { period: 'soir', time: '17:00', quantity: 10 }],
       [{ session_type: 'matin', time: '07:10:00', actual_quantity: 15, remaining_quantity: 5, mortality: 2, behavior: 'faible', notes: 'Eau trouble · [ref:x]' }], 500);
