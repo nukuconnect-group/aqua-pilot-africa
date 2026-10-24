@@ -922,61 +922,79 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           <DialogHeader><DialogTitle>Nourrir aujourd’hui — {feeding?.title}</DialogTitle></DialogHeader>
           {feeding && (
             <div className="space-y-3">
-              <div className="rounded-md bg-muted p-3 text-sm grid grid-cols-2 gap-2">
-                <div><span className="text-muted-foreground">Aliment :</span> <strong>{feeding.feed_type}</strong></div>
-                <div><span className="text-muted-foreground">Périodes :</span> <strong>{periodsLabel(feeding)}</strong></div>
-                <div className="col-span-2"><span className="text-muted-foreground">Dose prévue :</span> <strong>{feeding.quantity} {feeding.unit} par infrastructure</strong></div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div><Label>Période de nourrissage</Label><Select value={feedForm.period} onValueChange={period => setFeedForm({ ...feedForm, period })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{sheetPeriods(feeding).map(pt => <SelectItem key={pt.period} value={pt.period}>Nourrissage {pt.period === 'soir' ? 'du soir' : pt.period === 'midi' ? 'de midi' : 'du matin'}</SelectItem>)}</SelectContent></Select></div>
-                <div><Label>Date du nourrissage</Label><Input type="date" value={feedForm.date} onChange={e => setFeedForm({ ...feedForm, date: e.target.value })} /></div>
-                <div><Label>Heure réelle *</Label><Input type="time" value={feedForm.time} onChange={e => setFeedForm({ ...feedForm, time: e.target.value })} /></div>
-              </div>
-              {Object.entries(feedLines).map(([infraId, line]) => (
-                <div key={infraId || 'all'} className="rounded-md border p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium">{infraId ? infraName(infraId) : 'Toutes infrastructures'}</p>
-                    {infraId && fishCounts[infraId] !== undefined && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        <Fish className="w-3 h-3 mr-1" />{fishCounts[infraId]} poisson(s)
-                      </Badge>
+              {Object.entries(feedLines).map(([infraId, line]) => {
+                const prescribed = periodQty(feeding, feedForm.period);
+                const returned = Math.max(0, Number(line.taken) - Number(line.dose));
+                const setLine = (patch: Partial<FeedLine>) => setFeedLines({ [infraId]: { ...line, ...patch } });
+                const fish = infraId ? fishCounts[infraId] : undefined;
+                return (
+                  <div key={infraId || 'none'} className="space-y-3">
+                    <div className="grid grid-cols-1 gap-2 rounded-md bg-muted p-3 text-sm sm:grid-cols-2">
+                      <div><span className="text-muted-foreground">Infrastructure :</span>{' '}
+                        {infraId ? <strong>{infraName(infraId)}</strong> : <span className="text-destructive">à rattacher</span>}
+                      </div>
+                      <div className="flex items-center gap-1"><Fish className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Sujets disponibles :</span> <strong>{fish !== undefined ? `${fish} poissons` : 'inconnu'}</strong>
+                      </div>
+                      <div><span className="text-muted-foreground">Aliment :</span> <strong>{feeding.feed_type}</strong></div>
+                      <div><span className="text-muted-foreground">Ration du jour :</span> <strong>{planTotal(sheetPlan(feeding))} {feeding.unit}</strong></div>
+                    </div>
+                    {!infraId && (
+                      <div className="rounded-md border border-destructive/40 p-3">
+                        <Label htmlFor="feed-attach">Cette fiche n’a pas d’infrastructure. Choisissez-la pour l’y rattacher *</Label>
+                        <Select onValueChange={attachFeedInfrastructure}>
+                          <SelectTrigger id="feed-attach" className="mt-1"><SelectValue placeholder="Sélectionner l’infrastructure" /></SelectTrigger>
+                          <SelectContent>{unitInfras.map(i => {
+                            const used = findInfrastructureConflict(sheets, i.id, feedForm.date, feeding.id);
+                            return <SelectItem key={i.id} value={i.id} disabled={!!used}>{i.name}{used ? ` · déjà sur « ${used.title} »` : ''}</SelectItem>;
+                          })}</SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div><Label>Période</Label>
+                        <Select value={feedForm.period} onValueChange={changeFeedPeriod}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>{sheetPlan(feeding).map(pt => <SelectItem key={pt.period} value={pt.period}>{PERIOD_LABELS[pt.period]} — prévu {pt.time} · {pt.quantity} {feeding.unit}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label>Date</Label><Input type="date" value={feedForm.date} onChange={e => setFeedForm({ ...feedForm, date: e.target.value })} /></div>
+                      <div><Label>Heure réelle *</Label><Input type="time" value={feedForm.time} onChange={e => setFeedForm({ ...feedForm, time: e.target.value })} /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <div><Label>Quantité prescrite</Label><Input readOnly value={`${prescribed} ${feeding.unit}`} className="bg-muted" /></div>
+                      <div><Label>Quantité prélevée *</Label><Input type="number" min="0" step="0.01" value={line.taken} onChange={e => setLine({ taken: e.target.value })} /></div>
+                      <div><Label>Quantité servie *</Label><Input type="number" min="0" step="0.01" value={line.dose} onChange={e => setLine({ dose: e.target.value })} /></div>
+                      <div><Label>Quantité restante</Label><Input readOnly value={`${returned.toLocaleString('fr-FR')} ${feeding.unit}`} className="bg-muted font-semibold" /></div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {fish !== undefined ? `Sur les ${fish} poissons, ` : ''}{Number(line.dose) || 0} {feeding.unit} servis.
+                      {returned > 0 ? ` Les ${returned.toLocaleString('fr-FR')} ${feeding.unit} restants retournent au stock.` : ''}
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div><Label>Mortalité observée</Label><Input type="number" min="0" step="1" value={line.mortality} onChange={e => setLine({ mortality: e.target.value })} /></div>
+                      <div><Label>Comportement des poissons</Label>
+                        <Select value={feedForm.behavior} onValueChange={(v) => setFeedForm({ ...feedForm, behavior: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="normal">Bon appétit</SelectItem>
+                            <SelectItem value="faible">Appétit faible</SelectItem>
+                            <SelectItem value="refus">Refus de manger</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {(feedForm.behavior !== 'normal' || returned > 0) && (
+                      <div><Label>Pourquoi les poissons n’ont pas tout mangé ? *</Label>
+                        <Input list="feed-refusal-reasons" value={feedForm.reason} onChange={(e) => setFeedForm({ ...feedForm, reason: e.target.value })} placeholder="Ex : eau trouble, température basse…" />
+                        <datalist id="feed-refusal-reasons">
+                          {['Eau trouble ou de mauvaise qualité', 'Température trop basse', 'Manque d’oxygène', 'Poissons malades', 'Stress (manipulation, pêche)', 'Aliment inadapté ou avarié', 'Suralimentation'].map((r) => <option key={r} value={r} />)}
+                        </datalist>
+                      </div>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div><Label>Quantité prélevée ({feeding.unit}) *</Label><Input type="number" min="0" step="0.01" value={line.taken} onChange={e => setFeedLines({ ...feedLines, [infraId]: { ...line, taken: e.target.value } })} /></div>
-                    <div>
-                      <Label>Quantité servie / ingérée ({feeding.unit}) *</Label>
-                      <Input type="number" step="0.01" value={line.dose} onChange={(e) => setFeedLines({ ...feedLines, [infraId]: { ...line, dose: e.target.value } })} />
-                    </div>
-                    <div>
-                      <Label>Mortalité constatée</Label>
-                      <Input type="number" min="0" value={line.mortality} onChange={(e) => setFeedLines({ ...feedLines, [infraId]: { ...line, mortality: e.target.value } })} />
-                    </div>
-                  </div>
-                  <p className="text-sm"><span className="text-muted-foreground">Prescrite :</span> {feeding.quantity} {feeding.unit} · <span className="text-muted-foreground">Restante / retour au stock :</span> <strong>{Math.max(0, Number(line.taken) - Number(line.dose)).toLocaleString('fr-FR')} {feeding.unit}</strong></p>
-                </div>
-              ))}
-
-              <div>
-                <Label>Appétit</Label>
-                <Select value={feedForm.behavior} onValueChange={(v) => setFeedForm({ ...feedForm, behavior: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Bon appétit</SelectItem>
-                    <SelectItem value="faible">Appétit faible</SelectItem>
-                    <SelectItem value="refus">Refus de manger</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {feedForm.behavior !== 'normal' && (
-                <div><Label>Pourquoi l’aliment n’a pas été consommé ? *</Label>
-                  <Input list="feed-refusal-reasons" value={feedForm.reason} onChange={(e) => setFeedForm({ ...feedForm, reason: e.target.value })} placeholder="Ex : eau trouble, température basse…" />
-                  <datalist id="feed-refusal-reasons">
-                    {['Eau trouble ou de mauvaise qualité', 'Température trop basse', 'Manque d’oxygène', 'Poissons malades', 'Stress (manipulation, pêche)', 'Aliment inadapté ou avarié', 'Suralimentation'].map((r) => <option key={r} value={r} />)}
-                  </datalist>
-                </div>
-              )}
+                );
+              })}
               <div><Label>Observations</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
               <div className="border-t pt-3 text-sm">
                 <span className="text-muted-foreground">Stock de production · {unitName} · {feeding.feed_type} :</span>{' '}
