@@ -56,3 +56,7 @@ export function infrastructureQrHTML(infrastructure?: InfrastructureQrIdentity, 
   if (!infrastructure) return '';
   return `<figure style="margin:8px 0;display:inline-block;break-inside:avoid;text-align:center;max-width:160px">${imageSrc ? `<img src="${escapeHtml(imageSrc)}" width="112" height="112" alt="QR infrastructure">` : infrastructureQrSvg(infrastructure)}<figcaption style="font:11px Arial,sans-serif;overflow-wrap:anywhere">${escapeHtml(infrastructure.name)}</figcaption></figure>`;
 }
+
+/** Excel-compatible HTML preserves QR images, unlike the old tab-delimited XLS. */
+export const infrastructureQrTableHTML = (rows: Array<Array<string | number>>, qrFigures: string) =>
+  `<!doctype html><html><head><meta charset="utf-8"></head><body>${qrFigures}<table border="1">${rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('')}</table></body></html>`;

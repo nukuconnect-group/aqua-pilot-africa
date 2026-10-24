@@ -1,7 +1,7 @@
 import { translateDelimitedText, translateHtmlDocument } from '@/i18n/runtime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { infrastructureQrHTML, infrastructureQrValue, infrastructureQrPng, type InfrastructureQrIdentity } from '@/lib/infrastructureQr';
+import { infrastructureQrHTML, infrastructureQrValue, infrastructureQrPng, infrastructureQrTableHTML, type InfrastructureQrIdentity } from '@/lib/infrastructureQr';
 
 interface FeedingRecordForExport {
   id: string;
@@ -355,7 +355,7 @@ export const exportFeedingToWord = async (options: ExportFeedingOptions) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportFeedingToExcel = (options: ExportFeedingOptions) => {
+export const exportFeedingToExcel = async (options: ExportFeedingOptions) => {
   const { record, unitName, cycleName } = options;
   const details = parseNotesForDetails(record.notes || '');
   
@@ -389,8 +389,8 @@ export const exportFeedingToExcel = (options: ExportFeedingOptions) => {
     [record.notes || '-']
   ];
   
-  const csvContent = rows.map(row => row.join('\t')).join('\n');
-  const blob = new Blob(['\ufeff' + translateDelimitedText(csvContent), ], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const figure = options.infrastructureQr ? infrastructureQrHTML(options.infrastructureQr, await infrastructureQrPng(options.infrastructureQr)) : '';
+  const blob = new Blob(['\ufeff' + translateHtmlDocument(infrastructureQrTableHTML(rows, figure))], { type: 'application/vnd.ms-excel;charset=utf-8' });
   
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

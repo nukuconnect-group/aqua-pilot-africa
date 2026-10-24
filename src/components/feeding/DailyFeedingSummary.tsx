@@ -33,7 +33,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useCycleInfrastructures } from '@/hooks/useCycleInfrastructures';
-import { resolveInfrastructureQr, infrastructureQrHTML, infrastructureQrValue, infrastructureQrPng } from '@/lib/infrastructureQr';
+import { resolveInfrastructureQr, infrastructureQrHTML, infrastructureQrValue, infrastructureQrPng, infrastructureQrTableHTML } from '@/lib/infrastructureQr';
 
 interface DailyFeedingSummaryProps {
   records: FeedingRecord[];
@@ -444,7 +444,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
     URL.revokeObjectURL(url);
   };
 
-  const exportToExcel = (date: string, dayRecords: FeedingRecord[]) => {
+  const exportToExcel = async (date: string, dayRecords: FeedingRecord[]) => {
     const summary = getDaySummary(dayRecords);
     
     const rows = [
@@ -462,6 +462,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
       ...dayRecords.map(r => {
         const sessionInfo = getSessionInfo(r);
         const behaviorInfo = getBehaviorInfo(r.behavior);
+        const qr = recordQr(r);
         return [
           sessionInfo.label,
           r.time || '-',
@@ -474,14 +475,18 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
           r.mortality?.toString() || '0',
           behaviorInfo?.label || r.behavior || '-',
           (r.notes || '').replace(/\n/g, ' '),
-          recordQr(r)?.name || '',
-          recordQr(r) ? infrastructureQrValue(recordQr(r) as NonNullable<ReturnType<typeof recordQr>>) : ''
+          qr?.name || '',
+          qr ? infrastructureQrValue(qr) : ''
         ];
       })
     ];
     
-    const csvContent = rows.map(row => row.join('\t')).join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const figures = new Map<string, string>();
+    for (const record of dayRecords) {
+      const qr = recordQr(record);
+      if (qr && !figures.has(qr.id)) figures.set(qr.id, infrastructureQrHTML(qr, await infrastructureQrPng(qr)));
+    }
+    const blob = new Blob(['\ufeff' + infrastructureQrTableHTML(rows, [...figures.values()].join(''))], { type: 'application/vnd.ms-excel;charset=utf-8' });
     
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -499,6 +504,7 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
     const csvRows = dayRecords.map(r => {
       const sessionInfo = getSessionInfo(r);
       const behaviorInfo = getBehaviorInfo(r.behavior);
+      const qr = recordQr(r);
       return [
         date,
         r.time || '',
@@ -512,8 +518,8 @@ const DailyFeedingSummary = ({ records, unitName, onEdit, onDelete }: DailyFeedi
         r.mortality?.toString() || '0',
         behaviorInfo?.label || r.behavior || '',
         (r.notes || '').replace(/\n/g, ' ').replace(/,/g, ';'),
-        recordQr(r)?.name || '',
-        recordQr(r) ? infrastructureQrValue(recordQr(r) as NonNullable<ReturnType<typeof recordQr>>) : ''
+        qr?.name || '',
+        qr ? infrastructureQrValue(qr) : ''
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
     });
     

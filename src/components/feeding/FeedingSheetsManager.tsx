@@ -168,7 +168,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     id ? (unitInfras.find((i) => i.id === id)?.name || 'Infrastructure introuvable') : 'Aucune infrastructure';
 
   const sheetInfraIds = (s: FeedingSheet) => normalizeInfrastructureIds(s);
-  const sheetQr = (s: FeedingSheet) => resolveInfrastructureQr(unitId, sheetInfraIds(s)[0], unitInfras);
+  const sheetQr = (s: FeedingSheet) => {
+    const ids = sheetInfraIds(s);
+    return ids.length === 1 ? resolveInfrastructureQr(unitId, ids[0], unitInfras) : undefined;
+  };
   const sheetPlan = (s: FeedingSheet, date = selectedDate) => readSheetPlan(s, date);
   const sheetPeriods = (s: FeedingSheet): PeriodTime[] => sheetPlan(s).map(({ period, time }) => ({ period, time }));
   const periodQty = (s: FeedingSheet, period: string) => sheetPlan(s).find(p => p.period === period)?.quantity ?? 0;
