@@ -12,6 +12,8 @@ vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
 vi.mock('@/contexts/ProductionUnitsContext', () => ({ useProductionUnits: () => ({ activeUnit: { id: 'unit-a', name: 'Unité A', type: 'fish_farming' } }) }));
 vi.mock('@/integrations/supabase/appClient', () => ({ supabase: { auth: { getUser: async () => ({ data: { user: null } }) } } }));
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'test-user' } }) }));
+vi.mock('@/hooks/useSuppliers', () => ({ useSuppliers: () => ({ suppliers: [] }) }));
 vi.mock('@/components/alerts/AlertHistory', () => ({ default: () => null }));
 vi.mock('recharts', () => ({ ResponsiveContainer: () => null, LineChart: () => null, Line: () => null, XAxis: () => null, YAxis: () => null, CartesianGrid: () => null, Tooltip: () => null, Legend: () => null }));
 import FeedStockManager from './FeedStockManager';
@@ -42,7 +44,7 @@ const select = async (name: string) => {
   await act(async () => checkbox.click());
 };
 beforeEach(async () => {
-  vi.clearAllMocks(); state.deleteStocks.mockImplementation(async ids => ids); state.updateStock.mockResolvedValue({});
+  vi.clearAllMocks(); sessionStorage.clear(); state.createStock.mockResolvedValue({}); state.deleteStocks.mockImplementation(async ids => ids); state.updateStock.mockResolvedValue({});
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   await act(async () => root.render(<FeedStockManager unitId="unit-a" />));
@@ -51,19 +53,38 @@ afterEach(async () => { await act(async () => root.unmount()); container.remove(
 describe('actions du stock — essais isolés sans données réelles', () => {
   it('corrige la quantité, retire le fournisseur et conserve un seuil nul', async () => {
     await click('Modifier Article A');
-    await input(field('Quantité *'), '15');
+    await input(field('Quantité'), '15');
     await input(field('Fournisseur'), '');
-    await input(field('Coût/kg (FCFA)'), '0');
+    await input(field('Coût par kg (F CFA)'), '0');
     await click('Modifier le stock');
     expect(state.updateStock).toHaveBeenCalledWith('a', expect.objectContaining({ quantity: 15, supplier: null, cost: 0, min_threshold: 0 }));
   });
   it('permet de corriger un article épuisé à zéro', async () => {
-    await click('Modifier Article A'); await input(field('Quantité *'), '0'); await click('Modifier le stock');
+    await click('Modifier Article A'); await input(field('Quantité'), '0'); await click('Modifier le stock');
     expect(state.updateStock).toHaveBeenCalledWith('a', expect.objectContaining({ quantity: 0 }));
   });
   it('fermer une correction ne transforme pas un nouvel ajout en modification', async () => {
     await click('Modifier Article A'); await click('Close'); await click('Ajouter stock');
     expect(field('Nom de l’article *').value).toBe('');
+  });
+  it('20 sacs de 25 kg à 15 000 F le sac : 500 kg à 600 F/kg', async () => {
+    await click('Ajouter stock');
+    await click('Stock de production'.length ? [...document.querySelectorAll('[role="dialog"] button')].find(b => b.textContent?.startsWith('Stock de production') || b.textContent?.includes('nourrir'))!.textContent!.trim() : '');
+    await input(field('Nom de l’article *'), 'Granulés 3 mm');
+    await click('En sacs');
+    await input(field('Nombre de sacs'), '20');
+    await click('25 kg');
+    await input(field('Prix d’un sac (F CFA)'), '15000');
+    await click('Ajouter le stock');
+    expect(state.createStock).toHaveBeenCalledWith(expect.objectContaining({ quantity: 500, unit: 'kg', cost: 600, bag_count: 20, kg_per_bag: 25, stock_purpose: 'production' }));
+  });
+  it('un brouillon de saisie survit au remontage de l’écran', async () => {
+    await click('Ajouter stock');
+    await input(field('Nom de l’article *'), 'Aliment en cours');
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await act(async () => root.render(<FeedStockManager unitId="unit-a" />));
+    expect(field('Nom de l’article *').value).toBe('Aliment en cours');
   });
   it('annuler une suppression ne supprime rien', async () => {
     await click('Supprimer Article A'); await click('Annuler'); expect(state.deleteStocks).not.toHaveBeenCalled();

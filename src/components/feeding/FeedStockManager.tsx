@@ -591,7 +591,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                     <div className="grid grid-cols-2 gap-2 mt-1">
                       {(['kg', 'sacs'] as QuantityMode[]).map(mode => (
                         <Button key={mode} type="button" size="sm" variant={newStock.quantity_mode === mode ? 'default' : 'outline'}
-                          onClick={() => setNewStock(prev => applyPackaging(prev, { quantity_mode: mode, cost_mode: mode === 'sacs' ? prev.cost_mode : 'kg' }))}>
+                          onClick={() => setNewStock(prev => applyPackaging(prev, { quantity_mode: mode, cost_mode: mode === 'sacs' ? 'sac' : 'kg' }))}>
                           {mode === 'kg' ? 'Au kilo' : 'En sacs'}
                         </Button>
                       ))}
@@ -686,6 +686,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                   )}
                   {newStock.quantity_mode === 'sacs' && newStock.cost_mode === 'sac' ? (
                     <div className="space-y-1">
+                      <Label className="text-xs">Prix d’un sac (F CFA)</Label>
                       <Input type="number" min="0" value={newStock.bag_cost || ''} placeholder="Prix d’un sac (F CFA)"
                         onChange={(e) => setNewStock(prev => applyPackaging(prev, { bag_cost: parseFloat(e.target.value) || 0 }))} className="text-sm" />
                       <p className="text-xs text-muted-foreground">
@@ -696,6 +697,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                     </div>
                   ) : (
                     <div className="space-y-1">
+                      <Label className="text-xs">Coût par kg (F CFA)</Label>
                       <Input type="number" min="0" value={newStock.cost || ''} placeholder="Coût par kg (F CFA)"
                         onChange={(e) => setNewStock(prev => applyPackaging(prev, { cost: parseFloat(e.target.value) || 0 }))} className="text-sm" />
                       {newStock.quantity_mode === 'sacs' && newStock.kg_per_bag > 0 && newStock.cost > 0 && (
