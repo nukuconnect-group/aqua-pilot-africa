@@ -50,17 +50,7 @@ export function registerAppServiceWorker() {
       })
       .catch(() => { /* hors connexion indisponible : l'application reste utilisable en ligne */ });
   });
-  let pendingReload = false;
-  let refreshing = false;
-  const applyWhenHidden = () => {
-    if (pendingReload && !refreshing && document.visibilityState === 'hidden') {
-      refreshing = true;
-      window.location.reload();
-    }
-  };
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    pendingReload = true;
-    applyWhenHidden();
-  });
-  document.addEventListener('visibilitychange', applyWhenHidden);
+  // The new worker may control the page in the background, but never reload it.
+  // Hiding the tab is not proof that edits were saved. The new app shell is used
+  // on the next navigation/reopening initiated by the user.
 }
