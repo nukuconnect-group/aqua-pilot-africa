@@ -34,6 +34,8 @@ import {
   buildDailyRows, PERIOD_LABELS, localDate, dateAfter, isSheetScheduled, validateSchedule, readDayPlans, WEEK_DAYS, type DayPlans, type PeriodPlan,
 } from '@/lib/feedingSheetPlan';
 import { recordSheetFeeding } from '@/lib/recordSheetFeeding';
+import InfrastructureQRCode from '@/components/infrastructure/InfrastructureQRCode';
+import { resolveInfrastructureQr, infrastructureQrHTML, infrastructureQrPng } from '@/lib/infrastructureQr';
 
 interface FeedingSheet {
   id: string;
@@ -166,6 +168,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     id ? (unitInfras.find((i) => i.id === id)?.name || 'Infrastructure introuvable') : 'Aucune infrastructure';
 
   const sheetInfraIds = (s: FeedingSheet) => normalizeInfrastructureIds(s);
+  const sheetQr = (s: FeedingSheet) => resolveInfrastructureQr(unitId, sheetInfraIds(s)[0], unitInfras);
   const sheetPlan = (s: FeedingSheet, date = selectedDate) => readSheetPlan(s, date);
   const sheetPeriods = (s: FeedingSheet): PeriodTime[] => sheetPlan(s).map(({ period, time }) => ({ period, time }));
   const periodQty = (s: FeedingSheet, period: string) => sheetPlan(s).find(p => p.period === period)?.quantity ?? 0;
@@ -510,7 +513,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           ${rows.length === 0 ? `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px;">Aucune fiche active pour cette période</td></tr>` : rows.map(s => `
             <tr>
               <td><strong>${escapeHtml(s.title)}</strong></td>
-              <td>${escapeHtml(infrasLabel(s))}</td>
+              <td>${escapeHtml(infrasLabel(s))}${infrastructureQrHTML(sheetQr(s))}</td>
               <td>${sheetPlan(s).map((pt) => `<span class="badge">${PERIOD_META[pt.period]?.label || pt.period} ${pt.time} · ${pt.quantity} ${escapeHtml(s.unit)}</span>`).join(' ')}</td>
               <td>${escapeHtml(s.feed_type)}</td>
               <td>${planTotal(sheetPlan(s))} ${escapeHtml(s.unit)} / jour</td>
@@ -577,6 +580,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       ${generateCompanyHeaderHTML(ci)}
       <h1>FICHE DE NOURRISSAGE JOURNALIÈRE</h1>
       <p class="sub">${escapeHtml(s.title)} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      ${infrastructureQrHTML(sheetQr(s))}
       <div class="info">
         <div>Unité<strong>${escapeHtml(unitName)}</strong></div>
         <div>Infrastructure<strong>${escapeHtml(infraName(id))}</strong></div>
@@ -645,8 +649,11 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       doc.setTextColor(30, 41, 59); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
       doc.text(`${s.title} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`, pageW / 2, y + 6, { align: 'center' });
       const { rows, id, totals } = await dailyData(s);
+      const qr = sheetQr(s);
+      if (qr) doc.addImage(await infrastructureQrPng(qr), 'PNG', pageW - 40, y + 11, 26, 26);
       autoTable(doc, {
         startY: y + 11, theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
+        margin: { left: 14, right: qr ? 46 : 14 },
         columnStyles: { 0: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 }, 2: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 38 } },
         body: [
           ['Unité', unitName, 'Infrastructure', infraName(id)],
@@ -655,7 +662,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
         ],
       });
       autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 5, theme: 'grid',
+        startY: Math.max((doc as any).lastAutoTable.finalY, qr ? y + 37 : 0) + 5, theme: 'grid',
         styles: { fontSize: 8.5, cellPadding: 2.2, minCellHeight: 9, valign: 'middle' },
         headStyles: { fillColor: [15, 118, 110], textColor: 255, halign: 'center' },
         footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },

@@ -20,6 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSettings } from '@/contexts/SettingsContext';
 import { getUnitTerms, getInfrastructureTypeLabel as getInfraLabel } from '@/lib/unitContext';
 import { computeFishCounts } from '@/lib/feedingSheetUtils';
+import InfrastructureQRCode from './InfrastructureQRCode';
 
 interface InfrastructureCardProps {
   infrastructure: Infrastructure;
@@ -278,6 +279,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
         </CardHeader>
         
         <CardContent className="flex-1 flex flex-col p-3 sm:p-4 pt-0">
+          <div className="mb-3 flex justify-center"><InfrastructureQRCode infrastructure={infrastructure} /></div>
           {/* Infos principales */}
           <div className="space-y-2 text-xs sm:text-sm flex-1">
             {unitTerms.features.feedingSheets && <div className="flex items-center gap-2">
@@ -447,6 +449,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
           
           <ScrollArea className="max-h-[60vh] p-4 sm:p-6">
             <div className="space-y-6">
+              <div className="flex justify-center"><InfrastructureQRCode infrastructure={infrastructure} size={176} /></div>
               {/* Informations générales */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-muted/50 rounded-lg">
