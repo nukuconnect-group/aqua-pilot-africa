@@ -19,10 +19,12 @@ BEGIN
  IF EXISTS(SELECT 1 FROM public.feeding_records WHERE request_id=_request_id) THEN RETURN jsonb_build_object('status','already_saved'); END IF;
  SELECT * INTO s FROM public.feeding_sheets WHERE id=_sheet_id FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Fiche inaccessible'; END IF;
+ IF cardinality(array_remove(COALESCE(s.infrastructure_ids,ARRAY[s.infrastructure_id]),NULL))<>1 THEN RAISE EXCEPTION 'Une fiche doit être rattachée à une seule infrastructure'; END IF;
  IF NOT (s.user_id=auth.uid() OR public.team_member_has_unit_access(s.user_id,s.unit_id)) THEN RAISE EXCEPTION 'Accès refusé'; END IF;
  IF _date IS NULL OR _time IS NULL OR _period IS NULL OR _period NOT IN ('matin','midi','soir') THEN RAISE EXCEPTION 'Date, heure et période requises'; END IF;
  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(s.period_times,jsonb_build_array(jsonb_build_object('period',s.period)))) p WHERE p->>'period'=_period) THEN RAISE EXCEPTION 'Période non prévue sur cette fiche'; END IF;
  IF _lines IS NULL OR jsonb_typeof(_lines)<>'array' OR jsonb_array_length(_lines)=0 THEN RAISE EXCEPTION 'Infrastructure requise'; END IF;
+ IF jsonb_array_length(_lines)<>1 THEN RAISE EXCEPTION 'Un nourrissage concerne une seule infrastructure'; END IF;
  IF (SELECT count(*) FROM jsonb_array_elements(_lines)) <> (SELECT count(DISTINCT l->>'infrastructure_id') FROM jsonb_array_elements(_lines) l) THEN RAISE EXCEPTION 'Infrastructure répétée'; END IF;
  FOR line IN SELECT * FROM jsonb_array_elements(_lines) LOOP
    iid:=(line->>'infrastructure_id')::uuid;
