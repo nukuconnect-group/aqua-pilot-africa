@@ -35,6 +35,41 @@ import { getUnitTerms } from '@/lib/unitContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getStockPurpose, getSalePrice, cleanStockNotes, STOCK_PURPOSE_LABELS, type StockPurpose } from '@/lib/stockPurpose';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { useSessionDraft } from '@/hooks/useSessionDraft';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSuppliers } from '@/hooks/useSuppliers';
+import { COMMON_BAG_WEIGHTS, totalKgFromBags, costPerKgFromBag, costPerBagFromKg, type QuantityMode, type CostMode } from '@/lib/stockPackaging';
+
+type StockForm = {
+  custom_name: string; feed_type: string; quantity: number; unit: string; expiration_date: string;
+  supplier: string; cost: number; protein_content: number; fat_content: number; notes: string;
+  min_threshold: number; bag_count: number; kg_per_bag: number; stock_purpose: StockPurpose | '';
+  sale_price: number; quantity_mode: QuantityMode; cost_mode: CostMode; bag_cost: number;
+};
+
+const EMPTY_STOCK: StockForm = {
+  custom_name: '', feed_type: '', quantity: 0, unit: 'kg', expiration_date: '', supplier: '', cost: 0,
+  protein_content: 0, fat_content: 0, notes: '', min_threshold: 50, bag_count: 0, kg_per_bag: 0,
+  stock_purpose: '', sale_price: 0, quantity_mode: 'kg', cost_mode: 'kg', bag_cost: 0,
+};
+
+/** Recalcule quantité totale (kg) et coût au kg selon le mode de saisie. */
+function applyPackaging(prev: StockForm, patch: Partial<StockForm>): StockForm {
+  const next = { ...EMPTY_STOCK, ...prev, ...patch };
+  if (next.quantity_mode === 'sacs') {
+    next.unit = 'kg';
+    next.quantity = totalKgFromBags(next.bag_count, next.kg_per_bag);
+    if (next.cost_mode === 'sac') next.cost = costPerKgFromBag(next.bag_cost, next.kg_per_bag);
+    else next.bag_cost = costPerBagFromKg(next.cost, next.kg_per_bag);
+  } else if (patch.quantity_mode === 'kg') {
+    next.bag_count = 0;
+    next.kg_per_bag = 0;
+    next.bag_cost = 0;
+    next.cost_mode = 'kg';
+  }
+  return next;
+}
+
 
 
 interface FeedStockManagerProps {
@@ -56,31 +91,21 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
   const { toast } = useToast();
   const [sendingAlerts, setSendingAlerts] = useState(false);
 
+  const { user: authUser } = useAuth();
+  const draftKey = `stock-form:${authUser?.id ?? 'anon'}:${unitId || 'none'}`;
   const [customFeedTypes, setCustomFeedTypes] = useState<string[]>([]);
-  const [showDialog, setShowDialog] = useState(false);
-  const [editingStock, setEditingStock] = useState<any | null>(null);
+  // Brouillon conservé si l'écran est rechargé ou remonté pendant la saisie.
+  const [showDialog, setShowDialog] = useSessionDraft<boolean>(`${draftKey}:open`, false);
+  const [editingStock, setEditingStock] = useSessionDraft<any | null>(`${draftKey}:editing`, null);
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
   const [customFeedTypeName, setCustomFeedTypeName] = useState('');
   const [stockSearch, setStockSearch] = useState('');
   const [purposeFilter, setPurposeFilter] = useState<'all' | StockPurpose>('all');
+  const [manualSupplier, setManualSupplier] = useState(false);
+  const [newStock, setNewStock] = useSessionDraft<StockForm>(`${draftKey}:form`, EMPTY_STOCK);
 
-  const [newStock, setNewStock] = useState({
-    custom_name: '',
-    feed_type: '',
-    quantity: 0,
-    unit: 'kg',
-    expiration_date: '',
-    supplier: '',
-    cost: 0,
-    protein_content: 0,
-    fat_content: 0,
-    notes: '',
-    min_threshold: 50,
-    bag_count: 0,
-    kg_per_bag: 0,
-    stock_purpose: '' as StockPurpose | '',
-    sale_price: 0
-  });
+  const { suppliers } = useSuppliers();
+  const unitSuppliers = suppliers.filter(s => s.status !== 'inactive' && (!s.unitId || s.unitId === unitId));
 
   const predefinedFeedTypes = [
     ...unitTerms.stockTypeOptions,
@@ -116,7 +141,8 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
     setEditingStock(null);
     setShowCustomTypeInput(false);
     setCustomFeedTypeName('');
-    setNewStock({ custom_name: '', feed_type: '', quantity: 0, unit: 'kg', expiration_date: '', supplier: '', cost: 0, protein_content: 0, fat_content: 0, notes: '', min_threshold: 50, bag_count: 0, kg_per_bag: 0, stock_purpose: '', sale_price: 0 });
+    setManualSupplier(false);
+    setNewStock(EMPTY_STOCK);
   };
 
   const handleSaveStock = async () => {
@@ -221,23 +247,8 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         onStockUpdate(stocks);
       }
       
-      setNewStock({
-        custom_name: '',
-        feed_type: '',
-        quantity: 0,
-        unit: 'kg',
-        expiration_date: '',
-        supplier: '',
-        cost: 0,
-        protein_content: 0,
-        fat_content: 0,
-        notes: '',
-        min_threshold: 50,
-        bag_count: 0,
-        kg_per_bag: 0,
-        stock_purpose: '',
-        sale_price: 0
-      });
+      setNewStock(EMPTY_STOCK);
+      setManualSupplier(false);
       setEditingStock(null);
       setShowDialog(false);
     } catch (error) {
@@ -247,11 +258,16 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
 
   const handleEditStock = (stock: any) => {
     setEditingStock(stock);
+    setManualSupplier(false);
+    const bagCount = Number(stock.bag_count) || 0;
+    const kgPerBag = Number(stock.kg_per_bag) || 0;
+    const inBags = bagCount > 0 && kgPerBag > 0;
     setNewStock({
+      ...EMPTY_STOCK,
       custom_name: stock.custom_name || '',
       feed_type: stock.feed_type,
       quantity: stock.quantity,
-      unit: stock.unit,
+      unit: stock.unit === 'sacs' ? 'kg' : stock.unit,
       expiration_date: stock.expiration_date || '',
       supplier: stock.supplier || '',
       cost: stock.cost || 0,
@@ -261,8 +277,11 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
       stock_purpose: getStockPurpose(stock),
       sale_price: getSalePrice(stock),
       min_threshold: stock.min_threshold ?? 50,
-      bag_count: stock.bag_count || 0,
-      kg_per_bag: stock.kg_per_bag || 0
+      bag_count: bagCount,
+      kg_per_bag: kgPerBag,
+      quantity_mode: inBags ? 'sacs' : 'kg',
+      cost_mode: 'kg',
+      bag_cost: inBags ? costPerBagFromKg(Number(stock.cost) || 0, kgPerBag) : 0,
     });
     setShowDialog(true);
   };
@@ -566,115 +585,126 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
                   </div>
                 )}
 
-                <div>
-                  <Label className="text-sm">Quantité *</Label>
-                  <Input 
-                    type="number"
-                    value={newStock.quantity}
-                    onChange={(e) => setNewStock(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
-                    className="text-sm"
-                    placeholder="0"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Total en kg (calculé automatiquement si vous renseignez sacs × kg/sac)
-                  </p>
-                </div>
-
-                <div>
-                  <Label className="text-sm">Unité</Label>
-                  <Select value={newStock.unit} onValueChange={(value) => setNewStock(prev => ({ ...prev, unit: value }))}>
-                    <SelectTrigger className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">kg</SelectItem>
-                      <SelectItem value="tonnes">tonnes</SelectItem>
-                      <SelectItem value="sacs">sacs</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-sm">Fournisseur</Label>
-                  <Input 
-                    value={newStock.supplier}
-                    onChange={(e) => setNewStock(prev => ({ ...prev, supplier: e.target.value }))}
-                    placeholder="Nom du fournisseur"
-                    className="text-sm"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm">Coût/kg (FCFA)</Label>
-                  <Input 
-                    type="number"
-                    value={newStock.cost}
-                    onChange={(e) => setNewStock(prev => ({ ...prev, cost: parseFloat(e.target.value) || 0 }))}
-                    className="text-sm"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="sm:col-span-2 border-t pt-3 mt-1">
-                  <Label className="text-sm font-semibold">Conditionnement en sacs (optionnel)</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Renseignez le nombre de sacs et les kg par sac, la quantité totale (kg) sera calculée automatiquement.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <Label className="text-xs">Nombre de sacs</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={newStock.bag_count || ''}
-                        onChange={(e) => {
-                          const bag_count = parseFloat(e.target.value) || 0;
-                          const kg_per_bag = newStock.kg_per_bag || 0;
-                          const computedQty = bag_count * kg_per_bag;
-                          setNewStock(prev => ({
-                            ...prev,
-                            bag_count,
-                            quantity: computedQty > 0 ? computedQty : prev.quantity,
-                            unit: 'kg'
-                          }));
-                        }}
-                        placeholder="Ex: 10"
-                        className="text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Kg par sac</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        value={newStock.kg_per_bag || ''}
-                        onChange={(e) => {
-                          const kg_per_bag = parseFloat(e.target.value) || 0;
-                          const bag_count = newStock.bag_count || 0;
-                          const computedQty = bag_count * kg_per_bag;
-                          setNewStock(prev => ({
-                            ...prev,
-                            kg_per_bag,
-                            quantity: computedQty > 0 ? computedQty : prev.quantity,
-                            unit: 'kg'
-                          }));
-                        }}
-                        placeholder="Ex: 25"
-                        className="text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Total calculé</Label>
-                      <div className="text-sm font-semibold p-2 bg-muted rounded border">
-                        {((newStock.bag_count || 0) * (newStock.kg_per_bag || 0)).toLocaleString('fr-FR')} kg
-                      </div>
+                <div className="sm:col-span-2 rounded-lg border border-border p-3 space-y-3">
+                  <div>
+                    <Label className="text-sm">Quantité saisie *</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {(['kg', 'sacs'] as QuantityMode[]).map(mode => (
+                        <Button key={mode} type="button" size="sm" variant={newStock.quantity_mode === mode ? 'default' : 'outline'}
+                          onClick={() => setNewStock(prev => applyPackaging(prev, { quantity_mode: mode, cost_mode: mode === 'sacs' ? prev.cost_mode : 'kg' }))}>
+                          {mode === 'kg' ? 'Au kilo' : 'En sacs'}
+                        </Button>
+                      ))}
                     </div>
                   </div>
-                  {(newStock.bag_count || 0) > 0 && (newStock.kg_per_bag || 0) > 0 && (newStock.cost || 0) > 0 && (
-                    <p className="text-xs text-primary mt-2">
-                      Prix par sac : {((newStock.cost || 0) * (newStock.kg_per_bag || 0)).toLocaleString('fr-FR')} F CFA
-                    </p>
+
+                  {newStock.quantity_mode === 'kg' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Quantité</Label>
+                        <Input type="number" min="0" value={newStock.quantity || ''} placeholder="Ex : 20"
+                          onChange={(e) => setNewStock(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))} className="text-sm" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Unité</Label>
+                        <Select value={newStock.unit === 'sacs' ? 'kg' : newStock.unit} onValueChange={(value) => setNewStock(prev => ({ ...prev, unit: value }))}>
+                          <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="tonnes">tonnes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Nombre de sacs</Label>
+                          <Input type="number" min="0" value={newStock.bag_count || ''} placeholder="Ex : 20"
+                            onChange={(e) => setNewStock(prev => applyPackaging(prev, { bag_count: parseFloat(e.target.value) || 0 }))} className="text-sm" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Le sac contient combien de kg ?</Label>
+                          <Input type="number" min="0" step="0.5" value={newStock.kg_per_bag || ''} placeholder="Ex : 25"
+                            onChange={(e) => setNewStock(prev => applyPackaging(prev, { kg_per_bag: parseFloat(e.target.value) || 0 }))} className="text-sm" />
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {COMMON_BAG_WEIGHTS.map(w => (
+                              <Button key={w} type="button" size="sm" variant={newStock.kg_per_bag === w ? 'default' : 'outline'} className="h-7 px-2 text-xs"
+                                onClick={() => setNewStock(prev => applyPackaging(prev, { kg_per_bag: w }))}>{w} kg</Button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-sm">
+                        Total : <strong>{totalKgFromBags(newStock.bag_count, newStock.kg_per_bag).toLocaleString('fr-FR')} kg</strong>
+                        {newStock.bag_count > 0 && newStock.kg_per_bag > 0 && <span className="text-muted-foreground"> ({newStock.bag_count} sacs × {newStock.kg_per_bag} kg)</span>}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label className="text-sm">Fournisseur</Label>
+                  {unitSuppliers.length > 0 && !manualSupplier ? (
+                    <Select value={unitSuppliers.some(s => s.name === newStock.supplier) ? newStock.supplier : ''}
+                      onValueChange={(value) => {
+                        if (value === '__other__') { setManualSupplier(true); setNewStock(prev => ({ ...prev, supplier: '' })); }
+                        else setNewStock(prev => ({ ...prev, supplier: value }));
+                      }}>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder="Choisir un fournisseur enregistré" /></SelectTrigger>
+                      <SelectContent>
+                        {unitSuppliers.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                        <SelectItem value="__other__">Autre fournisseur…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input value={newStock.supplier} onChange={(e) => setNewStock(prev => ({ ...prev, supplier: e.target.value }))}
+                        placeholder="Nom du fournisseur" className="text-sm" />
+                      {unitSuppliers.length > 0 && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setManualSupplier(false)}>Liste</Button>
+                      )}
+                    </div>
+                  )}
+                  {unitSuppliers.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">Aucun fournisseur enregistré pour cette unité. Vous pouvez en ajouter dans « Fournisseurs ».</p>
+                  )}
+                </div>
+
+                <div className="sm:col-span-2 rounded-lg border border-border p-3 space-y-2">
+                  <Label className="text-sm">Coût d’achat</Label>
+                  {newStock.quantity_mode === 'sacs' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['sac', 'kg'] as CostMode[]).map(mode => (
+                        <Button key={mode} type="button" size="sm" variant={newStock.cost_mode === mode ? 'default' : 'outline'}
+                          onClick={() => setNewStock(prev => applyPackaging(prev, { cost_mode: mode }))}>
+                          {mode === 'sac' ? 'Prix par sac' : 'Prix par kg'}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                  {newStock.quantity_mode === 'sacs' && newStock.cost_mode === 'sac' ? (
+                    <div className="space-y-1">
+                      <Input type="number" min="0" value={newStock.bag_cost || ''} placeholder="Prix d’un sac (F CFA)"
+                        onChange={(e) => setNewStock(prev => applyPackaging(prev, { bag_cost: parseFloat(e.target.value) || 0 }))} className="text-sm" />
+                      <p className="text-xs text-muted-foreground">
+                        {newStock.kg_per_bag > 0 && newStock.bag_cost > 0
+                          ? <>Soit <strong className="text-foreground">{newStock.cost.toLocaleString('fr-FR')} F CFA/kg</strong></>
+                          : 'Indiquez le poids du sac pour calculer le coût au kg.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <Input type="number" min="0" value={newStock.cost || ''} placeholder="Coût par kg (F CFA)"
+                        onChange={(e) => setNewStock(prev => applyPackaging(prev, { cost: parseFloat(e.target.value) || 0 }))} className="text-sm" />
+                      {newStock.quantity_mode === 'sacs' && newStock.kg_per_bag > 0 && newStock.cost > 0 && (
+                        <p className="text-xs text-muted-foreground">Soit {costPerBagFromKg(newStock.cost, newStock.kg_per_bag).toLocaleString('fr-FR')} F CFA le sac</p>
+                      )}
+                    </div>
+                  )}
+                  {newStock.quantity > 0 && newStock.cost > 0 && (
+                    <p className="text-xs text-primary">Valeur de l’entrée : {Math.round(newStock.quantity * newStock.cost).toLocaleString('fr-FR')} F CFA</p>
                   )}
                 </div>
               </div>
