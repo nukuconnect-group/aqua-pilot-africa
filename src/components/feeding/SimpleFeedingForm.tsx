@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useSessionDraft } from '@/hooks/useSessionDraft';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +17,7 @@ interface SimpleFeedingFormProps {
   unitId: string;
   unitName: string;
   cycleId?: string;
-  onSave: (record: any) => void;
+  onSave: (record: any) => Promise<void>;
 }
 
 const SESSION_TYPES = [
@@ -45,15 +47,19 @@ const BEHAVIORS = [
 ];
 
 const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingFormProps) => {
+  const { user } = useAuth();
+  const draftKey = `feeding-simple:${user?.id || 'signed-out'}:${unitId}:${cycleId || ''}`;
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const { units: allUnits } = useProductionUnits();
   const unitType = allUnits.find((u) => u.id === unitId)?.type;
   const terms = getUnitTerms(unitType);
   const isAlgae = isAlgaeUnitType(unitType);
   const feedTypes = terms.features.feedingSheets ? FEED_TYPES : terms.feedOptions;
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useSessionDraft(`${draftKey}:open`, false);
   const { infrastructures } = useCycleInfrastructures(cycleId || '');
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useSessionDraft(`${draftKey}:form`, {
     date: new Date().toISOString().split('T')[0],
     time: new Date().toTimeString().slice(0, 5),
     sessionType: '',
@@ -72,8 +78,10 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
     (parseFloat(formData.prescribedQuantity) || 0) - (parseFloat(formData.actualQuantity) || 0)
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true); setSaveError('');
     
     const record = {
       date: formData.date,
@@ -94,7 +102,8 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
       cycle_id: cycleId
     };
 
-    onSave(record);
+    try {
+    await onSave(record);
     setIsOpen(false);
     
     // Reset form but keep date
@@ -112,10 +121,13 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
       mortality: '0',
       notes: ''
     });
+    } catch {
+      setSaveError('Enregistrement impossible. Votre saisie est conservée.');
+    } finally { setSaving(false); }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={open => !saving && setIsOpen(open)}>
       <DialogTrigger asChild>
         <Button className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
@@ -330,10 +342,11 @@ const SimpleFeedingForm = ({ unitId, unitName, cycleId, onSave }: SimpleFeedingF
           </div>
 
           {/* Boutons */}
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <div className="flex gap-2 pt-2">
-            <Button type="submit" className="flex-1">
+            <Button type="submit" disabled={saving} className="flex-1">
               <Save className="w-4 h-4 mr-2" />
-              Enregistrer
+              {saving ? 'Enregistrement…' : 'Enregistrer'}
             </Button>
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Annuler
