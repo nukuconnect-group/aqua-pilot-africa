@@ -18,7 +18,7 @@ export async function recordSheetFeeding(db: any, userId: string, input: Feeding
   const returned = Math.round((input.taken - input.served) * 1e6) / 1e6;
   const rpc = await db.rpc('record_sheet_feeding', {
     _sheet_id: sheet.id, _request_id: input.requestId, _date: input.date, _time: input.time, _period: input.period,
-    _lines: [{ infrastructure_id: input.infrastructureId, taken: input.taken, served: input.served, returned, mortality: input.mortality }],
+    _lines: [{ infrastructure_id: input.infrastructureId, prescribed: input.prescribed, taken: input.taken, served: input.served, returned, mortality: input.mortality }],
     _behavior: input.behavior, _notes: input.notes,
   });
   if (!rpc.error) return { status: rpc.data?.status === 'already_saved' ? 'already_saved' : 'ok' };
