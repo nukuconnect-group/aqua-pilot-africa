@@ -6,16 +6,19 @@ import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { signupUnitLabel, signupUnitTypes } from '@/lib/signupUnits';
+import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 
 /** Crée, à la première connexion, les unités choisies à l'inscription, puis informe sur le multi-unités. */
 export default function FirstUnitsSetup({ onRequest }: { onRequest: () => void }) {
   const { user } = useAuth();
+  const { subscription, loading: subscriptionLoading } = useCurrentSubscription();
   const { units, isLoadingUnits, addUnit, setActiveUnit } = useProductionUnits() as any;
   const [created, setCreated] = useState<string[]>([]);
   const ran = useRef(false);
 
   useEffect(() => {
-    if (ran.current || !user?.id || (user as any).isTeamMember || isLoadingUnits || units.length > 0) return;
+    if (ran.current || !user?.id || (user as any).isTeamMember || isLoadingUnits || subscriptionLoading || units.length > 0) return;
+    if (user.role !== 'admin' && subscription && !subscription.isActive) return;
     const doneKey = `aquapilote.firstUnits.${user.id}`;
     if (localStorage.getItem(doneKey)) return;
     ran.current = true;
@@ -35,7 +38,7 @@ export default function FirstUnitsSetup({ onRequest }: { onRequest: () => void }
       localStorage.setItem(doneKey, '1');
       if (names.length) { setActiveUnit?.(null); setCreated(names); }
     })();
-  }, [user?.id, isLoadingUnits, units.length]);
+  }, [user?.id, isLoadingUnits, units.length, subscriptionLoading, subscription?.isActive]);
 
   return (
     <Dialog open={created.length > 0} onOpenChange={(o) => !o && setCreated([])}>
@@ -46,7 +49,7 @@ export default function FirstUnitsSetup({ onRequest }: { onRequest: () => void }
         </DialogHeader>
         <ul className="list-disc pl-5 text-sm space-y-1">{created.map((n) => <li key={n}>{n}</li>)}</ul>
         <p className="text-sm text-muted-foreground">
-          Vous pouvez gérer plusieurs unités ou plusieurs fermes au même endroit. Pour en ajouter, envoyez-nous une demande et nous les ajoutons à votre compte.
+          Pendant votre essai gratuit, tous les types d’unités sont disponibles. Avec un abonnement payant, vous pouvez ajouter plusieurs unités des types couverts. Pour étendre les types autorisés, écrivez à l’administration.
         </p>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setCreated([])}>Plus tard</Button>

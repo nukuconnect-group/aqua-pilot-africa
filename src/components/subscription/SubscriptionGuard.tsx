@@ -16,8 +16,10 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode; moduleId?:
   const { user, isDemoMode } = useAuth();
   const navigate = useNavigate();
 
-  if (moduleId === 'aqua-assistant' || loading || isDemoMode || !user) return <>{children}</>;
+  if (moduleId === 'aqua-assistant' || isDemoMode || !user) return <>{children}</>;
   if (user.role === 'admin' || user.isTeamMember) return <>{children}</>;
+  if (loading) return <div role="status" className="p-4 text-muted-foreground">Vérification de l’abonnement…</div>;
+  if (moduleId === 'settings' || moduleId === 'support') return <>{children}</>;
   if (!subscription || subscription.isActive) return <>{children}</>;
 
   return (
@@ -27,10 +29,10 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode; moduleId?:
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold">Votre essai est terminé</h2>
+          <h2 className="text-2xl font-bold">{subscription.plan === 'trial_discovery' ? 'Votre essai gratuit est terminé' : 'Votre abonnement est terminé'}</h2>
           <p className="text-muted-foreground">
-            Votre Pack Découverte a expiré. Vos données sont conservées en sécurité.
-            Souscrivez à un plan pour continuer à profiter d'AquaPilote.
+            L’utilisation de vos unités est suspendue. Souscrivez à un abonnement payant pour les réactiver.
+            Votre compte reste accessible et vos données sont conservées.
           </p>
           <Button size="lg" onClick={() => navigate('/subscription')} className="w-full">
             <Sparkles className="w-4 h-4 mr-2" />

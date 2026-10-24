@@ -116,6 +116,9 @@
 - [x] Écritures : préciser le type de stock ; aliments consommés = charge (coût × quantité)
 
 ## Vérification du refus des types d’unités
+- [x] Interface : autoriser tous les types pendant l’essai actif et appliquer les restrictions aux abonnements payants
+- [x] Interface : bloquer les écrans des unités à expiration selon les dates et afficher l’invitation à souscrire sans supprimer les données ; 16 tests ciblés réussis
+- [ ] Appliquer et vérifier la protection serveur sur la base historique de l’application : déploiement hors de la base Lovable Cloud non disponible ; script préparé dans docs/sql/unit_trial_access.sql
 - [x] Vérifier la règle existante : quatre tests réussis, dont grossissement autorisé et fabrication d’aliment refusée
 - [x] Corriger le faux succès après un refus de création ou modification et conserver le message du refus
 - [x] Bloquer la sauvegarde tant que la lecture des types autorisés n’a pas réussi
