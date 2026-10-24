@@ -233,77 +233,83 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   const openEdit = (s: FeedingSheet) => {
     setEditing(s);
-    setForm({ ...s, infrastructure_ids: sheetInfraIds(s) });
+    setForm({ ...s, infrastructure_ids: sheetInfraIds(s), observations: cleanObservations(s.observations) });
     const next = defaultPeriods();
     (Object.keys(next) as Array<keyof PeriodState>).forEach((p) => { next[p].enabled = false; });
-    sheetPeriods(s).forEach((pt) => { next[pt.period] = { enabled: true, time: pt.time }; });
+    sheetPlan(s).forEach((pt) => { next[pt.period] = { enabled: true, time: pt.time, quantity: String(pt.quantity || '') }; });
     setPeriods(next);
     setOpenForm(true);
   };
 
+  /** Fiche active qui utilise déjà cette infrastructure (une seule fiche active par infrastructure). */
+  const conflictFor = (infraId?: string | null) =>
+    infraId ? findInfrastructureConflict(sheets, infraId, form.start_date || new Date().toLocaleDateString('en-CA'), editing?.id) : null;
+
   const submit = async () => {
     if (!user || savingSheet) return;
-    const enabledPeriods = PERIOD_ORDER.filter((p) => periods[p].enabled);
-    if (!form.title || !form.feed_type || !enabledPeriods.length) {
-      toast({
-        title: 'Champs requis',
-        description: 'Titre, aliment et au moins une période de nourrissage sont requis',
-        variant: 'destructive',
-      });
+    if (!form.title?.trim() || !form.feed_type?.trim()) {
+      toast({ title: 'Champs requis', description: 'Indiquez le titre de la fiche et l’aliment à servir.', variant: 'destructive' });
       return;
     }
-    const periodTimes: PeriodTime[] = enabledPeriods.map((p) => ({
-      period: p,
-      time: periods[p].time || '07:00',
-    }));
     const infraIds = (form.infrastructure_ids || []).filter(Boolean) as string[];
     try { requireSingleInfrastructure(infraIds, unitInfras.map(i => i.id)); }
     catch (error) { toast({ title: 'Infrastructure requise', description: (error as Error).message, variant: 'destructive' }); return; }
-    if (!infraIds.length || !(Number(form.quantity) > 0) || !periodTimes.every(p => /^([01]\d|2[0-3]):[0-5]\d$/.test(p.time))) {
-      toast({ title: 'Précisez les infrastructures, une quantité positive et les horaires.', variant: 'destructive' }); return;
+    const conflict = form.is_active !== false ? conflictFor(infraIds[0]) : null;
+    if (conflict) {
+      toast({ title: 'Infrastructure déjà utilisée', description: `${infraName(infraIds[0])} figure déjà sur la fiche active « ${conflict.title} ». Désactivez cette fiche pour en créer une nouvelle.`, variant: 'destructive' });
+      return;
     }
+    let fields: ReturnType<typeof buildSheetFields>;
+    try { fields = buildSheetFields(periodsToPlan(periods), form.observations); }
+    catch (error) { toast({ title: 'Périodes à compléter', description: (error as Error).message, variant: 'destructive' }); return; }
     setSavingSheet(true);
     try {
-      const basePayload: any = {
-        user_id: user.id,
+      // Champs existants de la base de l'application uniquement.
+      const payload: any = {
+        user_id: editing?.user_id || user.id,
         unit_id: unitId,
-        infrastructure_id: infraIds[0] || null,
-        title: form.title,
-        period: periodTimes[0].period,
-        time: periodTimes[0].time,
-        feed_type: form.feed_type,
-        quantity: Number(form.quantity) || 0,
+        infrastructure_id: infraIds[0],
+        title: form.title.trim(),
+        ...fields,
+        feed_type: form.feed_type.trim(),
         unit: form.unit || 'kg',
-        responsible_name: form.responsible_name || null,
-        observations: form.observations || null,
+        responsible_name: form.responsible_name?.trim() || null,
         frequency: form.frequency || 'daily',
         days: form.days && form.days.length ? form.days : DAYS,
-        start_date: form.start_date || new Date().toISOString().split('T')[0],
+        start_date: form.start_date || new Date().toLocaleDateString('en-CA'),
         end_date: form.end_date || null,
         is_active: form.is_active !== false,
       };
-      const fullPayload = { ...basePayload, infrastructure_ids: infraIds, period_times: periodTimes };
-
-      const saveRow = async (payload: any) => {
-        if (editing) {
-          const { error } = await (supabase as any).from('feeding_sheets').update(payload).eq('id', editing.id).eq('unit_id', unitId).select('id').single();
-          if (error) throw error;
-        } else {
-          const { error } = await (supabase as any).from('feeding_sheets').insert([payload]);
-          if (error) throw error;
-        }
-      };
-
-      // Never silently discard advanced fields when the server is not ready.
-      await saveRow(fullPayload);
-      toast({ title: editing ? 'Fiche mise à jour' : 'Fiche créée' });
+      if (editing) {
+        const { error } = await (supabase as any).from('feeding_sheets').update(payload).eq('id', editing.id).eq('unit_id', unitId).select('id').single();
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from('feeding_sheets').insert([payload]);
+        if (error) throw error;
+      }
+      toast({ title: editing ? 'Fiche mise à jour' : 'Fiche créée', description: `${infraName(infraIds[0])} · ${fields.quantity} ${payload.unit} par jour` });
       setOpenForm(false);
       setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); setEditing(null);
       fetchSheets();
     } catch (e: any) {
       console.error(e);
-      toast({ title: 'Erreur', description: e.message || 'Enregistrement impossible', variant: 'destructive' });
+      toast({ title: 'Fiche non enregistrée', description: e.message || 'Enregistrement impossible. Votre saisie est conservée.', variant: 'destructive' });
     } finally { setSavingSheet(false); }
+  };
+
+  const toggleActive = async (s: FeedingSheet) => {
+    if (!s.is_active) {
+      const id = sheetInfraIds(s)[0];
+      const conflict = id ? findInfrastructureConflict(sheets, id, new Date().toLocaleDateString('en-CA'), s.id) : null;
+      if (conflict) {
+        toast({ title: 'Infrastructure déjà utilisée', description: `Désactivez d’abord la fiche « ${conflict.title} ».`, variant: 'destructive' });
+        return;
+      }
+    }
+    const { error } = await (supabase as any).from('feeding_sheets').update({ is_active: !s.is_active }).eq('id', s.id).eq('unit_id', unitId);
+    if (error) { toast({ title: 'Modification impossible', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: s.is_active ? 'Fiche désactivée' : 'Fiche réactivée' });
+    fetchSheets();
   };
 
   const remove = async (id: string) => {
