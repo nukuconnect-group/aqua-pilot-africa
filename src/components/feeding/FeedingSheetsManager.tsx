@@ -729,7 +729,6 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredSheets.map(s => {
-                const pts = sheetPeriods(s);
                 const ids = sheetInfraIds(s);
                 return (
                   <Card key={s.id} className={`border-l-4 ${s.is_active ? 'border-l-primary' : 'border-l-border opacity-70'}`}>
