@@ -62,7 +62,7 @@ describe('enregistrement depuis la fiche', () => {
     expect(mocks.rpc).toHaveBeenCalledTimes(1);
     expect(mocks.rpc).toHaveBeenCalledWith('record_sheet_feeding', expect.objectContaining({
       _sheet_id: 'sheet-a', _period: 'matin', _time: expect.stringMatching(/^\d{2}:\d{2}$/),
-      _lines: [{ infrastructure_id: 'infra-a', taken: 20, served: 15, returned: 5, mortality: 0 }],
+      _lines: [{ infrastructure_id: 'infra-a', prescribed: expect.any(Number), taken: 20, served: 15, returned: 5, mortality: 0 }],
     }));
     expect(mocks.refetch).toHaveBeenCalled();
     expect(document.querySelector('[role="dialog"]')).toBeNull();
