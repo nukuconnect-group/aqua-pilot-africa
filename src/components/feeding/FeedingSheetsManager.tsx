@@ -1,4 +1,5 @@
 import { useSessionDraft } from '@/hooks/useSessionDraft';
+import { printWhenReady } from '@/lib/printReady';
 import { feedingBalance, matchesFeedingStock } from '@/lib/feedingDistribution';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -617,8 +618,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     }
     w.document.write(html);
     w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 300);
+    void printWhenReady(w);
   };
 
   const printProgram = (period: 'today' | 'week' | 'month') => openPrintWindow(buildProgramHTML(period));
