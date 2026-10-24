@@ -26,7 +26,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { generateCompanyHeaderHTML, generateCompanyFooterHTML, type CompanyInfoForPrint } from '@/lib/companyHeaderUtils';
 import {
   PERIOD_ORDER, normalizePeriodTimes, normalizeInfrastructureIds,
-  computeFishCounts,
+  computeFishCounts, requireSingleInfrastructure,
   type PeriodTime,
 } from '@/lib/feedingSheetUtils';
 
@@ -210,6 +210,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   useEffect(() => { loadFishCounts(); }, [user?.id, unitId, unitInfras.length]);
 
   const openCreate = () => {
+    if (!unitInfras.length) {
+      toast({ title: 'Aucune infrastructure', description: 'Vous n’avez aucune infrastructure dans cette unité. Créez une infrastructure avant sa fiche de nourrissage.', variant: 'destructive' }); return;
+    }
     setEditing(null);
     // Reopening a new sheet preserves its unfinished draft.
     if (editing) { setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); }
@@ -242,6 +245,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       time: periods[p].time || '07:00',
     }));
     const infraIds = (form.infrastructure_ids || []).filter(Boolean) as string[];
+    try { requireSingleInfrastructure(infraIds, unitInfras.map(i => i.id)); }
+    catch (error) { toast({ title: 'Infrastructure requise', description: (error as Error).message, variant: 'destructive' }); return; }
     if (!infraIds.length || !(Number(form.quantity) > 0) || !periodTimes.every(p => /^([01]\d|2[0-3]):[0-5]\d$/.test(p.time))) {
       toast({ title: 'Précisez les infrastructures, une quantité positive et les horaires.', variant: 'destructive' }); return;
     }
@@ -316,8 +321,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   const validateDistribution = (s: FeedingSheet) => {
     const ids = sheetInfraIds(s);
+    try { requireSingleInfrastructure(ids, unitInfras.map(i => i.id)); }
+    catch (error) { toast({ title: 'Fiche à corriger', description: (error as Error).message, variant: 'destructive' }); return; }
     const lines: Record<string, FeedLine> = {};
-    (ids.length ? ids : unitInfras.map(i => i.id)).forEach(id => {
+    ids.forEach(id => {
       lines[id] = { taken: String(s.quantity), dose: String(s.quantity), mortality: '0' };
     });
     setFeedLines(lines);
@@ -333,6 +340,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       const lines = Object.entries(feedLines).map(([infrastructure_id, line]) => ({
         infrastructure_id, ...feedingBalance(Number(line.taken), Number(line.dose)), mortality: Number(line.mortality),
       }));
+      requireSingleInfrastructure(lines.map(l => l.infrastructure_id), unitInfras.map(i => i.id));
+      requireSingleInfrastructure(sheetInfraIds(s), unitInfras.map(i => i.id));
+      if (lines[0]?.infrastructure_id !== sheetInfraIds(s)[0]) throw new Error('L’infrastructure ne correspond pas à la fiche.');
       if (!lines.length || lines.some(l => !l.infrastructure_id || !Number.isInteger(l.mortality) || l.mortality < 0) ||
           !/^([01]\d|2[0-3]):[0-5]\d$/.test(feedForm.time) || !feedForm.date) {
         throw new Error('Précisez la date, l’heure réelle, l’infrastructure et une mortalité entière positive ou nulle.');
@@ -704,38 +714,14 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
               <Input value={form.title || ''} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ex: Alimentation matin — Bac 1" />
             </div>
             <div className="sm:col-span-2">
-              <Label>Infrastructures (plusieurs possibles)</Label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {unitInfras.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Aucune infrastructure dans cette unité.</p>
-                )}
-                {unitInfras.map((i) => {
-                  const selected = (form.infrastructure_ids || []).includes(i.id);
-                  const count = fishCounts[i.id];
-                  return (
-                    <Button
-                      key={i.id}
-                      type="button"
-                      size="sm"
-                      variant={selected ? 'default' : 'outline'}
-                      className="h-auto min-h-9 whitespace-normal text-left"
-                      onClick={() => {
-                        const cur = new Set(form.infrastructure_ids || []);
-                        if (selected) cur.delete(i.id); else cur.add(i.id);
-                        setForm({ ...form, infrastructure_ids: Array.from(cur) });
-                      }}
-                    >
-                      {i.name}
-                      {count !== undefined && (
-                        <span className={`ml-1 text-[10px] ${selected ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                          · {count} poisson(s)
-                        </span>
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Sélectionnez les infrastructures rattachées à cette fiche.</p>
+              <Label htmlFor="sheet-infrastructure">Infrastructure rattachée *</Label>
+              <Select value={(form.infrastructure_ids || []).length === 1 ? form.infrastructure_ids?.[0] : undefined} onValueChange={id => setForm({ ...form, infrastructure_id: id, infrastructure_ids: [id] })}>
+                <SelectTrigger id="sheet-infrastructure"><SelectValue placeholder="Sélectionner une infrastructure" /></SelectTrigger>
+                <SelectContent>{unitInfras.map(i => <SelectItem key={i.id} value={i.id}>{i.name} · {fishCounts[i.id] !== undefined ? `${fishCounts[i.id]} sujets disponibles` : 'effectif indisponible'}</SelectItem>)}</SelectContent>
+              </Select>
+              {!unitInfras.length && <p role="alert" className="mt-2 text-sm text-destructive">Vous n’avez aucune infrastructure dans cette unité. Créez-en une avant sa fiche de nourrissage.</p>}
+              {(form.infrastructure_ids || []).length > 1 && <p role="alert" className="mt-2 text-sm text-destructive">Cette ancienne fiche regroupe plusieurs infrastructures. Sélectionnez une seule infrastructure avant de l’enregistrer.</p>}
+              {(form.infrastructure_ids || []).length === 1 && <p className="mt-2 text-sm text-muted-foreground">Sujets disponibles : <strong className="text-foreground">{fishCounts[form.infrastructure_ids?.[0] || ''] ?? 'Effectif indisponible'}</strong></p>}
             </div>
             <div className="sm:col-span-2">
               <Label>Périodes de nourrissage *</Label>
@@ -834,7 +820,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpenForm(false)}>Annuler</Button>
-            <Button disabled={savingSheet} onClick={submit}>{editing ? 'Enregistrer' : 'Créer la fiche'}</Button>
+            <Button disabled={savingSheet || !unitInfras.length} onClick={submit}>{editing ? 'Enregistrer' : 'Créer la fiche'}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -868,7 +854,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div><Label>Quantité prélevée ({feeding.unit}) *</Label><Input type="number" min="0" step="0.01" value={line.taken} onChange={e => setFeedLines({ ...feedLines, [infraId]: { ...line, taken: e.target.value } })} /></div>
                     <div>
-                      <Label>Quantité servie ({feeding.unit}) *</Label>
+                      <Label>Quantité servie / ingérée ({feeding.unit}) *</Label>
                       <Input type="number" step="0.01" value={line.dose} onChange={(e) => setFeedLines({ ...feedLines, [infraId]: { ...line, dose: e.target.value } })} />
                     </div>
                     <div>
