@@ -1,3 +1,10 @@
+## Corrections Alimentation et chatbot (24/10/2026, 10:30)
+- [ ] Création de fiche acceptée par la base réelle (une infrastructure, quantités et heures matin/midi/soir)
+- [ ] Une infrastructure sur une seule fiche active ; désactiver l’autre fiche pour la réutiliser
+- [ ] Nourrir : effectif, prescrit, prélevé, servi, restant, mortalité, comportement, raison ; fonctionne sans la fonction serveur
+- [ ] PDF/impression journaliers plus professionnels, remplis avec les nourrissages réels
+- [ ] Chatbot : bulle d’accueil dépliée à l’arrivée, flèche pour réduire et redéplier
+
 ## Fiches avancées de nourrissage (24/10/2026)
 - [x] Nouvelle précision : exactement une infrastructure par fiche ; création bloquée sans infrastructure ; effectifs disponibles sur les infrastructures ; anciennes fiches multiples conservées mais correction requise avant nourrissage
 - [x] Revoir les fiches modifiables et leurs exports PDF/impression
