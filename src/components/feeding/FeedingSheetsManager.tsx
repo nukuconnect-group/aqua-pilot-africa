@@ -1,3 +1,7 @@
+import { useSessionDraft } from '@/hooks/useSessionDraft';
+import { feedingBalance, matchesFeedingStock } from '@/lib/feedingDistribution';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { isCommercialStock } from '@/lib/stockPurpose';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +26,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { generateCompanyHeaderHTML, generateCompanyFooterHTML, type CompanyInfoForPrint } from '@/lib/companyHeaderUtils';
 import {
   PERIOD_ORDER, normalizePeriodTimes, normalizeInfrastructureIds,
-  computeFishCounts, applyMortality, isMissingColumnError,
+  computeFishCounts, isMissingColumnError,
   type PeriodTime,
 } from '@/lib/feedingSheetUtils';
 
@@ -51,9 +55,9 @@ interface FeedingSheet {
 
 const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 const PERIOD_META: Record<string, { label: string; icon: React.ComponentType<any>; color: string }> = {
-  matin: { label: 'Matin', icon: Sunrise, color: 'bg-amber-100 text-amber-800' },
-  midi: { label: 'Midi', icon: Sun, color: 'bg-orange-100 text-orange-800' },
-  soir: { label: 'Soir', icon: Moon, color: 'bg-indigo-100 text-indigo-800' },
+  matin: { label: 'Matin', icon: Sunrise, color: 'bg-secondary text-secondary-foreground' },
+  midi: { label: 'Midi', icon: Sun, color: 'bg-accent text-accent-foreground' },
+  soir: { label: 'Soir', icon: Moon, color: 'bg-muted text-foreground' },
 };
 
 interface Props {
@@ -124,10 +128,12 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   const [sheets, setSheets] = useState<FeedingSheet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openForm, setOpenForm] = useState(false);
-  const [editing, setEditing] = useState<FeedingSheet | null>(null);
-  const [form, setForm] = useState<Partial<FeedingSheet>>(emptyForm(unitId));
-  const [periods, setPeriods] = useState<PeriodState>(defaultPeriods());
+  const draftKey = `feeding:${user?.id || 'signed-out'}:${unitId}`;
+  const [openForm, setOpenForm] = useSessionDraft(`${draftKey}:open`, false);
+  const [savingSheet, setSavingSheet] = useState(false);
+  const [editing, setEditing] = useSessionDraft<FeedingSheet | null>(`${draftKey}:editing`, null);
+  const [form, setForm] = useSessionDraft<Partial<FeedingSheet>>(`${draftKey}:form`, emptyForm(unitId));
+  const [periods, setPeriods] = useSessionDraft<PeriodState>(`${draftKey}:periods`, defaultPeriods());
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterInfra, setFilterInfra] = useState<string>('all');
   const [fishCounts, setFishCounts] = useState<Record<string, number>>({});
@@ -205,8 +211,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm(unitId));
-    setPeriods(defaultPeriods());
+    // Reopening a new sheet preserves its unfinished draft.
+    if (editing) { setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); }
     setOpenForm(true);
   };
 
@@ -221,7 +227,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   };
 
   const submit = async () => {
-    if (!user) return;
+    if (!user || savingSheet) return;
     const enabledPeriods = PERIOD_ORDER.filter((p) => periods[p].enabled);
     if (!form.title || !form.feed_type || !enabledPeriods.length) {
       toast({
@@ -236,6 +242,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       time: periods[p].time || '07:00',
     }));
     const infraIds = (form.infrastructure_ids || []).filter(Boolean) as string[];
+    if (!infraIds.length || !(Number(form.quantity) > 0) || !periodTimes.every(p => /^([01]\d|2[0-3]):[0-5]\d$/.test(p.time))) {
+      toast({ title: 'Précisez les infrastructures, une quantité positive et les horaires.', variant: 'destructive' }); return;
+    }
+    setSavingSheet(true);
     try {
       const basePayload: any = {
         user_id: user.id,
@@ -259,7 +269,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
       const saveRow = async (payload: any) => {
         if (editing) {
-          const { error } = await (supabase as any).from('feeding_sheets').update(payload).eq('id', editing.id);
+          const { error } = await (supabase as any).from('feeding_sheets').update(payload).eq('id', editing.id).eq('unit_id', unitId).select('id').single();
           if (error) throw error;
         } else {
           const { error } = await (supabase as any).from('feeding_sheets').insert([payload]);
@@ -267,28 +277,21 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
         }
       };
 
-      try {
-        await saveRow(fullPayload);
-      } catch (e: any) {
-        // Base historique sans les nouvelles colonnes : repli sur le format d'origine.
-        if (isMissingColumnError(e, 'infrastructure_ids') || isMissingColumnError(e, 'period_times')) {
-          await saveRow(basePayload);
-        } else {
-          throw e;
-        }
-      }
+      // Never silently discard advanced fields when the server is not ready.
+      await saveRow(fullPayload);
       toast({ title: editing ? 'Fiche mise à jour' : 'Fiche créée' });
       setOpenForm(false);
+      setForm(emptyForm(unitId)); setPeriods(defaultPeriods()); setEditing(null);
       fetchSheets();
     } catch (e: any) {
       console.error(e);
       toast({ title: 'Erreur', description: e.message || 'Enregistrement impossible', variant: 'destructive' });
-    }
+    } finally { setSavingSheet(false); }
   };
 
   const remove = async (id: string) => {
     try {
-      const { error } = await (supabase as any).from('feeding_sheets').delete().eq('id', id);
+      const { error } = await (supabase as any).from('feeding_sheets').delete().eq('id', id).eq('unit_id', unitId);
       if (error) throw error;
       toast({ title: 'Fiche supprimée' });
       setDeleteId(null);
@@ -300,148 +303,68 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   // ---------- Nourrissage ----------
 
-  interface FeedLine { dose: string; mortality: string; }
-  const [feeding, setFeeding] = useState<FeedingSheet | null>(null);
-  const [feedLines, setFeedLines] = useState<Record<string, FeedLine>>({});
-  const [feedForm, setFeedForm] = useState({ behavior: 'normal', reason: '', notes: '', stockId: '' });
+  interface FeedLine { taken: string; dose: string; mortality: string; }
+  const [feeding, setFeeding] = useSessionDraft<FeedingSheet | null>(`${draftKey}:feeding`, null);
+  const [feedLines, setFeedLines] = useSessionDraft<Record<string, FeedLine>>(`${draftKey}:lines`, {});
+  const [feedForm, setFeedForm] = useSessionDraft(`${draftKey}:distribution`, {
+    behavior: 'normal', reason: '', notes: '', period: 'matin', time: '',
+    date: new Date().toLocaleDateString('en-CA'), requestId: '',
+  });
   const [savingFeed, setSavingFeed] = useState(false);
-  const { stocks: allUnitStocks } = useFeedStocks(unitId);
+  const { stocks: allUnitStocks, refetch: refreshStocks } = useFeedStocks(unitId);
   const stocks = useMemo(() => allUnitStocks.filter(s => !isCommercialStock(s)), [allUnitStocks]);
 
   const validateDistribution = (s: FeedingSheet) => {
-    const match = (stocks || []).find((x: any) => [x.feed_type, x.custom_name].some((v: string) => (v || '').trim().toLowerCase() === (s.feed_type || '').trim().toLowerCase()));
     const ids = sheetInfraIds(s);
     const lines: Record<string, FeedLine> = {};
-    (ids.length ? ids : ['']).forEach((id) => {
-      lines[id] = { dose: String(s.quantity || ''), mortality: '' };
+    (ids.length ? ids : unitInfras.map(i => i.id)).forEach(id => {
+      lines[id] = { taken: String(s.quantity), dose: String(s.quantity), mortality: '0' };
     });
     setFeedLines(lines);
-    setFeedForm({ behavior: 'normal', reason: '', notes: '', stockId: match?.id || '' });
+    setFeedForm({ behavior: 'normal', reason: '', notes: '', period: sheetPeriods(s)[0].period,
+      time: new Date().toTimeString().slice(0, 5), date: new Date().toLocaleDateString('en-CA'), requestId: crypto.randomUUID() });
     setFeeding(s);
-  };
-
-  /** Insère un enregistrement de nourrissage, avec repli si la base n'a pas les colonnes récentes. */
-  const insertFeedingRecord = async (row: Record<string, any>) => {
-    const { error } = await (supabase as any).from('feeding_records').insert([row]);
-    if (!error) return;
-    const optionalCols = ['session_type', 'feeder_name', 'prescribed_quantity', 'actual_quantity', 'remaining_quantity', 'mortality', 'infrastructure_id', 'cycle_id', 'behavior'];
-    if (optionalCols.some((c) => isMissingColumnError(error, c))) {
-      const minimal = {
-        user_id: row.user_id, unit_id: row.unit_id, date: row.date, time: row.time,
-        feed_type: row.feed_type, quantity: row.quantity, notes: row.notes,
-      };
-      const { error: fallbackError } = await (supabase as any).from('feeding_records').insert([minimal]);
-      if (fallbackError) throw fallbackError;
-      return;
-    }
-    throw error;
-  };
-
-  /** Applique la mortalité au lot et à l'infrastructure de cycle portant ce nom. */
-  const applyMortalityToInfrastructure = async (infraId: string, mortality: number) => {
-    const dead = Math.floor(mortality);
-    if (dead <= 0) return;
-    const infra = unitInfras.find((i) => i.id === infraId);
-    if (!infra) return;
-    try {
-      const { data: cycles } = await (supabase as any)
-        .from('production_cycles')
-        .select('id')
-        .eq('unit_id', unitId)
-        .eq('status', 'active');
-      const cycleIds = (cycles || []).map((c: any) => c.id);
-      if (!cycleIds.length) return;
-      const { data: cis } = await (supabase as any)
-        .from('cycle_infrastructures')
-        .select('*')
-        .in('cycle_id', cycleIds)
-        .ilike('infrastructure_name', infra.name);
-      for (const ci of cis || []) {
-        if (ci.livestock_batch_id) {
-          const { data: batch } = await (supabase as any)
-            .from('livestock_batches')
-            .select('id,quantity')
-            .eq('id', ci.livestock_batch_id)
-            .single();
-          if (batch) {
-            await (supabase as any)
-              .from('livestock_batches')
-              .update({ quantity: applyMortality(batch.quantity, dead) })
-              .eq('id', batch.id);
-          }
-        }
-        if (ci.current_quantity != null) {
-          await (supabase as any)
-            .from('cycle_infrastructures')
-            .update({ current_quantity: applyMortality(ci.current_quantity, dead) })
-            .eq('id', ci.id);
-        }
-      }
-    } catch (e) {
-      console.warn('Mortalité non appliquée aux lots:', e);
-    }
   };
 
   const confirmFeeding = async () => {
     const s = feeding;
     if (!user || !s || savingFeed) return;
-    const lineEntries = Object.entries(feedLines);
-    const totalApplied = lineEntries.reduce((sum, [, l]) => sum + (Number(l.dose) || 0), 0);
-    if (totalApplied <= 0) {
-      toast({ title: 'Dose appliquée requise', variant: 'destructive' });
-      return;
-    }
-    if (feedForm.behavior !== 'normal' && !feedForm.reason.trim()) {
-      toast({ title: 'Précisez la raison', description: 'Indiquez pourquoi l’aliment n’a pas été entièrement consommé.', variant: 'destructive' });
-      return;
-    }
-    setSavingFeed(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const firstPeriod = sheetPeriods(s)[0];
-      const notes = [
-        `Fiche : ${s.title}`,
-        feedForm.reason && `Raison non-consommation : ${feedForm.reason}`,
-        feedForm.notes,
-      ].filter(Boolean).join(' · ');
-
-      for (const [infraId, line] of lineEntries) {
-        const dose = Number(line.dose) || 0;
-        const mortality = Math.floor(Number(line.mortality) || 0);
-        if (dose <= 0 && mortality <= 0) continue;
-        await insertFeedingRecord({
-          user_id: user.id, unit_id: unitId, infrastructure_id: infraId || null,
-          date: today, time: firstPeriod.time, feed_type: s.feed_type, quantity: dose,
-          session_type: firstPeriod.period, feeder_name: s.responsible_name || null,
-          prescribed_quantity: s.quantity, actual_quantity: dose, remaining_quantity: 0,
-          mortality, behavior: feedForm.behavior, notes,
-        });
-        if (mortality > 0 && infraId) {
-          await applyMortalityToInfrastructure(infraId, mortality);
-        }
+      const lines = Object.entries(feedLines).map(([infrastructure_id, line]) => ({
+        infrastructure_id, ...feedingBalance(Number(line.taken), Number(line.dose)), mortality: Number(line.mortality),
+      }));
+      if (!lines.length || lines.some(l => !l.infrastructure_id || !Number.isInteger(l.mortality) || l.mortality < 0) ||
+          !/^([01]\d|2[0-3]):[0-5]\d$/.test(feedForm.time) || !feedForm.date) {
+        throw new Error('Précisez la date, l’heure réelle, l’infrastructure et une mortalité entière positive ou nulle.');
       }
-
-      let extra = '';
-      if (totalApplied > 0) {
-        const { deductFeedStock } = await import('@/lib/feedStockDeduction');
-        const r = await deductFeedStock(unitId, s.feed_type, totalApplied, `Nourrissage — fiche ${s.title}`, feedForm.stockId || undefined);
-        extra = r.status === 'ok'
-          ? ` · Stock restant : ${r.after.toFixed(1)}${r.amount ? ` · Écriture comptable de ${r.amount.toLocaleString('fr-FR')} créée` : ''}`
-          : r.status === 'insufficient' ? ' · Stock insuffisant, non déduit'
-          : r.status === 'not_found' ? ' · Aucun article de stock portant ce nom' : '';
+      const totalTaken = lines.reduce((sum, l) => sum + l.taken, 0);
+      const totalServed = lines.reduce((sum, l) => sum + l.served, 0);
+      if (totalTaken <= 0) throw new Error('La quantité prélevée doit être positive.');
+      if (feedForm.behavior !== 'normal' && !feedForm.reason.trim()) throw new Error('Précisez la raison de la non-consommation.');
+      const matchingStocks = stocks.filter(x => matchesFeedingStock(x, unitId, s.feed_type) && x.unit === s.unit);
+      if (matchingStocks.reduce((sum, x) => sum + Number(x.quantity), 0) < totalTaken) {
+        throw new Error('Stock de production insuffisant pour ce prélèvement dans cette unité.');
       }
-      const totalMortality = lineEntries.reduce((sum, [, l]) => sum + (Number(l.mortality) || 0), 0);
-      toast({
-        title: 'Nourrissage enregistré',
-        description: `Dose appliquée ${totalApplied} ${s.unit}${totalMortality > 0 ? ` · Mortalité : ${totalMortality} poisson(s) retiré(s) des lots` : ''}${extra}`,
+      setSavingFeed(true);
+      const requestId = feedForm.requestId || crypto.randomUUID();
+      setFeedForm(previous => ({ ...previous, requestId }));
+      const { error } = await (supabase as any).rpc('record_sheet_feeding', {
+        _sheet_id: s.id, _request_id: requestId, _date: feedForm.date, _time: feedForm.time,
+        _period: feedForm.period, _lines: lines, _behavior: feedForm.behavior,
+        _notes: [feedForm.reason, feedForm.notes].filter(Boolean).join(' · '),
       });
-      setFeeding(null);
-      loadFishCounts();
+      if (error) {
+        if (error.code === 'PGRST202' || error.code === '42883') {
+          throw new Error('L’enregistrement sécurisé du nourrissage n’est pas encore disponible pour votre compte. Votre saisie est conservée ; aucun stock n’a été modifié.');
+        }
+        throw error;
+      }
+      toast({ title: 'Nourrissage enregistré', description: `${totalTaken} ${s.unit} prélevés · ${totalServed} ${s.unit} servis · ${totalTaken - totalServed} ${s.unit} retournés au stock` });
+      setFeeding(null); setFeedLines({});
+      await Promise.all([loadFishCounts(), refreshStocks()]);
     } catch (e: any) {
-      toast({ title: 'Erreur', description: e.message || 'Enregistrement du nourrissage impossible', variant: 'destructive' });
-    } finally {
-      setSavingFeed(false);
-    }
+      toast({ title: 'Nourrissage non enregistré', description: e.message || 'Votre saisie est conservée.', variant: 'destructive' });
+    } finally { setSavingFeed(false); }
   };
 
   // ---------- Impression / export ----------
@@ -541,16 +464,16 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
     const ci = companyPrintInfo();
     const now = new Date();
     const ids = sheetInfraIds(s);
-    const rows = (ids.length ? ids : ['']).map((id) => {
+    const rows = sheetPeriods(s).flatMap(pt => (ids.length ? ids : ['']).map(id => ({ id, pt }))).map(({ id, pt }) => {
       const name = id ? infraName(id) : 'Toutes infrastructures';
       const count = id ? fishCounts[id] : undefined;
       return `
         <tr>
-          <td>${escapeHtml(name)}</td>
+          <td>${escapeHtml(name)}</td><td>${escapeHtml(PERIOD_META[pt.period].label)} ${pt.time}</td><td></td>
           <td style="text-align:center;">${count !== undefined ? count : '—'}</td>
           <td>${escapeHtml(s.feed_type)}</td>
           <td style="text-align:center;">${s.quantity} ${escapeHtml(s.unit)}</td>
-          <td></td><td></td><td></td>
+          <td></td><td></td><td></td><td></td><td></td>
         </tr>`;
     }).join('');
 
@@ -574,8 +497,8 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
       <table>
         <thead>
           <tr>
-            <th>Infrastructure</th><th>Poissons présents</th><th>Aliment</th>
-            <th>Dose prévue</th><th>Dose appliquée</th><th>Mortalité</th><th>Observations</th>
+            <th>Infrastructure</th><th>Période prévue</th><th>Heure réelle</th><th>Poissons présents</th><th>Aliment</th>
+            <th>Prescrite</th><th>Prélevée</th><th>Servie</th><th>Restante / retour</th><th>Mortalité</th><th>Observations</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -602,6 +525,37 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
   const printProgram = (period: 'today' | 'week' | 'month') => openPrintWindow(buildProgramHTML(period));
   const printDailySheet = (s: FeedingSheet) => openPrintWindow(buildDailySheetHTML(s));
 
+  const downloadSheetPdf = async (s: FeedingSheet) => {
+    try {
+      const doc = new jsPDF({ orientation: 'landscape' });
+      let y = 16;
+      if (companyInfo.logoUrl) {
+        try {
+          const image = new Image(); image.crossOrigin = 'anonymous';
+          await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = reject; image.src = companyInfo.logoUrl || ''; });
+          const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) { ctx.drawImage(image, 0, 0); doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, 8, 24, 16); y = 30; }
+        } catch { /* The company's text remains even if its logo is unavailable. */ }
+      }
+      doc.setFontSize(16); doc.text(companyInfo.name || unitName, 14, y);
+      doc.setFontSize(9); doc.text([companyInfo.address, companyInfo.phone, companyInfo.email].filter(Boolean).join(' · '), 14, y + 6);
+      doc.setFontSize(14); doc.text('Fiche de nourrissage', 14, y + 17);
+      doc.setFontSize(10); doc.text(doc.splitTextToSize(`${s.title} — Unité : ${unitName}`, 265), 14, y + 24);
+      doc.text(`Responsable : ${s.responsible_name || '—'} · Début : ${s.start_date}${s.end_date ? ` · Fin : ${s.end_date}` : ''}`, 14, y + 35);
+      const ids = sheetInfraIds(s);
+      autoTable(doc, {
+        startY: y + 40, styles: { fontSize: 8 }, theme: 'grid',
+        head: [['Infrastructure', 'Effectif', 'Période', 'Heure prévue', 'Heure réelle', 'Aliment', 'Prescrite', 'Prélevée', 'Servie', 'Retour', 'Mortalité']],
+        body: sheetPeriods(s).flatMap(pt => ids.map(id => [infraName(id), fishCounts[id] ?? '—', PERIOD_META[pt.period].label, pt.time, '', s.feed_type, `${s.quantity} ${s.unit}`, '', '', '', ''])),
+      });
+      doc.addPage(); doc.setFontSize(12); doc.text('Consignes et validation', 14, 18);
+      doc.setFontSize(10); doc.text(doc.splitTextToSize(s.observations || '—', 265), 14, 28);
+      doc.text('Le consultant : nom et signature', 14, 100); doc.text("Le directeur de l’exploitation : nom et signature", 155, 100);
+      doc.save(`fiche-nourrissage-${s.title.replace(/[^a-zA-Z0-9À-ÿ_-]/g, '-')}.pdf`);
+    } catch { toast({ title: 'Téléchargement PDF impossible', variant: 'destructive' }); }
+  };
+
   const shareProgram = async (period: 'today' | 'week' | 'month') => {
     const html = buildProgramHTML(period);
     const blob = new Blob([html], { type: 'text/html' });
@@ -626,7 +580,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
 
   return (
     <div className="min-w-0 space-y-4">
-      <Card>
+      <section>
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
@@ -635,7 +589,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 Fiches d'alimentation — {unitName}
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Planifiez, imprimez et suivez la distribution d'aliment par infrastructure.
+                Programmes de nourrissage
               </p>
             </div>
             <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap">
@@ -685,7 +639,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 const pts = sheetPeriods(s);
                 const ids = sheetInfraIds(s);
                 return (
-                  <Card key={s.id} className={`border-l-4 ${s.is_active ? 'border-l-emerald-500' : 'border-l-slate-300 opacity-70'}`}>
+                  <Card key={s.id} className={`border-l-4 ${s.is_active ? 'border-l-primary' : 'border-l-border opacity-70'}`}>
                     <CardContent className="p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -706,10 +660,11 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                             {ids.length ? ids.map((id) => infraName(id)).join(', ') : 'Toutes infrastructures'}
                           </p>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                          <Button size="icon" variant="ghost" title="Télécharger la fiche en PDF" aria-label="Télécharger la fiche en PDF" onClick={() => downloadSheetPdf(s)}><FileDown className="w-4 h-4" /></Button>
                           <Button size="icon" variant="ghost" title="Imprimer la fiche du jour" onClick={() => printDailySheet(s)}><Printer className="w-4 h-4" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => setDeleteId(s.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Modifier la fiche" aria-label="Modifier la fiche" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Supprimer la fiche" aria-label="Supprimer la fiche" onClick={() => setDeleteId(s.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 break-words text-xs">
@@ -738,9 +693,9 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
             </div>
           )}
         </CardContent>
-      </Card>
+      </section>
 
-      <Dialog open={openForm} onOpenChange={setOpenForm}>
+      <Dialog open={openForm} onOpenChange={o => !savingSheet && setOpenForm(o)}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-2xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Modifier la fiche' : 'Nouvelle fiche d\'alimentation'}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -780,7 +735,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                   );
                 })}
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Sans sélection, la fiche concerne toutes les infrastructures.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Sélectionnez les infrastructures rattachées à cette fiche.</p>
             </div>
             <div className="sm:col-span-2">
               <Label>Périodes de nourrissage *</Label>
@@ -824,7 +779,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
               <p className="text-[11px] text-muted-foreground mt-1">Utilisez le nom de l’article du module Stock pour qu’il soit déduit automatiquement.</p>
             </div>
             <div>
-              <Label>Dose prévue (par infrastructure)</Label>
+              <Label>Quantité prescrite (par infrastructure et période)</Label>
               <Input type="number" step="0.01" value={form.quantity || 0} onChange={e => setForm({ ...form, quantity: parseFloat(e.target.value) })} />
             </div>
             <div>
@@ -879,22 +834,27 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpenForm(false)}>Annuler</Button>
-            <Button onClick={submit}>{editing ? 'Enregistrer' : 'Créer la fiche'}</Button>
+            <Button disabled={savingSheet} onClick={submit}>{editing ? 'Enregistrer' : 'Créer la fiche'}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!feeding} onOpenChange={(o) => !o && setFeeding(null)}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-lg max-h-[90dvh] overflow-y-auto">
+      <Dialog open={!!feeding} onOpenChange={(o) => !o && !savingFeed && setFeeding(null)}>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nourrir aujourd’hui — {feeding?.title}</DialogTitle></DialogHeader>
           {feeding && (
             <div className="space-y-3">
-              <div className="rounded-xl bg-muted p-3 text-sm grid grid-cols-2 gap-2">
+              <div className="rounded-md bg-muted p-3 text-sm grid grid-cols-2 gap-2">
                 <div><span className="text-muted-foreground">Aliment :</span> <strong>{feeding.feed_type}</strong></div>
                 <div><span className="text-muted-foreground">Périodes :</span> <strong>{periodsLabel(feeding)}</strong></div>
                 <div className="col-span-2"><span className="text-muted-foreground">Dose prévue :</span> <strong>{feeding.quantity} {feeding.unit} par infrastructure</strong></div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div><Label>Période de nourrissage</Label><Select value={feedForm.period} onValueChange={period => setFeedForm({ ...feedForm, period })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{sheetPeriods(feeding).map(pt => <SelectItem key={pt.period} value={pt.period}>Nourrissage {pt.period === 'soir' ? 'du soir' : pt.period === 'midi' ? 'de midi' : 'du matin'}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label>Date du nourrissage</Label><Input type="date" value={feedForm.date} onChange={e => setFeedForm({ ...feedForm, date: e.target.value })} /></div>
+                <div><Label>Heure réelle *</Label><Input type="time" value={feedForm.time} onChange={e => setFeedForm({ ...feedForm, time: e.target.value })} /></div>
+              </div>
               {Object.entries(feedLines).map(([infraId, line]) => (
                 <div key={infraId || 'all'} className="rounded-md border p-3 space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -905,9 +865,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                       </Badge>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div><Label>Quantité prélevée ({feeding.unit}) *</Label><Input type="number" min="0" step="0.01" value={line.taken} onChange={e => setFeedLines({ ...feedLines, [infraId]: { ...line, taken: e.target.value } })} /></div>
                     <div>
-                      <Label>Dose appliquée ({feeding.unit}) *</Label>
+                      <Label>Quantité servie ({feeding.unit}) *</Label>
                       <Input type="number" step="0.01" value={line.dose} onChange={(e) => setFeedLines({ ...feedLines, [infraId]: { ...line, dose: e.target.value } })} />
                     </div>
                     <div>
@@ -915,6 +876,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                       <Input type="number" min="0" value={line.mortality} onChange={(e) => setFeedLines({ ...feedLines, [infraId]: { ...line, mortality: e.target.value } })} />
                     </div>
                   </div>
+                  <p className="text-sm"><span className="text-muted-foreground">Prescrite :</span> {feeding.quantity} {feeding.unit} · <span className="text-muted-foreground">Restante / retour au stock :</span> <strong>{Math.max(0, Number(line.taken) - Number(line.dose)).toLocaleString('fr-FR')} {feeding.unit}</strong></p>
                 </div>
               ))}
 
@@ -938,20 +900,10 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 </div>
               )}
               <div><Label>Observations</Label><Input value={feedForm.notes} onChange={(e) => setFeedForm({ ...feedForm, notes: e.target.value })} /></div>
-              <div>
-                <Label>Stock à prélever *</Label>
-                <Select value={feedForm.stockId} onValueChange={(v) => setFeedForm({ ...feedForm, stockId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Choisir l'article du stock…" /></SelectTrigger>
-                  <SelectContent>
-                    {(stocks || []).map((x: any) => (
-                      <SelectItem key={x.id} value={x.id}>
-                        {x.custom_name || x.feed_type} — {Number(x.quantity)} {x.unit} dispo.
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="border-t pt-3 text-sm">
+                <span className="text-muted-foreground">Stock de production · {unitName} · {feeding.feed_type} :</span>{' '}
+                <strong>{stocks.filter(x => matchesFeedingStock(x, unitId, feeding.feed_type) && x.unit === feeding.unit).reduce((sum, x) => sum + Number(x.quantity), 0).toLocaleString('fr-FR')} {feeding.unit} disponibles</strong>
               </div>
-              <p className="text-xs text-muted-foreground">La somme des doses appliquées sera retirée du stock choisi, une sortie sera ajoutée à l’historique du stock et l’écriture comptable correspondante sera créée. Toute mortalité saisie diminue automatiquement l’effectif du lot et de l’infrastructure.</p>
               <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="outline" onClick={() => setFeeding(null)}>Annuler</Button>
                 <Button className="h-auto min-h-10 whitespace-normal" disabled={savingFeed} onClick={confirmFeeding}>
