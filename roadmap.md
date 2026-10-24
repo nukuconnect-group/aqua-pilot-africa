@@ -1,10 +1,11 @@
 ## Module Alimentation (demande du 24/10/2026)
-- [ ] Fiches d'alimentation : plusieurs infrastructures par fiche, périodes matin/midi/soir avec heure par période
-- [ ] Afficher le nombre de poissons par infrastructure (cycle actif) sur les fiches et au nourrissage
-- [ ] Mortalité : diminuer automatiquement le lot de poissons et l'effectif de l'infrastructure
-- [ ] PDF de la fiche journalière : en-tête avec logo, signatures consultant et directeur de l'exploitation
-- [ ] Réparer le bouton « Nourrir » (enregistrement robuste même si la base historique n'a pas les nouvelles colonnes)
-- [ ] Script docs/sql/feeding_sheets_multi.sql à installer sur la base historique
+- [x] Fiches d'alimentation : plusieurs infrastructures par fiche, périodes matin/midi/soir avec heure par période
+- [x] Afficher le nombre de poissons par infrastructure (cycle actif) sur les fiches et au nourrissage
+- [x] Mortalité : diminuer automatiquement le lot de poissons et l'effectif de l'infrastructure
+- [x] PDF de la fiche journalière : en-tête avec logo, signatures consultant et directeur de l'exploitation
+- [x] Réparer le bouton « Nourrir » (enregistrement robuste même si la base historique n'a pas les nouvelles colonnes) ; 10 tests réussis, compilation réussie
+- [ ] Script docs/sql/feeding_sheets_multi.sql à installer sur la base historique (bloqué : action de l'utilisateur) ; sans lui, une seule infrastructure et une seule période par fiche
+- [ ] Vérifier le nourrissage réel avec un compte connecté : session indisponible, aperçu redirigé vers /auth
 
 - [ ] Traduire Prophylaxie alimentaire, Production d’aliments et Traçabilité selon la langue sélectionnée
 - [ ] Centraliser les règles de modules par type d’unité
