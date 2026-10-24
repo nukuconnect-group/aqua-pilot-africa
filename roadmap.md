@@ -1,3 +1,9 @@
+## Programme daté et accueil succinct (24/10/2026)
+- [ ] Accueil AquaAssistant court avec le nom réel de la ferme
+- [ ] Programme sur une semaine ou dates libres, quantités/heures par jour
+- [ ] Fiche journalière cumulant les périodes, suivi et PDF par date
+- [ ] Tests ciblés et vérification de l’aperçu sans modifier de stock réel
+
 ## Corrections Alimentation et chatbot (24/10/2026, 10:30)
 - [x] Création de fiche acceptée par la base réelle (une infrastructure, quantités et heures matin/midi/soir)
 - [x] Une infrastructure sur une seule fiche active ; désactiver l’autre fiche pour la réutiliser
