@@ -47,10 +47,17 @@ describe('enregistrement depuis la fiche', () => {
     const numbers = document.querySelectorAll<HTMLInputElement>('input[type="number"]');
     const served = numbers[1];
     if (!served) throw new Error('Quantité servie absente');
-    await act(async () => {
+    const type = async (input: HTMLInputElement, value: string) => act(async () => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-      setter?.call(served, '15'); served.dispatchEvent(new Event('input', { bubbles: true }));
+      setter?.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    await type(served, '15');
+    // 5 kg restants : la raison est obligatoire avant tout enregistrement.
+    await click('Enregistrer le nourrissage');
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    const reason = document.querySelector<HTMLInputElement>('input[list="feed-refusal-reasons"]');
+    if (!reason) throw new Error('Raison absente');
+    await type(reason, 'Eau trouble');
     await click('Enregistrer le nourrissage');
     expect(mocks.rpc).toHaveBeenCalledTimes(1);
     expect(mocks.rpc).toHaveBeenCalledWith('record_sheet_feeding', expect.objectContaining({
