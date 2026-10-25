@@ -181,12 +181,6 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
             />
           </SheetTitle>
 
-                alt="AquaPilote"
-                className="h-9 w-auto max-w-[180px] object-contain"
-              />
-            </span>
-          </SheetTitle>
-          
           {/* Indicateur membre d'equipe */}
           {isTeamMember && teamMemberInfo && (
             <div className="flex items-center gap-2 mt-2">
