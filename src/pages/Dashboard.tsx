@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -64,6 +64,8 @@ import {
   recordDiagnostic,
   requestDataRefresh,
 } from '@/lib/appRecovery';
+import { useAppRefresh } from '@/hooks/useAppRefresh';
+import { shouldPullRefresh } from '@/lib/manualRefresh';
 
 /**
  * Page principale du dashboard
@@ -78,6 +80,8 @@ const Dashboard: React.FC = () => {
   const activeTab = moduleParamToTabId(searchParams.get('module'));
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [moduleResetKey, setModuleResetKey] = useState(0);
+  const { refresh } = useAppRefresh();
+  const pullStart = useRef<{ x: number; y: number; atTop: boolean } | null>(null);
   const { isTeamMember, teamMemberInfo, isLoading: isLoadingAccess, hasAccessToModule, getAllowedModulesList } = useTeamMemberAccess();
   const { hasModuleAccess, isLoading: isLoadingPlan } = useModuleAccess();
   const { activeUnit } = useProductionUnits();
@@ -369,6 +373,16 @@ const Dashboard: React.FC = () => {
 
           {/* Main Content avec padding-top pour compenser le header fixe sur mobile */}
           <main
+            onTouchStart={event => {
+              const touch = event.touches[0];
+              if (!touch || event.touches.length !== 1 || hasOpenTransientOverlay() || (event.target as HTMLElement).closest('input,textarea,select,[role="slider"],[role="log"]')) { pullStart.current = null; return; }
+              pullStart.current = { x: touch.clientX, y: touch.clientY, atTop: event.currentTarget.scrollTop <= 0 && window.scrollY <= 0 };
+            }}
+            onTouchEnd={event => {
+              const touch = event.changedTouches[0]; const start = pullStart.current; pullStart.current = null;
+              if (touch && start && shouldPullRefresh(touch.clientY - start.y, touch.clientX - start.x, start.atTop)) void refresh();
+            }}
+            onTouchCancel={() => { pullStart.current = null; }}
             className="flex-1 overflow-y-auto px-2 sm:p-4 lg:p-6 pt-[3.75rem] sm:pt-[5rem] md:pt-2"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)' }}
           >
