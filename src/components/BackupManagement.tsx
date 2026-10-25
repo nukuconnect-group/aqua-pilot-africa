@@ -1,380 +1,121 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Download, Upload, FileJson, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Download, FileJson, Loader2, FolderOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { createUnitBackup, readUnitBackup, UNIT_BACKUP_TABLES, type UnitBackup, type UnitBackupTable } from '@/lib/unitBackup';
 
-interface BackupData {
-  version: string;
-  exportDate: string;
-  userId: string;
-  data: {
-    production_units?: any[];
-    unit_infrastructures?: any[];
-    unit_equipment?: any[];
-    purchases?: any[];
-    accounting_transactions?: any[];
-    depreciable_assets?: any[];
-    feed_stocks?: any[];
-    livestock_batches?: any[];
-    production_cycles?: any[];
-    cycle_infrastructures?: any[];
-    health_records?: any[];
-    feeding_records?: any[];
-    feeding_plans?: any[];
-    reproduction_records?: any[];
-  };
-}
-
-const DATA_TABLES = [
-  { key: 'production_units', label: 'Unités de production', icon: '🏭' },
-  { key: 'unit_infrastructures', label: 'Infrastructures', icon: '🏗️' },
-  { key: 'unit_equipment', label: 'Équipements', icon: '⚙️' },
-  { key: 'purchases', label: 'Achats', icon: '🛒' },
-  { key: 'accounting_transactions', label: 'Transactions comptables', icon: '💰' },
-  { key: 'depreciable_assets', label: 'Actifs amortissables', icon: '📊' },
-  { key: 'feed_stocks', label: 'Stocks d\'aliments', icon: '🌾' },
-  { key: 'livestock_batches', label: 'Lots de cheptel', icon: '🐟' },
-  { key: 'production_cycles', label: 'Cycles de production', icon: '🔄' },
-  { key: 'cycle_infrastructures', label: 'Infrastructures de cycle', icon: '🏠' },
-  { key: 'health_records', label: 'Enregistrements de santé', icon: '🏥' },
-  { key: 'feeding_records', label: 'Enregistrements d\'alimentation', icon: '🍽️' },
-  { key: 'feeding_plans', label: 'Plans d\'alimentation', icon: '📋' },
-  { key: 'reproduction_records', label: 'Enregistrements de reproduction', icon: '🥚' },
-];
-
-export const BackupManagement = () => {
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const [isExporting, setIsExporting] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [selectedTables, setSelectedTables] = useState<string[]>(DATA_TABLES.map(t => t.key));
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [showImportConfirm, setShowImportConfirm] = useState(false);
-  const [importPreview, setImportPreview] = useState<BackupData | null>(null);
-
-  const toggleTable = (key: string) => {
-    setSelectedTables(prev => 
-      prev.includes(key) 
-        ? prev.filter(k => k !== key)
-        : [...prev, key]
-    );
-  };
-
-  const selectAll = () => setSelectedTables(DATA_TABLES.map(t => t.key));
-  const deselectAll = () => setSelectedTables([]);
-
-  const handleExport = async () => {
-    if (!user) {
-      toast({ title: 'Erreur', description: 'Vous devez être connecté', variant: 'destructive' });
-      return;
-    }
-
-    if (selectedTables.length === 0) {
-      toast({ title: 'Erreur', description: 'Sélectionnez au moins une table', variant: 'destructive' });
-      return;
-    }
-
-    setIsExporting(true);
-    try {
-      const backupData: BackupData = {
-        version: '1.0',
-        exportDate: new Date().toISOString(),
-        userId: user.id,
-        data: {}
-      };
-
-      for (const tableKey of selectedTables) {
-        const { data, error } = await supabase
-          .from(tableKey as any)
-          .select('*')
-          .eq('user_id', user.id);
-
-        if (error) {
-          console.error(`Error fetching ${tableKey}:`, error);
-          continue;
-        }
-
-        (backupData.data as any)[tableKey] = data || [];
-      }
-
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `aquapilot-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast({ title: 'Succès', description: 'Sauvegarde exportée avec succès' });
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({ title: 'Erreur', description: 'Échec de l\'exportation', variant: 'destructive' });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text) as BackupData;
-
-      if (!data.version || !data.data) {
-        toast({ title: 'Erreur', description: 'Format de fichier invalide', variant: 'destructive' });
-        return;
-      }
-
-      setImportFile(file);
-      setImportPreview(data);
-    } catch (error) {
-      toast({ title: 'Erreur', description: 'Impossible de lire le fichier', variant: 'destructive' });
-    }
-  };
-
-  const handleImport = async () => {
-    if (!user || !importPreview) return;
-
-    setIsImporting(true);
-    setShowImportConfirm(false);
-
-    try {
-      let importedCount = 0;
-      let errorCount = 0;
-
-      for (const [tableKey, records] of Object.entries(importPreview.data)) {
-        if (!records || !Array.isArray(records) || records.length === 0) continue;
-
-        // Update user_id to current user
-        const updatedRecords = records.map(record => ({
-          ...record,
-          user_id: user.id,
-          id: undefined // Remove id to let Supabase generate new ones
-        }));
-
-        const { error } = await supabase
-          .from(tableKey as any)
-          .insert(updatedRecords);
-
-        if (error) {
-          console.error(`Error importing ${tableKey}:`, error);
-          errorCount++;
-        } else {
-          importedCount++;
-        }
-      }
-
-      if (errorCount > 0) {
-        toast({ 
-          title: 'Import partiel', 
-          description: `${importedCount} tables importées, ${errorCount} erreurs`,
-          variant: 'destructive'
-        });
-      } else {
-        toast({ title: 'Succès', description: 'Données importées avec succès' });
-      }
-
-      setImportFile(null);
-      setImportPreview(null);
-    } catch (error) {
-      console.error('Import error:', error);
-      toast({ title: 'Erreur', description: 'Échec de l\'importation', variant: 'destructive' });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const getRecordCount = (data: BackupData['data']) => {
-    return Object.values(data).reduce((sum, arr) => sum + (arr?.length || 0), 0);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <FileJson className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Gestion des sauvegardes</h1>
-          <p className="text-muted-foreground">Exportez et importez vos données</p>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Export Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              Exporter les données
-            </CardTitle>
-            <CardDescription>
-              Téléchargez une sauvegarde de vos données au format JSON
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAll}>
-                Tout sélectionner
-              </Button>
-              <Button variant="outline" size="sm" onClick={deselectAll}>
-                Tout désélectionner
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
-              {DATA_TABLES.map(table => (
-                <div key={table.key} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`export-${table.key}`}
-                    checked={selectedTables.includes(table.key)}
-                    onCheckedChange={() => toggleTable(table.key)}
-                  />
-                  <Label htmlFor={`export-${table.key}`} className="flex items-center gap-2 cursor-pointer">
-                    <span>{table.icon}</span>
-                    <span>{table.label}</span>
-                  </Label>
-                </div>
-              ))}
-            </div>
-
-            <Button 
-              onClick={handleExport} 
-              disabled={isExporting || selectedTables.length === 0}
-              className="w-full"
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Exportation...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Exporter ({selectedTables.length} tables)
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Import Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Importer les données
-            </CardTitle>
-            <CardDescription>
-              Restaurez vos données depuis une sauvegarde JSON
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="import-file">Fichier de sauvegarde</Label>
-              <Input
-                id="import-file"
-                type="file"
-                accept=".json"
-                onChange={handleFileSelect}
-              />
-            </div>
-
-            {importPreview && (
-              <Card className="bg-muted/50">
-                <CardContent className="pt-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span>Fichier valide</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    <p>Version: {importPreview.version}</p>
-                    <p>Date: {new Date(importPreview.exportDate).toLocaleDateString('fr-FR')}</p>
-                    <p>Total: {getRecordCount(importPreview.data)} enregistrements</p>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Tables incluses:
-                    <ul className="list-disc list-inside mt-1">
-                      {Object.entries(importPreview.data).map(([key, records]) => {
-                        if (!records?.length) return null;
-                        const table = DATA_TABLES.find(t => t.key === key);
-                        return (
-                          <li key={key}>
-                            {table?.icon} {table?.label || key}: {records.length}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="flex items-start gap-2 p-3 bg-yellow-500/10 rounded-lg text-sm">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
-              <span className="text-yellow-700 dark:text-yellow-400">
-                L'importation ajoutera de nouvelles données sans supprimer les existantes.
-              </span>
-            </div>
-
-            <Button 
-              onClick={() => setShowImportConfirm(true)}
-              disabled={isImporting || !importPreview}
-              className="w-full"
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importation...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Importer les données
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <AlertDialog open={showImportConfirm} onOpenChange={setShowImportConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer l'importation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir importer ces données ? Cette action ajoutera 
-              {importPreview && ` ${getRecordCount(importPreview.data)} enregistrements`} à votre compte.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleImport}>
-              Importer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
+const LABELS: Record<UnitBackupTable, string> = {
+  production_units: 'Unité', unit_infrastructures: 'Infrastructures', unit_equipment: 'Matériel',
+  purchases: 'Achats', accounting_transactions: 'Écritures comptables', depreciable_assets: 'Amortissements',
+  feed_stocks: 'Stocks', livestock_batches: 'Cheptel', production_cycles: 'Cycles de production',
+  cycle_infrastructures: 'Infrastructures de cycle', health_records: 'Relevés de santé', feeding_records: 'Nourrissage',
+  feeding_plans: 'Programmes d’alimentation', feeding_sheets: 'Fiches d’alimentation', reproduction_records: 'Reproduction',
+  sales: 'Ventes', sale_items: 'Articles vendus', cash_sessions: 'Sessions de caisse', cash_movements: 'Opérations de caisse',
+  treasury_accounts: 'Comptes de trésorerie', treasury_movements: 'Mouvements de trésorerie',
 };
 
+export const BackupManagement = () => {
+  const { user } = useAuth();
+  const { units, activeUnit } = useProductionUnits();
+  const { toast } = useToast();
+  const [unitChoice, setUnitChoice] = useState<string | null>(null);
+  const selectedUnitId = unitChoice ?? activeUnit?.id ?? (units.length === 1 ? units[0].id : '');
+  const selectedUnit = units.find(u => u.id === selectedUnitId);
+  const [selectedTables, setSelectedTables] = useState<UnitBackupTable[]>([...UNIT_BACKUP_TABLES]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [preview, setPreview] = useState<UnitBackup | null>(null);
+  const [fileError, setFileError] = useState('');
+
+  const handleExport = async () => {
+    if (!user || !selectedUnit || !selectedTables.length) return;
+    setIsExporting(true);
+    try {
+      const backup = await createUnitBackup({
+        read: async (table, column, ids, offset, limit) => {
+          const { data, error } = await supabase.from(table as any).select('*').in(column, ids).order('id').range(offset, offset + limit - 1);
+          if (error) throw new Error(`${LABELS[table]} : ${error.message}`);
+          return (data ?? []) as unknown as Record<string, unknown>[];
+        },
+      }, { id: selectedUnit.id, name: selectedUnit.name }, selectedTables);
+      readUnitBackup(backup);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `aquapilote-unite-${selectedUnit.id}-${backup.exportDate.slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast({ title: 'Sauvegarde téléchargée', description: selectedUnit.name });
+    } catch (error) {
+      toast({ title: 'Sauvegarde interrompue', description: error instanceof Error ? error.message : 'Impossible de lire les données. Aucun fichier incomplet téléchargé.', variant: 'destructive' });
+    } finally { setIsExporting(false); }
+  };
+
+  const handleFile = async (file?: File) => {
+    setPreview(null); setFileError('');
+    if (!file) return;
+    try {
+      if (file.size > 50 * 1024 * 1024) throw new Error('Fichier trop volumineux (50 Mo maximum).');
+      setPreview(readUnitBackup(JSON.parse(await file.text())));
+    } catch (error) { setFileError(error instanceof Error ? error.message : 'Fichier illisible.'); }
+  };
+
+  return <div className="min-w-0 space-y-4">
+    <h2 className="flex items-center gap-2 text-xl font-semibold"><FileJson className="h-5 w-5 shrink-0 text-primary" />Sauvegarde par unité</h2>
+    <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+      <Card className="min-w-0">
+        <CardHeader><CardTitle className="text-base">Télécharger une sauvegarde</CardTitle><CardDescription>Données accessibles de l’unité sélectionnée. Les photos et fichiers joints ne sont pas inclus.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2"><Label htmlFor="backup-unit">Unité à sauvegarder</Label>
+            <Select value={selectedUnit?.id ?? ''} onValueChange={setUnitChoice} disabled={isExporting}>
+              <SelectTrigger id="backup-unit" className="w-full min-w-0"><SelectValue placeholder="Choisir une unité" /></SelectTrigger>
+              <SelectContent>{units.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          {!units.length && <p className="text-sm text-muted-foreground">Aucune unité accessible.</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <Button size="sm" variant="outline" disabled={isExporting} onClick={() => setSelectedTables([...UNIT_BACKUP_TABLES])}>Tout sélectionner</Button>
+            <Button size="sm" variant="outline" disabled={isExporting} onClick={() => setSelectedTables([])}>Désélectionner</Button>
+          </div>
+          <div className="grid max-h-72 grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2">
+            {UNIT_BACKUP_TABLES.map(table => <div key={table} className="flex min-w-0 items-start gap-2">
+              <Checkbox id={`backup-${table}`} disabled={isExporting} checked={selectedTables.includes(table)} onCheckedChange={checked => setSelectedTables(prev => checked ? [...prev, table] : prev.filter(t => t !== table))} />
+              <Label htmlFor={`backup-${table}`} className="min-w-0 cursor-pointer break-words leading-4">{LABELS[table]}</Label>
+            </div>)}
+          </div>
+          <Button className="w-full" disabled={isExporting || !selectedUnit || !selectedTables.length || !user} onClick={handleExport}>
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {isExporting ? 'Préparation…' : 'Télécharger la sauvegarde'}
+          </Button>
+        </CardContent>
+      </Card>
+      <Card className="min-w-0">
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><FolderOpen className="h-4 w-4" />Consulter une sauvegarde</CardTitle><CardDescription>La consultation ne modifie aucune donnée de l’application. La restauration automatique n’est pas disponible.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          <Label htmlFor="backup-file">Fichier de sauvegarde de l’unité</Label>
+          <Input id="backup-file" type="file" accept=".json,application/json" onChange={e => void handleFile(e.target.files?.[0])} />
+          {fileError && <p role="alert" className="text-sm text-destructive">{fileError}</p>}
+          {preview && <div className="min-w-0 space-y-3">
+            <div className="text-sm"><p className="break-words font-semibold">{preview.unit.name}</p><p className="text-muted-foreground">{new Date(preview.exportDate).toLocaleString('fr-FR')}</p></div>
+            <div className="max-h-96 space-y-2 overflow-y-auto">
+              {Object.entries(preview.data).map(([table, rows]) => <details key={table} className="border-b pb-2">
+                <summary className="cursor-pointer text-sm">{LABELS[table as UnitBackupTable]} · {rows?.length ?? 0}</summary>
+                <pre className="mt-2 max-h-64 overflow-auto bg-muted p-2 text-xs">{JSON.stringify(rows, null, 2)}</pre>
+              </details>)}
+            </div>
+          </div>}
+        </CardContent>
+      </Card>
+    </div>
+  </div>;
+};
 export default BackupManagement;
