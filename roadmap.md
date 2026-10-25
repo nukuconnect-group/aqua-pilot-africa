@@ -1,5 +1,6 @@
 # Ajustements Ventes et abonnements
 ## Harmonisation mobile
+- [ ] Vérifier et corriger si nécessaire l’essai d’un mois gratuit en premier dans les choix d’abonnement.
 - [ ] Corriger les largeurs communes, onglets, fenêtres et tableaux sans masquer les informations.
 - [ ] Adapter tableaux de bord, graphiques neutres, recommandations, performances et Centre IoT.
 - [ ] Aligner actions cheptel, alimentation, prophylaxie, AquaHealth et cycles ; vérifier mortalité et actions existantes.
