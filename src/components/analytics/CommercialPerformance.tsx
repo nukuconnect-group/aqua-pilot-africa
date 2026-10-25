@@ -69,7 +69,7 @@ export default function CommercialPerformance({ initialTab = 'performance', titl
     generatedAt: now.toLocaleString('fr-FR'), sections: [
       {title:'Performances réalisées',type:'summary',summary:figures.map(([label,value])=>({label,value}))},
       {title:'Produits vendus',type:'table',headers:['Produit','Quantité','Ventes'],rows:metrics.products.map(p=>[p.name,p.quantity,formatMoney(p.total)])},
-      {title:'Prévisions estimées — moyenne des trois derniers mois complets',type:'table',headers:['Mois','Ventes estimées','Achats estimés'],rows:projection.forecast.map(p=>[p.month,formatMoney(p.revenue),formatMoney(p.expenses)])},
+      {title:'Prévisions commerciales estimées',type:'table',headers:['Mois','Ventes estimées','Achats estimés'],rows:projection.forecast.map(p=>[p.month,formatMoney(p.revenue),formatMoney(p.expenses)])},
       {title:'Périmètre',type:'summary',summary:[{label:'Solde ventes − achats',value:'Ce solde n’est pas un bénéfice net : les achats incluent du stock et ne couvrent pas toutes les charges.'},{label:'Prévisions',value:projection.forecast.length ? 'Estimations automatiques, non garanties, à partir des montants enregistrés. Les mois sans opérations enregistrées comptent pour zéro.' : 'Historique insuffisant : au moins trois mois complets nécessaires.'}]},
     ],
   } : null;
