@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthReady } from '@/hooks/useAuthReady';
@@ -33,6 +34,7 @@ export const useHealthRecords = (cycleId?: string, unitId?: string) => {
   const { isReady, isAuthenticated } = useAuthReady();
   const { isDemoMode } = useAuth();
 
+  const backgroundRead = useRef(false);
   const fetchRecords = useCallback(async () => {
     // Attendre que l'auth soit prête
     if (!isReady) return;
@@ -62,7 +64,7 @@ export const useHealthRecords = (cycleId?: string, unitId?: string) => {
     }
 
     try {
-      setLoading(true);
+      if (!backgroundRead.current) setLoading(true);
       setError(null);
       
       let query = supabase
@@ -99,6 +101,11 @@ export const useHealthRecords = (cycleId?: string, unitId?: string) => {
       setLoading(false);
     }
   }, [isReady, isAuthenticated, cycleId, unitId, toast, isDemoMode]);
+
+  useManualRefresh(async () => {
+    backgroundRead.current = true;
+    try { await fetchRecords(); } finally { backgroundRead.current = false; }
+  });
 
   // Charger les données quand l'auth est prête
   useEffect(() => {

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
@@ -79,6 +80,7 @@ export const useSales = () => {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  const backgroundRead = useRef(false);
   const fetchSales = useCallback(async () => {
     if (isDemoMode) {
       const demoData = getDemoData();
@@ -103,7 +105,7 @@ export const useSales = () => {
     }
     if (!user?.id || !isAuthenticated) return;
 
-    setLoading(true);
+    if (!backgroundRead.current) setLoading(true);
     setFetchError(null);
     try {
       const { data, error } = await supabase
@@ -121,6 +123,11 @@ export const useSales = () => {
       setLoading(false);
     }
   }, [isDemoMode, user?.id, isAuthenticated]);
+
+  useManualRefresh(async () => {
+    backgroundRead.current = true;
+    try { await fetchSales(); } finally { backgroundRead.current = false; }
+  });
 
   useEffect(() => {
     fetchSales();

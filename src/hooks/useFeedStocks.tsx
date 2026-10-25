@@ -1,3 +1,4 @@
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
@@ -82,6 +83,10 @@ export const useFeedStocks = (unitId?: string) => {
       setLoading(false);
     }
   }, [isReady, isAuthenticated, unitId, toast]);
+
+  useManualRefresh(async () => {
+    try { await fetchStocks(); } finally { }
+  });
 
   // Charger les données quand l'auth est prête
   useEffect(() => {

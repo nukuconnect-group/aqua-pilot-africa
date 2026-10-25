@@ -1,3 +1,4 @@
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +56,8 @@ export const useAIAnalyses = (limit: number = 10, unitId?: string) => {
       setLoading(false);
     }
   };
+
+  useManualRefresh(fetchAnalyses);
 
   const deleteAnalysis = async (id: string) => {
     if (!user) return;
