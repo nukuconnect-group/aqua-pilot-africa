@@ -1,7 +1,7 @@
 ## Discussions AquaAssistant invisibles (25/10/2026)
-- [ ] Corriger la zone de conversation écrasée par les panneaux et conserver les messages pendant la sauvegarde
-- [ ] Vérifier écrit et vocal sur téléphone, tablette, ordinateur et fenêtre 694 × 604
-- [ ] Vérifier une réponse depuis le compte réel si une session historique est disponible
+- [x] Zone de discussion non nulle, questions dans le défilement, dernier message visible ; création d’historique avec échange complet sans réinitialisation
+- [x] Écrit visible et conservé sur 390, 694, 768 et 1280 px, écran et fenêtre flottante ; 5 tests navigateur et 7 tests vocaux réussis, compilation OK ; capture et courbe avec audio fourni et affichage du texte dicté contrôlés isolément
+- [ ] Réponse et transcription depuis le compte réel : session historique indisponible, génération de session refusée faute d’utilisateur dans le service d’aperçu ; aucune donnée réelle modifiée
 
 ## Transcription vocale réelle (25/10/2026)
 - [x] Capture WAV réelle en mémoire, courbe mesurée, transcription protégée par la session historique ; aucune persistance audio
