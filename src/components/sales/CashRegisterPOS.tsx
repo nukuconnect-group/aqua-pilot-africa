@@ -20,6 +20,8 @@ import BarcodeScanner from './BarcodeScanner';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { resolveCashierNames } from '@/lib/cashierNames';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
 import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
@@ -139,6 +141,27 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   }, [user?.id, metaName]);
   const [clientOpen, setClientOpen] = useState(false);
   const [clientQuery, setClientQuery] = useState('');
+  // Annuaire des caissiers : membres d'équipe + profils, pour afficher les noms complets.
+  const { teamMembers } = useTeamMembers() as any;
+  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const cashierDirectory = useMemo(() => {
+    const entries = ((teamMembers || []) as any[])
+      .filter((m) => m.user_id)
+      .map((m) => ({ id: m.user_id as string, name: (m.member_name || m.name || m.member_email || m.email || '') as string }));
+    if (user?.id && cashierName) entries.push({ id: user.id, name: cashierName });
+    for (const [id, name] of Object.entries(profileNames)) entries.push({ id, name });
+    return entries;
+  }, [teamMembers, user?.id, cashierName, profileNames]);
+  useEffect(() => {
+    const ids = [...new Set(cash.sessions.flatMap((s) => ((s as any).cashier_ids || []) as string[]))];
+    const missing = ids.filter((id) => !cashierDirectory.some((e) => e.id === id));
+    if (!missing.length) return;
+    (appSupabase as any).from('profiles').select('id, full_name').in('id', missing)
+      .then(({ data }: any) => {
+        if (data?.length) setProfileNames((prev) => ({ ...prev, ...Object.fromEntries(data.map((p: any) => [p.id, p.full_name])) }));
+      });
+  }, [cash.sessions, cashierDirectory]);
+  const cashierNamesOf = (ids: string[]) => resolveCashierNames(ids, cashierDirectory);
   const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
   const [backfilling, setBackfilling] = useState(false);
   const checkUnposted = async () => {
