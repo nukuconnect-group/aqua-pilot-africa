@@ -1,3 +1,8 @@
+## Actualisation, installation et emails (25/10/2026)
+- [ ] Vérifier lectures réelles déclenchées par bouton et tirage, erreurs et conservation d’écran ; corriger puis tester les formats principaux
+- [ ] Vérifier parcours PWA Android/iPhone disponibles et corriger les problèmes constatés ; distinguer émulation et installation physique
+- [ ] Configurer les emails de notifications depuis app.aquapilote.com : domaine d’envoi absent, configuration par le propriétaire requise avant modèles/envoi
+
 ## Installation AquaPilote (25/10/2026)
 - [x] Statut centralisé ; événements navigateur partagés, aucun statut installé déduit du stockage local ou de l’acceptation seule
 - [x] Une seule invitation globale, photo générée, logo actuel, fermeture respectée sept jours ; section visible dans Paramètres
