@@ -32,7 +32,8 @@ export default function CommercialPerformance({ initialTab = 'performance', titl
   const [exportError, setExportError] = useState('');
   const [exporting, setExporting] = useState(false);
   const unitId = activeUnit?.id;
-  const now = useMemo(() => new Date(), [unitId, days]);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { setNow(new Date()); }, [unitId, days]);
   const start = format(subDays(startOfDay(now), Number(days) - 1), 'yyyy-MM-dd');
   const end = format(now, 'yyyy-MM-dd');
   const currency = getCurrency();
@@ -52,7 +53,7 @@ export default function CommercialPerformance({ initialTab = 'performance', titl
     },
   });
   useEffect(() => {
-    const refresh = () => { if (user?.id && unitId) void refetch(); };
+    const refresh = () => { if (user?.id && unitId) { setNow(new Date()); void refetch(); } };
     window.addEventListener('aqua:data-refresh', refresh);
     return () => window.removeEventListener('aqua:data-refresh', refresh);
   }, [refetch, user?.id, unitId]);
@@ -102,7 +103,7 @@ export default function CommercialPerformance({ initialTab = 'performance', titl
   return <div className="min-w-0 space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0"><h1 className="text-2xl font-bold sm:text-3xl">{title}</h1><p className="break-words text-sm text-muted-foreground">{activeUnit?.name} · {start} au {end}</p></div>
       <div className="flex items-center gap-2"><Select value={days} onValueChange={setDays}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="7">7 derniers jours</SelectItem><SelectItem value="30">30 derniers jours</SelectItem><SelectItem value="90">90 derniers jours</SelectItem><SelectItem value="365">12 derniers mois</SelectItem></SelectContent></Select>
-      <Button variant="outline" size="icon" title="Actualiser" aria-label="Actualiser les chiffres" disabled={isFetching} onClick={()=>void refetch()}><RefreshCw className="size-4" /></Button></div></div>
+      <Button variant="outline" size="icon" title="Actualiser" aria-label="Actualiser les chiffres" disabled={isFetching} onClick={()=>{ setNow(new Date()); void refetch(); }}><RefreshCw className="size-4" /></Button></div></div>
     {error && <p role="alert" className="text-sm text-destructive">Les données commerciales sont indisponibles. Réessayez.</p>}
     {isPending && !error && user ? <p className="text-muted-foreground">Chargement des données commerciales…</p> : !metrics ? null : <>
       {commonLayout && <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{primaryFigures.map(({label, value, icon: Icon}) => <Card key={label}><CardContent className="flex min-w-0 items-start justify-between gap-3 p-4 sm:p-6"><div className="min-w-0"><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="mt-1 break-words text-2xl font-bold tabular-nums">{value}</p></div><div className="shrink-0 rounded-full bg-primary/10 p-3"><Icon className="size-6 text-primary" /></div></CardContent></Card>)}</div>}
