@@ -19,7 +19,6 @@ import { Shimmer } from '@/components/ai-elements/shimmer';
 import AssistantKpis from '@/components/assistant/AssistantKpis';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 import AssistantOverview from '@/components/assistant/AssistantOverview';
-import assistantBackdrop from '@/assets/assistant-farm-backdrop.jpg';
 import assistantIcon from '@/assets/aqua-assistant-icon.png';
 
 interface Message {
@@ -421,7 +420,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       } : undefined}
     >
       <header className="assistant-masthead relative z-10 shrink-0 overflow-visible border-b px-3 pt-3 sm:px-4">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true"><img src={assistantBackdrop} alt="" width={1536} height={864} className="assistant-header-image h-full w-full object-cover"/><div className="assistant-header-veil absolute inset-0"/></div>
+        <div className="assistant-header-veil pointer-events-none absolute inset-0" aria-hidden="true"></div>
         <div className="relative flex flex-wrap items-center justify-between gap-2 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-background/90">
@@ -486,7 +485,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         </div>}
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="assistant-scene pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true"><img src={assistantBackdrop} alt="" width={1536} height={864} className="assistant-scene-image h-full w-full object-cover"/><div className="assistant-scene-veil absolute inset-0"/></div>
+            <div className="assistant-scene-veil pointer-events-none absolute inset-0" aria-hidden="true"></div>
             <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
               <Button type="button" variant="ghost" size="sm" onClick={()=>setShowQuestions(v=>!v)}><Sparkles className="size-4 text-ocean-secondary"/>Questions rapides</Button>
               <Button type="button" variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
