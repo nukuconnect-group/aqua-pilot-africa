@@ -1,25 +1,23 @@
 import { SUPABASE_URL } from '@/integrations/supabase/env';
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Download, Smartphone, X, Monitor } from 'lucide-react';
-import aquaPilotLogo from '@/assets/aqua-pilot-logo-small.webp';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Download, X } from 'lucide-react';
+import logo from '@/assets/aquapilote-logo.png';
+import engineer from '@/assets/install-aquaculture-engineer.jpg';
 import { supabase } from '@/integrations/supabase/appClient';
 import { detectDevice } from '@/lib/deviceDetection';
-import { usePWAInstallState, supportsInstallPrompt } from '@/hooks/usePWAInstallState';
+import { usePWAInstallState } from '@/hooks/usePWAInstallState';
+import { canInvite, dismissedAt, rememberDismissal } from '@/lib/pwaInstallation';
+import { InstallationInstructions } from './PWAInstallCard';
 
-const PWAInstallPrompt: React.FC = () => {
-  const { isInstalled, canPromptInstall, isReady, promptInstall } = usePWAInstallState();
-  const [dismissed, setDismissed] = useState<boolean>(() => {
-    try { return sessionStorage.getItem('pwa-install-dismissed') === 'true'; } catch { return false; }
-  });
+const PWAInstallPrompt = () => {
+  const { status, isStandalone, isReady, canPromptInstall, promptInstall, busy } = usePWAInstallState();
+  const [dismissed, setDismissed] = useState(() => dismissedAt());
   const [delayElapsed, setDelayElapsed] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDelayElapsed(true), 5000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
+  const [instructions, setInstructions] = useState(false);
+  useEffect(() => { const timer = window.setTimeout(() => setDelayElapsed(true), 30000); return () => window.clearTimeout(timer); }, []);
+  const dismiss = () => { rememberDismissal(); setDismissed(Date.now()); };
   const trackInstall = async () => {
     try {
       const device = detectDevice(navigator.userAgent);
@@ -46,87 +44,31 @@ const PWAInstallPrompt: React.FC = () => {
     }
   };
 
-  const handleInstallClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const install = async () => {
+    if (!canPromptInstall) { setInstructions(true); return; }
     const outcome = await promptInstall();
-    if (outcome === 'accepted') {
-      setDismissed(true);
-      trackInstall();
-    }
+    if (outcome === 'accepted') { void trackInstall(); dismiss(); }
+    else if (outcome === 'dismissed') dismiss();
+    else setInstructions(true);
   };
-
-  const handleDismiss = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDismissed(true);
-    try { sessionStorage.setItem('pwa-install-dismissed', 'true'); } catch {}
-  };
-
-  // Ne jamais proposer l'installation si l'app est déjà installée / lancée en mode app
-  if (isInstalled || dismissed || !isReady || !delayElapsed) return null;
-
-  // Sur navigateurs Chromium, on n'affiche la bannière que si une installation
-  // native est réellement possible (sinon = déjà installée ou non éligible).
-  const manualOnly = !supportsInstallPrompt();
-  if (!canPromptInstall && !manualOnly) return null;
-
-  const isMobile = /mobile|android|iphone|ipad|phone/.test(navigator.userAgent.toLowerCase());
-  const DeviceIcon = isMobile ? Smartphone : Monitor;
-
-  return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 flex justify-center md:left-auto md:right-4 md:max-w-sm">
-      <Card className="w-full max-w-sm shadow-2xl border-aqua-200 bg-card/95 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <img src={aquaPilotLogo} alt="AQUAPILOTE" className="w-10 h-10 rounded-lg flex-shrink-0" />
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold truncate">Installer AQUAPILOTE</h3>
-                <button
-                  type="button"
-                  onClick={handleDismiss}
-                  className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md"
-                  aria-label="Fermer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                {isMobile
-                  ? "Installez l'app sur votre téléphone pour un accès rapide et hors-ligne"
-                  : "Installez l'app sur votre ordinateur pour un accès rapide depuis le bureau"}
-                {manualOnly && " (via le menu de votre navigateur)"}
-              </p>
-
-              <div className="flex gap-2">
-                {canPromptInstall ? (
-                  <Button onClick={handleInstallClick} size="sm" className="flex-1 bg-gradient-aqua text-primary-foreground text-xs h-8">
-                    <Download className="w-3 h-3 mr-1" />
-                    Installer
-                  </Button>
-                ) : (
-                  <Button onClick={handleDismiss} size="sm" className="flex-1 bg-gradient-aqua text-primary-foreground text-xs h-8">
-                    J'ai compris
-                  </Button>
-                )}
-                <Button onClick={handleDismiss} variant="ghost" size="sm" className="text-xs h-8 px-3">
-                  Plus tard
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                <DeviceIcon className="w-3 h-3" />
-                <span>{isMobile ? "Ajout à l'écran d'accueil" : 'Application de bureau'}</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const open = isReady && delayElapsed && canInvite(status, isStandalone, dismissed, Date.now());
+  return <Dialog open={open} onOpenChange={value => { if (!value) dismiss(); }}>
+    <DialogContent hideClose className="top-auto bottom-[max(1rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-md translate-y-0 gap-0 overflow-hidden rounded-lg p-0 max-h-[calc(100dvh-2rem)] overflow-y-auto sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
+      <div className="relative">
+        <img src={engineer} alt="Ingénieure aquacole auprès de bassins piscicoles" width={1200} height={800} loading="lazy" className="h-32 w-full object-cover object-[center_40%] sm:h-48" />
+        <Button variant="secondary" size="icon" onClick={dismiss} aria-label="Fermer l’invitation" className="absolute right-2 top-2 h-11 w-11 shadow-sm"><X className="h-5 w-5" /></Button>
+      </div>
+      <div className="space-y-3 p-4 sm:p-6">
+        <img src={logo} alt="AquaPilote" width={56} height={56} className="h-12 w-12 object-contain" />
+        <DialogTitle className="text-lg leading-snug tracking-normal sm:text-xl">Emportez AquaPilote partout avec vous</DialogTitle>
+        <DialogDescription className="text-sm leading-relaxed">Accédez rapidement à votre exploitation aquacole, suivez vos indicateurs et consultez vos recommandations intelligentes directement depuis votre appareil.</DialogDescription>
+        {instructions && <InstallationInstructions />}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button onClick={install} disabled={busy} className="min-h-11 flex-1 gap-2"><Download className="h-4 w-4" />Installer AquaPilote</Button>
+          <Button variant="outline" onClick={dismiss} className="min-h-11">Plus tard</Button>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>;
 };
-
 export default PWAInstallPrompt;

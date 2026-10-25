@@ -1,139 +1,73 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
+import { installationStatus, type InstallationStatus } from '@/lib/pwaInstallation';
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
-
-const INSTALLED_KEY = 'aqua-pwa-installed';
-
 export const isStandaloneDisplay = (): boolean => {
   if (typeof window === 'undefined') return false;
-  const standaloneMedia =
-    window.matchMedia?.('(display-mode: standalone)').matches ||
-    window.matchMedia?.('(display-mode: fullscreen)').matches ||
-    window.matchMedia?.('(display-mode: minimal-ui)').matches;
-  const iosStandalone = (window.navigator as any).standalone === true;
-  return Boolean(standaloneMedia || iosStandalone);
+  return Boolean(window.matchMedia?.('(display-mode: standalone)').matches || window.matchMedia?.('(display-mode: minimal-ui)').matches || window.matchMedia?.('(display-mode: window-controls-overlay)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true);
 };
-
-/** Chromium-based browsers fire `beforeinstallprompt` when the app is installable. */
-export const supportsInstallPrompt = (): boolean =>
-  typeof window !== 'undefined' && 'onbeforeinstallprompt' in window;
-
-interface PWAInstallState {
-  /** L'app est installée (ou lancée en mode application) */
-  isInstalled: boolean;
-  /** Une installation native est proposable maintenant */
-  canPromptInstall: boolean;
-  /** Détection terminée : évite d'afficher une bannière trop tôt */
-  isReady: boolean;
-  promptInstall: () => Promise<'accepted' | 'dismissed' | 'unavailable'>;
+export const supportsInstallPrompt = () => typeof window !== 'undefined' && 'onbeforeinstallprompt' in window;
+interface Snapshot { status: InstallationStatus; isInstalled: boolean; isStandalone: boolean; canPromptInstall: boolean; isReady: boolean; busy: boolean }
+let confirmed = false;
+let deferred: BeforeInstallPromptEvent | null = null;
+let initialized = false;
+let checking = 0;
+let snapshot: Snapshot = { status: 'unknown', isInstalled: false, isStandalone: false, canPromptInstall: false, isReady: false, busy: false };
+const listeners = new Set<() => void>();
+function publish() {
+  const standalone = isStandaloneDisplay();
+  snapshot = { ...snapshot, status: installationStatus(confirmed, Boolean(deferred)), isInstalled: confirmed, isStandalone: standalone, canPromptInstall: Boolean(deferred) && !confirmed && !standalone, isReady: true };
+  listeners.forEach(listener => listener());
 }
-
-export const usePWAInstallState = (): PWAInstallState => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState<boolean>(() => isStandaloneDisplay());
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const markInstalled = (installed: boolean) => {
-      if (cancelled) return;
-      setIsInstalled(installed);
-      try {
-        if (installed) localStorage.setItem(INSTALLED_KEY, 'true');
-        else localStorage.removeItem(INSTALLED_KEY);
-      } catch {}
-    };
-
-    const detect = async () => {
-      if (isStandaloneDisplay()) {
-        markInstalled(true);
-        setIsReady(true);
-        return;
-      }
-
-      // Android / Chromium : source de vérité fiable même dans un onglet navigateur
-      const getInstalled = (navigator as any).getInstalledRelatedApps;
-      if (typeof getInstalled === 'function') {
-        try {
-          const related = await getInstalled.call(navigator);
-          if (Array.isArray(related) && related.length > 0) {
-            markInstalled(true);
-            setIsReady(true);
-            return;
-          }
-          // API disponible et aucune app liée => réellement désinstallée
-          markInstalled(false);
-          setIsReady(true);
-          return;
-        } catch {}
-      }
-
-      // Sinon on retombe sur la mémoire locale (par navigateur/profil)
-      let remembered = false;
-      try {
-        remembered = localStorage.getItem(INSTALLED_KEY) === 'true';
-      } catch {}
-      if (!cancelled) {
-        setIsInstalled(remembered);
-        setIsReady(true);
-      }
-    };
-
-    detect();
-
-    // Si l'évènement se déclenche, l'app N'EST PAS installée (ou a été désinstallée)
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      markInstalled(false);
-      setIsReady(true);
-    };
-
-    const handleAppInstalled = () => {
-      setDeferredPrompt(null);
-      markInstalled(true);
-    };
-
-    const displayModeQuery = window.matchMedia?.('(display-mode: standalone)');
-    const handleDisplayChange = () => markInstalled(isStandaloneDisplay());
-    displayModeQuery?.addEventListener?.('change', handleDisplayChange);
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      cancelled = true;
-      displayModeQuery?.removeEventListener?.('change', handleDisplayChange);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const promptInstall = useCallback(async () => {
-    if (!deferredPrompt) return 'unavailable' as const;
-    try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      setDeferredPrompt(null);
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
-        try { localStorage.setItem(INSTALLED_KEY, 'true'); } catch {}
-      }
-      return outcome;
-    } catch {
-      setDeferredPrompt(null);
-      return 'unavailable' as const;
+async function detect() {
+  const generation = ++checking;
+  publish();
+  const nav = navigator as Navigator & { getInstalledRelatedApps?: () => Promise<Array<{ platform?: string; url?: string; id?: string }>> };
+  if (!nav.getInstalledRelatedApps) return;
+  try {
+    const apps = await nav.getInstalledRelatedApps();
+    if (generation !== checking) return;
+    // An empty list proves nothing: the API only reports configured related apps.
+    const manifest = new URL('/manifest.json', window.location.origin).href;
+    if (apps.some(app => app.platform === 'webapp' && app.url && new URL(app.url, window.location.origin).href === manifest)) {
+      confirmed = true; deferred = null; publish();
     }
-  }, [deferredPrompt]);
-
-  return {
-    isInstalled,
-    canPromptInstall: Boolean(deferredPrompt) && !isInstalled,
-    isReady,
-    promptInstall,
-  };
+  } catch { /* Browser cannot verify; retain unknown, not a local guess. */ }
+}
+function initialize() {
+  if (initialized || typeof window === 'undefined') return;
+  initialized = true;
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    if (confirmed) return;
+    deferred = event as BeforeInstallPromptEvent;
+    publish();
+  });
+  window.addEventListener('appinstalled', () => { ++checking; confirmed = true; deferred = null; publish(); });
+  for (const mode of ['standalone', 'minimal-ui', 'window-controls-overlay']) {
+    window.matchMedia?.(`(display-mode: ${mode})`).addEventListener?.('change', () => { void detect(); });
+  }
+  window.addEventListener('pageshow', () => { void detect(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void detect(); });
+  void detect();
+}
+async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
+  const event = deferred;
+  if (!event || snapshot.busy || confirmed || isStandaloneDisplay()) return 'unavailable';
+  snapshot = { ...snapshot, busy: true }; listeners.forEach(listener => listener());
+  try {
+    await event.prompt();
+    const { outcome } = await event.userChoice;
+    // Acceptance is not proof that installation completed; wait for appinstalled.
+    return outcome;
+  } catch { return 'unavailable'; }
+  finally { if (deferred === event) deferred = null; snapshot = { ...snapshot, busy: false }; publish(); }
+}
+export const usePWAInstallState = () => {
+  useEffect(initialize, []);
+  const state = useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => snapshot, () => snapshot);
+  return { ...state, promptInstall };
 };
