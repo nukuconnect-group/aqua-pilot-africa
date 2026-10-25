@@ -1,3 +1,9 @@
+## Installation AquaPilote (25/10/2026)
+- [ ] Centraliser le statut vérifiable et les événements, sans déduire l’installation du stockage local
+- [ ] Refaire l’invitation avec photo, logo actuel et fréquence discrète ; option dans Paramètres
+- [ ] Vérifier icônes et manifeste ; adapter l’icône flottante et tester mobile/tablette/ordinateur
+- [ ] Vérifier scénarios navigateur disponibles et indiquer les limites des installations réelles
+
 ## Photos du tableau de bord et actualisation mobile (25/10/2026)
 - [x] Remplacer le fond mobile par les deux images fournies hébergées, alternées toutes les 30 minutes
 - [x] Ajouter bouton et tirage vers le bas ; relire les sources montées du tableau de bord et les requêtes actives sans rechargement ni remontage
