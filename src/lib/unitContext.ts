@@ -6,6 +6,7 @@
  * Aucun module dupliqué n'est créé pour l'algoculture.
  */
 import type { ProductionUnitType } from '@/contexts/ProductionUnitsContext';
+import { COMMERCIAL_INFRASTRUCTURE_TYPES } from './commercialInfrastructure';
 
 export interface UnitContextTerms {
   /** Libellé du module « Cheptel / lots ». */
@@ -397,6 +398,14 @@ export const ALGAE_TERMS: UnitContextTerms = {
 
 const TERMS_BY_TYPE: Partial<Record<ProductionUnitType, UnitContextTerms>> = {
   algoculture: ALGAE_TERMS,
+  commercialisation: {
+    ...DEFAULT_TERMS,
+    infrastructureLabel: 'Infrastructure / matériel',
+    infrastructureTypeOptions: COMMERCIAL_INFRASTRUCTURE_TYPES,
+    attachedBatchLabel: 'Lot de stock rattaché',
+    attachedBatchEmptyText: 'Aucun lot de marchandises rattaché',
+    features: { feedingSheets: false, feedingPlanning: false, sampling: false },
+  },
 };
 
 export const isAlgaeUnitType = (type?: ProductionUnitType | null) => type === 'algoculture';

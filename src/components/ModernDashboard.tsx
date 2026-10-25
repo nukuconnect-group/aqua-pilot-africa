@@ -31,6 +31,7 @@ import FarmsMap from './dashboard/FarmsMap';
 import { analyzeParameter } from '@/lib/waterQualityThresholds';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 import { stocksForUnitType } from '@/lib/stockPurpose';
+import dashboardAquaculture from '@/assets/dashboard-aquaculture.jpg';
 
 interface ModernDashboardProps {
   onNavigate?: (tab: string) => void;
@@ -46,22 +47,22 @@ const KpiCard: React.FC<{
   trend?: { value: number; positive: boolean };
 }> = ({ label, value, hint, icon: Icon, tone = 'primary', trend }) => {
   const tones: Record<string, string> = {
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-assistant-positive/10 text-assistant-positive',
-    warning: 'bg-dashboard-warning/10 text-dashboard-warning',
-    danger: 'bg-destructive/10 text-destructive',
-    info: 'bg-ocean-secondary/10 text-ocean-secondary',
+    primary: 'bg-primary text-primary-foreground',
+    success: 'bg-assistant-positive text-primary-foreground',
+    warning: 'bg-dashboard-warning text-primary-foreground',
+    danger: 'bg-destructive text-destructive-foreground',
+    info: 'bg-ocean-secondary text-primary-foreground',
   };
   return (
     <Card className="dashboard-kpi relative min-w-0 overflow-hidden border-border bg-card">
-      <CardContent className="flex h-full min-h-[138px] flex-col justify-between p-3 sm:p-5">
+      <CardContent className="flex h-full min-h-[104px] flex-col justify-between p-2.5 sm:min-h-[138px] sm:p-5">
         <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 break-words text-xs font-semibold uppercase text-muted-foreground">{label}</p>
-          <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}><Icon className="size-5" /></div>
+          <p className="min-w-0 break-words text-[11px] leading-tight font-semibold text-muted-foreground sm:text-xs sm:uppercase">{label}</p>
+          <div className={`flex size-7 sm:size-9 shrink-0 items-center justify-center rounded-md ${tones[tone]}`}><Icon className="size-4 sm:size-5" /></div>
         </div>
-        <div className="min-w-0 pt-3">
-          <p className="break-words text-[22px] font-bold leading-tight tabular-nums [overflow-wrap:anywhere] sm:text-2xl">{value}</p>
-          {hint && <p className="mt-2 break-words text-xs text-muted-foreground">{hint}</p>}
+        <div className="min-w-0 pt-1.5 sm:pt-3">
+          <p className="break-words text-xl font-bold leading-tight tabular-nums [overflow-wrap:anywhere] sm:text-2xl">{value}</p>
+          {hint && <p className="mt-1 sm:mt-2 break-words text-[11px] leading-tight sm:text-xs text-muted-foreground">{hint}</p>}
         </div>
       </CardContent>
     </Card>
@@ -307,7 +308,9 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
 
   return (
     <div className="dashboard-content min-w-0 space-y-4 sm:space-y-6">
-      <section aria-label="Tableau de bord AquaPilote" className="min-w-0 rounded-lg bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
+      <section aria-label="Tableau de bord AquaPilote" className="relative isolate overflow-hidden min-w-0 rounded-lg bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
+        <img src={dashboardAquaculture} alt="" aria-hidden="true" width={1536} height={1024} className="absolute inset-0 -z-20 h-full w-full object-cover object-[65%_45%] blur-[1.5px] sm:hidden" />
+        <div className="absolute inset-0 -z-10 bg-sidebar/65 sm:hidden" />
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <Badge variant="outline" className="mb-3 border-sidebar-border bg-sidebar-accent text-sidebar-foreground">{getAssistantUnitProfile(activeUnit?.type).label}</Badge>

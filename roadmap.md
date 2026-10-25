@@ -1,3 +1,16 @@
+## Indicateurs et en-tête mobiles (25/10/2026)
+- [x] Réduire la hauteur des quatre indicateurs à 104 px sur mobile et colorer distinctement leurs icônes
+- [x] Garder AquaPilote sur une ligne ; contenir notification, recherche et langue sans débordement
+- [x] Vérifier l’affichage à 320, 393, 768 et 1280 px et l’ouverture de Recherche, sans erreur
+- [x] Ajouter une image légèrement floutée d’aquaculteur au travail derrière le titre et les filtres mobiles
+
+## Infrastructures commerciales et chaîne du froid (25/10/2026)
+- [x] Vérifier l’option d’amortissement et son lien comptable par unité : création et maintien des modifications comptables confirmés en transaction annulée
+- [x] Adapter types, équipements et matériel ; rattacher les lots de Stock de la même unité ; erreurs de sauvegarde conservant la saisie
+- [x] Adapter le centre IoT aux températures enregistrées, courbes et analyses des chambres froides ; relevé manuel daté, pas de simulation ni durée de dépassement inventée
+- [x] 10 tests réussis ; formulaire commercial à 393, 768 et 1280 px sans débordement ; compilation OK
+- [ ] Vérifier création, rattachement de Stock et relevé depuis le compte réel : session historique indisponible. Aucun capteur connecté ni chambre froide commerciale enregistrée à ce jour ; connexion automatique des capteurs non réalisée faute de source réelle.
+
 ## Tableau de bord et menu mobile (25/10/2026)
 - [x] Bandeau plus haut, titre lisible, quatre indicateurs en deux colonnes, sources existantes filtrées par unité et contenus commerciaux adaptés
 - [x] Accès rapides sous les dépenses ; menu élargi et aligné à gauche au-dessus des autres éléments ; AquaAssistant après Paramètres, agrandi avec zoom léger désactivé en mouvement réduit

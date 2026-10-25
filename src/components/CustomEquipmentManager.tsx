@@ -9,11 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Settings } from 'lucide-react';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { COMMERCIAL_INFRASTRUCTURE_TYPES } from '@/lib/commercialInfrastructure';
 
 const CustomEquipmentManager = () => {
   const { activeUnit, getUnitEquipment, addEquipment, updateEquipment } = useProductionUnits();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -27,6 +30,8 @@ const CustomEquipmentManager = () => {
     if (!activeUnit) return [];
 
     switch (activeUnit.type) {
+      case 'commercialisation':
+        return [...COMMERCIAL_INFRASTRUCTURE_TYPES, { value: 'autre', label: 'Autre équipement / matériel' }];
       case 'transformation':
         return [
           { value: 'four_electrique', label: 'Four Électrique' },
@@ -107,8 +112,10 @@ const CustomEquipmentManager = () => {
     }
   };
 
-  const handleSubmit = () => {
-    if (!activeUnit || !formData.name || !formData.type) return;
+  const handleSubmit = async () => {
+    if (saving) return;
+    if (!activeUnit || !formData.name.trim() || !formData.type) { setSaveError('Indiquez le nom et le type du matériel.'); return; }
+    setSaving(true); setSaveError('');
 
     const equipmentData = {
       name: formData.name,
@@ -118,11 +125,12 @@ const CustomEquipmentManager = () => {
       specifications: formData.specifications
     };
 
+    try {
     if (editingEquipment) {
-      updateEquipment(editingEquipment, equipmentData);
+      await updateEquipment(editingEquipment, equipmentData);
       setEditingEquipment(null);
     } else {
-      addEquipment(equipmentData);
+      await addEquipment(equipmentData);
     }
 
     setFormData({
@@ -132,6 +140,8 @@ const CustomEquipmentManager = () => {
       specifications: {}
     });
     setShowAddDialog(false);
+    } catch { setSaveError('Le matériel n’a pas pu être enregistré. Vos saisies sont conservées.'); }
+    finally { setSaving(false); }
   };
 
   const handleEdit = (equipment: any) => {
@@ -160,7 +170,7 @@ const CustomEquipmentManager = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h3 className="text-lg font-semibold">Équipements Personnalisés</h3>
+          <h3 className="text-lg font-semibold">Équipements et matériel</h3>
           <p className="text-sm text-gray-600">
             {activeUnit.name} - Gérez vos équipements spécifiques
           </p>
@@ -173,7 +183,7 @@ const CustomEquipmentManager = () => {
               Ajouter Équipement
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="w-[calc(100%-2rem)] max-w-md max-h-[90dvh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingEquipment ? 'Modifier' : 'Ajouter'} un Équipement
@@ -254,8 +264,9 @@ const CustomEquipmentManager = () => {
                 </div>
               )}
               
-              <Button onClick={handleSubmit} className="w-full">
-                {editingEquipment ? 'Modifier' : 'Ajouter'} l'Équipement
+              {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
+              <Button onClick={handleSubmit} disabled={saving} className="w-full">
+                {saving ? 'Enregistrement…' : `${editingEquipment ? 'Modifier' : 'Ajouter'} le matériel`}
               </Button>
             </div>
           </DialogContent>
