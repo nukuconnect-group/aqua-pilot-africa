@@ -180,7 +180,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     const request = ++noticeRequest.current;
     try {
       const list = await findUnpostedSales(activeUnit.id);
-      const { data: accs, error } = await (appSupabase as any).from('treasury_accounts').select('kind, unit_id, archived_at').eq('unit_id', activeUnit.id);
+      const { data: accs, error } = await (appSupabase as any).from('treasury_accounts').select('*').eq('unit_id', activeUnit.id);
       if (error) throw error;
       if (request !== noticeRequest.current) return;
       setUnposted(treasuryNotice(accs || [], list, activeUnit.id));
