@@ -64,7 +64,7 @@ import {
   requestDataRefresh,
 } from '@/lib/appRecovery';
 import { useAppRefresh } from '@/hooks/useAppRefresh';
-import { shouldPullRefresh } from '@/lib/manualRefresh';
+import { shouldPullRefresh, isPullSurfaceAtTop } from '@/lib/manualRefresh';
 
 /**
  * Page principale du dashboard
@@ -375,7 +375,7 @@ const Dashboard: React.FC = () => {
             onTouchStart={event => {
               const touch = event.touches[0];
               if (!touch || event.touches.length !== 1 || hasOpenTransientOverlay() || (event.target as HTMLElement).closest('input,textarea,select,[role="slider"],[role="log"]')) { pullStart.current = null; return; }
-              pullStart.current = { x: touch.clientX, y: touch.clientY, atTop: event.currentTarget.scrollTop <= 0 && window.scrollY <= 0 };
+              pullStart.current = { x: touch.clientX, y: touch.clientY, atTop: isPullSurfaceAtTop(event.target as HTMLElement, event.currentTarget) && window.scrollY <= 0 };
             }}
             onTouchEnd={event => {
               const touch = event.changedTouches[0]; const start = pullStart.current; pullStart.current = null;

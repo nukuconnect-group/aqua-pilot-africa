@@ -1,11 +1,12 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
-import { usePWAInstallState } from './usePWAInstallState';
+import { usePWAInstallState, initializePWAInstallation } from './usePWAInstallState';
 
 it('shares browser events, ignores stored guesses and waits for actual installation confirmation', async () => {
   localStorage.setItem('aqua-pwa-installed', 'true');
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn() }));
+  initializePWAInstallation();
   const host = document.createElement('div');
   const root = createRoot(host);
   let first: ReturnType<typeof usePWAInstallState> | undefined;

@@ -6,8 +6,11 @@ import { OfflineProvider } from './contexts/OfflineContext';
 import { installDiagnostics } from './lib/appRecovery';
 import { installDomMutationGuard } from './lib/domPatch';
 import { registerAppServiceWorker } from './lib/pwaRegister';
+import { initializePWAInstallation } from './hooks/usePWAInstallState';
 
 installDomMutationGuard();
+// Capture the one-shot native installation event before the React tree mounts.
+initializePWAInstallation();
 
 console.log('🚀 AQUA PILOT - Application complète restaurée');
 installDiagnostics();

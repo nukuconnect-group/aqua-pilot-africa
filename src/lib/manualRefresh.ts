@@ -36,3 +36,11 @@ export function refreshMountedData() {
 export function shouldPullRefresh(distance: number, horizontalDistance: number, atTop: boolean) {
   return atTop && distance >= 80 && Math.abs(horizontalDistance) < 40;
 }
+
+export function isPullSurfaceAtTop(target: HTMLElement, main: HTMLElement) {
+  for (let element: HTMLElement | null = target; element; element = element.parentElement) {
+    if (element.scrollTop > 0) return false;
+    if (element === main) return true;
+  }
+  return false;
+}
