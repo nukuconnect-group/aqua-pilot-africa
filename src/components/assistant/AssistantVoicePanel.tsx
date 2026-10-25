@@ -16,7 +16,7 @@ export default function AssistantVoicePanel({ voice, onSend, onCancel }: {
           {voice.bars.map((height, i) => <line key={i} x1={i * 4 + 2} x2={i * 4 + 2} y1={18 - height / 2} y2={18 + height / 2} stroke="currentColor" strokeWidth="2" strokeLinecap="round" />)}
         </svg>
       </div>
-      <Button type="button" size="icon" disabled={busy || (voice.phase === 'ready' && !voice.text)} onClick={onSend} title="Terminer et envoyer la dictée" aria-label="Terminer et envoyer la dictée">{busy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" /> : <Send className="size-4" />}</Button>
+      <Button type="button" size="icon" disabled={busy || voice.phase !== 'listening'} onClick={onSend} title="Terminer et envoyer la dictée" aria-label="Terminer et envoyer la dictée">{busy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" /> : <Send className="size-4" />}</Button>
     </div>
     <p role="status" className="text-xs text-muted-foreground">{voice.phase === 'starting' ? 'Accès au microphone…' : voice.phase === 'finishing' ? 'Transcription de votre parole…' : voice.phase === 'ready' ? 'Dictée interrompue — aucun message envoyé' : 'Écoute en cours…'}</p>
     {voice.text && <p className="max-h-24 overflow-y-auto break-words text-sm [overflow-wrap:anywhere]">{voice.text}</p>}
