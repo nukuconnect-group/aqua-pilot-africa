@@ -1,8 +1,9 @@
 ## AquaAssistant : synthèse mobile et vocal (25/10/2026)
-- [ ] Compacter les indicateurs en deux colonnes sur téléphone et aligner mesures, alertes et commandes
-- [ ] Adapter aussi la synthèse et le chatbot aux ordinateurs et tablettes
-- [ ] Ajouter une courbe du microphone, une durée, annulation et envoi explicite du texte dicté dans la conversation existante
-- [ ] Tester les commandes vocales et vérifier les dispositions mobile et ordinateur ; compte réel si session disponible
+- [x] Compacter les indicateurs en deux colonnes sur téléphone et aligner mesures, alertes et commandes
+- [x] Adapter aussi la synthèse et le chatbot aux ordinateurs et tablettes : deux colonnes en espace réduit, quatre en espace large
+- [x] Ajouter une courbe réelle du microphone, une durée, annulation et envoi explicite du texte dicté dans la conversation existante ; pas de stockage audio
+- [x] 26 tests ciblés réussis ; contrôles isolés à 390, 768 et 1280 px sans débordement ni erreur ; annulation préserve la saisie, envoi rejoint le traitement existant et restaure le texte après refus anonyme ; compilation réussie
+- [ ] Vérifier données personnelles, parole réelle et réponse IA depuis le compte connecté : session historique indisponible ; dictée testée avec reconnaissance simulée, pas de données réelles modifiées
 
 ## Fond AquaAssistant encore plus sobre (25/10/2026)
 - [x] Retirer les deux voiles dégradés et l’ombre de la conversation ; entête en aplat marine très léger, réponses en carte à bordure fine
