@@ -1,5 +1,6 @@
 ## AquaAssistant : synthèse mobile et vocal (25/10/2026)
 - [ ] Compacter les indicateurs en deux colonnes sur téléphone et aligner mesures, alertes et commandes
+- [ ] Adapter aussi la synthèse et le chatbot aux ordinateurs et tablettes
 - [ ] Ajouter une courbe du microphone, une durée, annulation et envoi explicite du texte dicté dans la conversation existante
 - [ ] Tester les commandes vocales et vérifier les dispositions mobile et ordinateur ; compte réel si session disponible
 
