@@ -1,3 +1,9 @@
+## Navigation Ventes et panier mobile (25/10/2026)
+- [x] Masquer les raccourcis après sélection et ajouter un retour sans perdre le panier
+- [x] Disposition mobile en deux zones défilantes : recherche et panier après ajout, recherche et encaissement épinglés ; disposition ordinateur conservée
+- [x] 15 tests ciblés réussis, dont panier de 6500 conservé au retour ; compilation OK
+- [ ] Vérifier visuellement la caisse à 393×604 sur le compte réel : session historique indisponible, dernier contrôle navigateur sur /auth ; aucune vente réelle effectuée
+
 ## Parcours Ventes mobile (25/10/2026)
 - [x] Ouvrir Ventes sur Gestion des caisses sur mobile, y compris pour les utilisateurs affectés ; droits serveur inchangés
 - [x] Afficher les cartes et la création sans bandeau de vente, ouvrir directement la caisse et intégrer Vente IA à Multi-caisses

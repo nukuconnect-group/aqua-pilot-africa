@@ -69,6 +69,7 @@ const fillCart = async () => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
   state.validateSession.mockResolvedValue({});
   state.postAtomic.mockResolvedValue(false);
   state.addMovement.mockResolvedValue({});
@@ -78,9 +79,17 @@ beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   await act(async () => root.render(<CashRegisterPOS />));
 });
-afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
+afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 describe('parcours encaissement — tests isolés sans écriture réelle', () => {
+  it('conserve le panier lors du retour aux caisses puis à la vente', async () => {
+    await fillCart();
+    await act(async () => root.render(<CashRegisterPOS view="registers" />));
+    await act(async () => root.render(<CashRegisterPOS view="checkout" />));
+    expect(button('Encaisser').textContent).toContain('6500 F CFA');
+    expect(document.querySelector<HTMLInputElement>('input[aria-label="Quantité 1"]')?.value).toBe('2.5');
+    expect(state.addSale).not.toHaveBeenCalled();
+  });
   it('ouvre la caisse sélectionnée depuis la gestion sans créer de vente', async () => {
     const navigate = vi.fn();
     await act(async () => root.render(<CashRegisterPOS view="registers" onNavigate={navigate} />));

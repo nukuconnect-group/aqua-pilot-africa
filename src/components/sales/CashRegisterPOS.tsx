@@ -84,6 +84,14 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [opening, setOpening] = useState('');
   const [counted, setCounted] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
+  const workspaceRef = useRef<HTMLFieldSetElement>(null);
+  const hadCartItems = useRef(false);
+  useEffect(() => {
+    if (cart.length > 0 && !hadCartItems.current && window.matchMedia('(max-width: 639px)').matches) {
+      workspaceRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    }
+    hadCartItems.current = cart.length > 0;
+  }, [cart.length]);
   const [tickets, setTickets] = useState<{ id: number; cart: CartLine[]; client: string }[]>([{ id: 1, cart: [], client: '' }]);
   const [activeTicket, setActiveTicket] = useState(1);
   const [opsOpen, setOpsOpen] = useState(false);
@@ -870,12 +878,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           {tickets.length > 1 && <Button size="sm" variant="ghost" disabled={busy || !!pendingPayment} onClick={removeTicket}><Trash2 className="w-4 h-4 mr-1" />Fermer ce ticket</Button>}
         </div>
       )}
-      <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
-      <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
+      <fieldset ref={workspaceRef} disabled={busy || !!pendingPayment} className="min-w-0 scroll-mt-3 space-y-3">
+      <div className={`grid gap-3 lg:grid-cols-[1fr_380px] ${cart.length > 0 ? 'max-sm:h-[76dvh] max-sm:min-h-[360px] max-sm:grid-rows-[minmax(120px,2fr)_minmax(220px,3fr)]' : ''}`}>
         {view !== 'ai' && view !== 'multi' ? (
-        <Card className="rounded-2xl">
+        <Card className={`min-w-0 rounded-2xl ${cart.length > 0 ? 'max-sm:min-h-0 max-sm:overflow-y-auto' : ''}`}>
           <CardContent className="p-3 space-y-3">
-            <div className="flex gap-2">
+            <div className="sticky top-0 z-10 flex gap-2 bg-card pb-2">
               <Input aria-label="Rechercher un produit" placeholder="Rechercher un produit ou un code" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0].name, filtered[0].price); }} />
               <Button variant="outline" onClick={() => setScanOpen(true)} aria-label="Scanner un code"><ScanLine className="w-4 h-4" /></Button>
             </div>
@@ -916,7 +924,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           </CardContent>
         </Card>
         ) : (
-        <div className="space-y-3">
+        <div className={`min-w-0 space-y-3 ${cart.length > 0 ? 'max-sm:min-h-0 max-sm:overflow-y-auto' : ''}`}>
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
           <p className="text-sm font-semibold">Rechercher un produit</p>
           <Input aria-label="Rechercher un produit" placeholder="Nom ou code du produit" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -946,7 +954,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
 
         </div>
         )}
-        <Card id="pos-cart" className="rounded-2xl lg:sticky lg:top-4 lg:self-start">
+        <Card id="pos-cart" className={`min-w-0 rounded-2xl lg:sticky lg:top-4 lg:self-start ${cart.length > 0 ? 'max-sm:min-h-0 max-sm:overflow-y-auto' : ''}`}>
           <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Panier</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {cart.length === 0 && <p className="text-sm text-muted-foreground">Touchez un produit pour l'ajouter.</p>}
@@ -1024,8 +1032,10 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               ))}
             </div>
             <p className="text-xs text-muted-foreground">{paymentDestination(payment) === 'bank' ? 'Encaissé sur le compte banque de l’unité (Trésorerie).' : 'Encaissé dans la caisse de l’unité (Trésorerie).'}</p>
+            <div className="sticky bottom-0 z-10 space-y-2 bg-card pt-2">
             <div className="flex justify-between gap-2 text-lg font-bold pt-2 border-t border-border"><span>Total</span><span className="text-right">{formatCurrency(total)}</span></div>
             {!pendingPayment && <Button className="w-full h-12 text-base" disabled={busy || !isValidPosCart(cart)} onClick={checkout}>{busy ? 'Encaissement…' : `Encaisser · ${formatCurrency(total)}`}</Button>}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -1042,7 +1052,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         </div>}
       </DialogContent></Dialog>
       {cart.length > 0 && (
-        <Button className="lg:hidden fixed bottom-20 left-4 z-40 h-12 rounded-full shadow-lg" onClick={() => document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth' })}>
+        <Button className="hidden sm:flex lg:hidden fixed bottom-20 left-4 z-40 h-12 rounded-full shadow-lg" onClick={() => document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth' })}>
           <ShoppingCart className="w-4 h-4 mr-2" />{cart.reduce((n, l) => n + l.quantity, 0)} article(s) · {formatCurrency(total)}
         </Button>
       )}
