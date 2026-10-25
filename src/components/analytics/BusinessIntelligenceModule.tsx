@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { analyticsDateRange } from '@/lib/analyticsDateRange';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -54,18 +55,16 @@ const ProductionBusinessIntelligenceModule = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const range = useMemo(() => {
-    let end = new Date();
-    let start: Date;
-    if (period === 'custom') { start = new Date(customFrom); end = new Date(customTo); }
-    else start = new Date(Date.now() - Number(period) * DAY);
-    const span = Math.max(DAY, end.getTime() - start.getTime());
-    const prevStart = new Date(start.getTime() - span);
-    return { start: iso(start), end: iso(end), prevStart: iso(prevStart), days: Math.round(span / DAY) };
-  }, [period, customFrom, customTo]);
+  const validRange = useMemo(() => analyticsDateRange(period, customFrom, customTo), [period, customFrom, customTo]);
+  const range = validRange ?? { start: '', end: '', prevStart: '', days: 0 };
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    const request = ++requestId.current;
+    if (!validRange || !activeUnit?.id) { setData(null); setLoading(false); setError(null); return; }
     setLoading(true); setError(null);
+    setData(null);
+    try {
     const scope = <T,>(q: T): T => (activeUnit?.id ? (q as any).eq('unit_id', activeUnit.id) : q);
     const [s, p, f, h] = await Promise.all([
       scope(supabase.from('sales').select('id,date,total_amount,status').gte('date', range.prevStart).lte('date', range.end).limit(5000)),
@@ -74,19 +73,24 @@ const ProductionBusinessIntelligenceModule = () => {
       scope(supabase.from('health_records').select('date,mortality').gte('date', range.prevStart).lte('date', range.end).limit(5000)),
     ]);
     const err = s.error || p.error || f.error || h.error;
-    if (err) { setError(err.message); setLoading(false); return; }
+    if (err) throw err;
     const sales = ((s.data ?? []) as RawData['sales']).filter((x) => x.status !== 'cancelled');
     const curIds = sales.filter((x) => x.date >= range.start).map((x) => x.id);
     let items: RawData['items'] = [];
     if (curIds.length) {
-      const { data: it } = await supabase.from('sale_items').select('sale_id,name,total').in('sale_id', curIds.slice(0, 500));
+      const { data: it, error: itemError } = await supabase.from('sale_items').select('sale_id,name,total').in('sale_id', curIds.slice(0, 500));
+      if (itemError) throw itemError;
       items = (it ?? []) as RawData['items'];
     }
-    setData({ sales, purchases: ((p.data ?? []) as RawData['purchases']).filter((x) => x.status !== 'cancelled'), feeding: (f.data ?? []) as RawData['feeding'], health: (h.data ?? []) as RawData['health'], items });
-    setLoading(false);
-  }, [activeUnit?.id, range]);
+    if (request === requestId.current) setData({ sales, purchases: ((p.data ?? []) as RawData['purchases']).filter((x) => x.status !== 'cancelled'), feeding: (f.data ?? []) as RawData['feeding'], health: (h.data ?? []) as RawData['health'], items });
+    } catch {
+      if (request === requestId.current) setError('Les données d’analyse sont indisponibles. Vérifiez votre connexion puis réessayez.');
+    } finally {
+      if (request === requestId.current) setLoading(false);
+    }
+  }, [activeUnit?.id, validRange]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { void load(); return () => { requestId.current += 1; }; }, [load]);
 
   const stats = useMemo(() => {
     if (!data) return null;
@@ -149,11 +153,13 @@ const ProductionBusinessIntelligenceModule = () => {
               <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-40" aria-label="Date de début" />
               <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="w-40" aria-label="Date de fin" />
             </>}
-            <p className="text-xs text-muted-foreground">Comparée à la période précédente de même durée ({range.days} j)</p>
+            {validRange && <p className="text-xs text-muted-foreground">Comparée à la période précédente de même durée ({range.days} j)</p>}
           </div>
 
-          {error && <p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
-          {loading || !stats ? <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div> : <>
+          {!validRange && <p role="alert" className="text-sm text-destructive">Choisissez des dates valides : la fin doit suivre le début.</p>}
+          {!activeUnit?.id && <p className="text-sm text-muted-foreground">Sélectionnez une unité pour consulter ses analyses.</p>}
+          {error && <div role="alert" className="space-y-2 text-sm text-destructive"><p>{error}</p><Button variant="outline" onClick={() => void load()}>Réessayer</Button></div>}
+          {loading ? <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div> : !stats ? null : <>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               <Kpi label="Chiffre d'affaires" value={formatMoney(stats.rev[0])} change={pct(stats.rev[0], stats.rev[1])} />
               <Kpi label="Dépenses (achats)" value={formatMoney(stats.exp[0])} change={pct(stats.exp[0], stats.exp[1])} invert />
