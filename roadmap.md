@@ -1,3 +1,9 @@
+## Transcription vocale réelle (25/10/2026)
+- [x] Capture WAV réelle en mémoire, courbe mesurée, transcription protégée par la session historique ; aucune persistance audio
+- [x] Validation appelle la transcription complète puis l’envoi existant ; annulation conserve le brouillon ; fragments incomplets et refus ne sont pas envoyés
+- [x] Fonction déployée ; phrase française synthétisée réellement transcrite (HTTP 200) ; 7 tests réussis, capture navigateur avec audio parlé et courbe variable vérifiée ; refus 401 confirmé
+- [ ] Vérifier l’envoi et la réponse depuis le compte réel : session historique indisponible, génération de session impossible (aucun utilisateur dans le service d’aperçu) ; aucune donnée du compte modifiée
+
 ## AquaAssistant : synthèse mobile et vocal (25/10/2026)
 - [x] Compacter les indicateurs en deux colonnes sur téléphone et aligner mesures, alertes et commandes
 - [x] Adapter aussi la synthèse et le chatbot aux ordinateurs et tablettes : deux colonnes en espace réduit, quatre en espace large
