@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle, RotateCcw, Boxes, MoreHorizontal, KeyRound } from 'lucide-react';
+import { Lock, Unlock, ScanLine, Sparkles, Mic, Printer, Minus, Plus, Trash2, ShoppingCart, ArrowDownCircle, ArrowUpCircle, RotateCcw, Boxes, MoreHorizontal, KeyRound, CircleCheck, Wallet, RefreshCw } from 'lucide-react';
 import { useTreasury } from '@/hooks/useTreasury';
 import CashDiscrepancies from './CashDiscrepancies';
 import { summarizeSession, carriedOverBalance, cashDifference, latestClosedByName } from '@/lib/cashBalance';
@@ -23,7 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { resolveCashierNames } from '@/lib/cashierNames';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
-import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury } from '@/lib/posTreasury';
+import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury, treasuryNotice } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
 import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
@@ -173,18 +173,21 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const cashierNamesOf = (ids: string[]) => resolveCashierNames(ids, cashierDirectory);
   const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
   const [backfilling, setBackfilling] = useState(false);
+  const noticeRequest = useRef(0);
+  const [noticeError, setNoticeError] = useState(false);
   const checkUnposted = async () => {
     if (!activeUnit?.id) return;
+    const request = ++noticeRequest.current;
     try {
       const list = await findUnpostedSales(activeUnit.id);
-      const { data: accs } = await (appSupabase as any).from('treasury_accounts').select('kind, archived_at').eq('unit_id', activeUnit.id);
-      const kinds = new Set((accs || []).filter((a: any) => !a.archived_at).map((a: any) => a.kind));
-      const needs = [...new Set(list.map((x: any) => paymentDestination(x.payment_method)))].filter(k => !kinds.has(k)) as ('cash' | 'bank')[];
-      if (!kinds.has('cash')) needs.includes('cash') || needs.push('cash');
-      setUnposted({ count: list.length, amount: list.reduce((t: number, x: any) => t + Number(x.total_amount), 0), needs });
-    } catch { /* indicatif */ }
+      const { data: accs, error } = await (appSupabase as any).from('treasury_accounts').select('kind, unit_id, archived_at').eq('unit_id', activeUnit.id);
+      if (error) throw error;
+      if (request !== noticeRequest.current) return;
+      setUnposted(treasuryNotice(accs || [], list, activeUnit.id));
+      setNoticeError(false);
+    } catch { if (request === noticeRequest.current) { setNoticeError(true); setUnposted({ count: 0, amount: 0, needs: [] }); } }
   };
-  useEffect(() => { checkUnposted(); }, [activeUnit?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setUnposted({ count: 0, amount: 0, needs: [] }); checkUnposted(); return () => { noticeRequest.current++; }; }, [activeUnit?.id, sales, treasury.accounts]); // eslint-disable-line react-hooks/exhaustive-deps
   // Réactualise le bandeau dès qu'un compte est créé/rattaché en Trésorerie ou au retour sur l'onglet.
   useEffect(() => {
     const refresh = () => { checkUnposted(); };
@@ -685,10 +688,10 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   return (
     <div className="space-y-3">
       <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
-      <div aria-label="Barre de caisse" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground">
+      <div aria-label="Barre de caisse" className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-foreground">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="mb-0.5 text-[11px] text-muted-foreground">Caisse · Ouverte</p>
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-assistant-positive"><CircleCheck className="h-3.5 w-3.5 shrink-0" />Ouverte</p>
             {cash.sessions.length > 1 ? (
               <select className="h-7 w-full rounded border border-border bg-background px-1 text-xs font-medium" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
                 {cash.sessions.map((s) => <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>)}
@@ -696,7 +699,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             ) : <p className="text-sm font-semibold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
             <p className="mt-1 text-xs leading-snug text-muted-foreground break-words">Caissier / Caissière : <span className="font-medium text-foreground">{cashierName || '—'}</span></p>
           </div>
-          <div className="flex shrink-0 gap-0.5">
+          <div className="flex shrink-0 gap-0.5 text-primary">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpsOpen(true)} aria-label="Opérations" title="Opérations de caisse"><MoreHorizontal className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)} aria-label="Clôturer" title="Clôturer la caisse"><Lock className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
@@ -706,7 +709,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Ventes du jour</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums">{formatCurrency(today.sales)}</dd></div>
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Tickets du jour</dt><dd className="text-sm font-semibold leading-snug tabular-nums">{todayMoves.filter(m => m.type === 'sale').length}</dd></div>
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Quantités du jour</dt><dd className="text-sm font-semibold leading-snug tabular-nums">{todayQuantities}</dd></div>
-          <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Solde en caisse</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums">{formatCurrency(cash.expected)}</dd></div>
+          <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Solde en caisse</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums text-assistant-positive">{formatCurrency(cash.expected)}</dd></div>
         </dl>
         {closedRegisters.length > 0 && (
           <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
@@ -835,32 +838,35 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       </DialogContent></Dialog>
 
       {(unposted.needs.length > 0 || unposted.count > 0) && (
-        <Alert><AlertDescription className="space-y-2">
-          {unposted.needs.includes('cash') && <p><b>Aucune caisse en trésorerie pour {activeUnit.name}.</b> Créez un compte « Caisse de vente » pour recevoir les ventes en espèces et Mobile Money.</p>}
-          {unposted.needs.includes('bank') && <p><b>Aucun compte bancaire pour {activeUnit.name}.</b> Créez-le pour recevoir les ventes par carte bancaire et virement.</p>}
-          {unposted.count > 0 && <p>{unposted.count} vente(s) ({formatCurrency(unposted.amount)}) sont en comptabilité mais pas encore dans la caisse ou la banque.</p>}
+        <section role="status" className="flex min-w-0 items-start gap-2 rounded-lg border border-dashboard-warning/25 bg-dashboard-warning/5 p-3">
+          <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-dashboard-warning" />
+          <div className="min-w-0 flex-1 space-y-2 text-xs leading-snug break-words">
+          {unposted.needs.includes('cash') && <p><b className="text-dashboard-warning">Caisse de trésorerie à créer · {activeUnit.name}</b><br />Dans Comptabilité → Trésorerie, créez une caisse rattachée à cette unité, au même nom que votre caisse de vente.</p>}
+          {unposted.needs.includes('bank') && <p><b className="text-dashboard-warning">Compte bancaire à créer · {activeUnit.name}</b><br />Il recevra les ventes par carte et virement de cette unité.</p>}
+          {unposted.count > 0 && <p><b>{formatCurrency(unposted.amount)} à reporter</b> · {unposted.count} vente(s) encaissée(s) sans mouvement de trésorerie confirmé.</p>}
           <div className="flex flex-wrap gap-2">
             {unposted.needs.length > 0 && <Button size="sm" onClick={() => {
               const kind = unposted.needs.includes('cash') ? 'cash' : 'bank';
               try { sessionStorage.setItem('aquapilote:open-treasury-account', kind); } catch { /* stockage indisponible */ }
               window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'accounting' }));
               window.dispatchEvent(new CustomEvent('aquapilote:open-treasury-account', { detail: { kind } }));
-            }}>{unposted.needs.includes('cash') ? 'Créer une caisse' : 'Créer un compte bancaire'}</Button>}
+            }} className="h-auto min-h-8 whitespace-normal text-xs">{unposted.needs.includes('cash') ? 'Créer en trésorerie' : 'Créer le compte bancaire'}</Button>}
             {unposted.count > 0 && <Button size="sm" variant="outline" disabled={backfilling} onClick={runBackfill}>{backfilling ? 'Report…' : 'Reporter ces ventes'}</Button>}
-            <Button size="sm" variant="ghost" onClick={checkUnposted}>Vérifier à nouveau</Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={checkUnposted} aria-label="Actualiser la trésorerie" title="Actualiser la trésorerie"><RefreshCw className="h-4 w-4" /></Button>
           </div>
-        </AlertDescription></Alert>
+          </div>
+        </section>
       )}
+      {noticeError && <p role="alert" className="text-xs text-destructive">Trésorerie non vérifiée. <Button variant="link" className="h-auto p-0 text-xs" onClick={checkUnposted}>Réessayer</Button></p>}
       {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
       {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
 
       {(view === 'checkout' || view === 'ai' || view === 'multi') && (<>
       {catalog.length === 0 && (
-        <Card className="rounded-xl border-primary/40 bg-primary/5"><CardContent className="p-4 flex flex-wrap items-center gap-3">
-          <Boxes className="w-6 h-6 text-primary" />
-          <div className="flex-1 min-w-0"><p className="font-semibold">Initiez votre stock pour vendre</p><p className="text-sm text-muted-foreground">Ajoutez vos produits en « Stock commercial » avec leur prix de vente : ils apparaîtront ici.</p></div>
-          <Button onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>Initier le stock</Button>
-        </CardContent></Card>
+        <div className="flex min-w-0 items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5">
+          <Boxes className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-primary">Stock commercial vide</p><p className="leading-snug text-muted-foreground">Ajoutez vos produits et leurs prix de vente.</p><Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>Ajouter au stock</Button></div>
+        </div>
       )}
       {(view === 'multi' || tickets.length > 1) && (
         <div className="flex flex-wrap items-center gap-2">
