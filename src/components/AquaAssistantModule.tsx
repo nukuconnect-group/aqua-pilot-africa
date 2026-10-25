@@ -43,7 +43,7 @@ const languages: Language[] = [
   { id: 'swahili', label: 'Kiswahili', code: 'sw-KE', flag: '🇰🇪' },
 ];
 
-const AquaAssistantModule = ({ onClose, presentation = 'floating' }: { onClose?: () => void; presentation?: 'page' | 'floating' } = {}) => {
+const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = true }: { onClose?: () => void; presentation?: 'page' | 'floating'; visible?: boolean } = {}) => {
   const { units, activeUnit } = useProductionUnits();
   const { isDemoMode } = useAuth();
   const { t } = useSettings();
@@ -503,6 +503,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating' }: { onClose?:
       </div></div>}
     </section>
   );
+  if (!visible) return null;
   return isPage ? surface : createPortal(surface, document.body);
 };
 

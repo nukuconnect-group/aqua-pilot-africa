@@ -401,7 +401,7 @@ const Dashboard: React.FC = () => {
                 </SubscriptionGuard>
               )}
               {assistantMounted && canAccessTab('aqua-assistant') && <div className={activeTab === 'aqua-assistant' || assistantOverlayVisible ? 'contents' : 'hidden'}>
-                <AquaAssistantModule presentation={activeTab === 'aqua-assistant' ? 'page' : 'floating'} onClose={() => {
+                <AquaAssistantModule visible={activeTab === 'aqua-assistant' || assistantOverlayVisible} presentation={activeTab === 'aqua-assistant' ? 'page' : 'floating'} onClose={() => {
                   setAssistantOpen(false);
                   if (activeTab === 'aqua-assistant') handleTabChange('dashboard');
                 }} />
