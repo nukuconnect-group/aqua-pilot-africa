@@ -184,8 +184,9 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
           {/* Indicateur membre d'equipe */}
           {isTeamMember && teamMemberInfo && (
             <div className="flex items-center gap-2 mt-2">
-              <Shield className="w-4 h-4 text-white" />
-              <Badge variant="outline" className="text-xs text-white border-white/30 bg-white/10">
+              <Shield className="w-4 h-4 text-sidebar-header-foreground" />
+              <Badge variant="outline" className="text-xs text-sidebar-header-foreground border-sidebar-header-foreground/25 bg-sidebar-header-foreground/5">
+
                 {teamMemberInfo.role === 'custom' ? teamMemberInfo.customRole : teamMemberInfo.role}
               </Badge>
             </div>
