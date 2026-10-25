@@ -14,7 +14,7 @@ vi.mock('@/hooks/useSales', () => ({ useSales: () => ({ sales: [], addSale: stat
 vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [
   { id: 'stock-a', unit_id: 'unit-a', custom_name: 'Poisson', quantity: 20, unit: 'kg', stock_purpose: 'commercial' },
   { id: 'stock-b', unit_id: 'unit-a', custom_name: 'Aliment', quantity: 30, unit: 'kg', stock_purpose: 'commercial' },
-] }) }));
+] , updateStock: vi.fn(async () => undefined), refetch: vi.fn(async () => undefined) }) }));
 vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({
   session: state.session, sessions: [state.session], movements: [], history: [], allMovements: [],
   expected: 10000, loading: false, setActiveSession: state.setActiveSession, reload: vi.fn(async () => undefined), validateSession: state.validateSession, addMovement: state.addMovement,
