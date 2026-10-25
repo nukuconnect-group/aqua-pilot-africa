@@ -159,7 +159,8 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     (appSupabase as any).from('profiles').select('id, full_name').in('id', missing)
       .then(({ data }: any) => {
         if (data?.length) setProfileNames((prev) => ({ ...prev, ...Object.fromEntries(data.map((p: any) => [p.id, p.full_name])) }));
-      });
+      })
+      .catch(() => { /* annuaire indicatif : les identifiants restent affichés tels quels */ });
   }, [cash.sessions, cashierDirectory]);
   const cashierNamesOf = (ids: string[]) => resolveCashierNames(ids, cashierDirectory);
   const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
