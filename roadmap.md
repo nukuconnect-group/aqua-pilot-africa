@@ -1,3 +1,8 @@
+## Discussions AquaAssistant invisibles (25/10/2026)
+- [ ] Corriger la zone de conversation écrasée par les panneaux et conserver les messages pendant la sauvegarde
+- [ ] Vérifier écrit et vocal sur téléphone, tablette, ordinateur et fenêtre 694 × 604
+- [ ] Vérifier une réponse depuis le compte réel si une session historique est disponible
+
 ## Transcription vocale réelle (25/10/2026)
 - [x] Capture WAV réelle en mémoire, courbe mesurée, transcription protégée par la session historique ; aucune persistance audio
 - [x] Validation appelle la transcription complète puis l’envoi existant ; annulation conserve le brouillon ; fragments incomplets et refus ne sont pas envoyés
