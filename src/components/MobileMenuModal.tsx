@@ -177,7 +177,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
             <img
               src={menuLogoAsset.url}
               alt="AquaPilote"
-              className="h-10 w-auto max-w-[190px] object-contain"
+              className="h-10 w-auto max-w-[170px] object-contain"
             />
           </SheetTitle>
 
