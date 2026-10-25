@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   addSale: vi.fn(), addMovement: vi.fn(), validateSession: vi.fn(), toast: vi.fn(), postAtomic: vi.fn(),
   session: { id: 'register-a', name: 'Caisse A', opened_at: '2026-10-20T00:00:00Z' },
+  setActiveSession: vi.fn(),
 }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: state.toast }) }));
 vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ formatCurrency: (n: number) => `${n} F CFA`, companyInfo: {} }) }));
@@ -13,10 +14,10 @@ vi.mock('@/hooks/useSales', () => ({ useSales: () => ({ sales: [], addSale: stat
 vi.mock('@/hooks/useFeedStocks', () => ({ useFeedStocks: () => ({ stocks: [
   { id: 'stock-a', unit_id: 'unit-a', custom_name: 'Poisson', quantity: 20, unit: 'kg', stock_purpose: 'commercial' },
   { id: 'stock-b', unit_id: 'unit-a', custom_name: 'Aliment', quantity: 30, unit: 'kg', stock_purpose: 'commercial' },
-] }) }));
+] , updateStock: vi.fn(async () => undefined), refetch: vi.fn(async () => undefined) }) }));
 vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({
   session: state.session, sessions: [state.session], movements: [], history: [], allMovements: [],
-  expected: 10000, loading: false, reload: vi.fn(async () => undefined), validateSession: state.validateSession, addMovement: state.addMovement,
+  expected: 10000, loading: false, setActiveSession: state.setActiveSession, reload: vi.fn(async () => undefined), validateSession: state.validateSession, addMovement: state.addMovement,
 }) }));
 vi.mock('./BarcodeScanner', () => ({ default: () => null }));
 vi.mock('./CashSalesHistory', () => ({ default: () => null }));
@@ -80,6 +81,27 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
 
 describe('parcours encaissement — tests isolés sans écriture réelle', () => {
+  it('ouvre la caisse sélectionnée depuis la gestion sans créer de vente', async () => {
+    const navigate = vi.fn();
+    await act(async () => root.render(<CashRegisterPOS view="registers" onNavigate={navigate} />));
+    await click(button('Accéder à la caisse'));
+    expect(state.setActiveSession).toHaveBeenCalledWith('register-a');
+    expect(navigate).toHaveBeenCalledWith('checkout');
+    expect(state.addSale).not.toHaveBeenCalled();
+  });
+  it('conserve des paniers distincts dans la vente IA multi-clients', async () => {
+    await act(async () => root.render(<CashRegisterPOS view="multi" />));
+    await input('Rechercher un produit', 'Poisson');
+    await click(button('Poisson'));
+    await input('Prix du produit', '2000');
+    await click(button('Ajouter à la sélection'));
+    await click(button('Ajouter au panier (1)'));
+    await click(button('Nouveau client'));
+    expect(button('Encaisser').disabled).toBe(true);
+    await click(button('Client 1'));
+    expect(button('Encaisser').textContent).toContain('2000 F CFA');
+    expect(state.addSale).not.toHaveBeenCalled();
+  });
   it('enregistre plusieurs articles, quantités décimales et prix puis rattache 6500 à la caisse choisie', async () => {
     await fillCart();
     expect(button('Encaisser').textContent).toContain('6500 F CFA');

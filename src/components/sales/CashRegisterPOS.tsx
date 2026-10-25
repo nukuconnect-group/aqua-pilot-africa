@@ -574,7 +574,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <p className="text-xs font-semibold text-muted-foreground">Caisses fermées — rouvrir avec leur solde</p>
     {closedRegisters.map((h) => (
       <div key={h.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2 text-sm">
-        <span className="min-w-0 truncate">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
+        <span className="min-w-0 break-words">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
         <div className="flex gap-1"><Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
         {isAdmin && <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
           const { error } = await (appSupabase as any).from('cash_sessions').update({ notes: 'caisse désactivée' }).eq('id', h.id);
@@ -599,6 +599,57 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       } finally { setBusy(false); }
     }}><Unlock className="w-4 h-4 mr-2" />Ouvrir la caisse</Button>
   </div>;
+
+  if (view === 'registers') return (
+    <div className="space-y-3">
+      <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between"><h3 className="font-semibold">Caisses de l’unité</h3>{isAdmin && <Button size="sm" onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}</div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {cash.sessions.map((s) => {
+              const assigned = cashierNamesOf(((s as any).cashier_ids || []) as string[]);
+              return (
+              <Card key={s.id} className={`rounded-xl ${s.id === cash.session?.id ? 'border-primary' : ''}`}>
+                <CardContent className="p-4 space-y-2 text-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 font-semibold break-words leading-tight">{s.name || 'Caisse'}</span>
+                    <Badge className="shrink-0">Ouverte</Badge>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Unité</span>
+                    <span className="min-w-0 break-words sm:text-right">{activeUnit.name}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Ouverte le</span>
+                    <span className="min-w-0 break-words sm:text-right">{new Date(s.opened_at).toLocaleString('fr-FR')}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Caissier(s) affecté(s)</span>
+                    <span className="min-w-0 break-words sm:text-right">{assigned.length ? assigned.join(' · ') : '—'}</span>
+                  </div>
+                  {s.id === cash.session?.id && (
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                      <span className="shrink-0">Caissier en session</span>
+                      <span className="min-w-0 break-words font-medium text-foreground sm:text-right">{cashierName || '—'}</span>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button size="sm" onClick={() => { cash.setActiveSession(s.id); onNavigate?.('checkout'); }}>Accéder à la caisse</Button>
+                    {isAdmin && <CashierAssignDialog sessionId={s.id} current={(s as any).cashier_ids || []} onSaved={() => cash.reload()} />}
+                  </div>
+                </CardContent>
+              </Card>
+              );
+            })}
+          </div>
+          {cash.sessions.length === 0 && <p className="text-sm text-muted-foreground">{isAdmin ? 'Aucune caisse ouverte dans cette unité.' : 'Aucune caisse ouverte ne vous est attribuée. Demandez au responsable de vous rattacher à une caisse.'}</p>}
+          {reopenList}
+          {isAdmin && <CashDiscrepancies history={cash.history} formatCurrency={formatCurrency} unitId={activeUnit.id} />}
+          <h3 className="font-semibold text-sm">Historique des ventes en caisse</h3>
+          <CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session?.id} />
+        </div>
+    </div>
+  );
 
   if (!cash.session) return (
     <div className="space-y-6"><Card className="max-w-md mx-auto rounded-lg">
@@ -800,52 +851,6 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       {checkoutError && <Alert variant="destructive"><AlertDescription><p className="font-semibold">{checkoutError.title}</p><p>{checkoutError.description}</p>{pendingPayment && <p className="mt-2">Vente : {pendingPayment.sale.documentNumber || pendingPayment.sale.id} · Montant : {formatCurrency(pendingPayment.sale.totalAmount)} · Caisse : {cash.sessions.find(s => s.id === pendingPayment.sessionId)?.name || pendingPayment.sessionId}</p>}</AlertDescription></Alert>}
       {pendingPayment && <Alert><AlertDescription>La vente est enregistrée. Reprenez l’encaissement pour mettre à jour sa caisse, sans recréer la vente.</AlertDescription></Alert>}
 
-      {view === 'registers' && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between"><h3 className="font-semibold">Caisses de l’unité</h3>{isAdmin && <Button size="sm" onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}</div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {cash.sessions.map((s) => {
-              const assigned = cashierNamesOf(((s as any).cashier_ids || []) as string[]);
-              return (
-              <Card key={s.id} className={`rounded-xl ${s.id === cash.session?.id ? 'border-primary' : ''}`}>
-                <CardContent className="p-4 space-y-2 text-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="min-w-0 font-semibold break-words leading-tight">{s.name || 'Caisse'}</span>
-                    <Badge className="shrink-0">Ouverte</Badge>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
-                    <span className="shrink-0">Unité</span>
-                    <span className="min-w-0 break-words sm:text-right">{activeUnit.name}</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
-                    <span className="shrink-0">Ouverte le</span>
-                    <span className="min-w-0 break-words sm:text-right">{new Date(s.opened_at).toLocaleString('fr-FR')}</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
-                    <span className="shrink-0">Caissier(s) affecté(s)</span>
-                    <span className="min-w-0 break-words sm:text-right">{assigned.length ? assigned.join(' · ') : '—'}</span>
-                  </div>
-                  {s.id === cash.session?.id && (
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
-                      <span className="shrink-0">Caissier en session</span>
-                      <span className="min-w-0 break-words font-medium text-foreground sm:text-right">{cashierName || '—'}</span>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button size="sm" onClick={() => { cash.setActiveSession(s.id); onNavigate?.('checkout'); }}>Accéder à la caisse</Button>
-                    {isAdmin && <CashierAssignDialog sessionId={s.id} current={(s as any).cashier_ids || []} onSaved={() => cash.reload()} />}
-                  </div>
-                </CardContent>
-              </Card>
-              );
-            })}
-          </div>
-          {reopenList}
-          {isAdmin && <CashDiscrepancies history={cash.history} formatCurrency={formatCurrency} unitId={activeUnit.id} />}
-          <h3 className="font-semibold text-sm">Historique des ventes en caisse</h3>
-          <CashSalesHistory key={activeUnit.id} sessions={[...cash.sessions, ...cash.history]} movements={cash.allMovements} sales={sales} activeSessionId={cash.session.id} />
-        </div>
-      )}
       {(view === 'checkout' || view === 'ai' || view === 'multi') && (<>
       {catalog.length === 0 && (
         <Card className="rounded-xl border-primary/40 bg-primary/5"><CardContent className="p-4 flex flex-wrap items-center gap-3">
@@ -867,7 +872,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       )}
       <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
       <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
-        {view !== 'ai' ? (
+        {view !== 'ai' && view !== 'multi' ? (
         <Card className="rounded-2xl">
           <CardContent className="p-3 space-y-3">
             <div className="flex gap-2">
@@ -876,7 +881,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
-            ) : view === 'multi' || search.trim() ? (
+            ) : search.trim() ? (
               searchResults
             ) : (
               <>
@@ -906,7 +911,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               </div>
               </>
             )}
-            {catalog.length > 0 && view !== 'multi' && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+            {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
             <Button variant="outline" onClick={() => setCart(prev => [...prev, { name: search.trim(), quantity: 1, unitPrice: 0 }])}><Plus className="h-4 w-4 mr-2" />Ajouter un produit</Button>
           </CardContent>
         </Card>
@@ -914,12 +919,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <div className="space-y-3">
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
           <p className="text-sm font-semibold">Rechercher un produit</p>
-          <Input placeholder="Nom ou code du produit" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input aria-label="Rechercher un produit" placeholder="Nom ou code du produit" value={search} onChange={(e) => setSearch(e.target.value)} />
           {searchResults}
         </CardContent></Card>
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
           <p className="text-sm font-semibold">Vente par la voix ou par texte</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
               <Button variant="outline" onClick={startVoice} disabled={listening} aria-label="Dicter la vente"><Mic className={`w-4 h-4 ${listening ? 'text-destructive animate-pulse' : ''}`} /></Button>
               <Button variant="secondary" onClick={() => handleQuick()}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
@@ -1036,7 +1041,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <Button className="w-full" onClick={printReceipt}><Printer className="w-4 h-4 mr-2" />Imprimer le reçu</Button>
         </div>}
       </DialogContent></Dialog>
-      {view !== 'registers' && cart.length > 0 && (
+      {cart.length > 0 && (
         <Button className="lg:hidden fixed bottom-20 left-4 z-40 h-12 rounded-full shadow-lg" onClick={() => document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth' })}>
           <ShoppingCart className="w-4 h-4 mr-2" />{cart.reduce((n, l) => n + l.quantity, 0)} article(s) · {formatCurrency(total)}
         </Button>

@@ -15,7 +15,6 @@ import { useSettings } from '@/contexts/SettingsContext';
 import ProductionUnitSelector from './ProductionUnitSelector';
 import ReceiptPreview, { ReceiptData } from './economics/ReceiptPreview';
 import BarcodeScanner from './sales/BarcodeScanner';
-import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import CashRegisterPOS, { type PosView } from './sales/CashRegisterPOS';
 
 const POS_TABS = ['registers', 'pos', 'multi', 'ai'];
@@ -72,8 +71,7 @@ const SalesManagement = () => {
   const { toast } = useToast();
   const { sales, loading, addSale, updateSale, cancelSale } = useSales();
   
-  const [salesTab, setSalesTab] = useState('pos');
-  const { isTeamMember } = useTeamMemberAccess();
+  const [salesTab, setSalesTab] = useState(() => window.matchMedia('(max-width: 639px)').matches ? 'registers' : 'pos');
   const [showSaleDialog, setShowSaleDialog] = useState(false);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   const [previewReceiptData, setPreviewReceiptData] = useState<ReceiptData | null>(null);
@@ -886,7 +884,7 @@ const SalesManagement = () => {
       {/* Raccourcis mobiles : grille de tuiles (les onglets défilants restent sur ordinateur) */}
       <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1.5 sm:hidden">
         {([
-          ...(isTeamMember ? [] : [['registers', 'Caisses', Store] as [string, string, typeof Store]]),
+          ['registers', 'Caisses', Store],
           ['pos', 'Caisse', ShoppingCart],
           ['multi', 'Multi-caisses', Users],
           ['ai', 'Vente IA', Zap],
@@ -896,12 +894,13 @@ const SalesManagement = () => {
           ['closures', 'Clôtures', FileText],
           ['returns', 'Annulations', Trash2],
         ] as [string, string, typeof Store][]).map(([v, label, Icon]) => (
-          <button
+          <Button
             key={v}
             type="button"
             onClick={() => setSalesTab(v)}
             aria-pressed={salesTab === v}
-            className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl p-2 text-center text-[13px] transition ${
+            variant="ghost"
+            className={`flex h-auto min-h-[72px] min-w-0 flex-col items-center justify-center gap-1.5 whitespace-normal rounded-xl p-2 text-center text-[13px] transition ${
               salesTab === v
                 ? 'bg-card font-semibold text-foreground shadow-sm'
                 : 'font-medium text-muted-foreground'
@@ -909,7 +908,7 @@ const SalesManagement = () => {
           >
             <Icon className="h-5 w-5 shrink-0 text-primary" strokeWidth={2} />
             <span className="leading-tight break-words">{label}</span>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -968,7 +967,7 @@ const SalesManagement = () => {
       <Tabs value={salesTab} onValueChange={setSalesTab} className="space-y-3 sm:space-y-4">
         <div className="hidden sm:block min-w-0 max-w-full overflow-x-auto">
           <TabsList className="inline-flex w-max min-w-full h-auto gap-1 bg-muted rounded-lg p-1 text-foreground">
-            {(([...(isTeamMember ? [] : [['registers', 'Gestion des caisses', Store]]), ['pos', 'Caisse', CreditCard], ['multi', 'Multi-caisses', Users], ['ai', 'Vente IA', Zap]]) as [string, string, typeof Store][]).map(([v, label, Icon]) => (
+            {([['registers', 'Gestion des caisses', Store], ['pos', 'Caisse', CreditCard], ['multi', 'Multi-caisses', Users], ['ai', 'Vente IA', Zap]] as [string, string, typeof Store][]).map(([v, label, Icon]) => (
               <TabsTrigger key={v} value={v} className="text-sm shrink-0 gap-2 px-3 py-2 whitespace-nowrap text-foreground data-[state=active]:bg-sidebar data-[state=active]:text-sidebar-foreground">
                 <Icon className="w-4 h-4 shrink-0" strokeWidth={2.2} />
                 {label}
