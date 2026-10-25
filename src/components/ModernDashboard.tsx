@@ -31,6 +31,7 @@ import FarmsMap from './dashboard/FarmsMap';
 import { analyzeParameter } from '@/lib/waterQualityThresholds';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 import { stocksForUnitType } from '@/lib/stockPurpose';
+import dashboardAquaculture from '@/assets/dashboard-aquaculture.jpg';
 
 interface ModernDashboardProps {
   onNavigate?: (tab: string) => void;
@@ -307,7 +308,9 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
 
   return (
     <div className="dashboard-content min-w-0 space-y-4 sm:space-y-6">
-      <section aria-label="Tableau de bord AquaPilote" className="min-w-0 rounded-lg bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
+      <section aria-label="Tableau de bord AquaPilote" className="relative isolate overflow-hidden min-w-0 rounded-lg bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
+        <img src={dashboardAquaculture} alt="" aria-hidden="true" width={1536} height={1024} className="absolute inset-0 -z-20 h-full w-full object-cover object-[65%_45%] blur-[1.5px] sm:hidden" />
+        <div className="absolute inset-0 -z-10 bg-sidebar/65 sm:hidden" />
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <Badge variant="outline" className="mb-3 border-sidebar-border bg-sidebar-accent text-sidebar-foreground">{getAssistantUnitProfile(activeUnit?.type).label}</Badge>
