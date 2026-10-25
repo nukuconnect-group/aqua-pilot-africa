@@ -1,3 +1,4 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -102,6 +103,7 @@ export const useFeedingRecords = (cycleId?: string, unitId?: string) => {
         description: 'Impossible de charger les enregistrements d\'alimentation',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -109,7 +111,7 @@ export const useFeedingRecords = (cycleId?: string, unitId?: string) => {
 
   useManualRefresh(async () => {
     backgroundRead.current = true;
-    try { await fetchRecords(); } finally { backgroundRead.current = false; }
+    try { requireFreshRead(await fetchRecords()); } finally { backgroundRead.current = false; }
   });
 
   // Charger les données quand l'auth est prête

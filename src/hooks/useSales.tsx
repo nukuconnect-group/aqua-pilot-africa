@@ -1,3 +1,4 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -119,6 +120,7 @@ export const useSales = () => {
     } catch (err) {
       setFetchError('Impossible de charger les ventes.');
       console.error('Error fetching sales:', err);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -126,7 +128,7 @@ export const useSales = () => {
 
   useManualRefresh(async () => {
     backgroundRead.current = true;
-    try { await fetchSales(); } finally { backgroundRead.current = false; }
+    try { requireFreshRead(await fetchSales()); } finally { backgroundRead.current = false; }
   });
 
   useEffect(() => {

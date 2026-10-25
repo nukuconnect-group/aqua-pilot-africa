@@ -37,7 +37,7 @@ async function detect() {
     }
   } catch { /* Browser cannot verify; retain unknown, not a local guess. */ }
 }
-function initialize() {
+export function initializePWAInstallation() {
   if (initialized || typeof window === 'undefined') return;
   initialized = true;
   window.addEventListener('beforeinstallprompt', event => {
@@ -67,7 +67,7 @@ async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'
   finally { if (deferred === event) deferred = null; snapshot = { ...snapshot, busy: false }; publish(); }
 }
 export const usePWAInstallState = () => {
-  useEffect(initialize, []);
+  useEffect(initializePWAInstallation, []);
   const state = useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => snapshot, () => snapshot);
   return { ...state, promptInstall };
 };

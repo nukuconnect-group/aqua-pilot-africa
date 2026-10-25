@@ -1,0 +1,40 @@
+import React, { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({ from: vi.fn(), toast: vi.fn() }));
+vi.mock('@/integrations/supabase/appClient', () => ({ supabase: { from: mocks.from } }));
+vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: mocks.toast }) }));
+vi.mock('@/hooks/useAuthReady', () => ({ useAuthReady: () => ({ isReady: true, isAuthenticated: true }) }));
+import { useFeedStocks } from './useFeedStocks';
+import { refreshMountedData } from '@/lib/manualRefresh';
+
+it('manual refresh reads the unit again, updates records without loading/remounting and rejects server failure', async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const read = vi.fn().mockResolvedValue({ data: [{ id: 'stock', quantity: 10 }], error: null });
+  const eq = vi.fn(() => read());
+  mocks.from.mockReturnValue({ select: () => ({ order: () => ({ eq }) }) });
+  const host = document.createElement('div'); const root = createRoot(host);
+  let api: ReturnType<typeof useFeedStocks> | undefined;
+  let mounts = 0;
+  const Harness = () => {
+    api = useFeedStocks('unit-a');
+    React.useEffect(() => { mounts++; }, []);
+    return <input defaultValue="saisie conservée" />;
+  };
+  await act(async () => root.render(<Harness />));
+  expect(api?.stocks[0].quantity).toBe(10);
+  let finish: ((value: unknown) => void) | undefined;
+  read.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  let pending: Promise<void> | undefined;
+  await act(async () => { pending = refreshMountedData(); await Promise.resolve(); });
+  expect(api?.loading).toBe(false);
+  await act(async () => { finish?.({ data: [{ id: 'stock', quantity: 7 }], error: null }); await pending; });
+  expect(api?.stocks[0].quantity).toBe(7);
+  expect(mounts).toBe(1);
+  expect(host.querySelector('input')?.value).toBe('saisie conservée');
+  expect(eq).toHaveBeenLastCalledWith('unit_id', 'unit-a');
+  read.mockResolvedValueOnce({ data: null, error: { message: 'offline' } });
+  await act(async () => { await expect(refreshMountedData()).rejects.toThrow('Refresh failed'); });
+  expect(api?.stocks[0].quantity).toBe(7);
+  await act(async () => root.unmount());
+});

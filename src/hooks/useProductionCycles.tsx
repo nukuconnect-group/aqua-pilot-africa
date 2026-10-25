@@ -1,3 +1,4 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -76,6 +77,7 @@ export const useProductionCycles = (unitId?: string) => {
         description: 'Impossible de charger les cycles de production',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ export const useProductionCycles = (unitId?: string) => {
 
   useManualRefresh(async () => {
     backgroundRead.current = true;
-    try { await fetchCycles(); } finally { backgroundRead.current = false; }
+    try { requireFreshRead(await fetchCycles()); } finally { backgroundRead.current = false; }
   });
 
   // Charger les données quand l'auth est prête

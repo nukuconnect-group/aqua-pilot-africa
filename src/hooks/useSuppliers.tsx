@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { requireFreshRead } from '@/lib/manualRefresh';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
@@ -53,6 +55,7 @@ export const useSuppliers = () => {
   const [orders, setOrders] = useState<SupplierOrder[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const backgroundRead = useRef(false);
   const fetchSuppliers = useCallback(async () => {
     if (isDemoMode) {
       const demoData = getDemoData();
@@ -76,7 +79,7 @@ export const useSuppliers = () => {
     }
     if (!user?.id || !isAuthenticated) return;
 
-    setLoading(true);
+    if (!backgroundRead.current) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('suppliers')
@@ -120,10 +123,16 @@ export const useSuppliers = () => {
       })));
     } catch (err) {
       console.error('Error fetching suppliers:', err);
+      return false;
     } finally {
       setLoading(false);
     }
   }, [isDemoMode, user?.id, isAuthenticated]);
+
+  useManualRefresh(async () => {
+    backgroundRead.current = true;
+    try { requireFreshRead(await fetchSuppliers()); } finally { backgroundRead.current = false; }
+  });
 
   useEffect(() => {
     fetchSuppliers();

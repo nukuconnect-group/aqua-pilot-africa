@@ -1,3 +1,4 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -44,7 +45,7 @@ export const useAIAnalyses = (limit: number = 10, unitId?: string) => {
 
       if (error) {
         console.error('Error fetching analyses:', error);
-        return;
+        return false;
       }
 
       if (data) {
@@ -52,12 +53,13 @@ export const useAIAnalyses = (limit: number = 10, unitId?: string) => {
       }
     } catch (error) {
       console.error('Error:', error);
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  useManualRefresh(fetchAnalyses);
+  useManualRefresh(async () => requireFreshRead(await fetchAnalyses()));
 
   const deleteAnalysis = async (id: string) => {
     if (!user) return;
