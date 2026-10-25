@@ -2,6 +2,7 @@
 - [ ] Réduire la hauteur des quatre indicateurs et colorer distinctement leurs icônes
 - [ ] Garder AquaPilote sur une ligne ; contenir notification, recherche et langue sans débordement
 - [ ] Vérifier l’affichage mobile et l’ouverture de Recherche
+- [ ] Ajouter une image légèrement floutée d’aquaculteur au travail derrière le titre et les filtres mobiles
 
 ## Infrastructures commerciales et chaîne du froid (25/10/2026)
 - [ ] Vérifier l’option d’amortissement et son calcul comptable par unité
