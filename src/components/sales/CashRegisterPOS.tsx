@@ -30,6 +30,7 @@ import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { Sale } from '@/hooks/useSales';
+import { resolveSalesUnit } from '@/lib/salesUnitSelection';
 
 interface CartLine { name: string; quantity: number; unitPrice: number; pack?: { label: string; size: number } }
 
@@ -137,7 +138,10 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [contact, setContact] = useState('');
   const [receipt, setReceipt] = useState<{ number: string; date: string; client: string; payment: string; register: string; lines: CartLine[]; total: number } | null>(null);
   const [listening, setListening] = useState(false);
-  const [unitConfirmed, setUnitConfirmed] = useState(false);
+  useEffect(() => {
+    const resolved = resolveSalesUnit(units, activeUnit);
+    if (!activeUnit && resolved) setActiveUnit(resolved);
+  }, [units, activeUnit, setActiveUnit]);
   const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
   const [draft, setDraft] = useState<CartLine[]>([]);
   const metaName = (user as any)?.user_metadata?.full_name || [(user as any)?.user_metadata?.first_name, (user as any)?.user_metadata?.last_name].filter(Boolean).join(' ');
@@ -493,7 +497,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <Card className="rounded-2xl"><CardHeader><CardTitle className="text-base">Avec quelle unité voulez-vous vendre ?</CardTitle></CardHeader>
       <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {units.length === 0 ? <p className="text-sm text-muted-foreground">Aucune unité disponible.</p> : units.map((u) => (
-          <Button key={u.id} variant="outline" className="h-auto justify-start p-3 text-left whitespace-normal" onClick={() => { setActiveUnit(u); setUnitConfirmed(true); }}>{u.name}</Button>
+          <Button key={u.id} variant="outline" className="h-auto justify-start p-3 text-left whitespace-normal" onClick={() => setActiveUnit(u)}>{u.name}</Button>
         ))}
       </CardContent></Card>
   );
@@ -699,11 +703,6 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             ) : <p className="text-sm font-semibold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
             <p className="mt-1 text-xs leading-snug text-muted-foreground break-words">Caissier / Caissière : <span className="font-medium text-foreground">{cashierName || '—'}</span></p>
           </div>
-          <div className="flex shrink-0 gap-0.5 text-primary">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpsOpen(true)} aria-label="Opérations" title="Opérations de caisse"><MoreHorizontal className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)} aria-label="Clôturer" title="Clôturer la caisse"><Lock className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
-          </div>
         </div>
         <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border pt-2 sm:grid-cols-4">
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Ventes du jour</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums">{formatCurrency(today.sales)}</dd></div>
@@ -711,6 +710,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Quantités du jour</dt><dd className="text-sm font-semibold leading-snug tabular-nums">{todayQuantities}</dd></div>
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Solde en caisse</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums text-assistant-positive">{formatCurrency(cash.expected)}</dd></div>
         </dl>
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-1 border-t border-border pt-2 sm:flex sm:gap-2">
+          <Button variant="outline" size="sm" className="h-auto min-h-10 min-w-0 gap-1 whitespace-normal px-1 text-[11px] leading-snug sm:px-3 sm:text-xs" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-3.5 w-3.5 shrink-0" /><span>Clôturer la caisse</span></Button>
+          <Button variant="outline" size="sm" className="h-auto min-h-10 min-w-0 gap-1 whitespace-normal px-1 text-[11px] leading-snug sm:px-3 sm:text-xs" onClick={() => setLockAsk(true)}><KeyRound className="h-3.5 w-3.5 shrink-0" /><span>Verrouiller la caisse</span></Button>
+          <Button variant="outline" size="sm" className="h-auto min-h-10 min-w-0 gap-1 whitespace-normal px-1 text-[11px] leading-snug sm:px-3 sm:text-xs" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-3.5 w-3.5 shrink-0" /><span>Opérations</span></Button>
+          <Button variant="secondary" size="icon" className="h-10 w-8 shrink-0 sm:ml-auto sm:w-10" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))} aria-label="Ajouter du stock" title="Ajouter du stock"><Boxes className="h-4 w-4" /></Button>
+        </div>
         {closedRegisters.length > 0 && (
           <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
             <span className="text-muted-foreground">Caisses fermées :</span>
@@ -865,7 +870,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       {catalog.length === 0 && (
         <div className="flex min-w-0 items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5">
           <Boxes className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-primary">Stock commercial vide</p><p className="leading-snug text-muted-foreground">Ajoutez vos produits et leurs prix de vente.</p><Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>Ajouter au stock</Button></div>
+          <div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-primary">Stock commercial vide</p><p className="leading-snug text-muted-foreground">Ajoutez vos produits et leurs prix de vente.</p></div>
         </div>
       )}
       {(view === 'multi' || tickets.length > 1) && (
