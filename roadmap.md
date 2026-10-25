@@ -1,5 +1,6 @@
 # Ajustements Ventes et abonnements
 ## Harmonisation mobile
+- [ ] Terminer les ajustements ciblés dans Alertes/performances, IoT, Cheptel, cycles, Prophylaxie, Alimentation, Comptabilité et Ventes/achats ; relever séparément les contrôles connectés non réalisables.
 - [x] Essai d’un mois gratuit déjà en premier : inscription vérifiée à 320, 393 et 1280 px, sans créer de compte ; page abonnement également ordonnée.
 - [x] Corriger les largeurs communes, onglets, fenêtres et tableaux sans masquer les informations.
 - [x] Adapter paramètres du tableau de bord, graphiques vides, performances et Centre IoT/MQTT ; contrôle connecté restant ci-dessous.

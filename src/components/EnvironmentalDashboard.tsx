@@ -233,9 +233,9 @@ const EnvironmentalDashboard = () => {
       {/* Monitoring par bassin */}
       <Tabs defaultValue={unitBasins[0]?.id || ''} className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <TabsList className="grid w-full grid-cols-auto gap-1" style={{ gridTemplateColumns: `repeat(${unitBasins.length}, 1fr)` }}>
+          <TabsList className="grid h-auto w-full min-w-0 grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
             {unitBasins.map(basin => (
-              <TabsTrigger key={basin.id} value={basin.id} className="text-xs">
+              <TabsTrigger key={basin.id} value={basin.id} className="min-w-0 whitespace-normal break-words text-xs">
                 {basin.name}
               </TabsTrigger>
             ))}
