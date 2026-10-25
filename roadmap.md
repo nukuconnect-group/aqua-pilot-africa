@@ -1,3 +1,8 @@
+## Indications caisse, trésorerie et stock (25/10/2026)
+- [ ] Colorer et aligner l’état ouvert, le caissier et les indicateurs sans supprimer les données
+- [ ] Actualiser les invitations selon les comptes réels de l’unité et distinguer création et report des ventes
+- [ ] Compacter l’indication de stock vide et tester les règles de trésorerie
+
 ## Barre de caisse et largeur du menu mobile (25/10/2026)
 - [x] Conserver toutes les informations dans une barre de caisse lisible : libellés complets, grille compacte mobile, actions en icônes
 - [x] Réduire uniquement la largeur du menu téléphone à 240 px maximum ; préserver tablette, ordinateur, textes, icônes et défilement

@@ -1,10 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
 vi.mock('@/integrations/supabase/appClient', () => ({ supabase: {} }));
-import { findRegisterAccount } from '@/lib/posTreasury';
+import { findRegisterAccount, treasuryNotice } from '@/lib/posTreasury';
 
 const acc = (id: string, name: string, kind: 'cash' | 'bank' = 'cash') => ({ id, name, kind, user_id: 'u', unit_id: 'x', account_code: '5711', currency: 'XOF' } as any);
 
 describe('caisse de trésorerie rattachée à la caisse de vente', () => {
+  it('cesse de demander une caisse dès qu’un compte actif existe dans cette unité', () => {
+    expect(treasuryNotice([acc('a', 'Caisse')], [], 'x').needs).toEqual([]);
+    expect(treasuryNotice([acc('a', 'Caisse')], [], 'autre').needs).toEqual(['cash']);
+  });
+  it('conserve le report des ventes sans demander un nouveau compte existant', () => {
+    expect(treasuryNotice([acc('a', 'Caisse')], [{ total_amount: 6500, payment_method: 'Espèces' }], 'x')).toEqual({ count: 1, amount: 6500, needs: [] });
+  });
   it('prend le compte portant le même nom que la caisse', () => {
     expect(findRegisterAccount([acc('a', 'Coffre'), acc('b', 'Caisse 1')], 'caisse 1')?.id).toBe('b');
   });

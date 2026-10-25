@@ -25,6 +25,12 @@ export const findBankAccount = (accounts: TreasuryAccount[]) => {
 export const findSaleAccount = (accounts: TreasuryAccount[], payment?: string | null, registerName?: string | null) =>
   paymentDestination(payment) === 'bank' ? findBankAccount(accounts) : findRegisterAccount(accounts, registerName);
 
+export function treasuryNotice(accounts: Pick<TreasuryAccount, 'kind' | 'unit_id'>[], pending: { total_amount: unknown; payment_method?: string | null }[], unitId: string) {
+  const kinds = new Set(accounts.filter(a => a.unit_id === unitId && !(a as { archived_at?: string }).archived_at).map(a => a.kind));
+  const required = new Set<'cash' | 'bank'>(['cash', ...pending.map(s => paymentDestination(s.payment_method))]);
+  return { count: pending.length, amount: pending.reduce((n, s) => n + (Number(s.total_amount) || 0), 0), needs: [...required].filter(k => !kinds.has(k)) };
+}
+
 /** Contrepartie des encaissements de vente (compte clients, hors trésorerie). */
 export const SALE_COUNTERPART = '411';
 
@@ -78,11 +84,13 @@ export async function reverseSaleInTreasury(unitId: string, saleId: string, reas
 
 /** Ventes payées de l'unité qui n'ont pas encore de mouvement de trésorerie. */
 export async function findUnpostedSales(unitId: string) {
-  const { data: sales } = await db.from('sales').select('id, total_amount, payment_method, document_number, client_name, date, status')
+  const { data: sales, error: salesError } = await db.from('sales').select('id, total_amount, payment_method, document_number, client_name, date, status')
     .eq('unit_id', unitId).neq('status', 'cancelled').gt('total_amount', 0).limit(1000);
+  if (salesError) throw salesError;
   const list = (sales || []).filter((s: any) => ['paid', 'confirmed', 'delivered'].includes(s.status));
   if (!list.length) return [];
-  const { data: moves } = await db.from('treasury_movements').select('request_id').eq('unit_id', unitId).in('request_id', list.map((s: any) => s.id));
+  const { data: moves, error: movesError } = await db.from('treasury_movements').select('request_id').eq('unit_id', unitId).in('request_id', list.map((s: any) => s.id));
+  if (movesError) throw movesError;
   const done = new Set((moves || []).map((m: any) => m.request_id));
   return list.filter((s: any) => !done.has(s.id));
 }
