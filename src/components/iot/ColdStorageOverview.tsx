@@ -13,12 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import coldRoomImage from '@/assets/cold-room.jpg';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export default function ColdStorageOverview() {
+export default function ColdStorageOverview({ analysisOnly = false }: { analysisOnly?: boolean }) {
   const { activeUnit, getUnitInfrastructures } = useProductionUnits();
   const { user, isDemoMode } = useAuth();
-  const rooms = activeUnit ? getUnitInfrastructures(activeUnit.id).filter(i => isColdStorage(i.type)) : [];
+  const rooms = activeUnit ? getUnitInfrastructures(activeUnit.id) : [];
   const [selected, setSelected] = useState('all');
   const [days, setDays] = useState('7');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -42,11 +42,11 @@ export default function ColdStorageOverview() {
   const saveReading = async () => {
     if (saving || !user?.id || !activeUnit || isDemoMode) return;
     if (!rooms.some(r => r.id === roomId) || !value.trim() || !Number.isFinite(Number(value))) {
-      setSaveError('Sélectionnez une chambre froide et indiquez la température mesurée.'); return;
+      setSaveError('Sélectionnez une infrastructure et indiquez la température mesurée.'); return;
     }
     setSaving(true); setSaveError('');
     try {
-      const { error } = await supabase.from('health_records').insert({ user_id: user.id, unit_id: activeUnit.id, basin_id: roomId, temperature: Number(value), date: new Date().toISOString().slice(0,10), notes: 'Relevé manuel de température · chambre froide' });
+      const { error } = await supabase.from('health_records').insert({ user_id: user.id, unit_id: activeUnit.id, basin_id: roomId, temperature: Number(value), date: new Date().toISOString().slice(0,10), notes: 'Relevé manuel de température · infrastructure commerciale' });
       if (error) throw error;
       await query.refetch(); setDialogOpen(false); setValue('');
     } catch { setSaveError('Le relevé n’a pas pu être enregistré. Votre saisie est conservée.'); }
@@ -54,16 +54,16 @@ export default function ColdStorageOverview() {
   };
   return <div className="space-y-5 min-w-0" data-cold-storage>
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><h3 className="text-lg font-semibold">Chambres froides · {activeUnit?.name}</h3><p className="text-sm text-muted-foreground">Températures enregistrées</p></div>
-      <div className="flex items-center gap-2"><Button variant="outline" size="icon" aria-label="Actualiser les températures" disabled={query.isFetching || isDemoMode} onClick={() => query.refetch()}><RefreshCw className="h-4 w-4" /></Button><Button disabled={!rooms.length || !user || isDemoMode} onClick={() => { setRoomId(rooms[0]?.id || ''); setSaveError(''); setDialogOpen(true); }}><Plus className="mr-2 h-4 w-4" />Relevé de température</Button></div>
+      <div><h3 className="text-lg font-semibold">{analysisOnly ? 'Analyse thermique' : 'Paramètres des infrastructures'}</h3><p className="text-sm text-muted-foreground">Températures enregistrées · {activeUnit?.name}</p></div>
+      <div className="flex flex-wrap items-center gap-2"><Button variant="outline" size="icon" aria-label="Actualiser les températures" disabled={query.isFetching || isDemoMode} onClick={() => query.refetch()}><RefreshCw className="h-4 w-4" /></Button><Button disabled={!rooms.length || !user || isDemoMode} onClick={() => { setRoomId(rooms[0]?.id || ''); setSaveError(''); setDialogOpen(true); }}><Plus className="mr-2 h-4 w-4" />Relevé de température</Button></div>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <Select value={selected} onValueChange={setSelected}><SelectTrigger aria-label="Chambre froide"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Toutes les chambres froides</SelectItem>{rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select>
+      <div className="min-w-0 overflow-x-auto"><Tabs value={selected} onValueChange={setSelected}><TabsList className="w-max min-w-full"><TabsTrigger value="all">Toutes les infrastructures</TabsTrigger>{rooms.map(r => <TabsTrigger key={r.id} value={r.id} className="whitespace-nowrap">{r.name}</TabsTrigger>)}</TabsList></Tabs></div>
       <Select value={days} onValueChange={setDays}><SelectTrigger aria-label="Période des températures"><SelectValue /></SelectTrigger><SelectContent>{['1','7','30','90'].map(d => <SelectItem key={d} value={d}>{d} jour{d === '1' ? '' : 's'}</SelectItem>)}</SelectContent></Select>
     </div>
     {query.isLoading && <p className="text-sm text-muted-foreground">Chargement des relevés…</p>}
     {query.isError && <p role="alert" className="text-sm text-destructive">Impossible de charger les températures. Réessayez avec Actualiser.</p>}
-    {!rooms.length && <div className="py-10 text-center"><Thermometer className="mx-auto mb-3 h-10 w-10 text-muted-foreground" /><p>Aucune chambre froide enregistrée dans cette unité.</p><Button variant="link" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'infrastructures' }))}>Ouvrir Infrastructures</Button></div>}
+    {!rooms.length && <div className="py-10 text-center"><Thermometer className="mx-auto mb-3 h-8 w-8 text-muted-foreground" /><p>Aucune infrastructure enregistrée dans cette unité.</p><Button variant="link" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'infrastructures' }))}>Ouvrir Infrastructures</Button></div>}
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       {displayed.map(room => {
         const points = temperatureSeries(records, room.unitId, room.id).filter(p => p.time >= cutoff);
@@ -71,8 +71,8 @@ export default function ColdStorageOverview() {
         const min = limit('temperatureMin'), max = limit('temperatureMax');
         const summary = temperatureSummary(points, min, max);
         return <Card key={room.id} className="overflow-hidden min-w-0"><CardContent className="p-0">
-          <div className="grid grid-cols-[104px_minmax(0,1fr)] sm:grid-cols-[144px_minmax(0,1fr)] gap-4 p-4 border-b">
-            <img src={coldRoomImage} alt="Illustration de chambre froide" loading="lazy" width={1024} height={768} className="w-full aspect-[4/3] object-contain bg-muted rounded" />
+          <div className="flex items-start gap-3 p-4 border-b border-l-4 border-l-primary">
+            <div className="rounded-md bg-primary/10 p-2"><Thermometer className="size-5 text-primary" /></div>
             <div className="min-w-0"><h4 className="font-semibold break-words">{room.name}</h4><Badge variant="outline" className="mt-1">{summary ? 'Relevés enregistrés' : 'Sans relevé'}</Badge><div className="mt-2 text-2xl font-semibold text-primary">{summary ? `${summary.latest.value.toLocaleString('fr-FR')} °C` : '— °C'}</div>{summary && <p className="text-xs text-muted-foreground">Dernier enregistrement : {new Date(summary.latest.time).toLocaleString('fr-FR')}</p>}</div>
           </div>
           <div className="p-4 space-y-4">
@@ -86,6 +86,6 @@ export default function ColdStorageOverview() {
         </CardContent></Card>;
       })}
     </div>
-    <Dialog open={dialogOpen} onOpenChange={open => { if (!saving) setDialogOpen(open); }}><DialogContent className="w-[calc(100%-2rem)] max-w-md"><DialogHeader><DialogTitle>Relevé manuel de température</DialogTitle></DialogHeader><Label>Chambre froide</Label><Select value={roomId} onValueChange={setRoomId} disabled={saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{rooms.map(r=><SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select><Label htmlFor="cold-temperature">Température mesurée (°C)</Label><Input id="cold-temperature" type="number" step="0.1" value={value} disabled={saving} onChange={e=>setValue(e.target.value)} />{saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}<Button onClick={saveReading} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer le relevé'}</Button></DialogContent></Dialog>
+    <Dialog open={dialogOpen} onOpenChange={open => { if (!saving) setDialogOpen(open); }}><DialogContent className="w-[calc(100%-2rem)] max-w-md"><DialogHeader><DialogTitle>Relevé manuel de température</DialogTitle></DialogHeader><Label>Infrastructure</Label><Select value={roomId} onValueChange={setRoomId} disabled={saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{rooms.map(r=><SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select><Label htmlFor="cold-temperature">Température mesurée (°C)</Label><Input id="cold-temperature" type="number" step="0.1" value={value} disabled={saving} onChange={e=>setValue(e.target.value)} />{saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}<Button onClick={saveReading} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer le relevé'}</Button></DialogContent></Dialog>
   </div>;
 }

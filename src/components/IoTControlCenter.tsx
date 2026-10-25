@@ -35,26 +35,23 @@ const IoTControlCenter = () => {
   ]);
 
   const alerts = getActiveAlerts();
-
-  if (activeUnit?.type === 'commercialisation') {
-    return <div className="space-y-5 min-w-0"><header className="border-b pb-4"><h2 className="text-xl font-semibold flex items-center gap-2"><Thermometer className="h-6 w-6 text-primary" />Centre IoT · Chaîne du froid</h2></header><ColdStorageOverview /></div>;
-  }
+  const commercial = activeUnit?.type === 'commercialisation';
 
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-responsive rounded-xl text-white">
+      <div className="bg-primary p-responsive rounded-lg text-primary-foreground">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-responsive">
           <div className="flex-1">
             <h2 className="text-responsive-title font-bold mb-2">{t('iot_title')}</h2>
-            <p className="text-blue-100 text-responsive">{t('iot_subtitle')}</p>
+            <p className="text-primary-foreground/80 text-responsive">{commercial ? activeUnit.name : t('iot_subtitle')}</p>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4 justify-end sm:justify-center">
+          {!commercial && <div className="flex items-center gap-2 sm:gap-4 justify-end sm:justify-center">
             <div className="text-center">
               <div className="text-lg sm:text-2xl font-bold">{alerts.length}</div>
-              <div className="text-xs text-blue-200">{t('active_alerts')}</div>
+              <div className="text-xs text-primary-foreground/80">{t('active_alerts')}</div>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -62,21 +59,21 @@ const IoTControlCenter = () => {
         <div className="min-w-0 max-w-full overflow-x-auto">
           <TabsList className="inline-flex w-auto min-w-full sm:w-full gap-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
-              <Waves className="w-4 h-4" />
-              {t('basins_parameters')}
+              {commercial ? <Thermometer className="w-4 h-4" /> : <Waves className="w-4 h-4" />}
+              {commercial ? 'Températures des infrastructures' : t('basins_parameters')}
             </TabsTrigger>
             <TabsTrigger value="ai-analysis" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               <Brain className="w-4 h-4" />
-              {t('ai_analysis')}
+              {commercial ? 'Analyse thermique' : t('ai_analysis')}
             </TabsTrigger>
-            <TabsTrigger value="environmental" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
+            {!commercial && <TabsTrigger value="environmental" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               <Thermometer className="w-4 h-4" />
               {t('environmental')}
-            </TabsTrigger>
-            <TabsTrigger value="automation" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
+            </TabsTrigger>}
+            {!commercial && <TabsTrigger value="automation" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               <Settings className="w-4 h-4" />
               {t('automation')}
-            </TabsTrigger>
+            </TabsTrigger>}
             <TabsTrigger value="config" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               <Wifi className="w-4 h-4" />
               {t('configuration')}
@@ -85,19 +82,19 @@ const IoTControlCenter = () => {
         </div>
 
         <TabsContent value="overview" className="space-y-4">
-          <IoTBasinOverview />
+          {commercial ? <ColdStorageOverview /> : <IoTBasinOverview />}
         </TabsContent>
 
         <TabsContent value="ai-analysis">
-          <IoTAIAnalysis />
+          {commercial ? <ColdStorageOverview analysisOnly /> : <IoTAIAnalysis />}
         </TabsContent>
 
-        <TabsContent value="environmental">
+        {!commercial && <TabsContent value="environmental">
           <EnvironmentalDashboard />
-        </TabsContent>
+        </TabsContent>}
 
 
-        <TabsContent value="automation" className="space-y-4">
+        {!commercial && <TabsContent value="automation" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -126,7 +123,7 @@ const IoTControlCenter = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent>}
 
         <TabsContent value="config">
           <MqttConfiguration />
