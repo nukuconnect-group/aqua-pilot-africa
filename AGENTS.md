@@ -3,12 +3,12 @@
 - Preserve assistant state across views; scroll questions with messages; initialize history with exchanges.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
 - One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Shared manual refresh awaits mounted readers/active queries, propagates failures; no reload/remount/loading guards.
-- Dashboard KPIs are unit-scoped; align mobile menus locally; rotate CDN backgrounds independently.
+- Dashboard KPIs are unit-scoped; dashboardPeriod bounds optional financial periods with dated payroll. Align mobile menus locally; rotate CDN backgrounds independently.
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
 - Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
 - Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
 - Feeding print/PDF waits for assets/SVG via printWhenReady.
-- Render the assistant launcher through a body portal independently of module eligibility, hiding it only while the assistant overlay is actually rendered; keep the conversation permission check so layout clipping or stale open state cannot hide the launcher or bypass access rules.
+- Portal the assistant launcher to body independently of module eligibility; hide only for a rendered overlay. Preserve conversation permissions so clipping/stale state cannot hide it or bypass access.
 - Centralize universal AquaAssistant eligibility in core/always-open module rules and exempt only its screen from subscription expiry; keep authenticated server calls and unit data permissions unchanged.
 - URL resolution preserves explicit tab IDs; groups never redirect siblings; Stock keeps feeding access.
 
@@ -46,6 +46,6 @@
 - Periodic/focus refreshes (subscription, plan rules, stock lists) must not toggle loading states after the first load, because guards render a loader in place of the module and would unmount open forms; the stock add form also keeps its draft with useSessionDraft.
 
 - Voice: in-memory WAV via aqua-transcribe, app-session verified; existing sender; cancel frees mic.
-- Commercial infrastructure uses same-unit commercial stocks via specifications.attachedStockId; reuse CustomEquipmentManager. ColdStorageOverview reads dated health_records by infrastructure ID, never simulated IoT; isolated readings cannot prove connectivity or excursion duration.
+- Commercial infrastructure reuses CustomEquipmentManager and same-unit stocks via specifications.attachedStockId. Shared IoTControlCenter tabs use ColdStorageOverview for dated infrastructure temperatures only; isolated readings prove neither connectivity nor excursion duration.
 
 - PWA installation: one early-initialized store/App prompt; browser evidence only; standalone suppresses invites without proving installation.
