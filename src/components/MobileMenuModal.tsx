@@ -158,7 +158,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
     <Sheet modal={false} open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="left"
-        className="z-[10010] p-0 m-0 left-0 top-0 h-dvh w-[min(300px,85vw)] max-w-none sm:max-w-none flex flex-col text-left bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-foreground [&>button]:hover:bg-sidebar-accent"
+        className="z-[10010] p-0 m-0 left-0 top-0 h-dvh w-[min(300px,85vw)] max-w-none sm:max-w-none flex flex-col text-left bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-header-foreground [&>button]:hover:bg-sidebar-header-foreground/10"
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement | null;
           if (target?.closest('[data-mobile-menu-trigger]')) {
@@ -172,11 +172,15 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
           }
         }}
       >
-        <SheetHeader className="px-5 pt-4 pb-3 border-b border-sidebar-border text-left">
+        <SheetHeader className="px-5 pt-4 pb-3 bg-sidebar-header border-b border-sidebar-border text-left">
           <SheetTitle className="flex justify-start">
-            <span className="inline-flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm">
-              <img
-                src={menuLogoAsset.url}
+            <img
+              src={menuLogoAsset.url}
+              alt="AquaPilote"
+              className="h-10 w-auto max-w-[190px] object-contain"
+            />
+          </SheetTitle>
+
                 alt="AquaPilote"
                 className="h-9 w-auto max-w-[180px] object-contain"
               />
