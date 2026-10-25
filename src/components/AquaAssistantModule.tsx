@@ -22,6 +22,17 @@ import AssistantOverview from '@/components/assistant/AssistantOverview';
 import { useAssistantVoice } from '@/hooks/useAssistantVoice';
 import AssistantVoicePanel from '@/components/assistant/AssistantVoicePanel';
 import assistantIcon from '@/assets/aqua-assistant-icon.png';
+import { useStickToBottomContext } from 'use-stick-to-bottom';
+
+function ScrollToLatestMessage({ messages, visible }: { messages: Message[]; visible: boolean }) {
+  const { scrollToBottom } = useStickToBottomContext();
+  useEffect(() => {
+    if (!visible) return;
+    const frame = requestAnimationFrame(() => { void scrollToBottom({ animation: 'instant' }); });
+    return () => cancelAnimationFrame(frame);
+  }, [messages, visible, scrollToBottom]);
+  return null;
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -85,8 +96,6 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   const [selectedLanguage, setSelectedLanguage] = useState<string>('fr');
   const [showUnitSelector, setShowUnitSelector] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   // Ordinateur : fenêtre miniature agrandissable ; téléphone : plein écran.
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isPage = presentation === 'page';
@@ -112,6 +121,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   }, [activeConversation?.id]);
 
   useEffect(() => {
+    if (isLoading) return;
     if (activeConversation?.messages?.length) {
       setMessages(
         activeConversation.messages.map((m, index) => {
@@ -127,7 +137,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       setMessages([{ role: 'assistant', content: greeting }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId, activeConversation?.id]);
+  }, [activeId, activeConversation?.messages]);
 
   // Crée automatiquement une conversation si l'utilisateur n'en a aucune
   useEffect(() => {
@@ -148,27 +158,6 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
 
   // Données réelles
   const { records: healthRecords, loading: healthLoading, error: healthError } = useHealthRecords(undefined, selectedUnitId || undefined);
-
-  // Auto-scroll robuste : cible le viewport interne de Radix ScrollArea
-  // ET utilise scrollIntoView sur une ancre en bas pour couvrir tous les cas
-  // (streaming, changement de conversation, réponses longues, mobile).
-  useEffect(() => {
-    const scrollToBottom = () => {
-      // 1) Radix ScrollArea : viewport réel
-      const viewport = scrollRef.current?.querySelector(
-        '[data-radix-scroll-area-viewport]'
-      ) as HTMLElement | null;
-      if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
-      }
-      // 2) Ancre : garantie même quand le contenu grandit en streaming
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    };
-    // Deux passes : immédiat + après paint pour laisser le DOM se stabiliser
-    scrollToBottom();
-    const raf = requestAnimationFrame(scrollToBottom);
-    return () => cancelAnimationFrame(raf);
-  }, [messages, isLoading]);
 
   const currentLang = languages.find(l => l.id === selectedLanguage);
   
@@ -214,6 +203,8 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
     const last=scopedHistory[scopedHistory.length-1];
     const newMessages = isRetry && last?.role==='user' && last.content===textToSend ? scopedHistory : [...scopedHistory, userMessage];
     setMessages(newMessages);
+    setView('conversation');
+    setShowQuestions(false);
     setInput('');
     setIsLoading(true);
 
@@ -325,18 +316,10 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         setInput(textToSend);
       }
     } finally {
-      setIsLoading(false);
       requestAbort.current=null;
       // Persiste la conversation après chaque échange
       try {
-        let convId = activeConversation?.unit_id===selectedUnitId?activeId:null;
-        if (!convId) {
-          const target=units.find(u=>u.id===selectedUnitId);
-          const created = await startNew(target ? { id: target.id, name: target.name } : undefined);
-          convId = created?.id ?? null;
-        }
-        if (convId) {
-          const finalMessages: AquaMessage[] = [
+        const finalMessages: AquaMessage[] = [
             ...newMessages.map((m) => ({
               role: m.role,
               content: m.content,
@@ -346,10 +329,19 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
             })),
             ...(assistantContent ? [{ role: 'assistant' as const, content: assistantContent, unitId:selectedUnitId||undefined, createdAt: new Date().toISOString() }] : []),
           ];
+        let convId = activeConversation?.unit_id===selectedUnitId?activeId:null;
+        if (!convId) {
+          const target=units.find(u=>u.id===selectedUnitId);
+          const created = await startNew(target ? { id: target.id, name: target.name } : undefined, finalMessages);
+          convId = created?.id ?? null;
+        }
+        if (convId) {
           await persistMessages(convId, finalMessages, selectedCategory ?? null);
         }
       } catch (e) {
         console.warn('Persistance historique chat échouée', e);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -379,7 +371,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   const surface = (
     <section
       aria-label="AquaAssistant, assistant de gestion aquacole"
-      className={isPage ? 'relative flex h-[max(380px,calc(100dvh-10rem))] sm:h-[max(460px,calc(100dvh-12rem))] w-full min-w-0 flex-col overflow-hidden bg-background' : isFullscreen
+      className={isPage ? 'relative flex h-[max(460px,calc(100dvh-7rem))] sm:h-[max(460px,calc(100dvh-9rem))] w-full min-w-0 flex-col overflow-hidden bg-background' : isFullscreen
         ? 'fixed inset-0 z-[10000] flex min-h-0 flex-col overflow-hidden bg-background'
         : 'fixed inset-0 z-[10000] flex min-h-0 flex-col overflow-hidden border bg-background shadow-2xl sm:inset-auto sm:bottom-4 sm:right-4 sm:h-[min(680px,calc(100dvh-2rem))] sm:w-[min(440px,calc(100vw-2rem))] sm:rounded-lg'}
       style={!isPage && isFullscreen ? {
@@ -399,7 +391,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
+            <Button variant="outline" disabled={isLoading} size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
             {!isPage && <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>
@@ -441,7 +433,12 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         <AssistantKpis unitId={selectedUnitId} />
         <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-2" role="tablist" aria-label="Vues AquaAssistant"><Button role="tab" aria-selected={view==='conversation'} variant={view==='conversation'?'secondary':'ghost'} size="sm" onClick={()=>setView('conversation')}><MessageSquare className="size-4"/>Conversation</Button><Button role="tab" aria-selected={view==='overview'} variant={view==='overview'?'secondary':'ghost'} size="sm" onClick={()=>{voice.cancel();setView('overview');}}><LayoutDashboard className="size-4"/>Synthèse</Button>{canNavigate('reports')&&<Button size="icon" variant="ghost" className="ml-auto" title="Consulter les rapports" aria-label="Consulter les rapports" onClick={()=>navigate('reports')}><FileText className="size-4"/></Button>}</div>
         {view==='overview'?<div className="min-h-0 flex-1 overflow-y-auto"><AssistantOverview unitId={selectedUnitId} onQuestion={ask} onNavigate={navigate} canNavigate={canNavigate}/></div>:<>
-        {messages.length <= 1 && currentUnit?.type !== 'commercialisation' && <div className="shrink-0 border-b px-4 py-2">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
+          <Conversation className="min-h-24 flex-1" aria-label="Messages AquaAssistant">
+            <ScrollToLatestMessage messages={messages} visible={visible} />
+            <ConversationContent className="gap-4 p-3 sm:p-4">
+        {messages.length <= 1 && currentUnit?.type !== 'commercialisation' && <div className="border-b pb-2">
           <p className="text-sm text-muted-foreground">
             {latestControl
               ? `Dernier contrôle du ${new Date(`${latestControl.date}T00:00:00`).toLocaleDateString('fr-FR')} : ${measuredParameters}.`
@@ -450,16 +447,12 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
               : 'Aucun contrôle de l’eau disponible pour cette unité.'}
           </p>
         </div>}
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
+            <div className="flex shrink-0 items-center justify-between gap-2">
               <Button type="button" variant="ghost" size="sm" onClick={()=>setShowQuestions(v=>!v)}><Sparkles className="size-4 text-ocean-secondary"/>Questions rapides</Button>
-              <Button type="button" variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
+              <Button type="button" disabled={isLoading} variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
             </div>
             {showQuestions&&<div className="max-h-32 shrink-0 overflow-y-auto border-b px-3 py-2 sm:max-h-40"><div className="flex flex-wrap gap-2">{[...unitProfile.suggestions,{title:'Rapport hebdomadaire',question:'Génère mon rapport hebdomadaire pour cette unité : faits datés, chiffres enregistrés, limites et recommandations.'}].map(s=><Button key={s.title} variant="outline" size="sm" className="assistant-question h-auto max-w-full whitespace-normal bg-background text-left" onClick={()=>ask(s.question)}><Sparkles className="size-3 shrink-0 text-ocean-primary"/>{s.title}</Button>)}</div></div>}
 
-          <Conversation className="min-h-0 flex-1">
-            <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
                 {message.role === 'assistant' && <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground"><img src={assistantIcon} alt="" width={28} height={28} className="size-7 object-contain"/>AquaAssistant</div>}
                 <MessageContent className={message.role === 'user' ? 'bg-ocean-primary text-sidebar-foreground break-words [overflow-wrap:anywhere]' : 'min-w-0 rounded-lg border bg-card p-3 text-sm sm:p-4 sm:text-base break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-ocean-primary [&_strong]:tabular-nums'}>
@@ -467,13 +460,12 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}
               </AIMessage>)}
-              {isLoading && messages[messages.length - 1]?.content === '' && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Bot className="size-4 text-primary" /><Shimmer>Analyse des données de l’unité…</Shimmer></div>}
-              <div ref={messagesEndRef} aria-hidden="true" />
+              {isLoading && !messages[messages.length - 1]?.content?.trim() && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Bot className="size-4 text-primary" /><Shimmer>Analyse des données de l’unité…</Shimmer></div>}
             </ConversationContent>
             <ConversationScrollButton aria-label="Voir le dernier message" />
           </Conversation>
 
-          <div className="shrink-0 border-t bg-background p-3 sm:p-4">
+          <div className="max-h-[45%] shrink-0 overflow-y-auto border-t bg-background p-2 sm:p-3">
             {chatError && <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 p-3" data-chat-error={chatError.cause}>
               <div className="flex gap-2"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-destructive">{CHAT_ERROR_LABEL[chatError.cause]}</p><p className="text-xs text-muted-foreground">{chatError.message}</p><div className="mt-2 flex flex-wrap gap-2">{chatError.retryable && lastAttempt && <Button size="sm" variant="outline" disabled={isLoading || !canRetryNow} onClick={() => sendMessage(lastAttempt)}><RefreshCw className="size-3.5" />{canRetryNow ? 'Réessayer' : `Dans ${retryIn}s`}</Button>}<Button size="sm" variant="ghost" onClick={clearChatError}>Fermer</Button></div></div></div>
             </div>}
