@@ -1,7 +1,6 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot } from 'lucide-react';
+import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot, LayoutDashboard, MessageSquare, Sparkles, FileText } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea,
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import AssistantKpis from '@/components/assistant/AssistantKpis';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
+import AssistantOverview from '@/components/assistant/AssistantOverview';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -43,8 +43,8 @@ const languages: Language[] = [
   { id: 'swahili', label: 'Kiswahili', code: 'sw-KE', flag: '🇰🇪' },
 ];
 
-const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = true }: { onClose?: () => void; presentation?: 'page' | 'floating'; visible?: boolean } = {}) => {
-  const { units, activeUnit } = useProductionUnits();
+const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = true, canNavigate = () => false }: { onClose?: () => void; presentation?: 'page' | 'floating'; visible?: boolean; canNavigate?: (tab:string)=>boolean } = {}) => {
+  const { units, activeUnit, setActiveUnit } = useProductionUnits();
   const { isDemoMode } = useAuth();
   const { t } = useSettings();
   const greeting = "Bonjour et bienvenue. Comment puis-je vous aider aujourd’hui avec votre ferme ?";
@@ -62,6 +62,9 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: greeting }]);
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState('');
+  const [view,setView]=useState<'conversation'|'overview'>('conversation');
+  const [showQuestions,setShowQuestions]=useState(false);
+  const requestAbort=useRef<AbortController|null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const {
     chatError,
@@ -89,6 +92,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
 
   // Changer d'unité ouvre une nouvelle conversation propre à cette unité (historique séparé).
   const switchUnit = async (unitId: string | null) => {
+    if (isLoading) return;
     setShowUnitSelector(false);
     if (unitId === selectedUnitId) return;
     setSelectedUnitId(unitId);
@@ -102,6 +106,10 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   const recognitionRef = useRef<any>(null);
 
   // Charge les messages de la conversation active depuis Supabase
+  useEffect(() => {
+    if (activeConversation && !isLoading) setSelectedUnitId(activeConversation.unit_id);
+  }, [activeConversation?.id]);
+
   useEffect(() => {
     if (activeConversation?.messages?.length) {
       setMessages(
@@ -131,13 +139,9 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   // Synchroniser avec l'unité active
   useEffect(() => {
     if (activeUnit?.id && activeUnit.id !== selectedUnitId) {
+      requestAbort.current?.abort();
       setSelectedUnitId(activeUnit.id);
-      if (messages.length > 1) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `📍 Contexte basculé vers l'unité "${activeUnit.name}". Je peux maintenant répondre avec les données spécifiques de cette unité.` 
-        }]);
-      }
+      setMessages([{role:'assistant',unitId:activeUnit.id,content:`Bonjour. Que souhaitez-vous analyser pour « ${activeUnit.name} » ?`}]);
     }
   }, [activeUnit?.id]);
 
@@ -237,12 +241,17 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       category: selectedCategory || undefined,
       unitId: selectedUnitId || undefined
     };
-    const newMessages = [...messages, userMessage];
+    const scopedHistory = messages.filter(m=>!m.unitId||m.unitId===selectedUnitId);
+    const last=scopedHistory[scopedHistory.length-1];
+    const newMessages = isRetry && last?.role==='user' && last.content===textToSend ? scopedHistory : [...scopedHistory, userMessage];
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
     let assistantContent = '';
+    let placeholderAdded = false;
+    const controller=new AbortController();
+    requestAbort.current=controller;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -251,8 +260,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         const authErr = new Error("Session expirée. Reconnectez-vous pour utiliser l'assistant.");
         (authErr as unknown as { status: number }).status = 401;
         failFromError(authErr, ctx.attempt);
-        setIsLoading(false);
-        return;
+        throw authErr;
       }
 
       const enrichedMessages = newMessages.map(m => ({
@@ -262,16 +270,17 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
           : m.content
       }));
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/aqua-assistant`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aqua-assistant`, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
-          'apikey': SUPABASE_ANON_KEY,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           'x-request-id': ctx.requestId,
         },
         body: JSON.stringify({ 
-          messages: enrichedMessages,
+          messages: enrichedMessages.slice(-50),
           category: selectedCategory,
           unitId: selectedUnitId,
           unitName: selectedUnitName,
@@ -298,6 +307,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       if (!reader) throw new Error('Pas de réponse');
 
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      placeholderAdded = true;
 
       let buffer = '';
 
@@ -326,7 +336,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
               assistantContent += content;
               setMessages(prev => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: assistantContent };
+                updated[updated.length - 1] = { role: 'assistant', content: assistantContent, unitId:selectedUnitId||undefined };
                 return updated;
               });
             }
@@ -336,20 +346,24 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
           }
         }
       }
+      if(!assistantContent.trim()) throw new Error('L’assistant n’a pas renvoyé de réponse.');
       markChatSuccess();
     } catch (error) {
       console.error('Assistant error:', error);
-      failFromError(error, ctx.attempt);
+      if(!(error instanceof DOMException && error.name==='AbortError')) failFromError(error, ctx.attempt);
       if (!assistantContent) {
-        setMessages(prev => prev.slice(0, -1));
+        if(placeholderAdded) setMessages(prev => prev.slice(0, -1));
+        setInput(textToSend);
       }
     } finally {
       setIsLoading(false);
+      requestAbort.current=null;
       // Persiste la conversation après chaque échange
       try {
-        let convId = activeId;
+        let convId = activeConversation?.unit_id===selectedUnitId?activeId:null;
         if (!convId) {
-          const created = await startNew(activeUnit ? { id: activeUnit.id, name: activeUnit.name } : undefined);
+          const target=units.find(u=>u.id===selectedUnitId);
+          const created = await startNew(target ? { id: target.id, name: target.name } : undefined);
           convId = created?.id ?? null;
         }
         if (convId) {
@@ -361,7 +375,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
               unitId: m.unitId,
               unitName: units.find((u) => u.id === m.unitId)?.name ?? null,
             })),
-            { role: 'assistant' as const, content: assistantContent, createdAt: new Date().toISOString() },
+            ...(assistantContent ? [{ role: 'assistant' as const, content: assistantContent, unitId:selectedUnitId||undefined, createdAt: new Date().toISOString() }] : []),
           ];
           await persistMessages(convId, finalMessages, selectedCategory ?? null);
         }
@@ -385,6 +399,13 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   ].filter(Boolean).join(' · ') : '';
 
   const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
+  const navigate=(tab:string)=>{
+    if(!canNavigate(tab)||isLoading)return;
+    if(currentUnit)setActiveUnit(currentUnit);
+    if(!isPage)onClose?.();
+    window.dispatchEvent(new CustomEvent('aquapilote:navigate',{detail:tab}));
+  };
+  const ask=(question:string)=>{setView('conversation');setInput(question);setShowQuestions(false);};
 
   const surface = (
     <section
@@ -397,10 +418,10 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className={isFullscreen ? "relative shrink-0 overflow-visible border-b bg-gradient-to-b from-primary/10 to-background px-3 pt-3 sm:px-5" : "relative z-10 shrink-0 overflow-visible border-b bg-gradient-to-b from-primary/10 to-background px-3 pt-2"}>
+      <header className="relative z-10 shrink-0 border-b bg-muted/30 px-3 pt-3 sm:px-4">
         <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-primary/30">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sidebar text-sidebar-foreground">
               <Bot className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
@@ -415,7 +436,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
             {!isPage && <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>}
-            <Button variant="outline" size="icon" className="shrink-0" onClick={() => { setIsFullscreen(false); if (onClose) onClose(); else window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => { requestAbort.current?.abort(); setIsFullscreen(false); if (onClose) onClose(); else window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
               <X className="size-4" />
             </Button>
           </div>
@@ -423,7 +444,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
 
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 px-1 pb-3 sm:px-0">
           <div className="relative min-w-0 flex-1 sm:max-w-sm">
-            <Button variant="outline" onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }} className="w-full justify-between bg-background">
+            <Button variant="outline" disabled={isLoading} onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }} className="w-full justify-between bg-background">
               <span className="flex min-w-0 items-center gap-2"><Building2 className="size-4 shrink-0" /><span className="truncate">{unitLabel}</span></span>
               <ChevronDown className="size-4 shrink-0" />
             </Button>
@@ -449,7 +470,9 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <AssistantKpis unitId={selectedUnitId} />
-        {messages.length <= 1 && currentUnit?.type !== 'commercialisation' && <div className="shrink-0 border-b px-4 py-3 sm:px-6">
+        <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-2" role="tablist" aria-label="Vues AquaAssistant"><Button role="tab" aria-selected={view==='conversation'} variant={view==='conversation'?'secondary':'ghost'} size="sm" onClick={()=>setView('conversation')}><MessageSquare className="size-4"/>Conversation</Button><Button role="tab" aria-selected={view==='overview'} variant={view==='overview'?'secondary':'ghost'} size="sm" onClick={()=>setView('overview')}><LayoutDashboard className="size-4"/>Synthèse</Button>{canNavigate('reports')&&<Button size="icon" variant="ghost" className="ml-auto" title="Consulter les rapports" aria-label="Consulter les rapports" onClick={()=>navigate('reports')}><FileText className="size-4"/></Button>}</div>
+        {view==='overview'?<div className="min-h-0 flex-1 overflow-y-auto"><AssistantOverview unitId={selectedUnitId} onQuestion={ask} onNavigate={navigate} canNavigate={canNavigate}/></div>:<>
+        {messages.length <= 1 && currentUnit?.type !== 'commercialisation' && <div className="shrink-0 border-b px-4 py-2">
           <p className="text-sm text-muted-foreground">
             {latestControl
               ? `Dernier contrôle du ${new Date(`${latestControl.date}T00:00:00`).toLocaleDateString('fr-FR')} : ${measuredParameters}.`
@@ -460,9 +483,11 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         </div>}
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-            <div className="flex shrink-0 justify-end px-3 pt-2">
+            <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
+              <Button type="button" variant="ghost" size="sm" onClick={()=>setShowQuestions(v=>!v)}><Sparkles className="size-4 text-ocean-secondary"/>Questions rapides</Button>
               <Button type="button" variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
             </div>
+            {showQuestions&&<div className="max-h-40 shrink-0 overflow-y-auto border-b px-3 py-2"><p className="mb-2 text-xs text-muted-foreground">{unitProfile.role}</p><div className="flex flex-wrap gap-2">{[...unitProfile.suggestions,{title:'Rapport hebdomadaire',question:'Génère mon rapport hebdomadaire pour cette unité : faits datés, chiffres enregistrés, limites et recommandations.'}].map(s=><Button key={s.title} variant="outline" size="sm" className="h-auto max-w-full whitespace-normal text-left" onClick={()=>ask(s.question)}>{s.title}</Button>)}</div></div>}
 
           <Conversation className="min-h-0 flex-1">
             <ConversationContent className="gap-5 p-3 sm:p-5">
@@ -487,7 +512,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
               <PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Posez une question sur ${unitLabel}…`} className="min-h-14 text-base" data-chat-input />
               <PromptInputFooter>
                 <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton></PromptInputTools>
-                <PromptInputSubmit status={chatStatus} disabled={!input.trim() && !isLoading} aria-label={isLoading ? 'Arrêter' : 'Envoyer la question'} />
+                <PromptInputSubmit status={chatStatus} disabled={!input.trim() && !isLoading} onClick={isLoading?(e)=>{e.preventDefault();requestAbort.current?.abort();}:undefined} aria-label={isLoading ? 'Arrêter' : 'Envoyer la question'} />
               </PromptInputFooter>
             </PromptInput>
             {isListening && <p className="mt-2 text-center text-xs text-primary">Écoute en cours…</p>}
@@ -495,6 +520,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
           </div>
 
         </div>
+        </>}
       </div>
 
       {showHistory && <div className="fixed inset-0 z-[10020] flex" onClick={() => setShowHistory(false)}><div className="absolute inset-0 bg-foreground/40" /><div className="relative ml-auto flex h-full w-full flex-col bg-background shadow-2xl sm:w-96" onClick={(event) => event.stopPropagation()}>

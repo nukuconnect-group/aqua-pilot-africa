@@ -147,9 +147,11 @@ html, body {
     --register-action: 0 0% 100%;
     --register-action-foreground: 219 80% 28%;
     --register-action-hover: 210 70% 94%;
+    --assistant-positive: 158 64% 29%;
   }
 
   .dark {
+    --assistant-positive: 158 62% 60%;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
