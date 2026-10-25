@@ -881,7 +881,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             </div>
             {catalog.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">Aucun stock commercial disponible. Dans Stock, ajoutez ou modifiez un article en choisissant « Stock commercial » avec son prix de vente.</p>
-            ) : view === 'multi' || search.trim() ? (
+            ) : search.trim() ? (
               searchResults
             ) : (
               <>
@@ -911,7 +911,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               </div>
               </>
             )}
-            {catalog.length > 0 && view !== 'multi' && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
+            {catalog.length > 0 && !filtered.length && <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>}
             <Button variant="outline" onClick={() => setCart(prev => [...prev, { name: search.trim(), quantity: 1, unitPrice: 0 }])}><Plus className="h-4 w-4 mr-2" />Ajouter un produit</Button>
           </CardContent>
         </Card>
@@ -919,7 +919,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <div className="space-y-3">
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
           <p className="text-sm font-semibold">Rechercher un produit</p>
-          <Input placeholder="Nom ou code du produit" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input aria-label="Rechercher un produit" placeholder="Nom ou code du produit" value={search} onChange={(e) => setSearch(e.target.value)} />
           {searchResults}
         </CardContent></Card>
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
@@ -1041,7 +1041,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <Button className="w-full" onClick={printReceipt}><Printer className="w-4 h-4 mr-2" />Imprimer le reçu</Button>
         </div>}
       </DialogContent></Dialog>
-      {view !== 'registers' && cart.length > 0 && (
+      {cart.length > 0 && (
         <Button className="lg:hidden fixed bottom-20 left-4 z-40 h-12 rounded-full shadow-lg" onClick={() => document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth' })}>
           <ShoppingCart className="w-4 h-4 mr-2" />{cart.reduce((n, l) => n + l.quantity, 0)} article(s) · {formatCurrency(total)}
         </Button>
