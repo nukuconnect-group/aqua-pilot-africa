@@ -21,6 +21,7 @@ import EnvironmentalDashboard from './EnvironmentalDashboard';
 import MqttConfiguration from './MqttConfiguration';
 import IoTAIAnalysis from './iot/IoTAIAnalysis';
 import IoTBasinOverview from './iot/IoTBasinOverview';
+import ColdStorageOverview from './iot/ColdStorageOverview';
 
 const IoTControlCenter = () => {
   const { activeUnit, units } = useProductionUnits();
@@ -34,6 +35,10 @@ const IoTControlCenter = () => {
   ]);
 
   const alerts = getActiveAlerts();
+
+  if (activeUnit?.type === 'commercialisation') {
+    return <div className="space-y-5 min-w-0"><header className="border-b pb-4"><h2 className="text-xl font-semibold flex items-center gap-2"><Thermometer className="h-6 w-6 text-primary" />Centre IoT · Chaîne du froid</h2></header><ColdStorageOverview /></div>;
+  }
 
   return (
     <div className="space-y-6">

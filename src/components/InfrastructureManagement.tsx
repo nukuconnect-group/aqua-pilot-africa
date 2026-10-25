@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { getInfrastructureTypeLabel as getInfraLabel } from '@/lib/unitContext';
+import CustomEquipmentManager from './CustomEquipmentManager';
 
 // Composant pour programmer la maintenance
 const MaintenanceScheduleForm = ({ infrastructure }: { infrastructure: any }) => {
@@ -203,6 +204,7 @@ const InfrastructureManagement = () => {
             <TabsTrigger value="maintenance" className="text-xs sm:text-sm px-2 sm:px-3">
               Maintenance
             </TabsTrigger>
+            <TabsTrigger value="equipment" className="text-xs sm:text-sm px-2 sm:px-3">Matériel</TabsTrigger>
           </TabsList>
         </div>
 
@@ -241,13 +243,13 @@ const InfrastructureManagement = () => {
                         {infrastructure.name}
                       </h4>
                       <Badge variant="outline" className="w-fit text-xs sm:text-sm">
-                        En ligne
+                        Configuration enregistrée
                       </Badge>
                     </div>
                     
                     {infrastructure.specifications && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
-                        {Object.entries(infrastructure.specifications).filter(([key, value]) => !['depreciation', 'depreciationAssetId'].includes(key) && (typeof value === 'string' || typeof value === 'number')).map(([key, value]) => (
+                          {Object.entries(infrastructure.specifications).filter(([key, value]) => !['depreciation', 'depreciationAssetId', 'attachedBatchId', 'attachedStockId', ...(activeUnit.type === 'commercialisation' ? ['ph','oxygenLevel','ammonia','profondeur'] : [])].includes(key) && (typeof value === 'string' || typeof value === 'number')).map(([key, value]) => (
                           <div key={key} className="flex justify-between gap-2 min-w-0">
                             <span className="text-gray-600 truncate">{key}:</span>
                             <span className="font-medium truncate">{value}</span>
@@ -324,6 +326,7 @@ const InfrastructureManagement = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="equipment"><CustomEquipmentManager /></TabsContent>
       </Tabs>
     </div>
   );
