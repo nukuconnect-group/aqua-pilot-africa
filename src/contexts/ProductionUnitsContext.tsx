@@ -1,3 +1,4 @@
+import { useManualRefresh } from '@/hooks/useManualRefresh';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -793,6 +794,8 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
     fetchTransactionsFromDB,
     fetchDepreciableAssetsFromDB,
   ]);
+
+  useManualRefresh(() => refreshCoreData('manual-mobile'));
 
   useEffect(() => {
     const handleRefresh = (event: Event) => {

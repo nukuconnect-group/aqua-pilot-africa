@@ -1,18 +1,18 @@
 
 - Only `AquaAssistantModule` mounts assistant UI; legacy stays unused. Keep one surface/store.
-- Keep assistant state across views; scroll questions with messages; create history with the exchange to avoid resets.
+- Preserve assistant state across views; questions scroll with messages; initialize history with the exchange.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
-- One QueryClientProvider, no focus refetch; account/unit cache preserves forms.
-- Dashboard uses scoped KPI sources; mobile menu overrides centered controls locally.
+- One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Manual refresh awaits registered mounted readers and active queries; never reload/remount. State-hook manual reads suppress loading guards.
+- Dashboard KPIs are unit-scoped; mobile menu alignment is local. Backgrounds use uploaded CDN pointers and isolated rotation state.
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
 - Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
 - Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
-- Feeding print/PDF windows use printWhenReady to wait for assets and rendered SVG layout instead of printing immediately or after a fixed delay.
+- Feeding print/PDF uses printWhenReady for assets and SVG layout, never fixed delays.
 - Render the assistant launcher through a body portal independently of module eligibility, hiding it only while the assistant overlay is actually rendered; keep the conversation permission check so layout clipping or stale open state cannot hide the launcher or bypass access rules.
 - Centralize universal AquaAssistant eligibility in core/always-open module rules and exempt only its screen from subscription expiry; keep authenticated server calls and unit data permissions unchanged.
-- Preserve explicit tab IDs during URL resolution; permission-group IDs must not redirect sibling screens, so Stock remains a separate screen with existing feeding permissions.
+- URL resolution preserves explicit tab IDs; permission-group IDs never redirect siblings. Stock keeps feeding permissions.
 
-- Treasury uses append-only unit-scoped movements with server-side account locking and balanced journal lines; account opening is atomic to prevent partial initialization.
+- Treasury: append-only unit movements, server account locking, balanced journals and atomic account opening.
 - Sale cancellation preserves prior status and journal entries, adds dated reversals, and atomically refunds linked POS cash.
 - Accounting, treasury and sales share the application client; deploy only to its actual backend.
 - CRM uses ContactActions to open messaging apps, never send automatically.

@@ -1,3 +1,9 @@
+## Photos du tableau de bord et actualisation mobile (25/10/2026)
+- [x] Remplacer le fond mobile par les deux images fournies hébergées, alternées toutes les 30 minutes
+- [x] Ajouter bouton et tirage vers le bas ; relire les sources montées du tableau de bord et les requêtes actives sans rechargement ni remontage
+- [x] Deux images chargées et alternance à 30 minutes contrôlées ; bouton et geste vérifiés, écran conservé, en-tête sans débordement à 320/393/768 px ; 14 tests ciblés distincts réussis, compilation OK
+- [ ] Vérifier la relecture des données du compte réel et le geste dans l’app installée : session historique indisponible ; contrôles d’interaction isolés uniquement
+
 ## Indicateurs et en-tête mobiles (25/10/2026)
 - [x] Réduire la hauteur des quatre indicateurs à 104 px sur mobile et colorer distinctement leurs icônes
 - [x] Garder AquaPilote sur une ligne ; contenir notification, recherche et langue sans débordement

@@ -31,7 +31,9 @@ import FarmsMap from './dashboard/FarmsMap';
 import { analyzeParameter } from '@/lib/waterQualityThresholds';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 import { stocksForUnitType } from '@/lib/stockPurpose';
-import dashboardAquaculture from '@/assets/dashboard-aquaculture.jpg';
+import dashboardPond from '@/assets/dashboard-pond.png.asset.json';
+import dashboardCages from '@/assets/dashboard-cages.png.asset.json';
+import { dashboardImageIndex, DASHBOARD_IMAGE_INTERVAL_MS } from '@/lib/dashboardImageRotation';
 
 interface ModernDashboardProps {
   onNavigate?: (tab: string) => void;
@@ -98,6 +100,12 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   const { activeUnit, setActiveUnit, units, getUnitEquipment, getUnitInfrastructures, getUnitDepreciableAssets, calculateDepreciation } = useProductionUnits();
   const { formatCurrency } = useSettings();
   const [showMap, setShowMap] = useState(false);
+  const [backgroundIndex, setBackgroundIndex] = useState(0);
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => setBackgroundIndex(dashboardImageIndex(Date.now() - startedAt)), DASHBOARD_IMAGE_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, []);
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedFarmFilter = searchParams.get('farm') || 'all';
   const selectedBasinFilter = searchParams.get('basin') || 'all';
@@ -309,7 +317,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   return (
     <div className="dashboard-content min-w-0 space-y-4 sm:space-y-6">
       <section aria-label="Tableau de bord AquaPilote" className="relative isolate overflow-hidden min-w-0 rounded-lg bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
-        <img src={dashboardAquaculture} alt="" aria-hidden="true" width={1536} height={1024} className="absolute inset-0 -z-20 h-full w-full object-cover object-[65%_45%] blur-[1.5px] sm:hidden" />
+        {[dashboardPond, dashboardCages].map((image, index) => <img key={image.asset_id} src={image.url} alt="" aria-hidden="true" width={index === 0 ? 1152 : 768} height={768} data-dashboard-background={index} className={`absolute inset-0 -z-20 h-full w-full object-cover object-center blur-[1.5px] sm:hidden ${backgroundIndex === index ? 'opacity-100' : 'opacity-0'}`} />)}
         <div className="absolute inset-0 -z-10 bg-sidebar/65 sm:hidden" />
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">

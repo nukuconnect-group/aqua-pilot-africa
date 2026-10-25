@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthReady } from '@/hooks/useAuthReady';
@@ -62,6 +63,7 @@ export const useLivestockBatches = (unitId?: string) => {
     };
   }, []);
 
+  const backgroundRead = useRef(false);
   const fetchBatches = useCallback(async () => {
     if (!isReady) return;
 
@@ -89,7 +91,7 @@ export const useLivestockBatches = (unitId?: string) => {
     }
 
     try {
-      setLoading(true);
+      if (!backgroundRead.current) setLoading(true);
       setError(null);
       
       let query = supabase
@@ -243,6 +245,11 @@ export const useLivestockBatches = (unitId?: string) => {
       throw error;
     }
   };
+
+  useManualRefresh(async () => {
+    backgroundRead.current = true;
+    try { await fetchBatches(); } finally { backgroundRead.current = false; }
+  });
 
   // Charger les données quand l'auth est prête
   useEffect(() => {

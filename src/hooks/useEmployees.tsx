@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
@@ -39,6 +40,7 @@ export const useEmployees = () => {
   const [paySlips, setPaySlips] = useState<PaySlip[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const backgroundRead = useRef(false);
   const fetchEmployees = useCallback(async () => {
     if (isDemoMode) {
       setEmployees([]);
@@ -47,7 +49,7 @@ export const useEmployees = () => {
     }
     if (!user?.id || !isAuthenticated) return;
 
-    setLoading(true);
+    if (!backgroundRead.current) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('employees')
@@ -97,6 +99,11 @@ export const useEmployees = () => {
       setLoading(false);
     }
   }, [isDemoMode, user?.id, isAuthenticated]);
+
+  useManualRefresh(async () => {
+    backgroundRead.current = true;
+    try { await fetchEmployees(); } finally { backgroundRead.current = false; }
+  });
 
   useEffect(() => {
     fetchEmployees();

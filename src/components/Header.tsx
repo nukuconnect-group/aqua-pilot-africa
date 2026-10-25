@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ProfileAvatar from '@/components/ProfileAvatar';
-import { Settings, LogOut, UserCircle, Sun, Moon, User, Globe, PanelLeft, Search, X, Sparkles } from 'lucide-react';
+import { Settings, LogOut, UserCircle, Sun, Moon, User, Globe, PanelLeft, Search, X, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,6 +23,7 @@ import { useLogs } from '@/contexts/LogsContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/components/ThemeProvider';
 import { supportedLanguages, type SupportedLanguage } from '@/i18n';
+import { useAppRefresh } from '@/hooks/useAppRefresh';
 
 const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) => void; onOpenMobileMenu?: () => void }) => {
   const [showLogin, setShowLogin] = useState(false);
@@ -50,6 +51,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
   } = useToast();
   const { theme, setTheme } = useTheme();
   const { subscription } = useCurrentSubscription();
+  const { refresh, refreshing } = useAppRefresh();
 
   const handleLogin = () => {
     if (!isAuthenticated) {
@@ -149,6 +151,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
 
         {/* Navigation actions à droite */}
         <div className="header-actions flex items-center gap-0.5 sm:gap-2 lg:gap-3 shrink-0 text-primary-foreground">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20" aria-label="Actualiser les données" disabled={refreshing} onClick={refresh}><RefreshCw className={`h-4 w-4 ${refreshing ? 'motion-safe:animate-spin' : ''}`} /></Button>
           {/* Bouton recherche mobile */}
           <Button
             variant="ghost"
