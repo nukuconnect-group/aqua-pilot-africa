@@ -532,6 +532,13 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const todayKey = new Date().toDateString();
   const todayMoves = cash.movements.filter((m) => new Date(m.created_at).toDateString() === todayKey);
   const today = summarizeSession(0, todayMoves);
+  // Quantités réellement vendues aujourd'hui dans l'unité active (ventes non annulées).
+  const todayQuantities = useMemo(() => {
+    const qty = (sales as any[])
+      .filter((s) => s.unitId === activeUnit?.id && s.status !== 'cancelled' && s.date && new Date(s.date).toDateString() === todayKey)
+      .reduce((n, s) => n + (s.products || []).reduce((q: number, p: any) => q + (Number(p.quantity) || 0), 0), 0);
+    return Math.round(qty * 100) / 100;
+  }, [sales, activeUnit?.id, todayKey]);
   const checkDayCount = async () => {
     const diff = cashDifference(Number(dayCount) || 0, cash.expected);
     if (diff !== 0 && unitOwner !== undefined) {
@@ -627,22 +634,23 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             <Button variant="registerAction" size="sm" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller : protège la caisse par votre mot de passe pendant une absence"><KeyRound className="h-4 w-4" />Verrouiller</Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           <div className="rounded-lg bg-white/15 p-2 min-w-0">
             <p className="text-[11px] uppercase tracking-wide text-blue-100">Caisse</p>
             {cash.sessions.length > 1 ? (
               <select className="mt-0.5 w-full h-7 rounded bg-white text-blue-900 px-1 text-sm font-semibold" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
                 {cash.sessions.map((s) => <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>)}
               </select>
-            ) : <p className="font-bold truncate">{cash.session.name || 'Caisse principale'}</p>}
+            ) : <p className="font-bold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
           </div>
           <div className="rounded-lg bg-white/15 p-2 min-w-0">
             <p className="text-[11px] uppercase tracking-wide text-blue-100">Caissier / Caissière</p>
-            <p className="font-bold truncate">{cashierName || '—'}</p>
+            <p className="font-bold break-words leading-tight">{cashierName || '—'}</p>
           </div>
-          <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Ventes du jour</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
-          <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Tickets du jour</p><p className="font-bold">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
-          <div className="rounded-lg bg-white/15 p-2 col-span-2 sm:col-span-1"><p className="text-[11px] uppercase tracking-wide text-blue-100">Solde en caisse</p><p className="font-bold">{formatCurrency(cash.expected)}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Ventes du jour</p><p className="font-bold break-words leading-tight">{formatCurrency(today.sales)}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Tickets du jour</p><p className="font-bold break-words leading-tight">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Quantités du jour</p><p className="font-bold break-words leading-tight">{todayQuantities}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0 col-span-2 sm:col-span-1"><p className="text-[11px] uppercase tracking-wide text-blue-100">Solde en caisse</p><p className="font-bold break-words leading-tight">{formatCurrency(cash.expected)}</p></div>
         </div>
         {closedRegisters.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 text-xs">
