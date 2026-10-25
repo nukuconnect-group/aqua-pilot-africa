@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { analyticsDateRange } from '@/lib/analyticsDateRange';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, Brush, CartesianGrid, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -176,6 +176,7 @@ const ProductionBusinessIntelligenceModule = () => {
                   <AreaChart data={stats.series}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="label" fontSize={11} /><YAxis fontSize={11} width={60} /><Tooltip formatter={(v: number) => formatMoney(v)} /><Legend />
                     <Area type="monotone" dataKey="ca" name="CA" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.2} />
                     <Area type="monotone" dataKey="depenses" name="Dépenses" stroke={COLORS[2]} fill={COLORS[2]} fillOpacity={0.15} />
+                    <Brush dataKey="label" height={24} stroke="hsl(var(--primary))" fill="hsl(var(--background))" />
                   </AreaChart></ResponsiveContainer> : <Empty />}</CardContent>
               </Card>
               <Card>
@@ -262,6 +263,7 @@ const ForecastPanel = ({ unitId, unitName }: { unitId?: string; unitName?: strin
               <Line type="monotone" dataKey="ca" name="CA réel" stroke={COLORS[0]} strokeWidth={2} connectNulls={false} />
               <Line type="monotone" dataKey="depenses" name="Dépenses réelles" stroke={COLORS[2]} strokeWidth={2} />
               <Line type="monotone" dataKey="caPrev" name="CA prévu" stroke={COLORS[0]} strokeDasharray="6 4" strokeWidth={2} />
+              <Brush dataKey="month" height={24} stroke="hsl(var(--primary))" fill="hsl(var(--background))" />
             </LineChart></ResponsiveContainer></CardContent>
         </Card>
         <Card><CardContent className="space-y-3 p-4">
@@ -277,6 +279,6 @@ const ForecastPanel = ({ unitId, unitName }: { unitId?: string; unitName?: strin
 
 const BusinessIntelligenceModule = () => {
   const { activeUnit } = useProductionUnits();
-  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Intelligence & Analyse" /> : <ProductionBusinessIntelligenceModule />;
+  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Intelligence & Analyse" presentation="intelligence" /> : <ProductionBusinessIntelligenceModule />;
 };
 export default BusinessIntelligenceModule;

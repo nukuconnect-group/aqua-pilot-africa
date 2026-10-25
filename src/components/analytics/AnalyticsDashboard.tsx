@@ -867,6 +867,6 @@ const ProductionAnalyticsDashboard: React.FC = () => {
 
 const AnalyticsDashboard = () => {
   const { activeUnit } = useProductionUnits();
-  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance /> : <ProductionAnalyticsDashboard />;
+  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Analytique" presentation="analytics" /> : <ProductionAnalyticsDashboard />;
 };
 export default AnalyticsDashboard;

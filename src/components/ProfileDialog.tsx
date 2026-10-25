@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import ProfileAvatar from '@/components/ProfileAvatar';
 import { Camera, Loader2, Save, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -191,12 +191,7 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ isOpen, onClose }) => {
         <div className="space-y-6 py-4">
           {/* Avatar */}
           <div className="flex flex-col items-center gap-3">
-            <Avatar className="h-28 w-28 sm:h-32 sm:w-32 ring-2 ring-border">
-              <AvatarImage src={avatarPreview || user.avatar} alt={user.name} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileAvatar src={avatarPreview || user.avatar} name={user.name} className="h-28 w-28 sm:h-32 sm:w-32" />
 
             <Button
               type="button"

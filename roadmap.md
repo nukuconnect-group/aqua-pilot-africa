@@ -1,3 +1,15 @@
+## Barre latérale AquaAssistant et profil (25/10/2026)
+- [x] Icône robot inspirée de la référence dans les menus ordinateur/mobile ; discussion existante conservée
+- [x] Photo existante conservée ; avatar silhouette élégant dans le profil et menu de déconnexion
+- [x] Ouverture depuis les deux menus vérifiée en contrôle isolé, sans débordement ni erreur ; 14 tests d’accès réussis
+- [ ] Vérifier photo personnelle et réponse IA avec le compte réel : session historique indisponible
+
+## Disposition commune des analyses (25/10/2026)
+- [x] Rétablir Analytique : quatre indicateurs, onglets, grille de graphiques ; données commerciales adaptées
+- [x] Intelligence & Analyse : tableau BI distinct, courbes/histogrammes, sélection de plage et prévisions tracées séparément
+- [x] 9 tests réussis, disposition et onglets vérifiés isolément sur ordinateur/mobile ; compilation réussie
+- [ ] Vérifier les courbes remplies depuis le compte réel : session indisponible, aucun montant d’essai créé
+
 ## Erreurs Analytique et Intelligence & Analyse (25/10/2026)
 - [x] Reproduire Invalid time value lors d’une date vide et corriger ; gérer les lectures échouées sans chargement permanent ; actualisation sans rechargement de page
 - [x] 9 tests réussis, écrans isolés sans erreur, date vide ne ferme plus l’analyse ; compilation réussie

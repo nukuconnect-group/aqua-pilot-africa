@@ -1,4 +1,5 @@
 import React from 'react';
+import AssistantNavIcon from '@/components/AssistantNavIcon';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -195,9 +196,10 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
                 </h3>
                 <div className="flex flex-col gap-0.5">
                   {category.items.map((item) => (
-                    <button
+                    <Button
                       key={item.id}
                       type="button"
+                      variant="ghost"
                       onClick={() => handleItemClick(item.id)}
                       className={`w-full h-8 px-2 flex flex-row items-center gap-2 text-left rounded-md transition-colors touch-manipulation ${
                         activeTab === item.id
@@ -205,11 +207,11 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
                           : 'text-white/90 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      <item.icon className="w-4 h-4 flex-shrink-0" />
+                      {item.id === 'aqua-assistant' ? <AssistantNavIcon className="h-6 w-6" /> : <item.icon className="w-4 h-4 flex-shrink-0" />}
                       <span className="text-sm leading-none truncate">
-                        {item.label}
+                        {item.id === 'aqua-assistant' ? 'AquaAssistant' : item.label}
                       </span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
