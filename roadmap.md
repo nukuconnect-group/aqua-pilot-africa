@@ -1,3 +1,9 @@
+## Amélioration AquaAssistant (25/10/2026)
+- [ ] Moderniser le module existant, synthèse réelle et conversation lisible, miniature conservée
+- [ ] Questions et raccourcis contextuels ; alertes datées avec source/priorité/recommandation
+- [ ] Vérifier le contexte réel côté IA, droits, données absentes et analyses structurées
+- [ ] Tests ciblés et vérifications accessibles ; signaler les limites du compte connecté
+
 ## Analyses commerciales, assistant et amortissements (24/10/2026)
 - [x] AquaAssistant : menu latéral en écran normal, icône en fenêtre compacte ; question non envoyée conservée et affichage mobile vérifié
 - [x] Commercialisation : ventes, encaissements, créances, achats et solde réels ; prévisions et rapport générés automatiquement ; 6 tests réussis
