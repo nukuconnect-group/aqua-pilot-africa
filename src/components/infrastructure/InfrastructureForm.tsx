@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, Calculator } from 'lucide-react';
+import { useFeedStocks } from '@/hooks/useFeedStocks';
+import { availableCommercialLots } from '@/lib/commercialInfrastructure';
 import { useProductionUnits, Infrastructure } from '@/contexts/ProductionUnitsContext';
 import { useLogs } from '@/contexts/LogsContext';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
@@ -52,13 +54,16 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
     capacity: 0,
     status: 'active' as 'active' | 'maintenance' | 'inactive',
     suggestedBatchId: '',
+    attachedStockId: '',
     specifications: {
       volume: '',
       profondeur: '',
       materiau: '',
       temperature: '',
       ph: '',
-      oxygenLevel: ''
+      oxygenLevel: '',
+      temperatureMin: '',
+      temperatureMax: ''
     }
   });
 
@@ -74,14 +79,17 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
         customTypeName: infrastructure.customTypeName || '',
         capacity: infrastructure.capacity,
         status: infrastructure.status,
-        suggestedBatchId: (infrastructure as any).suggestedBatchId || '',
+        suggestedBatchId: infrastructure.specifications?.attachedBatchId || '',
+        attachedStockId: infrastructure.specifications?.attachedStockId || '',
         specifications: {
           volume: infrastructure.specifications?.volume || '',
           profondeur: infrastructure.specifications?.profondeur || '',
           materiau: infrastructure.specifications?.materiau || '',
           temperature: infrastructure.specifications?.temperature || '',
           ph: infrastructure.specifications?.ph || '',
-          oxygenLevel: infrastructure.specifications?.oxygenLevel || ''
+          oxygenLevel: infrastructure.specifications?.oxygenLevel || '',
+          temperatureMin: infrastructure.specifications?.temperatureMin ?? '',
+          temperatureMax: infrastructure.specifications?.temperatureMax ?? ''
         }
       });
     }
@@ -102,6 +110,9 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
 
   const selectedUnitType = units.find(u => u.id === newInfrastructure.unitId)?.type;
   const formTerms = getUnitTerms(selectedUnitType);
+  const commercial = selectedUnitType === 'commercialisation';
+  const { stocks, loading: stocksLoading, error: stockError } = useFeedStocks(newInfrastructure.unitId || '__no_unit__');
+  const stockLots = availableCommercialLots(stocks, newInfrastructure.unitId, allInfrastructures, infrastructure?.id);
   const predefinedTypes = [
     ...formTerms.infrastructureTypeOptions,
     { value: 'custom', label: 'Type personnalisé...' }
@@ -149,13 +160,29 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
       const error = validateInfrastructureDepreciation(depreciation);
       if (error) { setSaveError(error); return; }
     }
+    if (commercial && newInfrastructure.attachedStockId && !stockLots.some(s => s.id === newInfrastructure.attachedStockId)) {
+      setSaveError('Ce lot n’est pas disponible dans le Stock de cette unité.'); return;
+    }
     // Build specifications with attachedBatchId if a batch is selected
     const specs = { ...infrastructure?.specifications, ...Object.fromEntries(
       Object.entries(newInfrastructure.specifications).filter(([_, value]) => value !== '')
     ) };
     if (includeDepreciation) specs.depreciation = depreciation;
-    if (newInfrastructure.suggestedBatchId) {
-      (specs as any).attachedBatchId = newInfrastructure.suggestedBatchId;
+    else if (!infrastructure?.specifications?.depreciationAssetId) delete specs.depreciation;
+    if (commercial) {
+      delete specs.attachedBatchId;
+      delete specs.ph; delete specs.oxygenLevel; delete specs.profondeur;
+      if (newInfrastructure.attachedStockId) specs.attachedStockId = newInfrastructure.attachedStockId;
+      else delete specs.attachedStockId;
+      for (const key of ['temperatureMin', 'temperatureMax'] as const) {
+        if (newInfrastructure.specifications[key] === '') delete specs[key];
+        else if (!Number.isFinite(Number(newInfrastructure.specifications[key]))) { setSaveError('Indiquez une limite de température valide.'); return; }
+      }
+      if (specs.temperatureMin !== undefined && specs.temperatureMax !== undefined && Number(specs.temperatureMin) > Number(specs.temperatureMax)) { setSaveError('La température minimale doit être inférieure à la maximale.'); return; }
+    } else {
+      delete specs.attachedStockId;
+      if (newInfrastructure.suggestedBatchId) specs.attachedBatchId = newInfrastructure.suggestedBatchId;
+      else delete specs.attachedBatchId;
     }
     
     const infrastructurePayload = {
@@ -205,14 +232,14 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
             id="infrastructure-name"
             value={newInfrastructure.name}
             onChange={(e) => setNewInfrastructure(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="Ex: Bassin principal A1"
+            placeholder={commercial ? "Nom de l’installation ou du matériel" : "Ex: Bassin principal A1"}
             className="text-sm"
           />
         </div>
         
         <div>
           <Label className="text-sm">Unité de production</Label>
-          <Select value={newInfrastructure.unitId} onValueChange={(value) => setNewInfrastructure(prev => ({ ...prev, unitId: value }))}>
+          <Select value={newInfrastructure.unitId} disabled={Boolean(infrastructure?.specifications?.depreciationAssetId)} onValueChange={(value) => setNewInfrastructure(prev => ({ ...prev, unitId: value, suggestedBatchId: "", attachedStockId: "", type: "" }))}>
             <SelectTrigger className="text-sm">
               <SelectValue placeholder="Sélectionner une unité" />
             </SelectTrigger>
@@ -256,7 +283,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
         )}
 
         <div>
-          <Label htmlFor="infrastructure-capacity" className="text-sm">Capacité</Label>
+          <Label htmlFor="infrastructure-capacity" className="text-sm">{commercial ? "Capacité de stockage (kg)" : "Capacité"}</Label>
           <Input 
             id="infrastructure-capacity"
             type="number"
@@ -282,7 +309,15 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
           </Select>
         </div>
 
-        <div className="sm:col-span-2">
+        {commercial ? <div className="sm:col-span-2 space-y-2">
+          <Label>Lot de Stock à rattacher (facultatif)</Label>
+          <Select value={newInfrastructure.attachedStockId || 'none'} disabled={stocksLoading || Boolean(stockError)} onValueChange={value => setNewInfrastructure(prev => ({ ...prev, attachedStockId: value === 'none' ? '' : value }))}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner un lot de marchandises" /></SelectTrigger>
+            <SelectContent><SelectItem value="none">Aucun lot</SelectItem>{stockLots.map(stock => <SelectItem key={stock.id} value={stock.id}>{stock.custom_name || stock.feed_type} · {Number(stock.quantity).toLocaleString('fr-FR')} {stock.unit} · {stock.id.slice(0,8)}</SelectItem>)}</SelectContent>
+          </Select>
+          {stockError && <p role="alert" className="text-sm text-destructive">Les lots n’ont pas pu être chargés.</p>}
+          <Button variant="link" size="sm" onClick={() => { setShowDialog(false); onClose?.(); window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' })); }}>Ouvrir Stock</Button>
+        </div> : <>        <div className="sm:col-span-2">
           <Label className="text-sm">{formTerms.attachedBatchLabel} (optionnel)</Label>
           <Select 
             value={newInfrastructure.suggestedBatchId || "none"} 
@@ -324,12 +359,14 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
           </p>
         </div>
 
+</>}
+
         {/* Spécifications techniques */}
         <div className="sm:col-span-2">
           <Label className="text-sm font-medium">Spécifications techniques</Label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
             <div>
-              <Label className="text-xs text-gray-600">Volume (L ou m³)</Label>
+              <Label className="text-xs text-muted-foreground">Volume (L ou m³)</Label>
               <Input 
                 value={newInfrastructure.specifications.volume}
                 onChange={(e) => setNewInfrastructure(prev => ({ 
@@ -340,8 +377,8 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
                 className="text-sm"
               />
             </div>
-            <div>
-              <Label className="text-xs text-gray-600">Profondeur (m)</Label>
+            {!commercial && <div>
+              <Label className="text-xs text-muted-foreground">Profondeur (m)</Label>
               <Input 
                 value={newInfrastructure.specifications.profondeur}
                 onChange={(e) => setNewInfrastructure(prev => ({ 
@@ -351,9 +388,9 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
                 placeholder="Ex: 2.5"
                 className="text-sm"
               />
-            </div>
+            </div>}
             <div>
-              <Label className="text-xs text-gray-600">Matériau</Label>
+              <Label className="text-xs text-muted-foreground">Matériau</Label>
               <Input 
                 value={newInfrastructure.specifications.materiau}
                 onChange={(e) => setNewInfrastructure(prev => ({ 
@@ -365,7 +402,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
               />
             </div>
             <div>
-              <Label className="text-xs text-gray-600">Température (°C)</Label>
+              <Label className="text-xs text-muted-foreground">{commercial ? "Température de consigne (°C)" : "Température (°C)"}</Label>
               <Input 
                 value={newInfrastructure.specifications.temperature}
                 onChange={(e) => setNewInfrastructure(prev => ({ 
@@ -376,8 +413,8 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
                 className="text-sm"
               />
             </div>
-            <div>
-              <Label className="text-xs text-gray-600">pH</Label>
+            {!commercial && <div>
+              <Label className="text-xs text-muted-foreground">pH</Label>
               <Input 
                 value={newInfrastructure.specifications.ph}
                 onChange={(e) => setNewInfrastructure(prev => ({ 
@@ -387,9 +424,9 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
                 placeholder="Ex: 7.0-7.5"
                 className="text-sm"
               />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-600">Oxygène (mg/L)</Label>
+            </div>}
+            {!commercial && <div>
+              <Label className="text-xs text-muted-foreground">Oxygène (mg/L)</Label>
               <Input 
                 value={newInfrastructure.specifications.oxygenLevel}
                 onChange={(e) => setNewInfrastructure(prev => ({ 
@@ -399,12 +436,16 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
                 placeholder="Ex: 6-8"
                 className="text-sm"
               />
-            </div>
+            </div>}
           </div>
         </div>
 
+        {commercial && <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(['temperatureMin', 'temperatureMax'] as const).map(key => <div key={key}><Label htmlFor={key}>{key === 'temperatureMin' ? 'Limite minimale (°C)' : 'Limite maximale (°C)'}</Label><Input id={key} type="number" step="0.1" value={newInfrastructure.specifications[key]} onChange={e => setNewInfrastructure(prev => ({ ...prev, specifications: { ...prev.specifications, [key]: e.target.value } }))} /></div>)}
+        </div>}
         <div className="sm:col-span-2 space-y-3 border-t pt-4">
-          <div className="flex items-center justify-between gap-3"><Label htmlFor="infrastructure-amortissement">Ajouter aux amortissements</Label><Switch id="infrastructure-amortissement" checked={includeDepreciation} disabled={Boolean(infrastructure?.specifications?.depreciationAssetId)} onCheckedChange={setIncludeDepreciation} /></div>
+          <div className="flex items-center justify-between gap-3"><Label htmlFor="infrastructure-amortissement" className="flex items-center gap-2"><Calculator className="h-5 w-5 text-primary" />Ajout d’amortissement</Label><Switch id="infrastructure-amortissement" checked={includeDepreciation} disabled={Boolean(infrastructure?.specifications?.depreciationAssetId)} onCheckedChange={setIncludeDepreciation} /></div>
+          {infrastructure?.specifications?.depreciationAssetId && <p className="text-sm text-primary">Rattaché aux amortissements de Comptabilité</p>}
           {includeDepreciation && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div><Label htmlFor="infra-cost">Coût d’acquisition</Label><Input id="infra-cost" type="number" min="0" step="0.01" value={depreciation.purchasePrice || ''} onChange={e=>setDepreciation(d=>({...d,purchasePrice:Number(e.target.value)}))}/></div>
             <div><Label>Devise</Label><Select value={depreciation.currency} onValueChange={v=>setDepreciation(d=>({...d,currency:v}))}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{['XOF','EUR','USD','MAD'].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
@@ -431,7 +472,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
   const dialogContent = (
     <DialogContent
       hideClose
-      className="max-w-full sm:max-w-3xl mx-2 max-h-[90vh] overflow-y-auto"
+      className="w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] overflow-y-auto"
       onInteractOutside={(event) => event.preventDefault()}
     >
       <DialogHeader>
