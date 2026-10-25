@@ -50,7 +50,7 @@
 
 - PWA installation: one early-initialized store/App prompt; browser evidence only; standalone suppresses invites without proving installation.
 - subscriptionOffers centralizes offers; client selection never activates or reprices purchases.
-- salesUnitSelection preserves accessible choices; auto-select only a sole unit.
+- salesUnitSelection keeps accessible choices; auto-select only a sole unit.
 
-- Settings exports use unitBackup: paginated unit/parent-ID reads, fail on errors; never regenerate historical IDs on restore.
-- Root ErrorBoundary wraps OfflineProvider/App so startup render failures do not leave a blank screen.
+- Settings exports: unitBackup, paginated unit/parent-ID reads, fail on errors; preserve historical IDs on restore.
+- Root ErrorBoundary wraps OfflineProvider/App to prevent blank screens on render failures.
