@@ -884,11 +884,12 @@ const SalesManagement = () => {
       </div>
 
       {/* Raccourcis mobiles : grille de tuiles (les onglets défilants restent sur ordinateur) */}
-      <div className="grid grid-cols-3 gap-2 sm:hidden">
+      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1.5 sm:hidden">
         {([
           ...(isTeamMember ? [] : [['registers', 'Caisses', Store] as [string, string, typeof Store]]),
-          ['pos', 'Caisse', CreditCard],
+          ['pos', 'Caisse', ShoppingCart],
           ['multi', 'Multi-caisses', Users],
+          ['ai', 'Vente IA', Zap],
           ['history', 'Historique', Calendar],
           ['overview', 'Analyses', TrendingUp],
           ['credits', 'Échéances', CreditCard],
@@ -900,13 +901,13 @@ const SalesManagement = () => {
             type="button"
             onClick={() => setSalesTab(v)}
             aria-pressed={salesTab === v}
-            className={`flex min-h-[64px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl border p-2 text-center text-xs font-medium transition ${
+            className={`flex min-h-[72px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl p-2 text-center text-[13px] transition ${
               salesTab === v
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border bg-card text-foreground'
+                ? 'bg-card font-semibold text-foreground shadow-sm'
+                : 'font-medium text-muted-foreground'
             }`}
           >
-            <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+            <Icon className="h-5 w-5 shrink-0 text-primary" strokeWidth={2} />
             <span className="leading-tight break-words">{label}</span>
           </button>
         ))}
