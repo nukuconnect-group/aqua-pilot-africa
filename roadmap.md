@@ -1,8 +1,9 @@
 ## Amélioration AquaAssistant (25/10/2026)
-- [ ] Moderniser le module existant, synthèse réelle et conversation lisible, miniature conservée
-- [ ] Questions et raccourcis contextuels ; alertes datées avec source/priorité/recommandation
-- [ ] Vérifier le contexte réel côté IA, droits, données absentes et analyses structurées
-- [ ] Tests ciblés et vérifications accessibles ; signaler les limites du compte connecté
+- [x] Moderniser le module existant, synthèse réelle et conversation lisible, miniature conservée
+- [x] Questions et raccourcis contextuels ; alertes datées avec source/priorité/recommandation
+- [x] Contexte IA : backend historique, IDs accessibles, données absentes explicites ; fonction déployée ; refus anonyme confirmé
+- [x] 26 tests ciblés réussis ; question rapide et saisie conservée entre vues ; miniature mobile vérifiée sans erreur
+- [ ] Vérifier synthèse et réponse IA avec le compte réel : navigateur sur /auth et appel protégé refusé 401, session historique indisponible ; aucune donnée réelle modifiée
 
 ## Analyses commerciales, assistant et amortissements (24/10/2026)
 - [x] AquaAssistant : menu latéral en écran normal, icône en fenêtre compacte ; question non envoyée conservée et affichage mobile vérifié
