@@ -1,3 +1,9 @@
+## Erreurs restantes Analytique (25/10/2026)
+- [x] AquaAssistant mobile : accès existant sans débordement ni erreur ; avatar absent/inaccessible vérifié, dimension de silhouette corrigée
+- [x] Dates/quantités manquantes sécurisées, relevés non mesurés conservés absents, filtres unité/période et actualisation corrigés sans changement de disposition
+- [x] 11 tests réussis ; écrans isolés sans erreur et compilation réussie
+- [ ] Vérifier les données et la photo du compte réel : session historique indisponible ; aucun changement aux données réelles
+
 ## Barre latérale AquaAssistant et profil (25/10/2026)
 - [x] Icône robot inspirée de la référence dans les menus ordinateur/mobile ; discussion existante conservée
 - [x] Photo existante conservée ; avatar silhouette élégant dans le profil et menu de déconnexion

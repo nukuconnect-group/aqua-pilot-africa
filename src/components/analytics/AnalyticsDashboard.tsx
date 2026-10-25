@@ -52,9 +52,10 @@ import { useSales } from '@/hooks/useSales';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { getUnitTerms } from '@/lib/unitContext';
 import CommercialPerformance from './CommercialPerformance';
+import { analyticsDate, analyticsNumber } from '@/lib/analyticsValues';
 
 import { useSettings } from '@/contexts/SettingsContext';
-import { format, subDays, subMonths, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
+import { format, subDays, subMonths, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, eachMonthOfInterval, startOfDay, endOfDay } from 'date-fns';
 import { fr as frLocale } from 'date-fns/locale';
 
 // Couleurs du thème
@@ -136,15 +137,21 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, change, changeLabel, ic
 const ProductionAnalyticsDashboard: React.FC = () => {
   const { t, language } = useSettings();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '12m'>('30d');
+  const [reportNow, setReportNow] = useState(() => new Date());
   const [selectedUnit, setSelectedUnit] = useState<string>('all');
 
-  const { cycles, loading: cyclesLoading } = useProductionCycles();
-  const { records: feedingRecords, loading: feedingLoading } = useFeedingRecords();
-  const { records: healthRecords, loading: healthLoading } = useHealthRecords();
+  const { cycles: rawCycles, loading: cyclesLoading, error: cycleError, refetch: refreshCycles } = useProductionCycles();
+  const { records: rawFeeding, loading: feedingLoading, error: feedingError, refetch: refreshFeeding } = useFeedingRecords();
+  const { records: rawHealth, loading: healthLoading, error: healthError, refetch: refreshHealth } = useHealthRecords();
   const { batches, loading: batchesLoading } = useLivestockBatches();
-  const { sales, loading: salesLoading } = useSales();
+  const { allSales: sales, loading: salesLoading, error: salesError, refetch: refreshSales } = useSales();
   const { units, activeUnit } = useProductionUnits();
   const unitTerms = getUnitTerms(activeUnit?.type);
+  const cycles = useMemo(() => rawCycles.map(c => ({...c, current_quantity: analyticsNumber(c.current_quantity), target_quantity: analyticsNumber(c.target_quantity), initial_quantity: analyticsNumber(c.initial_quantity)})), [rawCycles]);
+  const feedingRecords = useMemo(() => rawFeeding.map(r => ({...r, quantity: analyticsNumber(r.quantity), fcr: analyticsNumber(r.fcr)})), [rawFeeding]);
+  const healthRecords = useMemo(() => rawHealth.map(r => ({...r, temperature: r.temperature == null ? undefined : analyticsNumber(r.temperature), mortality: analyticsNumber(r.mortality)})), [rawHealth]);
+  const scopeId = selectedUnit === 'all' ? activeUnit?.id : selectedUnit;
+
 
   
   const dateLocale = language === 'fr' ? frLocale : undefined;
@@ -153,48 +160,43 @@ const ProductionAnalyticsDashboard: React.FC = () => {
 
   // Calculer les dates de filtrage
   const dateFilters = useMemo(() => {
-    const now = new Date();
+    const now = reportNow;
     switch (dateRange) {
       case '7d':
-        return { start: subDays(now, 7), end: now };
+        return { start: startOfDay(subDays(now, 6)), end: endOfDay(now) };
       case '30d':
-        return { start: subDays(now, 30), end: now };
+        return { start: startOfDay(subDays(now, 29)), end: endOfDay(now) };
       case '90d':
-        return { start: subDays(now, 90), end: now };
+        return { start: startOfDay(subDays(now, 89)), end: endOfDay(now) };
       case '12m':
-        return { start: subMonths(now, 12), end: now };
+        return { start: startOfDay(subMonths(now, 12)), end: endOfDay(now) };
       default:
-        return { start: subDays(now, 30), end: now };
+        return { start: startOfDay(subDays(now, 29)), end: endOfDay(now) };
     }
-  }, [dateRange]);
+  }, [dateRange, reportNow]);
 
   // Filtrer les données par unité
   const filteredCycles = useMemo(() => {
-    if (selectedUnit === 'all') return cycles;
-    return cycles.filter(c => c.unit_id === selectedUnit);
-  }, [cycles, selectedUnit]);
+    return cycles.filter(c => c.unit_id === scopeId);
+  }, [cycles, scopeId]);
 
   const filteredFeedingRecords = useMemo(() => {
     let records = feedingRecords;
-    if (selectedUnit !== 'all') {
-      records = records.filter(r => r.unit_id === selectedUnit);
-    }
+    records = records.filter(r => r.unit_id === scopeId);
     return records.filter(r => {
-      const date = parseISO(r.date);
-      return date >= dateFilters.start && date <= dateFilters.end;
+      const date = analyticsDate(r.date);
+      return date !== null && date >= dateFilters.start && date <= dateFilters.end;
     });
-  }, [feedingRecords, selectedUnit, dateFilters]);
+  }, [feedingRecords, scopeId, dateFilters]);
 
   const filteredHealthRecords = useMemo(() => {
     let records = healthRecords;
-    if (selectedUnit !== 'all') {
-      records = records.filter(r => r.unit_id === selectedUnit);
-    }
+    records = records.filter(r => r.unit_id === scopeId);
     return records.filter(r => {
-      const date = parseISO(r.date);
-      return date >= dateFilters.start && date <= dateFilters.end;
+      const date = analyticsDate(r.date);
+      return date !== null && date >= dateFilters.start && date <= dateFilters.end;
     });
-  }, [healthRecords, selectedUnit, dateFilters]);
+  }, [healthRecords, scopeId, dateFilters]);
 
   // KPIs calculés - REAL DATA ONLY, no demo values
   const kpis = useMemo(() => {
@@ -217,7 +219,7 @@ const ProductionAnalyticsDashboard: React.FC = () => {
     const initialQuantity = activeCycles.reduce((sum, c) => sum + (c.initial_quantity || c.current_quantity || 0), 0);
     const survivalRate = initialQuantity > 0 ? ((initialQuantity - totalMortality) / initialQuantity) * 100 : 0;
 
-    const totalSales = sales?.reduce((sum, s) => sum + (s.totalAmount || 0), 0) || 0;
+    const totalSales = sales.filter(s => s.unitId === scopeId && s.status !== 'cancelled').filter(s => { const date = analyticsDate(s.date); return date !== null && date >= dateFilters.start && date <= dateFilters.end; }).reduce((sum, s) => sum + analyticsNumber(s.totalAmount), 0);
 
     // NO DEMO DATA - show real values only (0 if no data)
     return {
@@ -236,7 +238,7 @@ const ProductionAnalyticsDashboard: React.FC = () => {
       survivalChange: undefined,
       salesChange: undefined
     };
-  }, [filteredCycles, filteredFeedingRecords, filteredHealthRecords, sales]);
+  }, [filteredCycles, filteredFeedingRecords, filteredHealthRecords, sales, scopeId, dateFilters]);
 
   // Données pour le graphique de production
   const productionChartData = useMemo(() => {
@@ -246,12 +248,13 @@ const ProductionAnalyticsDashboard: React.FC = () => {
       const dateStr = format(day, 'yyyy-MM-dd');
       const dayFeeding = filteredFeedingRecords.filter(r => r.date === dateStr);
       const dayHealth = filteredHealthRecords.filter(r => r.date === dateStr);
+      const temperatures = dayHealth.map(r => r.temperature).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
       
       return {
         date: format(day, 'dd/MM', { locale: dateLocale }),
         alimentation: dayFeeding.reduce((sum, r) => sum + (r.quantity || 0), 0),
-        temperature: dayHealth.length > 0 
-          ? dayHealth.reduce((sum, r) => sum + (r.temperature || 0), 0) / dayHealth.length 
+        temperature: temperatures.length > 0 
+          ? temperatures.reduce((sum, value) => sum + value, 0) / temperatures.length 
           : null,
         mortalite: dayHealth.reduce((sum, r) => sum + (r.mortality || 0), 0)
       };
@@ -262,7 +265,7 @@ const ProductionAnalyticsDashboard: React.FC = () => {
   const fcrChartData = useMemo(() => {
     const byDate = new Map<string, { sum: number; count: number }>();
     filteredFeedingRecords.forEach(r => {
-      if (!r.fcr || r.fcr <= 0 || !r.date) return;
+      if (!r.fcr || r.fcr <= 0 || !analyticsDate(r.date)) return;
       const entry = byDate.get(r.date) || { sum: 0, count: 0 };
       entry.sum += r.fcr;
       entry.count += 1;
@@ -279,22 +282,22 @@ const ProductionAnalyticsDashboard: React.FC = () => {
   // Données pour le graphique mensuel
   const monthlyChartData = useMemo(() => {
     const months = eachMonthOfInterval({ 
-      start: subMonths(new Date(), 5), 
-      end: new Date() 
+      start: subMonths(reportNow, 5), 
+      end: reportNow 
     });
     
     return months.map(month => {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
       
-      const monthFeeding = feedingRecords.filter(r => {
-        const date = parseISO(r.date);
-        return date >= monthStart && date <= monthEnd;
+      const monthFeeding = feedingRecords.filter(r => r.unit_id === scopeId).filter(r => {
+        const date = analyticsDate(r.date);
+        return date !== null && date >= monthStart && date <= monthEnd;
       });
       
-      const monthCycles = cycles.filter(c => {
-        const date = parseISO(c.start_date);
-        return date >= monthStart && date <= monthEnd;
+      const monthCycles = filteredCycles.filter(c => {
+        const date = analyticsDate(c.start_date);
+        return date !== null && date >= monthStart && date <= monthEnd;
       });
 
       return {
@@ -304,7 +307,7 @@ const ProductionAnalyticsDashboard: React.FC = () => {
         alimentation: monthFeeding.reduce((sum, r) => sum + (r.quantity || 0), 0)
       };
     });
-  }, [feedingRecords, cycles]);
+  }, [feedingRecords, filteredCycles, scopeId, dateLocale, reportNow]);
 
   // Données pour le graphique par espèce
   const speciesData = useMemo(() => {
@@ -397,12 +400,13 @@ const ProductionAnalyticsDashboard: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" aria-label="Actualiser les analyses" onClick={() => window.dispatchEvent(new Event('aqua:data-refresh'))}>
+          <Button variant="outline" size="icon" aria-label="Actualiser les analyses" disabled={isLoading} onClick={() => { setReportNow(new Date()); void Promise.allSettled([refreshCycles(), refreshFeeding(), refreshHealth(), refreshSales()]); }}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
+      {(cycleError || feedingError || healthError || salesError) && <p role="alert" className="text-sm text-destructive">Certaines données n’ont pas pu être actualisées. Les chiffres disponibles peuvent être incomplets ; réessayez avec le bouton d’actualisation.</p>}
       {/* KPI Cards - Real data only */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard

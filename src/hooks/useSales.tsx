@@ -77,6 +77,7 @@ export const useSales = () => {
   const { activeUnit, addTransaction } = useProductionUnits();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchSales = useCallback(async () => {
     if (isDemoMode) {
@@ -103,6 +104,7 @@ export const useSales = () => {
     if (!user?.id || !isAuthenticated) return;
 
     setLoading(true);
+    setFetchError(null);
     try {
       const { data, error } = await supabase
         .from('sales')
@@ -113,6 +115,7 @@ export const useSales = () => {
 
       setSales((data || []).map((s: any) => mapSaleRow(s)));
     } catch (err) {
+      setFetchError('Impossible de charger les ventes.');
       console.error('Error fetching sales:', err);
     } finally {
       setLoading(false);
@@ -336,6 +339,7 @@ export const useSales = () => {
     sales: filteredSales,
     allSales: sales,
     loading,
+    error: fetchError,
     addSale,
     updateSale,
     deleteSale,
