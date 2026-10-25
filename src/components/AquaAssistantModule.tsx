@@ -420,10 +420,9 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       } : undefined}
     >
       <header className="assistant-masthead relative z-10 shrink-0 overflow-visible border-b px-3 pt-3 sm:px-4">
-        <div className="assistant-header-veil pointer-events-none absolute inset-0" aria-hidden="true"></div>
         <div className="relative flex flex-wrap items-center justify-between gap-2 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-background/90">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-background">
               <img src={assistantIcon} alt="" width={48} height={48} className="size-10 object-contain" />
             </div>
             <div className="min-w-0">
@@ -485,18 +484,17 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         </div>}
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="assistant-scene-veil pointer-events-none absolute inset-0 -z-10" aria-hidden="true"></div>
             <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
               <Button type="button" variant="ghost" size="sm" onClick={()=>setShowQuestions(v=>!v)}><Sparkles className="size-4 text-ocean-secondary"/>Questions rapides</Button>
               <Button type="button" variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
             </div>
-            {showQuestions&&<div className="max-h-32 shrink-0 overflow-y-auto border-b px-3 py-2 sm:max-h-40"><div className="flex flex-wrap gap-2">{[...unitProfile.suggestions,{title:'Rapport hebdomadaire',question:'Génère mon rapport hebdomadaire pour cette unité : faits datés, chiffres enregistrés, limites et recommandations.'}].map(s=><Button key={s.title} variant="outline" size="sm" className="assistant-question h-auto max-w-full whitespace-normal bg-background/90 text-left" onClick={()=>ask(s.question)}><Sparkles className="size-3 shrink-0 text-ocean-primary"/>{s.title}</Button>)}</div></div>}
+            {showQuestions&&<div className="max-h-32 shrink-0 overflow-y-auto border-b px-3 py-2 sm:max-h-40"><div className="flex flex-wrap gap-2">{[...unitProfile.suggestions,{title:'Rapport hebdomadaire',question:'Génère mon rapport hebdomadaire pour cette unité : faits datés, chiffres enregistrés, limites et recommandations.'}].map(s=><Button key={s.title} variant="outline" size="sm" className="assistant-question h-auto max-w-full whitespace-normal bg-background text-left" onClick={()=>ask(s.question)}><Sparkles className="size-3 shrink-0 text-ocean-primary"/>{s.title}</Button>)}</div></div>}
 
           <Conversation className="min-h-0 flex-1">
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
                 {message.role === 'assistant' && <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground"><img src={assistantIcon} alt="" width={28} height={28} className="size-7 object-contain"/>AquaAssistant</div>}
-                <MessageContent className={message.role === 'user' ? 'bg-ocean-primary text-sidebar-foreground break-words [overflow-wrap:anywhere]' : 'assistant-response rounded-lg border bg-background/95 p-4 break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-ocean-primary [&_strong]:tabular-nums'}>
+                <MessageContent className={message.role === 'user' ? 'bg-ocean-primary text-sidebar-foreground break-words [overflow-wrap:anywhere]' : 'rounded-lg border bg-card p-4 break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-ocean-primary [&_strong]:tabular-nums'}>
                   {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}

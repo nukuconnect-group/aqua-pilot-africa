@@ -29,10 +29,8 @@ html.large-text .text-2xl { font-size: 1.75rem; }
 
 /* QR codes retain a scan-safe print palette in either application theme. */
 :root { --qr-paper: #ffffff; --qr-ink: #000000; }
-/* AquaAssistant illustration is decorative; content remains on themed readable surfaces. */
-.assistant-header-veil { background: linear-gradient(180deg, hsl(var(--ocean-primary) / .10), hsl(var(--ocean-primary) / .03)); }
-.assistant-scene-veil { background: radial-gradient(120% 90% at 85% -10%, hsl(var(--ocean-primary) / .07), transparent 55%); }
-.assistant-response { box-shadow: 0 3px 16px hsl(var(--ocean-primary) / .06); }
+/* AquaAssistant surfaces are flat and themed: no illustrations, no gradients. */
+.assistant-masthead { background: hsl(var(--ocean-primary) / .04); }
 .assistant-question { transition: border-color .2s, transform .2s; }
 .assistant-question:hover { border-color: hsl(var(--ocean-secondary)); transform: translateY(-1px); }
 @media (prefers-reduced-motion: reduce) { .assistant-question { transition: none; } .assistant-question:hover { transform: none; } }
