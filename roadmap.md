@@ -1,6 +1,8 @@
 ## Actualisation, installation et emails (25/10/2026)
-- [ ] Vérifier lectures réelles déclenchées par bouton et tirage, erreurs et conservation d’écran ; corriger puis tester les formats principaux
-- [ ] Vérifier parcours PWA Android/iPhone disponibles et corriger les problèmes constatés ; distinguer émulation et installation physique
+- [x] Actualisation partagée bouton/tirage, requêtes actives avec erreurs remontées ; lectures des hooks refusées signalées ; chargement initial des unités uniquement ; fournisseur ajouté ; geste ignore les listes déjà défilées
+- [x] 23 tests réussis dont nouvelle lecture du stock par unité, quantité actualisée, saisie et écran conservés, refus serveur remonté ; contrôles bouton/tirage à 360/393/768/1280 px en mode isolé
+- [x] Parcours Android natif simulé et instructions iPhone/iPad testés en Chromium ; capture précoce de l’événement d’installation corrigée ; domaine réel HTTPS et icônes OK, manifeste sans erreur ; Chromium ne signale que le mode privé du banc de test
+- [ ] Vérifier lectures du compte réel et installation physique Android/Safari iPhone : session historique indisponible (création de session personnelle refusée), aucun appareil physique accessible
 - [ ] Configurer les emails de notifications depuis app.aquapilote.com : domaine d’envoi absent, configuration par le propriétaire requise avant modèles/envoi
 
 ## Installation AquaPilote (25/10/2026)
