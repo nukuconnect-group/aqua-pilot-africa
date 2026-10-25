@@ -1,6 +1,6 @@
 ## Module Ventes mobile et logo menu (25/10/2026)
 - [x] Ventes mobile : grille de raccourcis 3 colonnes, cartes de caisses complètes (unité, ouverture, caissiers affectés et connecté), noms longs non tronqués, tuile quantités du jour ; 9 tests réussis, compilation OK ; affichage compte réel non vérifié (session indisponible)
-- [x] Logo du menu mobile : logo d'origine sur plaque blanche arrondie, contrôlé à 320/393/430 px
+- [x] Logo du menu mobile : fond blanc étendu à toute la section du logo, s'arrêtant à la ligne de séparation du bas sans toucher les modules ; badge membre et croix de fermeture passés en bleu marine sur blanc ; contrôle isolé à 393 px et classes de couleur vérifiées, menu connecté non ouvert (session indisponible)
 
 ## Tableau de bord et IoT commercial (25/10/2026)
 - [x] Réduire les icônes ordinateur et placer les accès rapides avant les graphiques sur ordinateur ; ordre mobile conservé
