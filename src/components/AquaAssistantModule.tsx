@@ -485,7 +485,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         </div>}
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="assistant-scene-veil pointer-events-none absolute inset-0" aria-hidden="true"></div>
+            <div className="assistant-scene-veil pointer-events-none absolute inset-0 -z-10" aria-hidden="true"></div>
             <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
               <Button type="button" variant="ghost" size="sm" onClick={()=>setShowQuestions(v=>!v)}><Sparkles className="size-4 text-ocean-secondary"/>Questions rapides</Button>
               <Button type="button" variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
