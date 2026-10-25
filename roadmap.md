@@ -1,7 +1,8 @@
 ## Navigation Ventes et panier mobile (25/10/2026)
-- [ ] Masquer les raccourcis après sélection et ajouter un retour sans perdre le panier
-- [ ] Garder recherche et panier visibles ensemble sur mobile après ajout ; préserver la caisse ordinateur
-- [ ] Tester les parcours existants et vérifier les limites du contrôle visuel
+- [x] Masquer les raccourcis après sélection et ajouter un retour sans perdre le panier
+- [x] Disposition mobile en deux zones défilantes : recherche et panier après ajout, recherche et encaissement épinglés ; disposition ordinateur conservée
+- [x] 15 tests ciblés réussis, dont panier de 6500 conservé au retour ; compilation OK
+- [ ] Vérifier visuellement la caisse à 393×604 sur le compte réel : session historique indisponible, dernier contrôle navigateur sur /auth ; aucune vente réelle effectuée
 
 ## Parcours Ventes mobile (25/10/2026)
 - [x] Ouvrir Ventes sur Gestion des caisses sur mobile, y compris pour les utilisateurs affectés ; droits serveur inchangés
