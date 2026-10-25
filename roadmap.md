@@ -1,3 +1,8 @@
+## Photos du tableau de bord et actualisation mobile (25/10/2026)
+- [ ] Remplacer le fond mobile par les deux images fournies, alternées toutes les 30 minutes
+- [ ] Diagnostiquer et réparer l’actualisation mobile sans rechargement ni perte de saisie
+- [ ] Vérifier les images, l’alternance et l’actualisation
+
 ## Indicateurs et en-tête mobiles (25/10/2026)
 - [x] Réduire la hauteur des quatre indicateurs à 104 px sur mobile et colorer distinctement leurs icônes
 - [x] Garder AquaPilote sur une ligne ; contenir notification, recherche et langue sans débordement
