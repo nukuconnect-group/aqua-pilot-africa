@@ -300,22 +300,22 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
             )}
             
             {/* Spécifications compactes */}
-            {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description'].includes(k)).length > 0 && (
+            {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(k)).length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
                 {Object.entries(infrastructure.specifications)
-                  .filter(([key]) => !['location', 'usage', 'description'].includes(key))
+                  .filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key))
                   .slice(0, 2)
                   .map(([key, value]) => (
                     <span 
                       key={key} 
                       className="inline-block bg-muted rounded px-1.5 py-0.5 text-xs truncate max-w-[120px]"
                     >
-                      {key}: {value}
+                      {key}: {String(value)}
                     </span>
                   ))}
-                {Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description'].includes(key)).length > 2 && (
+                {Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key)).length > 2 && (
                   <span className="text-xs text-muted-foreground">
-                    +{Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description'].includes(key)).length - 2}
+                    +{Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key)).length - 2}
                   </span>
                 )}
               </div>
@@ -528,16 +528,16 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
               )}
               
               {/* Spécifications techniques */}
-              {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description'].includes(k)).length > 0 && (
+              {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(k)).length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium mb-3">Spécifications techniques</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Object.entries(infrastructure.specifications)
-                      .filter(([key]) => !['location', 'usage', 'description'].includes(key))
+                      .filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key))
                       .map(([key, value]) => (
                         <div key={key} className="flex justify-between items-center p-2 bg-muted/50 rounded-lg">
                           <span className="text-sm text-muted-foreground capitalize">{key}</span>
-                          <span className="text-sm font-medium">{value}</span>
+                          <span className="break-words text-right text-sm font-medium">{String(value)}</span>
                         </div>
                       ))}
                   </div>
