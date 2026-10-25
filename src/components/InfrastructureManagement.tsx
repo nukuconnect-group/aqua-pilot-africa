@@ -247,7 +247,7 @@ const InfrastructureManagement = () => {
                     
                     {infrastructure.specifications && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
-                        {Object.entries(infrastructure.specifications).map(([key, value]) => (
+                        {Object.entries(infrastructure.specifications).filter(([key, value]) => !['depreciation', 'depreciationAssetId'].includes(key) && (typeof value === 'string' || typeof value === 'number')).map(([key, value]) => (
                           <div key={key} className="flex justify-between gap-2 min-w-0">
                             <span className="text-gray-600 truncate">{key}:</span>
                             <span className="font-medium truncate">{value}</span>
