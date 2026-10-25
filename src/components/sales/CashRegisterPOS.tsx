@@ -883,7 +883,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         {view !== 'ai' && view !== 'multi' ? (
         <Card className={`min-w-0 rounded-2xl ${cart.length > 0 ? 'max-sm:min-h-0 max-sm:overflow-y-auto' : ''}`}>
           <CardContent className="p-3 space-y-3">
-            <div className="flex gap-2">
+            <div className="sticky top-0 z-10 flex gap-2 bg-card pb-2">
               <Input aria-label="Rechercher un produit" placeholder="Rechercher un produit ou un code" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0].name, filtered[0].price); }} />
               <Button variant="outline" onClick={() => setScanOpen(true)} aria-label="Scanner un code"><ScanLine className="w-4 h-4" /></Button>
             </div>
@@ -1032,8 +1032,10 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
               ))}
             </div>
             <p className="text-xs text-muted-foreground">{paymentDestination(payment) === 'bank' ? 'Encaissé sur le compte banque de l’unité (Trésorerie).' : 'Encaissé dans la caisse de l’unité (Trésorerie).'}</p>
+            <div className="sticky bottom-0 z-10 space-y-2 bg-card pt-2">
             <div className="flex justify-between gap-2 text-lg font-bold pt-2 border-t border-border"><span>Total</span><span className="text-right">{formatCurrency(total)}</span></div>
             {!pendingPayment && <Button className="w-full h-12 text-base" disabled={busy || !isValidPosCart(cart)} onClick={checkout}>{busy ? 'Encaissement…' : `Encaisser · ${formatCurrency(total)}`}</Button>}
+            </div>
           </CardContent>
         </Card>
       </div>
