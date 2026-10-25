@@ -69,16 +69,16 @@ export const useAquaAssistantConversations = (greeting: string) => {
   );
 
   const startNew = useCallback(
-    async (unit?: { id?: string | null; name?: string | null }) => {
+    async (unit?: { id?: string | null; name?: string | null }, messages?: AquaMessage[]) => {
       if (!user) return null;
-      const initial: AquaMessage[] = [
+      const initial: AquaMessage[] = messages ?? [
         { role: 'assistant', content: greeting, createdAt: new Date().toISOString() },
       ];
       const { data, error } = await supabase
         .from('aqua_assistant_conversations')
         .insert({
           user_id: user.id,
-          title: 'Nouvelle conversation',
+          title: buildTitle(initial),
           unit_id: unit?.id ?? null,
           unit_name: unit?.name ?? null,
           messages: initial as any,
