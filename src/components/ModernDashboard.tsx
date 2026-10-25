@@ -34,6 +34,7 @@ import { stocksForUnitType } from '@/lib/stockPurpose';
 import dashboardPond from '@/assets/dashboard-pond.png.asset.json';
 import dashboardCages from '@/assets/dashboard-cages.png.asset.json';
 import { dashboardImageIndex, DASHBOARD_IMAGE_INTERVAL_MS } from '@/lib/dashboardImageRotation';
+import { dashboardPeriod } from '@/lib/dashboardPeriod';
 
 interface ModernDashboardProps {
   onNavigate?: (tab: string) => void;
@@ -60,7 +61,7 @@ const KpiCard: React.FC<{
       <CardContent className="flex h-full min-h-[104px] flex-col justify-between p-2.5 sm:min-h-[138px] sm:p-5">
         <div className="flex items-start justify-between gap-2">
           <p className="min-w-0 break-words text-[11px] leading-tight font-semibold text-muted-foreground sm:text-xs sm:uppercase">{label}</p>
-          <div className={`flex size-7 sm:size-9 shrink-0 items-center justify-center rounded-md ${tones[tone]}`}><Icon className="size-4 sm:size-5" /></div>
+          <div className={`flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-md ${tones[tone]}`}><Icon className="size-4" /></div>
         </div>
         <div className="min-w-0 pt-1.5 sm:pt-3">
           <p className="break-words text-xl font-bold leading-tight tabular-nums [overflow-wrap:anywhere] sm:text-2xl">{value}</p>
@@ -140,7 +141,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   const { batches } = useLivestockBatches(activeUnit?.id);
   const { records: healthRecords } = useHealthRecords(undefined, activeUnit?.id);
   const { records: feedingRecords } = useFeedingRecords(undefined, activeUnit?.id);
-  const financial = useFinancialSummary(activeUnit?.id);
+  const financial = useFinancialSummary(activeUnit?.id, selectedPeriodFilter);
   const { analyses } = useAIAnalyses(8, activeUnit?.id);
   const { stocks: feedStocks } = useFeedStocks(activeUnit?.id);
 
@@ -186,13 +187,11 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
     : 100;
 
   const filteredHealthRecords = useMemo(() => {
-    const periodDays = Number(selectedPeriodFilter);
-    const minDate = new Date();
-    minDate.setDate(minDate.getDate() - periodDays);
+    const range = dashboardPeriod(selectedPeriodFilter);
 
     return healthRecords.filter((record: any) => {
       const matchesBasin = selectedBasinFilter === 'all' || record.basin_id === selectedBasinFilter;
-      const matchesPeriod = !record.date || new Date(record.date) >= minDate;
+      const matchesPeriod = range.contains(record.date);
       return matchesBasin && matchesPeriod;
     });
   }, [healthRecords, selectedBasinFilter, selectedPeriodFilter]);
@@ -326,8 +325,8 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
             <p className="mt-2 break-words text-sm text-sidebar-foreground/80">{activeUnit?.name || 'Toutes les unités'}</p>
           </div>
           <div className="flex min-w-0 items-center gap-2">
-            <div className="grid min-w-0 flex-1 grid-cols-3 gap-1 rounded-md border border-sidebar-border bg-sidebar-accent p-1 lg:min-w-64" role="group" aria-label="Période des contrôles">
-              {([['7', '7 jours'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => <Button key={value} variant="ghost" onClick={() => setSelectedPeriodFilter(value)} className={selectedPeriodFilter === value ? 'bg-background text-foreground hover:bg-background' : 'text-sidebar-foreground hover:bg-sidebar hover:text-sidebar-foreground'}>{label}</Button>)}
+            <div className="grid min-w-0 grid-cols-3 gap-0.5 rounded-md border border-sidebar-border bg-sidebar-accent p-0.5" role="group" aria-label="Période des contrôles">
+              {([['7', '7 jours'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => <Button key={value} variant="ghost" size="sm" aria-pressed={selectedPeriodFilter === value} onClick={() => setSelectedPeriodFilter(value)} className={`h-8 px-2 text-xs sm:px-3 ${selectedPeriodFilter === value ? 'bg-background text-foreground hover:bg-background' : 'text-sidebar-foreground hover:bg-sidebar hover:text-sidebar-foreground'}`}>{label}</Button>)}
             </div>
             <Select value={activeUnit?.id || 'all'} onValueChange={(v) => {
               if (v === 'all') { setActiveUnit(null); setSelectedFarmFilter('all'); return; }
@@ -353,12 +352,13 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
         {(activeUnit?.type === 'commercialisation' ? canAccessModule('stock') : canViewAlerts || canViewFeeding) && <KpiCard label={activeUnit?.type === 'commercialisation' ? 'Articles en stock' : 'Alertes enregistrées'} value={activeUnit?.type === 'commercialisation' ? stocksForUnitType(feedStocks, activeUnit.type).filter(s => s.quantity > 0).length : criticalAlerts} hint={activeUnit?.type === 'commercialisation' ? 'Stock commercial disponible' : 'Analyses de l’unité'} icon={activeUnit?.type === 'commercialisation' ? Layers : AlertTriangle} tone="warning" />}
       </div>
 
-      {/* Finance evolution + Donut (placés au-dessus) */}
-      {canViewFinance && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="flex min-w-0 flex-col gap-4 sm:gap-6">
+      {/* Financial data follows the selected period. Desktop quick access comes first. */}
+      {canViewFinance && <div className="order-1 lg:order-2 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-600" /> Évolution financière (6 derniers mois)
+              <TrendingUp className="w-5 h-5 text-emerald-600" /> Évolution financière ({selectedPeriodFilter === '365' ? '365 derniers jours' : `${selectedPeriodFilter} derniers jours`})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -423,7 +423,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
       </div>}
 
       {/* Quick access */}
-      {quickActions.length > 0 && <section className="border-y py-4">
+      {quickActions.length > 0 && <section className="order-2 lg:order-1 border-y py-4">
         <div className="mb-3">
           <h2 className="text-base font-semibold flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" /> Accès rapides
@@ -437,6 +437,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
           </div>
         </div>
       </section>}
+      </div>
 
       {/* Résumé Financier — déplacé sous l'évolution financière et la répartition des dépenses */}
       {canViewFinance && <Card className="border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-900/40">

@@ -4,6 +4,7 @@ import { useSales } from '@/hooks/useSales';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import { useFeedingRecords } from '@/hooks/useFeedingRecords';
+import { dashboardPeriod, type DashboardPeriod } from '@/lib/dashboardPeriod';
 
 export interface FinancialSummary {
   // Revenus
@@ -63,26 +64,28 @@ export interface FinancialSummary {
 export const isSaleMirror = (t: { category?: string; description?: string }) =>
   t.category === 'Vente de poissons' && (t.description || '').startsWith('Vente à ');
 
-export const useFinancialSummary = (unitId?: string) => {
+export const useFinancialSummary = (unitId?: string, period?: DashboardPeriod) => {
   const { transactions, purchases } = useProductionUnits();
   const { allSales: sales } = useSales();
-  const { employees } = useEmployees();
+  const { employees, paySlips } = useEmployees();
   const { stocks: feedStocks } = useFeedStocks(unitId);
   const { records: feedingRecords } = useFeedingRecords(undefined, unitId);
 
   const summary = useMemo<FinancialSummary>(() => {
+    const range = period ? dashboardPeriod(period) : undefined;
+    const inPeriod = (date?: string | null) => !range || range.contains(date);
     // Filtrer par unité si spécifié
     const filteredTransactions = unitId 
-      ? transactions.filter(t => t.unitId === unitId)
-      : transactions;
+      ? transactions.filter(t => t.unitId === unitId && inPeriod(t.date))
+      : transactions.filter(t => inPeriod(t.date));
     
     const filteredPurchases = unitId
-      ? purchases.filter(p => p.unitId === unitId)
-      : purchases;
+      ? purchases.filter(p => p.unitId === unitId && inPeriod(p.date))
+      : purchases.filter(p => inPeriod(p.date));
 
     const filteredSales = unitId
-      ? sales.filter(s => s.unitId === unitId)
-      : sales;
+      ? sales.filter(s => s.unitId === unitId && inPeriod(s.date))
+      : sales.filter(s => inPeriod(s.date));
 
     const filteredEmployees = unitId
       ? employees.filter(e => e.unitId === unitId)
@@ -102,7 +105,8 @@ export const useFinancialSummary = (unitId?: string) => {
     const otherPurchases = totalPurchases - feedPurchases;
 
     // Salaires (estimation mensuelle)
-    const totalMonthlySalaries = filteredEmployees
+    const periodPaySlips = paySlips.filter(p => (!unitId || p.unitId === unitId) && inPeriod(p.generatedAt));
+    const totalMonthlySalaries = range ? periodPaySlips.reduce((sum, p) => sum + (p.netSalary || 0), 0) : filteredEmployees
       .filter(e => e.status === 'active')
       .reduce((sum, e) => sum + (e.salary || 0), 0);
 
@@ -110,7 +114,7 @@ export const useFinancialSummary = (unitId?: string) => {
     const feedStockValue = feedStocks.reduce((sum, s) => sum + ((s.cost || 0) * s.quantity), 0);
     
     // Alimentation consommée
-    const feedConsumed = feedingRecords.reduce((sum, r) => sum + r.quantity, 0);
+    const feedConsumed = feedingRecords.filter(r => inPeriod(r.date)).reduce((sum, r) => sum + r.quantity, 0);
 
     // Transactions comptables
     // Les ventes et achats sont déjà comptés depuis leurs propres tables : on exclut leurs écritures miroir
@@ -132,10 +136,14 @@ export const useFinancialSummary = (unitId?: string) => {
     // Données mensuelles (6 derniers mois)
     const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
     const now = new Date();
-    const monthlyData = Array.from({ length: 6 }, (_, i) => {
+    const defaultBuckets = Array.from({ length: 6 }, (_, i) => {
       const date = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = monthNames[date.getMonth()];
+      return { key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`, label: monthNames[date.getMonth()] };
+    });
+    const monthlyData = (range?.buckets || defaultBuckets).map(bucket => {
+      const monthKey = bucket.key;
+      const monthName = bucket.label;
+      const bucketSalaries = range ? periodPaySlips.filter(p => p.generatedAt?.startsWith(monthKey)).reduce((sum, p) => sum + (p.netSalary || 0), 0) : totalMonthlySalaries;
 
       // Ventes du mois
       const monthSales = confirmedSalesData
@@ -157,7 +165,7 @@ export const useFinancialSummary = (unitId?: string) => {
         .reduce((sum, t) => sum + t.amount, 0);
 
       const revenue = monthSales + monthRevenue;
-      const expenses = monthPurchases + totalMonthlySalaries + monthExpenses;
+      const expenses = monthPurchases + bucketSalaries + monthExpenses;
 
       return {
         month: monthName,
@@ -166,8 +174,8 @@ export const useFinancialSummary = (unitId?: string) => {
         profit: revenue - expenses,
         sales: monthSales,
         purchases: monthPurchases,
-        salaries: totalMonthlySalaries,
-        feed: feedPurchases / 6, // Estimation mensuelle
+        salaries: bucketSalaries,
+        feed: range ? receivedPurchases.filter(p => p.date?.startsWith(monthKey) && (p.category?.toLowerCase().includes('aliment') || p.category === 'alimentation')).reduce((sum, p) => sum + p.amount, 0) : feedPurchases / 6,
       };
     });
 
@@ -211,7 +219,7 @@ export const useFinancialSummary = (unitId?: string) => {
       expenseBreakdown,
       revenueBreakdown,
     };
-  }, [transactions, purchases, sales, employees, feedStocks, feedingRecords, unitId]);
+  }, [transactions, purchases, sales, employees, paySlips, feedStocks, feedingRecords, unitId, period]);
 
   return summary;
 };
