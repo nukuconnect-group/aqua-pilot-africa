@@ -13,9 +13,9 @@
 - Preserve explicit tab IDs during URL resolution; permission-group IDs must not redirect sibling screens, so Stock remains a separate screen with existing feeding permissions.
 
 - Treasury uses append-only unit-scoped movements with server-side account locking and balanced journal lines; account opening is atomic to prevent partial initialization.
-- Business sale cancellation preserves the sale and its previous status; journal generation retains original entries and adds dated reversals, while linked POS cash refunds are atomic with cancellation.
-- Accounting and treasury use the same application client as sales; deployment must target the application's actual backend, never silently switch existing users to another database.
-- CRM contact shortcuts share ContactActions and open the user's messaging applications; they do not send messages automatically.
+- Sale cancellation preserves prior status and journal entries, adds dated reversals, and atomically refunds linked POS cash.
+- Accounting, treasury and sales share the application client; deploy only to its actual backend.
+- CRM uses ContactActions to open messaging apps, never send automatically.
 - POS uses the active unit's real stock and sale items through posCatalog; purchase cost is never used as a selling price.
 - Cash sale history is linked through cash_movements.sale_id and session_id, including closed sessions, to avoid duplicating sales records.
 - POS retains the sale and its original cash session when a cash posting fails; retry the posting rather than create a second sale.
@@ -45,4 +45,5 @@
 - Unit eligibility uses date-aware subscriptionAccess and unitTypeAccess: an active trial bypasses type restrictions, paid subscriptions use profiles.production_units, and expiry suspends unit screens without deleting data; preserve admin exceptions and legacy empty-list behavior. Server enforcement must target the historical application backend, not the unrelated managed database.
 - Periodic/focus refreshes (subscription, plan rules, stock lists) must not toggle loading states after the first load, because guards render a loader in place of the module and would unmount open forms; the stock add form also keeps its draft with useSessionDraft.
 
-- Voice captures WAV in memory, transcribes through aqua-transcribe with app-session validation, then uses the existing sender on confirmation; cancel aborts and frees the microphone. No persisted audio.
+- Voice: memory-only WAV via aqua-transcribe with app-session validation; confirm uses existing sender, cancel frees microphone.
+- Commercial infrastructure uses same-unit commercial stocks via specifications.attachedStockId; reuse CustomEquipmentManager. ColdStorageOverview reads dated health_records by infrastructure ID, never simulated IoT; isolated readings cannot prove connectivity or excursion duration.
