@@ -78,6 +78,7 @@ BEGIN
  RETURN a;
 END $$;
 GRANT UPDATE(unit_ids) ON public.treasury_accounts TO authenticated;
+DROP POLICY IF EXISTS treasury_accounts_owner_links ON public.treasury_accounts;
 CREATE POLICY treasury_accounts_owner_links ON public.treasury_accounts FOR UPDATE TO authenticated
  USING(user_id=auth.uid()) WITH CHECK(user_id=auth.uid());
 DROP POLICY IF EXISTS treasury_accounts_read ON public.treasury_accounts;
@@ -151,5 +152,24 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.post_sale_to_linked_treasury(uuid,uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.post_sale_to_linked_treasury(uuid,uuid) TO authenticated;
+
+-- The new session preserves its explicit destination, even after closing and reopening.
+CREATE OR REPLACE FUNCTION public.reopen_cash_register(_session_id uuid)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE s public.cash_sessions; latest public.cash_sessions; opened uuid;
+BEGIN
+ SELECT * INTO s FROM public.cash_sessions WHERE id=_session_id;
+ IF s.id IS NULL OR NOT public.is_cashier_of(s.id) THEN RAISE EXCEPTION 'Caisse inaccessible'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtext(s.unit_id||lower(COALESCE(s.name,''))));
+ SELECT id INTO opened FROM public.cash_sessions WHERE user_id=s.user_id AND unit_id=s.unit_id AND status='open' AND lower(COALESCE(name,''))=lower(COALESCE(s.name,'')) LIMIT 1;
+ IF opened IS NOT NULL THEN RETURN opened; END IF;
+ SELECT * INTO latest FROM public.cash_sessions WHERE user_id=s.user_id AND unit_id=s.unit_id AND status='closed' AND lower(COALESCE(name,''))=lower(COALESCE(s.name,'')) ORDER BY COALESCE(closed_at,opened_at) DESC LIMIT 1;
+ IF latest.id IS NULL THEN latest:=s; END IF;
+ INSERT INTO public.cash_sessions(user_id,unit_id,opened_by,opening_amount,name,cashier_ids,treasury_account_id,status)
+ VALUES(latest.user_id,latest.unit_id,auth.uid(),COALESCE(latest.counted_amount,latest.expected_amount,0),latest.name,latest.cashier_ids,latest.treasury_account_id,'open') RETURNING id INTO opened;
+ RETURN opened;
+END $$;
+REVOKE ALL ON FUNCTION public.reopen_cash_register(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.reopen_cash_register(uuid) TO authenticated;
 REVOKE ALL ON FUNCTION public.guard_cashier_ids(),public.guard_treasury_unit_links(),public.validate_treasury_movement() FROM PUBLIC,anon,authenticated;
 NOTIFY pgrst,'reload schema';
