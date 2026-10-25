@@ -1,7 +1,8 @@
 ## Barre de caisse et largeur du menu mobile (25/10/2026)
 - [x] Conserver toutes les informations dans une barre de caisse lisible : libellés complets, grille compacte mobile, actions en icônes
-- [ ] Réduire uniquement la largeur du menu téléphone à 240 px maximum ; préserver tablette, ordinateur, textes, icônes et défilement
-- [ ] Vérifier les dimensions et relancer les tests de caisse ; contrôle connecté indisponible
+- [x] Réduire uniquement la largeur du menu téléphone à 240 px maximum ; préserver tablette, ordinateur, textes, icônes et défilement
+- [x] Dimensions CSS contrôlées isolément à 320/393/768/1280 px : téléphone 240 px, tablette 300 px, hauteur inchangée ; 15 tests de caisse réussis, compilation OK
+- [ ] Vérifier visuellement les longs libellés et la barre de caisse depuis le compte réel : session historique indisponible ; contrôle de dimensions isolé uniquement
 
 ## Navigation Ventes et panier mobile (25/10/2026)
 - [x] Masquer les raccourcis après sélection et ajouter un retour sans perdre le panier
