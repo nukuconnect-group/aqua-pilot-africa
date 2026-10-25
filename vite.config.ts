@@ -125,6 +125,31 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Une seule copie de React, même si une dépendance en embarque une autre.
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+  },
+  // Pré-optimise aussi les dépendances des modules chargés à la demande : sinon
+  // Vite les découvre en cours de session, régénère ses chunks et l'aperçu
+  // mélange deux versions de React (écran blanc, « reading 'useState' » sur null).
+  optimizeDeps: {
+    include: [
+      "react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime",
+      "react-router-dom", "@tanstack/react-query", "@supabase/supabase-js",
+      "@radix-ui/react-accordion", "@radix-ui/react-alert-dialog", "@radix-ui/react-aspect-ratio",
+      "@radix-ui/react-avatar", "@radix-ui/react-checkbox", "@radix-ui/react-collapsible",
+      "@radix-ui/react-context-menu", "@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-hover-card", "@radix-ui/react-label", "@radix-ui/react-menubar",
+      "@radix-ui/react-navigation-menu", "@radix-ui/react-popover", "@radix-ui/react-progress",
+      "@radix-ui/react-radio-group", "@radix-ui/react-scroll-area", "@radix-ui/react-select",
+      "@radix-ui/react-separator", "@radix-ui/react-slider", "@radix-ui/react-slot",
+      "@radix-ui/react-switch", "@radix-ui/react-tabs", "@radix-ui/react-toast",
+      "@radix-ui/react-toggle", "@radix-ui/react-toggle-group", "@radix-ui/react-tooltip",
+      "class-variance-authority", "clsx", "tailwind-merge", "cmdk", "date-fns", "date-fns/locale",
+      "embla-carousel-react", "input-otp", "next-themes", "react-hook-form", "react-resizable-panels",
+      "vaul", "lucide-react", "recharts", "sonner", "zod", "react-day-picker", "motion/react",
+      "nanoid", "qrcode.react", "jsbarcode", "jspdf", "jspdf-autotable", "html2canvas",
+      "html5-qrcode", "react-simple-maps", "streamdown", "use-stick-to-bottom", "eventsource-parser",
+    ],
   },
   build: {
     chunkSizeWarningLimit: 2000,
