@@ -69,6 +69,7 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				// Palette aquatique personnalisée (HSL)
+				'assistant-positive': 'hsl(var(--assistant-positive))',
 				aqua: {
 					primary: 'hsl(var(--aqua-primary))',
 					secondary: 'hsl(var(--aqua-secondary))',

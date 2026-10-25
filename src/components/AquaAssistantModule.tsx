@@ -1,4 +1,3 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot, LayoutDashboard, MessageSquare, Sparkles, FileText } from 'lucide-react';
@@ -140,13 +139,9 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   // Synchroniser avec l'unité active
   useEffect(() => {
     if (activeUnit?.id && activeUnit.id !== selectedUnitId) {
+      requestAbort.current?.abort();
       setSelectedUnitId(activeUnit.id);
-      if (messages.length > 1) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `📍 Contexte basculé vers l'unité "${activeUnit.name}". Je peux maintenant répondre avec les données spécifiques de cette unité.` 
-        }]);
-      }
+      setMessages([{role:'assistant',unitId:activeUnit.id,content:`Bonjour. Que souhaitez-vous analyser pour « ${activeUnit.name} » ?`}]);
     }
   }, [activeUnit?.id]);
 
@@ -247,7 +242,8 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       unitId: selectedUnitId || undefined
     };
     const scopedHistory = messages.filter(m=>!m.unitId||m.unitId===selectedUnitId);
-    const newMessages = [...scopedHistory, userMessage];
+    const last=scopedHistory[scopedHistory.length-1];
+    const newMessages = isRetry && last?.role==='user' && last.content===textToSend ? scopedHistory : [...scopedHistory, userMessage];
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);

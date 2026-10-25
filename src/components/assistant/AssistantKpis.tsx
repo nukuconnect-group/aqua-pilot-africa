@@ -35,9 +35,9 @@ const AssistantKpis: React.FC<{ unitId?: string | null }> = ({ unitId }) => {
   if (!data) return null;
   const result = data.sales - data.purchases;
   const items = [
-    { icon: TrendingUp, label: 'Ventes du mois', value: fmt(data.sales), tone: 'text-primary' },
+    { icon: TrendingUp, label: 'Ventes du mois', value: fmt(data.sales), tone: 'text-assistant-positive' },
     { icon: ShoppingCart, label: 'Achats du mois', value: fmt(data.purchases), tone: 'text-muted-foreground' },
-    { icon: Scale, label: 'Solde ventes − achats', value: fmt(result), tone: result >= 0 ? 'text-primary' : 'text-destructive' },
+    { icon: Scale, label: 'Solde ventes − achats', value: fmt(result), tone: result >= 0 ? 'text-assistant-positive' : 'text-destructive' },
   ];
   return (
     <div className="grid grid-cols-3 divide-x divide-border border-b bg-muted/30" aria-label="Chiffres réels du mois">

@@ -107,7 +107,7 @@ const profiles: Record<ProductionUnitType | 'all', AssistantUnitProfile> = {
       common.revenue,
       { title: 'Meilleurs produits', question: 'Quels produits se vendent le mieux ce mois ?' },
       { title: 'Créances clients', question: 'Quels clients ont des montants restant à encaisser ?' },
-      { title: 'Marge', question: 'Quelle est ma marge brute par produit vendu ?' },
+      { title: 'Finances', question: 'Analyse mes dépenses et recettes. Distingue solde ventes moins achats et bénéfice net ; signale les coûts manquants.' },
       common.stocks,
       common.priorities,
     ],
