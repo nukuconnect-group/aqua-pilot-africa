@@ -1,3 +1,9 @@
+## Infrastructures commerciales et chaîne du froid (25/10/2026)
+- [ ] Vérifier l’option d’amortissement et son calcul comptable par unité
+- [ ] Adapter types, équipements et matériel ; rattacher les lots de Stock de la même unité
+- [ ] Adapter le centre IoT aux températures réelles, courbes et analyses des chambres froides
+- [ ] Tester les règles et les écrans téléphone/ordinateur ; préciser les contrôles connectés indisponibles
+
 ## Tableau de bord et menu mobile (25/10/2026)
 - [x] Bandeau plus haut, titre lisible, quatre indicateurs en deux colonnes, sources existantes filtrées par unité et contenus commerciaux adaptés
 - [x] Accès rapides sous les dépenses ; menu élargi et aligné à gauche au-dessus des autres éléments ; AquaAssistant après Paramètres, agrandi avec zoom léger désactivé en mouvement réduit
