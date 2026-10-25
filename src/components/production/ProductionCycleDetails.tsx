@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -109,15 +110,17 @@ const ProductionCycleDetails: React.FC<CycleDetailsProps> = ({ cycle, isOpen, on
                 {cycle.status}
               </Badge>
               {onEdit && (
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     onEdit(cycle);
                     onClose();
                   }}
-                  className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200"
+                  className="text-sm"
                 >
                   Modifier
-                </button>
+                </Button>
               )}
             </div>
           </div>

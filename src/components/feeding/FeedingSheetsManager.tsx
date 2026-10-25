@@ -780,20 +780,20 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                 return (
                   <Card key={s.id} className={`border-l-4 ${s.is_active ? 'border-l-primary' : 'border-l-border opacity-70'}`}>
                     <CardContent className="p-4 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-sm break-words">{s.title}</h3>
                             {!s.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
                           </div>
-                          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                          <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                             <Fish className="w-3 h-3" />
                             {ids.length === 1
                               ? <>{infraName(ids[0])} · <strong className="text-foreground">{fishCounts[ids[0]] !== undefined ? `${fishCounts[ids[0]]} sujets disponibles` : 'effectif inconnu'}</strong></>
                               : <span className="text-destructive">Infrastructure à rattacher</span>}
                           </p>
                         </div>
-                        <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                        <div className="grid shrink-0 grid-cols-2 gap-1 self-end sm:flex sm:flex-wrap sm:justify-end">
                           <Button size="icon" variant="ghost" title="Télécharger la fiche du jour en PDF" aria-label="Télécharger la fiche en PDF" onClick={() => downloadSheetPdf(s)}><FileDown className="w-4 h-4" /></Button>
                           <Button size="icon" variant="ghost" title="Imprimer la fiche du jour" aria-label="Imprimer la fiche du jour" onClick={() => printDailySheet(s)}><Printer className="w-4 h-4" /></Button>
                           <Button size="icon" variant="ghost" title="Modifier la fiche" aria-label="Modifier la fiche" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
@@ -827,7 +827,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
                         <div className="col-span-2"><span className="text-muted-foreground">Jours :</span> {(s.days || []).join(', ')}</div>
                         {cleanObservations(s.observations) && <div className="col-span-2 text-muted-foreground italic">{cleanObservations(s.observations)}</div>}
                       </div>
-                      <div className="flex flex-wrap gap-2 pt-2 border-t">
+                      <div className="mobile-action-grid grid grid-cols-2 gap-2 pt-2 border-t sm:flex sm:flex-wrap">
                         <Button size="sm" className="flex-1" disabled={!recordsReady || !isSheetScheduled(s, selectedDate) || sheetPlan(s).every(p => periodDone(s, p.period))} onClick={() => validateDistribution(s)}>
                           <CheckCircle2 className="w-4 h-4 mr-1" /> {sheetPlan(s).every(p => periodDone(s, p.period)) ? "Journée remplie" : "Nourrir aujourd’hui"}
                         </Button>
@@ -1100,7 +1100,7 @@ export default function FeedingSheetsManager({ unitId, unitName }: Props) {
           {dailySheet && <div className="space-y-4">
             <p className="text-sm font-medium">{new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {infrasLabel(dailySheet)}</p>
             {!isSheetScheduled(dailySheet, selectedDate) && <p className="text-sm text-muted-foreground">Aucun nourrissage prévu pour cette date.</p>}
-            <div className="overflow-x-auto"><table className="w-full text-xs"><thead className="bg-muted"><tr>{['Période / heure', 'Prescrite', 'Servie', 'Restante', 'Mortalité', 'Observations', 'État'].map(h => <th key={h} className="p-2 text-left">{h}</th>)}</tr></thead><tbody>
+            <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-xs"><thead className="bg-muted"><tr>{['Période / heure', 'Prescrite', 'Servie', 'Restante', 'Mortalité', 'Observations', 'État'].map(h => <th key={h} className="p-2 text-left">{h}</th>)}</tr></thead><tbody>
               {buildDailyRows(sheetPlan(dailySheet), recordsFor(dailySheet), fishCounts[sheetInfraIds(dailySheet)[0]]).map(row => <tr key={row.period} className="border-b">
                 <td className="p-2">{PERIOD_LABELS[row.period]} · {row.plannedTime}{row.actualTime && <span className="block text-muted-foreground">Nourri à {row.actualTime}</span>}</td><td className="p-2">{row.prescribed} {dailySheet.unit}</td><td className="p-2">{row.served || '—'}</td><td className="p-2">{row.remaining || '—'}</td><td className="p-2">{row.mortality || '—'}</td><td className="p-2 min-w-40">{row.behavior} {row.notes}</td>
                 <td className="p-2">{row.served !== '' ? <Badge variant="secondary">Nourri</Badge> : <Button size="sm" disabled={!recordsReady || !isSheetScheduled(dailySheet, selectedDate)} onClick={() => { validateDistribution(dailySheet, row.period); setDailySheet(null); }}>Nourrir</Button>}</td>
