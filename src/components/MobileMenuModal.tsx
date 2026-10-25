@@ -157,7 +157,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
     <Sheet modal={false} open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="left"
-        className="p-0 m-0 left-0 top-0 h-dvh w-[min(300px,85vw)] max-w-none sm:max-w-none flex flex-col text-left bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-foreground [&>button]:hover:bg-sidebar-accent"
+        className="z-[10010] p-0 m-0 left-0 top-0 h-dvh w-[min(300px,85vw)] max-w-none sm:max-w-none flex flex-col text-left bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-foreground [&>button]:hover:bg-sidebar-accent"
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement | null;
           if (target?.closest('[data-mobile-menu-trigger]')) {

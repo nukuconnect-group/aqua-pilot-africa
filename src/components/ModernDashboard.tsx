@@ -331,7 +331,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
       </section>
 
       <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Indicateurs de l’unité">
-        {canViewUnits && <KpiCard label="Infrastructures" value={unitInfra.length} hint={activeUnit?.name || 'Sélectionnez une unité'} icon={Building2} tone="info" />}
+        {(canViewUnits || canViewInfrastructure) && <KpiCard label={activeUnit ? 'Infrastructures' : 'Unités'} value={activeUnit ? unitInfra.length : units.length} hint={activeUnit?.name || 'Toutes les unités'} icon={Building2} tone="info" />}
         {canViewProduction && !['commercialisation', 'conservation', 'transformation', 'fabrication_aliment'].includes(activeUnit?.type || '') ? <>
           <KpiCard label={activeUnit?.type === 'algoculture' ? 'Cultures actives' : 'Cycles actifs'} value={activeCycles} hint={`${cycles.length} cycles enregistrés`} icon={Factory} tone="primary" />
           <KpiCard label={activeUnit?.type === 'ecloserie' ? 'Effectifs' : 'Biomasse estimée'} value={activeUnit?.type === 'ecloserie' ? totalStock.toLocaleString('fr-FR') : `${totalBiomassKg.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg`} hint="Unité active" icon={Fish} tone="success" />
@@ -339,7 +339,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
           <KpiCard label="Ventes" value={financial.confirmedSales} hint="Confirmées ou payées" icon={ShoppingCart} tone="primary" />
           <KpiCard label="Revenus des ventes" value={formatCurrency(financial.totalSalesRevenue)} hint="Ventes enregistrées" icon={Wallet} tone="success" />
         </>}
-        {(canViewAlerts || canViewFeeding) && <KpiCard label={activeUnit?.type === 'commercialisation' ? 'Articles en stock' : 'Alertes enregistrées'} value={activeUnit?.type === 'commercialisation' ? stocksForUnitType(feedStocks, activeUnit.type).filter(s => s.quantity > 0).length : criticalAlerts} hint={activeUnit?.type === 'commercialisation' ? 'Stock commercial disponible' : 'Analyses de l’unité'} icon={activeUnit?.type === 'commercialisation' ? Layers : AlertTriangle} tone="warning" />}
+        {(activeUnit?.type === 'commercialisation' ? canAccessModule('stock') : canViewAlerts || canViewFeeding) && <KpiCard label={activeUnit?.type === 'commercialisation' ? 'Articles en stock' : 'Alertes enregistrées'} value={activeUnit?.type === 'commercialisation' ? stocksForUnitType(feedStocks, activeUnit.type).filter(s => s.quantity > 0).length : criticalAlerts} hint={activeUnit?.type === 'commercialisation' ? 'Stock commercial disponible' : 'Analyses de l’unité'} icon={activeUnit?.type === 'commercialisation' ? Layers : AlertTriangle} tone="warning" />}
       </div>
 
       {/* Finance evolution + Donut (placés au-dessus) */}
@@ -386,10 +386,10 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
           </CardHeader>
           <CardContent>
             <div className="h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
+              {financial.expenseBreakdown.length === 0 ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Aucune dépense disponible.</div> : <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={financial.expenseBreakdown.length ? financial.expenseBreakdown : [{ name: 'Aucune', value: 1, color: '#e5e7eb' }]}
+                    data={financial.expenseBreakdown}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -398,14 +398,14 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
                     outerRadius={90}
                     paddingAngle={2}
                   >
-                    {(financial.expenseBreakdown.length ? financial.expenseBreakdown : [{ name: 'Aucune', value: 1, color: '#e5e7eb' }]).map((e, i) => (
+                    {financial.expenseBreakdown.map((e, i) => (
                       <Cell key={i} fill={e.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </div>
           </CardContent>
         </Card>
