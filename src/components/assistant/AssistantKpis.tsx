@@ -43,11 +43,11 @@ const AssistantKpis: React.FC<{ unitId?: string | null }> = ({ unitId }) => {
     <div className="grid grid-cols-3 divide-x divide-border border-b bg-muted/30" aria-label="Chiffres réels du mois">
       {items.map(({ icon: Icon, label, value, tone }) => (
         <div key={label} className="min-w-0 px-2 py-2 sm:px-3 sm:py-2.5">
-          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[11px]">
+          <p className="flex items-center gap-1 text-[10px] font-medium tracking-normal text-muted-foreground sm:gap-1.5 sm:text-[11px]">
             <Icon className={`size-3.5 shrink-0 ${tone}`} aria-hidden="true" />
             <span className="break-words">{label}</span>
           </p>
-          <p className={`mt-0.5 break-words text-xs font-semibold tabular-nums sm:text-sm ${tone === 'text-muted-foreground' ? 'text-foreground' : tone}`}>{value}</p>
+          <p className={`mt-0.5 break-words [overflow-wrap:anywhere] text-xs font-semibold tabular-nums sm:text-sm ${tone === 'text-muted-foreground' ? 'text-foreground' : tone}`}>{value}</p>
         </div>
       ))}
     </div>

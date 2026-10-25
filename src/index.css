@@ -30,6 +30,8 @@ html.large-text .text-2xl { font-size: 1.75rem; }
 /* QR codes retain a scan-safe print palette in either application theme. */
 :root { --qr-paper: #ffffff; --qr-ink: #000000; }
 /* AquaAssistant surfaces are flat and themed: no illustrations, no gradients. */
+.assistant-overview { container-type: inline-size; }
+@container (min-width: 650px) { .assistant-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .assistant-masthead { background: hsl(var(--ocean-primary) / .04); }
 .assistant-question { transition: border-color .2s, transform .2s; }
 .assistant-question:hover { border-color: hsl(var(--ocean-secondary)); transform: translateY(-1px); }

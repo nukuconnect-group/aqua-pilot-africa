@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot, LayoutDashboard, MessageSquare, Sparkles, FileText } from 'lucide-react';
+import { Mic, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot, LayoutDashboard, MessageSquare, Sparkles, FileText } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ import { Shimmer } from '@/components/ai-elements/shimmer';
 import AssistantKpis from '@/components/assistant/AssistantKpis';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 import AssistantOverview from '@/components/assistant/AssistantOverview';
+import { useAssistantVoice } from '@/hooks/useAssistantVoice';
+import AssistantVoicePanel from '@/components/assistant/AssistantVoicePanel';
 import assistantIcon from '@/assets/aqua-assistant-icon.png';
 
 interface Message {
@@ -78,7 +80,6 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
     succeed: markChatSuccess,
     clearError: clearChatError,
   } = useChatGuard();
-  const [isListening, setIsListening] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(activeUnit?.id || null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>('fr');
@@ -104,7 +105,6 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       ? `Vous posez maintenant vos questions sur l’unité « ${target.name} ».${otherThanActive ? ` Attention : votre unité active dans l’application est « ${activeUnit?.name} ». Mes réponses porteront uniquement sur « ${target.name} ».` : ''} Que voulez-vous savoir ?`
       : 'Vous posez maintenant vos questions sur l’ensemble de vos unités.' }]);
   };
-  const recognitionRef = useRef<any>(null);
 
   // Charge les messages de la conversation active depuis Supabase
   useEffect(() => {
@@ -172,47 +172,15 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
 
   const currentLang = languages.find(l => l.id === selectedLanguage);
   
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = currentLang?.code || 'fr-FR';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onerror = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
-  }, [selectedLanguage, currentLang?.code]);
-
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      toast({
-        title: "Micro non disponible",
-        description: "Votre navigateur ne supporte pas la reconnaissance vocale.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      recognitionRef.current.start();
-      setIsListening(true);
-    }
+  const voice = useAssistantVoice(currentLang?.code || 'fr-FR');
+  useEffect(() => { if (!visible) voice.cancel(); }, [visible, voice.cancel]);
+  useEffect(() => { voice.cancel(); }, [selectedUnitId, activeId, voice.cancel]);
+  const sendVoice = async () => {
+    const dictated = await voice.finish();
+    if (!dictated) return;
+    voice.cancel();
+    setInput(dictated);
+    void sendMessage(dictated, { retry: false });
   };
 
   const speakText = (text: string) => {
@@ -411,9 +379,9 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   const surface = (
     <section
       aria-label="AquaAssistant, assistant de gestion aquacole"
-      className={isPage ? 'relative flex h-[max(460px,calc(100dvh-12rem))] w-full min-w-0 flex-col overflow-hidden bg-background' : isFullscreen
+      className={isPage ? 'relative flex h-[max(380px,calc(100dvh-10rem))] sm:h-[max(460px,calc(100dvh-12rem))] w-full min-w-0 flex-col overflow-hidden bg-background' : isFullscreen
         ? 'fixed inset-0 z-[10000] flex min-h-0 flex-col overflow-hidden bg-background'
-        : 'fixed bottom-4 right-4 z-[10000] flex h-[min(680px,calc(100dvh-2rem))] w-[min(440px,calc(100vw-2rem))] min-h-0 flex-col overflow-hidden rounded-lg border bg-background shadow-2xl'}
+        : 'fixed inset-0 z-[10000] flex min-h-0 flex-col overflow-hidden border bg-background shadow-2xl sm:inset-auto sm:bottom-4 sm:right-4 sm:h-[min(680px,calc(100dvh-2rem))] sm:w-[min(440px,calc(100vw-2rem))] sm:rounded-lg'}
       style={!isPage && isFullscreen ? {
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
@@ -421,12 +389,12 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
     >
       <header className="assistant-masthead relative z-10 shrink-0 overflow-visible border-b px-3 pt-3 sm:px-4">
         <div className="relative flex flex-wrap items-center justify-between gap-2 px-1 pb-3 sm:px-0">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-background">
-              <img src={assistantIcon} alt="" width={48} height={48} className="size-10 object-contain" />
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-lg border bg-background">
+              <img src={assistantIcon} alt="" width={48} height={48} className="size-8 object-contain sm:size-10" />
             </div>
             <div className="min-w-0">
-              <h1 className="flex flex-wrap items-center gap-2 text-lg font-bold text-foreground">AquaAssistant</h1>
+              <h1 className="flex flex-wrap items-center gap-2 text-base font-bold sm:text-lg text-foreground">AquaAssistant</h1>
               <p className="truncate text-xs text-muted-foreground">{unitProfile.label} · {unitLabel}</p>
             </div>
           </div>
@@ -437,7 +405,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
             {!isPage && <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>}
-            <Button variant="outline" size="icon" className="shrink-0" onClick={() => { requestAbort.current?.abort(); setIsFullscreen(false); if (onClose) onClose(); else window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => { requestAbort.current?.abort(); voice.cancel(); setIsFullscreen(false); if (onClose) onClose(); else window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
               <X className="size-4" />
             </Button>
           </div>
@@ -471,7 +439,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <AssistantKpis unitId={selectedUnitId} />
-        <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-2" role="tablist" aria-label="Vues AquaAssistant"><Button role="tab" aria-selected={view==='conversation'} variant={view==='conversation'?'secondary':'ghost'} size="sm" onClick={()=>setView('conversation')}><MessageSquare className="size-4"/>Conversation</Button><Button role="tab" aria-selected={view==='overview'} variant={view==='overview'?'secondary':'ghost'} size="sm" onClick={()=>setView('overview')}><LayoutDashboard className="size-4"/>Synthèse</Button>{canNavigate('reports')&&<Button size="icon" variant="ghost" className="ml-auto" title="Consulter les rapports" aria-label="Consulter les rapports" onClick={()=>navigate('reports')}><FileText className="size-4"/></Button>}</div>
+        <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-2" role="tablist" aria-label="Vues AquaAssistant"><Button role="tab" aria-selected={view==='conversation'} variant={view==='conversation'?'secondary':'ghost'} size="sm" onClick={()=>setView('conversation')}><MessageSquare className="size-4"/>Conversation</Button><Button role="tab" aria-selected={view==='overview'} variant={view==='overview'?'secondary':'ghost'} size="sm" onClick={()=>{voice.cancel();setView('overview');}}><LayoutDashboard className="size-4"/>Synthèse</Button>{canNavigate('reports')&&<Button size="icon" variant="ghost" className="ml-auto" title="Consulter les rapports" aria-label="Consulter les rapports" onClick={()=>navigate('reports')}><FileText className="size-4"/></Button>}</div>
         {view==='overview'?<div className="min-h-0 flex-1 overflow-y-auto"><AssistantOverview unitId={selectedUnitId} onQuestion={ask} onNavigate={navigate} canNavigate={canNavigate}/></div>:<>
         {messages.length <= 1 && currentUnit?.type !== 'commercialisation' && <div className="shrink-0 border-b px-4 py-2">
           <p className="text-sm text-muted-foreground">
@@ -494,7 +462,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
                 {message.role === 'assistant' && <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground"><img src={assistantIcon} alt="" width={28} height={28} className="size-7 object-contain"/>AquaAssistant</div>}
-                <MessageContent className={message.role === 'user' ? 'bg-ocean-primary text-sidebar-foreground break-words [overflow-wrap:anywhere]' : 'rounded-lg border bg-card p-4 break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-ocean-primary [&_strong]:tabular-nums'}>
+                <MessageContent className={message.role === 'user' ? 'bg-ocean-primary text-sidebar-foreground break-words [overflow-wrap:anywhere]' : 'min-w-0 rounded-lg border bg-card p-3 text-sm sm:p-4 sm:text-base break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-ocean-primary [&_strong]:tabular-nums'}>
                   {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}
@@ -509,14 +477,14 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
             {chatError && <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 p-3" data-chat-error={chatError.cause}>
               <div className="flex gap-2"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-destructive">{CHAT_ERROR_LABEL[chatError.cause]}</p><p className="text-xs text-muted-foreground">{chatError.message}</p><div className="mt-2 flex flex-wrap gap-2">{chatError.retryable && lastAttempt && <Button size="sm" variant="outline" disabled={isLoading || !canRetryNow} onClick={() => sendMessage(lastAttempt)}><RefreshCw className="size-3.5" />{canRetryNow ? 'Réessayer' : `Dans ${retryIn}s`}</Button>}<Button size="sm" variant="ghost" onClick={clearChatError}>Fermer</Button></div></div></div>
             </div>}
-            <PromptInput onSubmit={(message) => sendMessage(message.text, { retry: false })} className="rounded-md bg-card">
+            {voice.error && <p role="alert" className="mb-2 text-xs text-destructive">{voice.error}</p>}
+            {voice.phase !== 'idle' ? <AssistantVoicePanel voice={voice} onSend={() => void sendVoice()} onCancel={() => { voice.cancel(); }} /> : <PromptInput onSubmit={(message) => sendMessage(message.text, { retry: false })} className="rounded-md bg-card">
               <PromptInputTextarea ref={(element) => { if (element && document.activeElement === document.body) element.focus(); }} value={input} onChange={(event) => { setInput(event.target.value); if (chatError) clearChatError(); }} disabled={isLoading} placeholder={`Posez une question sur ${unitLabel}…`} className="min-h-14 text-base" data-chat-input />
               <PromptInputFooter>
-                <PromptInputTools><PromptInputButton tooltip={isListening ? 'Arrêter l’écoute' : 'Dicter une question'} onClick={toggleListening} aria-label={isListening ? 'Arrêter l’écoute' : 'Dicter une question'}>{isListening ? <MicOff className="size-4 text-destructive" /> : <Mic className="size-4" />}</PromptInputButton></PromptInputTools>
+                <PromptInputTools><PromptInputButton tooltip="Dicter une question" disabled={isLoading} onClick={() => void voice.start(input)} aria-label="Dicter une question"><Mic className="size-4" /></PromptInputButton></PromptInputTools>
                 <PromptInputSubmit status={chatStatus} disabled={!input.trim() && !isLoading} onClick={isLoading?(e)=>{e.preventDefault();requestAbort.current?.abort();}:undefined} aria-label={isLoading ? 'Arrêter' : 'Envoyer la question'} />
               </PromptInputFooter>
-            </PromptInput>
-            {isListening && <p className="mt-2 text-center text-xs text-primary">Écoute en cours…</p>}
+            </PromptInput>}
           </div>
           </div>
 
