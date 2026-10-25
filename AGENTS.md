@@ -44,4 +44,4 @@
 - Unit eligibility uses date-aware subscriptionAccess and unitTypeAccess: an active trial bypasses type restrictions, paid subscriptions use profiles.production_units, and expiry suspends unit screens without deleting data; preserve admin exceptions and legacy empty-list behavior. Server enforcement must target the historical application backend, not the unrelated managed database.
 - Periodic/focus refreshes (subscription, plan rules, stock lists) must not toggle loading states after the first load, because guards render a loader in place of the module and would unmount open forms; the stock add form also keeps its draft with useSessionDraft.
 
-- Native dictation uses useAssistantVoice and the existing sender; cancel/close stops microphone analysis. Never store audio or create another conversation.
+- Dictation uses useAssistantVoice and the existing sender; cancel/close stops microphone analysis. Never store audio or create another conversation.
