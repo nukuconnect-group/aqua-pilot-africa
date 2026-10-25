@@ -1,5 +1,7 @@
 # Ajustements Ventes et abonnements
 ## Harmonisation mobile
+- [x] Ajustements ciblés dans les huit modules : onglets deux colonnes, formulaires achats empilés, actions/fiches alimentation, en-têtes cycles/caisses/factures et états SYSCOHADA. 30 tests ciblés réussis ; contrôles partagés isolés à 320/393 px sans débordement, changement d’onglet vérifié. Ce contrôle isolé ne valide pas les modules connectés.
+- [ ] Contrôle connecté des huit modules : session personnelle indisponible, Ventes redirige vers /auth. À vérifier : filtres et acquittement d’alertes ; bassins/MQTT/seuils ; visualisation/traçabilité/quarantaine/mortalité du cheptel ; création/modification/détails de cycles ; traitement et persistance de prophylaxie ; fiches/nourrissage/PDF ; écritures/trésorerie/export ; caisse/panier/clôture/verrouillage/opérations/factures/échéances. Aucune opération réelle créée.
 - [x] Essai d’un mois gratuit déjà en premier : inscription vérifiée à 320, 393 et 1280 px, sans créer de compte ; page abonnement également ordonnée.
 - [x] Corriger les largeurs communes, onglets, fenêtres et tableaux sans masquer les informations.
 - [x] Adapter paramètres du tableau de bord, graphiques vides, performances et Centre IoT/MQTT ; contrôle connecté restant ci-dessous.

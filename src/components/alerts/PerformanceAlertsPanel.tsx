@@ -223,7 +223,7 @@ const PerformanceAlertsPanel: React.FC = () => {
             )}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+        <div className="mobile-action-grid grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Button 
             variant="outline" 
             onClick={() => refetch()}
@@ -280,7 +280,7 @@ const PerformanceAlertsPanel: React.FC = () => {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <Filter className="h-4 w-4 text-muted-foreground" />
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-auto">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full sm:w-auto">
           <TabsList className="h-8">
             <TabsTrigger value="all" className="text-xs px-2 h-6">{t('all_filter')}</TabsTrigger>
             <TabsTrigger value="unacknowledged" className="text-xs px-2 h-6">{t('unacknowledged_label')}</TabsTrigger>
@@ -292,7 +292,7 @@ const PerformanceAlertsPanel: React.FC = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="text-xs h-8 px-2 rounded-md border bg-background"
+            className="w-full min-w-0 text-xs h-8 px-2 rounded-md border bg-background sm:w-auto"
           >
             <option value="all">{t('all_types')}</option>
             {alertTypes.map(type => (

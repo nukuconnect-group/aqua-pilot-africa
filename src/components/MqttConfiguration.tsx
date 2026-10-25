@@ -144,25 +144,27 @@ const MqttConfiguration = () => {
                     <Label>Topics MQTT</Label>
                     <div className="space-y-2 mt-2">
                       {config.topics.map((topic, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div key={index} className="flex min-w-0 items-center justify-between gap-2 p-2 bg-muted rounded">
                           <span className="min-w-0 break-all text-sm font-mono">{topic}</span>
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="shrink-0"
+                            aria-label="Supprimer le topic"
                             onClick={() => removeTopic(index)}
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
                       ))}
-                      <div className="flex space-x-2">
+                      <div className="flex min-w-0 gap-2">
                         <Input
                           value={newTopic}
                           onChange={(e) => setNewTopic(e.target.value)}
                           placeholder="sensors/basin/001/oxygen"
-                          className="text-sm"
+                          className="min-w-0 flex-1 text-sm"
                         />
-                        <Button size="sm" onClick={addTopic}>
+                        <Button size="sm" className="shrink-0" aria-label="Ajouter le topic" onClick={addTopic}>
                           <Plus className="w-4 h-4" />
                         </Button>
                       </div>

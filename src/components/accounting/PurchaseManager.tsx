@@ -1140,10 +1140,10 @@ const PurchaseManager = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <Label>Fournisseur *</Label>
-                <div className="flex gap-2">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
                   <Select
                     value={newPurchase.supplier}
                     onValueChange={(value) => {
@@ -1184,7 +1184,7 @@ const PurchaseManager = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <Label>Montant total</Label>
                   <div className="h-10 flex items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-semibold tabular-nums" aria-live="polite">
@@ -1270,7 +1270,7 @@ const PurchaseManager = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <Label>Référence</Label>
                 <Input
@@ -1322,7 +1322,7 @@ const PurchaseManager = () => {
               </div>
               
               {newPurchase.isCredit && (
-                <div className="grid grid-cols-2 gap-4 mt-3">
+                <div className="grid grid-cols-1 gap-4 mt-3 sm:grid-cols-2">
                   <div>
                     <Label className="text-sm">Date d'échéance *</Label>
                     <Input

@@ -174,12 +174,12 @@ const InvoiceManager: React.FC<InvoiceManagerProps> = ({ onCreateDocument }) => 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
           {t('invoiceManagement') || 'Factures'}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="mobile-action-grid grid grid-cols-2 gap-2 sm:flex sm:items-center">
           {onCreateDocument && (
             <>
               <Button
@@ -261,7 +261,7 @@ const InvoiceManager: React.FC<InvoiceManagerProps> = ({ onCreateDocument }) => 
           {invoices.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('noInvoicesYet') || "Aucune facture: enregistrez d'abord des ventes."}</p>
           ) : (
-            <Table>
+            <Table className="min-w-[680px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('invoiceNumber') || 'N°'}</TableHead>
@@ -280,7 +280,7 @@ const InvoiceManager: React.FC<InvoiceManagerProps> = ({ onCreateDocument }) => 
                     <TableCell>{invoice.clientName}</TableCell>
                     <TableCell>{invoice.date}</TableCell>
                     <TableCell>{invoice.dueDate}</TableCell>
-                    <TableCell>{formatCurrency(invoice.total)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular-nums">{formatCurrency(invoice.total)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(invoice.status)}>{getStatusLabel(invoice.status)}</Badge>
                     </TableCell>

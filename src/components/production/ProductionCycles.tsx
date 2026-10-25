@@ -72,7 +72,7 @@ const ProductionCycles = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-semibold">Cycles de Production</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -208,7 +208,7 @@ const ProductionCycles = () => {
           return (
             <Card key={cycle.id}>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold">{cycle.unit_name}</h3>
                     <p className="text-sm text-muted-foreground">{cycle.species || 'Non spécifié'}</p>
@@ -235,7 +235,7 @@ const ProductionCycles = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Quantité actuelle</p>
                     <p className="font-semibold">{cycle.current_quantity.toLocaleString()}</p>
@@ -262,7 +262,7 @@ const ProductionCycles = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-muted-foreground">
                   <div>
                     <span>Début: </span>
                     <span className="font-medium">
