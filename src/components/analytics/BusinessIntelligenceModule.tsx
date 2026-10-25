@@ -277,6 +277,6 @@ const ForecastPanel = ({ unitId, unitName }: { unitId?: string; unitName?: strin
 
 const BusinessIntelligenceModule = () => {
   const { activeUnit } = useProductionUnits();
-  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Intelligence & Analyse" /> : <ProductionBusinessIntelligenceModule />;
+  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Intelligence & Analyse" presentation="intelligence" /> : <ProductionBusinessIntelligenceModule />;
 };
 export default BusinessIntelligenceModule;
