@@ -1,3 +1,7 @@
+## Module Ventes mobile et logo menu (25/10/2026)
+- [ ] Ventes mobile : grille de raccourcis, cartes de caisses complètes, noms longs non tronqués, tuile quantités du jour ; tests 320-430 px
+- [ ] Logo du menu mobile : fond blanc derrière le logo pour une bonne visibilité
+
 ## Tableau de bord et IoT commercial (25/10/2026)
 - [x] Réduire les icônes ordinateur et placer les accès rapides avant les graphiques sur ordinateur ; ordre mobile conservé
 - [x] Compacter le sélecteur mobile et appliquer réellement les périodes aux données financières ; 7/30/365 jours, salaires datés et graphiques adaptés
