@@ -1,6 +1,7 @@
 ## Erreurs Analytique et Intelligence & Analyse (25/10/2026)
-- [ ] Reproduire et corriger les erreurs d’affichage des deux écrans existants
-- [ ] Vérifier les écrans et les tests sans modifier les données réelles
+- [x] Reproduire Invalid time value lors d’une date vide et corriger ; gérer les lectures échouées sans chargement permanent ; actualisation sans rechargement de page
+- [x] 9 tests réussis, écrans isolés sans erreur, date vide ne ferme plus l’analyse ; compilation réussie
+- [ ] Confirmer le problème signalé depuis le compte connecté : session historique indisponible ; contrôles isolés uniquement, aucune donnée réelle modifiée
 
 ## Amélioration AquaAssistant (25/10/2026)
 - [x] Moderniser le module existant, synthèse réelle et conversation lisible, miniature conservée
