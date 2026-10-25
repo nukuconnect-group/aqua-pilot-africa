@@ -58,14 +58,14 @@ const KpiCard: React.FC<{
   };
   return (
     <Card className="dashboard-kpi relative min-w-0 overflow-hidden border-border bg-card">
-      <CardContent className="flex h-full min-h-[104px] flex-col justify-between p-2.5 sm:min-h-[138px] sm:p-5">
+      <CardContent className="flex h-full min-h-[104px] flex-col p-2.5 sm:min-h-[104px] sm:p-4 lg:min-h-[88px] lg:p-3">
         <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 break-words text-[11px] leading-tight font-semibold text-muted-foreground sm:text-xs sm:uppercase">{label}</p>
+          <p className="min-w-0 line-clamp-2 min-h-[2lh] lg:min-h-0 lg:line-clamp-1 text-[11px] leading-tight font-semibold text-muted-foreground sm:text-xs sm:uppercase">{label}</p>
           <div className={`flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-md ${tones[tone]}`}><Icon className="size-4" /></div>
         </div>
-        <div className="min-w-0 pt-1.5 sm:pt-3">
-          <p className="break-words text-xl font-bold leading-tight tabular-nums [overflow-wrap:anywhere] sm:text-2xl">{value}</p>
-          {hint && <p className="mt-1 sm:mt-2 break-words text-[11px] leading-tight sm:text-xs text-muted-foreground">{hint}</p>}
+        <div className="min-w-0 mt-auto pt-1.5 sm:pt-2">
+          <p className="whitespace-nowrap truncate text-lg font-bold leading-tight tabular-nums sm:text-xl">{value}</p>
+          {hint && <p className="mt-1 truncate text-[11px] leading-tight sm:text-xs text-muted-foreground">{hint}</p>}
         </div>
       </CardContent>
     </Card>
@@ -448,32 +448,32 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-lg border bg-card p-3">
+            <div className="flex flex-col rounded-lg border bg-card p-3 min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
                 <TrendingUp className="w-3.5 h-3.5" /> Revenus
               </div>
-              <p className="text-lg sm:text-xl font-bold mt-1 text-emerald-600">{formatCurrency(financial.totalRevenue)}</p>
+              <p className="mt-auto pt-1 truncate whitespace-nowrap tabular-nums text-base sm:text-xl font-bold text-emerald-600">{formatCurrency(financial.totalRevenue)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{financial.confirmedSales} ventes</p>
             </div>
-            <div className="rounded-lg border bg-card p-3">
+            <div className="flex flex-col rounded-lg border bg-card p-3 min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-red-600 font-medium">
                 <ShoppingCart className="w-3.5 h-3.5" /> Dépenses
               </div>
-              <p className="text-lg sm:text-xl font-bold mt-1 text-red-600">{formatCurrency(financial.totalExpenses)}</p>
+              <p className="mt-auto pt-1 truncate whitespace-nowrap tabular-nums text-base sm:text-xl font-bold text-red-600">{formatCurrency(financial.totalExpenses)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{financial.purchasesCount} achats</p>
             </div>
-            <div className="rounded-lg border bg-card p-3">
+            <div className="flex flex-col rounded-lg border bg-card p-3 min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-purple-600 font-medium">
                 <UserCog className="w-3.5 h-3.5" /> Salaires
               </div>
-              <p className="text-lg sm:text-xl font-bold mt-1 text-purple-600">{formatCurrency(financial.totalSalaries)}</p>
+              <p className="mt-auto pt-1 truncate whitespace-nowrap tabular-nums text-base sm:text-xl font-bold text-purple-600">{formatCurrency(financial.totalSalaries)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{financial.employeesCount} employés</p>
             </div>
-            <div className="rounded-lg border bg-card p-3">
+            <div className="flex flex-col rounded-lg border bg-card p-3 min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
                 <CircleDollarSign className="w-3.5 h-3.5" /> Solde
               </div>
-              <p className={`text-lg sm:text-xl font-bold mt-1 ${financial.netBalance >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{formatCurrency(financial.netBalance)}</p>
+              <p className={`mt-auto pt-1 truncate whitespace-nowrap tabular-nums text-base sm:text-xl font-bold ${financial.netBalance >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{formatCurrency(financial.netBalance)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{financial.netBalance >= 0 ? 'Bénéfice' : 'Perte'}</p>
             </div>
           </div>
