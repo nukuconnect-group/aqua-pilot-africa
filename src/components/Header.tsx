@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ProfileAvatar from '@/components/ProfileAvatar';
 import { Settings, LogOut, UserCircle, Sun, Moon, User, Globe, PanelLeft, Search, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -203,16 +204,12 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 rounded-full p-0">
-                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9">
-                    <AvatarImage src={user?.avatar} alt={user?.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs sm:text-sm">
-                      {user?.name ? getInitials(user.name) : 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <ProfileAvatar src={user?.avatar} name={user?.name} className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 mobile-dropdown bg-background z-50" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
+                  <ProfileAvatar src={user?.avatar} name={user?.name} className="mb-3 h-12 w-12" />
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user?.name}</p>
                     <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
@@ -298,12 +295,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
             <div className="space-y-4">
               <h3 className="font-semibold text-sm">{t('profile')}</h3>
               <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg">
-                <Avatar className="h-14 w-14 sm:h-16 sm:w-16 shrink-0">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                    {user.name ? getInitials(user.name) : 'U'}
-                  </AvatarFallback>
-                </Avatar>
+                <ProfileAvatar src={user.avatar} name={user.name} className="h-14 w-14 sm:h-16 sm:w-16" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{user.name}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>

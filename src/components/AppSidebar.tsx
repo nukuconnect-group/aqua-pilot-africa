@@ -1,4 +1,5 @@
 import React from 'react';
+import AssistantNavIcon from '@/components/AssistantNavIcon';
 import { useSearchParams } from 'react-router-dom';
 import { Home, Building2, Wrench, Utensils, Heart, Package, Calendar, Users, FileText, Settings, Beef, Calculator, UserCheck, ShoppingCart, Wifi, ShoppingBag, Truck, UserCog, Database, Shield, MessageCircle, Headphones, BarChart3, Bell, ArrowLeft, UserPlus, ClipboardList, CreditCard, Activity, Eye, AlertTriangle, Mail } from 'lucide-react';
 import { Boxes, Sparkles, BookOpen, Stethoscope, Layers, Brain } from 'lucide-react';
@@ -258,14 +259,14 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
-                        size="sm"
+                        size={item.id === 'aqua-assistant' ? 'lg' : 'sm'}
                         onClick={() => onTabChange(item.id)}
                         isActive={isActive}
                         tooltip={open ? undefined : item.label}
                         className="text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/20 data-[active=true]:text-white"
                       >
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{item.label}</span>
+                        {item.id === 'aqua-assistant' ? <AssistantNavIcon className="h-8 w-8 group-data-[collapsible=icon]:h-5 group-data-[collapsible=icon]:w-5" /> : <Icon className="w-4 h-4 flex-shrink-0" />}
+                        <span className="truncate">{item.id === 'aqua-assistant' ? 'AquaAssistant' : item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
