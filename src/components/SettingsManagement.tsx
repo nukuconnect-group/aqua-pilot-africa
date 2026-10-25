@@ -25,6 +25,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import { supabase } from '@/integrations/supabase/appClient';
 import BackupManagement from '@/components/BackupManagement';
+import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
+import { createUnitBackup, UNIT_BACKUP_TABLES } from '@/lib/unitBackup';
 import MFASettings from '@/components/auth/MFASettings';
 import {
   AlertDialog,
@@ -71,6 +73,7 @@ const SettingsManagement = () => {
     setTheme, setLanguage, setCurrency, setOfflineMode, setShowOfflineIndicator, setTimezone, setCountry, t 
   } = useSettings();
   const { user, logout } = useAuth();
+  const { activeUnit } = useProductionUnits();
   const { toast } = useToast();
   const { isTeamMember } = useTeamMemberAccess();
   const companyLocked = isTeamMember;
@@ -631,6 +634,10 @@ const SettingsManagement = () => {
 
   const handleExportData = async () => {
     if (!user) return;
+    if (!activeUnit) {
+      toast({ title: 'Choisissez une unité', description: 'Sélectionnez l’unité dans Sauvegarde.', variant: 'destructive' });
+      return;
+    }
     
     toast({
       title: language === 'fr' ? 'Export en cours' : 'Export in progress',
@@ -638,29 +645,17 @@ const SettingsManagement = () => {
     });
 
     try {
-      const tables = [
-        'production_units', 'unit_infrastructures', 'unit_equipment',
-        'purchases', 'accounting_transactions', 'feed_stocks',
-        'livestock_batches', 'production_cycles', 'health_records',
-        'feeding_records', 'feeding_plans'
-      ];
-
-      const exportData: Record<string, any> = {
-        exportDate: new Date().toISOString(),
-        userId: user.id,
-        email: user.email,
-      };
-
-      for (const table of tables) {
-        const { data } = await supabase.from(table as any).select('*');
-        exportData[table] = data || [];
-      }
+      const exportData = await createUnitBackup({ read: async (table, column, ids, offset, limit) => {
+        const { data, error } = await supabase.from(table as any).select('*').in(column, ids).order('id').range(offset, offset + limit - 1);
+        if (error) throw error;
+        return (data ?? []) as unknown as Record<string, unknown>[];
+      } }, { id: activeUnit.id, name: activeUnit.name }, UNIT_BACKUP_TABLES);
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `aquapilot-export-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `aquapilote-unite-${activeUnit.id}-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

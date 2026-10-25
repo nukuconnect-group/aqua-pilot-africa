@@ -7,6 +7,7 @@ import { installDiagnostics } from './lib/appRecovery';
 import { installDomMutationGuard } from './lib/domPatch';
 import { registerAppServiceWorker } from './lib/pwaRegister';
 import { initializePWAInstallation } from './hooks/usePWAInstallState';
+import ErrorBoundary from './components/ErrorBoundary';
 
 installDomMutationGuard();
 // Capture the one-shot native installation event before the React tree mounts.
@@ -26,8 +27,10 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
+    <ErrorBoundary>
     <OfflineProvider>
       <App />
     </OfflineProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

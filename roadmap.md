@@ -1,5 +1,9 @@
 # Ajustements Ventes et abonnements
+## Sauvegarde dans Paramètres
+- [x] Sauvegarde existante adaptée au téléchargement par unité accessible (21 catégories), pagination et refus des exports incomplets ; consultation JSON sans réinsérer les historiques. Export rapide de Paramètres également limité à l’unité active. Tests d’isolation et de pagination réussis.
+- [ ] Valider le téléchargement réel depuis Paramètres avec une session de la base historique : navigateur de contrôle toujours redirigé vers Connexion ; aucune donnée réelle exportée ou modifiée.
 ## Erreur du tableau de bord
+- [x] Protection au démarrage ajoutée autour de l’application et du mode hors ligne : erreurs de rendu interceptées avant de laisser un écran blanc. Chargement frais contrôlé sans erreur JavaScript ni worker PWA, mais redirigé vers Connexion ; affichage connecté non confirmé.
 - [x] Écran blanc revérifié à 393 × 604 : le chargement actuel React rend correctement un composant avec `useState` dans le navigateur ; aucun worker PWA enregistré ni contrôleur actif. Tests supplémentaires couvrant le domaine exact de l’erreur et les aperçus, sans retirer les workers de notifications. Aucun changement du code métier ni redémarrage : le chargement frais ne reproduit pas l’erreur des anciennes versions.
 - [x] Identifier l’erreur `useState` du 25 octobre : les traces de l’aperçu mélangent deux versions des modules React (`2225e7be` et `7516dd16`) ; aucune modification des calculs ou de l’authentification. Huit tests tableau de bord/installation/hors ligne réussis. À l’ouverture fraîche, aucun worker ni erreur JavaScript, mais redirection vers Connexion.
 - [ ] Confirmer le tableau de bord connecté après actualisation manuelle unique de l’aperçu : session de la base historique non disponible dans le navigateur de contrôle ; l’écran déconnecté ne valide pas le tableau de bord.
