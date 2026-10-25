@@ -1080,7 +1080,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       return;
     }
 
-    if (!user?.id) return;
+    if (!user?.id) throw new Error('Connexion nécessaire pour enregistrer le matériel.');
 
     try {
       const { data, error } = await (supabase as any)
@@ -1117,6 +1117,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       setEquipment([newEquipment, ...equipment]);
     } catch (err) {
       console.error('Error adding equipment:', err);
+      throw err;
     }
   };
 
@@ -1142,7 +1143,9 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       const { error } = await (supabase as any)
         .from('unit_equipment')
         .update(dbUpdates)
-        .eq('id', id);
+        .eq('id', id)
+        .select('id')
+        .single();
 
       if (error) throw error;
 
@@ -1151,6 +1154,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       ));
     } catch (err) {
       console.error('Error updating equipment:', err);
+      throw err;
     }
   };
 
