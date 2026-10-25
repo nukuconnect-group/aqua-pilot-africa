@@ -96,8 +96,8 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
   }, []);
 
   return <>
-    <header className="bg-gradient-brand h-12 lg:h-14 w-full max-w-none shadow-md m-0 p-0 border-0">
-      <div className="flex justify-between items-center h-full w-full pl-0 pr-0 sm:px-4 lg:px-6 m-0">
+    <header className="app-header bg-gradient-brand w-full max-w-none shadow-md m-0 p-0 border-0 shrink-0">
+      <div className="flex justify-between gap-1 items-center h-12 lg:h-14 w-full px-1.5 sm:px-4 lg:px-6 m-0">
         {/* Logo et titre à gauche */}
         <div className="flex items-center space-x-1 sm:space-x-3 min-w-0 pl-0">
           {onOpenMobileMenu && (
@@ -112,9 +112,9 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
               <PanelLeft className="w-5 h-5" />
             </Button>
           )}
-          <div className="min-w-0 shrink-0">
-            <h1 className="text-primary-foreground text-sm sm:text-base lg:text-lg tracking-wide font-semibold truncate">
-              {t('app_title')}
+          <div className="min-w-0">
+            <h1 className="text-primary-foreground text-sm sm:text-base lg:text-lg font-semibold whitespace-nowrap">
+              AquaPilote
             </h1>
             <p className="text-primary-foreground/80 text-[10px] sm:text-xs leading-tight hidden sm:block truncate">
               {t('app_subtitle')}
@@ -148,7 +148,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
         </div>
 
         {/* Navigation actions à droite */}
-        <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 shrink-0 ml-2 pr-0 text-sidebar-foreground md:text-primary-foreground">
+        <div className="header-actions flex items-center gap-0.5 sm:gap-2 lg:gap-3 shrink-0 text-primary-foreground">
           {/* Bouton recherche mobile */}
           <Button
             variant="ghost"
@@ -156,6 +156,8 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
             className="sm:hidden text-primary-foreground hover:bg-primary-foreground/20 h-7 w-7 p-0"
             onClick={() => setMobileSearchOpen((v) => !v)}
             aria-label="Rechercher"
+            aria-expanded={mobileSearchOpen}
+            aria-controls="mobile-header-search"
           >
             <Search className="w-4 h-4" />
           </Button>
@@ -172,7 +174,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
           
           {/* Langue */}
           <Select value={language} onValueChange={(value) => setLanguage(value as SupportedLanguage)}>
-            <SelectTrigger className="w-[60px] sm:w-[70px] lg:w-[80px] h-7 sm:h-8 lg:h-9 text-primary-foreground border-primary-foreground/20 bg-transparent hover:bg-primary-foreground/10 text-xs sm:text-sm">
+            <SelectTrigger aria-label="Langue" className="w-9 px-1.5 sm:w-[70px] lg:w-[80px] h-8 lg:h-9 text-primary-foreground border-primary-foreground/20 bg-transparent hover:bg-primary-foreground/10 text-xs sm:text-sm">
               <SelectValue>
                 <div className="flex items-center gap-1">
                   <Globe className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
@@ -193,7 +195,8 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-primary-foreground hover:bg-primary-foreground/20 h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 p-0"
+            className="hidden sm:inline-flex text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8 lg:h-9 lg:w-9 p-0"
+            aria-label="Paramètres"
             onClick={() => setShowSettings(!showSettings)}
           >
             <Settings className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -203,7 +206,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 rounded-full p-0">
+                <Button variant="ghost" aria-label="Profil" className="relative h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 rounded-full p-0">
                   <ProfileAvatar src={user?.avatar} name={user?.name} className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9" />
                 </Button>
               </DropdownMenuTrigger>
@@ -256,7 +259,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
         </div>
       </div>
       {mobileSearchOpen && (
-        <div className="sm:hidden px-2 pb-2 -mt-1 bg-gradient-brand">
+        <div id="mobile-header-search" className="sm:hidden px-2 pb-2 bg-gradient-brand">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/70" />
             <Input
@@ -265,6 +268,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Rechercher…"
+              aria-label="Recherche mobile"
               className="h-8 pl-8 pr-8 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60"
             />
             {searchQuery && (
