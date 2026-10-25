@@ -1248,7 +1248,7 @@ const LivestockManagement = () => {
 
       {/* Onglets de gestion - Reproduction visible uniquement pour écloserie */}
       <Tabs defaultValue="lots" className="space-y-3 sm:space-y-4">
-        <TabsList className={`w-full grid h-auto ${activeUnit?.type === 'ecloserie' ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <TabsList className={`w-full grid h-auto grid-cols-2 ${activeUnit?.type === 'ecloserie' ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
           <TabsTrigger value="lots" className="text-xs sm:text-sm px-2 py-2">Lots</TabsTrigger>
           {activeUnit?.type === 'ecloserie' && (
             <TabsTrigger value="reproduction" className="text-xs sm:text-sm px-2 py-2">
@@ -1449,7 +1449,7 @@ const LivestockManagement = () => {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs sm:text-sm mb-3">
                           <div>
                             <p className="text-muted-foreground">Quantité</p>
-                            <p className="font-medium truncate">{batch.quantity.toLocaleString()} individus</p>
+                            <p className="font-medium break-words">{batch.quantity.toLocaleString()} individus</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Poids moyen ind.</p>
@@ -1466,7 +1466,7 @@ const LivestockManagement = () => {
                           {batch.feedingPlan && (
                             <div>
                               <p className="text-muted-foreground">Plan aliment.</p>
-                              <p className="font-medium truncate">{batch.feedingPlan}</p>
+                              <p className="font-medium break-words">{batch.feedingPlan}</p>
                             </div>
                           )}
                         </div>
@@ -1482,7 +1482,7 @@ const LivestockManagement = () => {
                           </div>
                           <div>
                             <p className="text-muted-foreground">Source</p>
-                            <p className="font-medium truncate">{batch.source}</p>
+                            <p className="font-medium break-words">{batch.source}</p>
                           </div>
                         </div>
 

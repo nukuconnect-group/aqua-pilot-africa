@@ -370,7 +370,7 @@ const FeedingManagement = () => {
             <TabsTrigger value="history" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <History className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Historique</span>
-              <span className="sm:hidden">Hist.</span>
+              <span className="sm:hidden">Historique</span>
             </TabsTrigger>
             {unitTerms.features.feedingSheets && (
               <TabsTrigger value="sheets" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
@@ -383,18 +383,18 @@ const FeedingManagement = () => {
               <TabsTrigger value="planning" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
                 <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Planification</span>
-                <span className="sm:hidden">Plan.</span>
+                <span className="sm:hidden">Planification</span>
               </TabsTrigger>
             )}
             <TabsTrigger value="alerts" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <Bell className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Alertes</span>
-              <span className="sm:hidden">Alert.</span>
+              <span className="sm:hidden">Alertes</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs sm:text-sm px-3 sm:px-4 whitespace-nowrap">
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Suivi graphique</span>
-              <span className="sm:hidden">Graph.</span>
+              <span className="sm:hidden">Suivi graphique</span>
             </TabsTrigger>
           </TabsList>
           <Button size="sm" variant="outline" className="w-full shrink-0 sm:w-auto sm:self-end" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>
@@ -469,7 +469,7 @@ const FeedingManagement = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm">{isAlgae ? 'Alertes sur les intrants' : 'Alertes stock aliment'}</p>
-                    <p className="text-xs text-muted-foreground truncate">{lowStockItems.length} {isAlgae ? 'intrant(s)' : 'aliment(s)'} sous seuil</p>
+                    <p className="text-xs text-muted-foreground break-words">{lowStockItems.length} {isAlgae ? 'intrant(s)' : 'aliment(s)'} sous seuil</p>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>Stock</Button>
@@ -493,8 +493,8 @@ const FeedingManagement = () => {
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {lowStockItems.map((stock) => (
                   <div key={stock.id} className="rounded-md border bg-card p-3 text-sm">
-                    <p className="font-medium truncate">{stock.custom_name || stock.feed_type}</p>
-                    <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+                    <p className="font-medium break-words">{stock.custom_name || stock.feed_type}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-1 text-xs text-muted-foreground">
                       <span>{stock.quantity} {stock.unit}</span>
                       <Badge variant="outline">Seuil {stock.min_threshold || 50}</Badge>
                     </div>

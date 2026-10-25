@@ -317,7 +317,7 @@ const ProphylaxieManagement = () => {
 
       <Tabs defaultValue="calendar" className="space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className={`grid ${isAlgae ? 'grid-cols-5 min-w-[520px]' : 'grid-cols-6 min-w-[600px]'} w-full sm:min-w-0`}>
+          <TabsList className={`grid h-auto grid-cols-2 gap-1 ${isAlgae ? 'sm:grid-cols-5' : 'sm:grid-cols-6'} w-full min-w-0`}>
             {!isAlgae && <TabsTrigger value="cheptel" className="text-xs sm:text-sm px-1 sm:px-3">
               {unitTerms.healthCheptelTabLabel}
             </TabsTrigger>}
@@ -384,7 +384,7 @@ const ProphylaxieManagement = () => {
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0">
                             {getTypeIcon(treatment.type)}
-                            <span className="font-medium text-xs sm:text-sm truncate">
+                            <span className="font-medium text-xs sm:text-sm break-words">
                               {treatment.product}
                             </span>
                           </div>
@@ -415,7 +415,7 @@ const ProphylaxieManagement = () => {
                         {getTypeIcon(treatment.type)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-sm sm:text-base truncate">
+                        <h4 className="font-medium text-sm sm:text-base break-words">
                           {treatment.product}
                         </h4>
                         <p className="text-xs sm:text-sm text-muted-foreground break-words">
@@ -452,7 +452,7 @@ const ProphylaxieManagement = () => {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Opérateur:</span>
-                      <p className="font-medium truncate">{treatment.operator}</p>
+                      <p className="font-medium break-words">{treatment.operator}</p>
                     </div>
                   </div>
                   {treatment.notes && (
@@ -532,7 +532,7 @@ const ProphylaxieManagement = () => {
                             <div key={treatment.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 bg-muted rounded">
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 {getTypeIcon(treatment.type)}
-                                <span className="text-xs sm:text-sm truncate">{treatment.product}</span>
+                                <span className="text-xs sm:text-sm break-words">{treatment.product}</span>
                               </div>
                               <span className="text-xs sm:text-sm text-muted-foreground">
                                 {new Date(treatment.date).toLocaleDateString('fr-FR')}

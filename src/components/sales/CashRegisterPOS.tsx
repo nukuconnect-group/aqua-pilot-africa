@@ -591,7 +591,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const reopenList = closedRegisters.length > 0 && <div className="space-y-2">
     <p className="text-xs font-semibold text-muted-foreground">Caisses fermées — rouvrir avec leur solde</p>
     {closedRegisters.map((h) => (
-      <div key={h.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2 text-sm">
+      <div key={h.id} className="flex flex-col items-stretch gap-2 rounded-lg border border-border p-2 text-sm sm:flex-row sm:items-center sm:justify-between">
         <span className="min-w-0 break-words">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
         <div className="flex gap-1"><Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
         {isAdmin && <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
@@ -629,7 +629,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <div className="space-y-3">
       <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
         <div className="space-y-3">
-          <div className="flex items-center justify-between"><h3 className="font-semibold">Caisses de l’unité</h3>{isAdmin && <Button size="sm" onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}</div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><h3 className="font-semibold">Caisses de l’unité</h3>{isAdmin && <Button size="sm" onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}</div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {cash.sessions.map((s) => {
               const assigned = cashierNamesOf(((s as any).cashier_ids || []) as string[]);

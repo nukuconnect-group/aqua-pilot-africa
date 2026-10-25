@@ -150,7 +150,7 @@ const AccountingManagement = () => {
 
       {/* Onglets principaux */}
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto rounded-xl">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 h-auto gap-1 rounded-xl">
           <TabsTrigger value="dashboard" className="text-xs sm:text-sm whitespace-nowrap">
             <TrendingUp className="icon-responsive mr-1" />
             <span className="hidden sm:inline">{t('dashboard')}</span>
@@ -166,22 +166,22 @@ const AccountingManagement = () => {
           <TabsTrigger value="transactions" className="text-xs sm:text-sm whitespace-nowrap">
             <Plus className="icon-responsive mr-1" />
             <span className="hidden sm:inline">{t('transactions')}</span>
-            <span className="sm:hidden">Trans.</span>
+            <span className="sm:hidden">{t('transactions')}</span>
           </TabsTrigger>
           <TabsTrigger value="depreciation" className="text-xs sm:text-sm whitespace-nowrap">
             <Calculator className="icon-responsive mr-1" />
             <span className="hidden sm:inline">{t('depreciation')}</span>
-            <span className="sm:hidden">Amort.</span>
+            <span className="sm:hidden">{t('depreciation')}</span>
           </TabsTrigger>
           <TabsTrigger value="cashflow" className="text-xs sm:text-sm whitespace-nowrap">
             <CreditCard className="icon-responsive mr-1" />
             <span className="hidden sm:inline">{t('cash_flow')}</span>
-            <span className="sm:hidden">Trés.</span>
+            <span className="sm:hidden">{t('cash_flow')}</span>
           </TabsTrigger>
           <TabsTrigger value="reports" className="text-xs sm:text-sm whitespace-nowrap">
             <FileText className="icon-responsive mr-1" />
             <span className="hidden sm:inline">{t('reports')}</span>
-            <span className="sm:hidden">Rapp.</span>
+            <span className="sm:hidden">{t('reports')}</span>
           </TabsTrigger>
         </TabsList>
 

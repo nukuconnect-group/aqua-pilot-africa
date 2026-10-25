@@ -380,7 +380,7 @@ const ProductionManagement = () => {
                       <p className="text-xs sm:text-sm text-gray-500">{cycle.notes}</p>
                     )}
                     
-                    <div className="pt-2 border-t flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <div className="mobile-action-grid pt-2 border-t grid grid-cols-2 gap-2 sm:flex">
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -436,7 +436,7 @@ const ProductionManagement = () => {
                       <p className="text-xs sm:text-sm text-gray-600">
                         {cycle.startDate} - {cycle.endDate || 'En cours'}
                       </p>
-                      <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs mt-2">
                         <span>Init: {cycle.initialQuantity.toLocaleString()}</span>
                         <span>Poids moy: {cycle.currentAverageWeight ? `${cycle.currentAverageWeight.toFixed(1)}g` : 'N/A'}</span>
                         <span>Survie: {cycle.avgSurvivalRate.toFixed(0)}%</span>
@@ -451,7 +451,7 @@ const ProductionManagement = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge 
                         className={
                           cycle.status === 'active' ? 'bg-green-100 text-green-800' :

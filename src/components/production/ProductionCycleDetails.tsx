@@ -96,9 +96,9 @@ const ProductionCycleDetails: React.FC<CycleDetailsProps> = ({ cycle, isOpen, on
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <DialogTitle className="text-xl font-bold">{cycle.name}</DialogTitle>
             <div className="flex items-center gap-2">
               <Badge className={
@@ -233,7 +233,7 @@ const ProductionCycleDetails: React.FC<CycleDetailsProps> = ({ cycle, isOpen, on
                     </div>
                   </div>
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex flex-wrap justify-between gap-2 text-sm mb-1">
                       <span className="text-muted-foreground">Progression temporelle du cycle</span>
                       <span className="font-medium">{timeProgress.toFixed(0)}%</span>
                     </div>
