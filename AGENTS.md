@@ -53,4 +53,4 @@
 - salesUnitSelection keeps accessible choices; auto-select only a sole unit.
 
 - Settings exports: unitBackup, paginated unit/parent-ID reads, fail on errors; preserve historical IDs on restore.
-- Root ErrorBoundary wraps OfflineProvider/App to prevent blank screens on render failures.
+- Root ErrorBoundary wraps OfflineProvider/App to catch render failures.
