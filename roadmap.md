@@ -1,3 +1,9 @@
+## Rapports et présentation AquaAssistant (25/10/2026)
+- [x] Rétablir la disposition habituelle de Rapports en Commercialisation avec contenus commerciaux par unité
+- [x] AquaAssistant : fond illustré flouté et présentation graphique professionnelle, discussion existante conservée
+- [x] 30 tests réussis ; six onglets/modèles, aperçu et PDF vérifiés isolément avec enregistrements réels ; fond chargé, saisie conservée et affichage mobile sans débordement
+- [ ] Vérifier Rapports et la réponse IA depuis le compte connecté : session historique indisponible, aperçu redirigé vers /auth ; aucune donnée réelle modifiée
+
 ## Erreurs restantes Analytique (25/10/2026)
 - [x] AquaAssistant mobile : accès existant sans débordement ni erreur ; avatar absent/inaccessible vérifié, dimension de silhouette corrigée
 - [x] Dates/quantités manquantes sécurisées, relevés non mesurés conservés absents, filtres unité/période et actualisation corrigés sans changement de disposition

@@ -19,6 +19,8 @@ import { Shimmer } from '@/components/ai-elements/shimmer';
 import AssistantKpis from '@/components/assistant/AssistantKpis';
 import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
 import AssistantOverview from '@/components/assistant/AssistantOverview';
+import assistantBackdrop from '@/assets/assistant-farm-backdrop.jpg';
+import assistantIcon from '@/assets/aqua-assistant-icon.png';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -63,7 +65,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState('');
   const [view,setView]=useState<'conversation'|'overview'>('conversation');
-  const [showQuestions,setShowQuestions]=useState(false);
+  const [showQuestions,setShowQuestions]=useState(true);
   const requestAbort=useRef<AbortController|null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const {
@@ -418,14 +420,15 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
-      <header className="relative z-10 shrink-0 border-b bg-muted/30 px-3 pt-3 sm:px-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-3 sm:px-0">
+      <header className="assistant-masthead relative z-10 shrink-0 overflow-visible border-b px-3 pt-3 sm:px-4">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true"><img src={assistantBackdrop} alt="" width={1536} height={864} className="assistant-header-image h-full w-full object-cover"/><div className="assistant-header-veil absolute inset-0"/></div>
+        <div className="relative flex flex-wrap items-center justify-between gap-2 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sidebar text-sidebar-foreground">
-              <Bot className="size-5" aria-hidden="true" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-background/90">
+              <img src={assistantIcon} alt="" width={48} height={48} className="size-10 object-contain" />
             </div>
             <div className="min-w-0">
-              <h1 className="flex flex-wrap items-center gap-2 text-base font-bold text-foreground">AquaAssistant{isPage && <span className="text-xs font-medium text-primary">Données réelles</span>}</h1>
+              <h1 className="flex flex-wrap items-center gap-2 text-lg font-bold text-foreground">AquaAssistant</h1>
               <p className="truncate text-xs text-muted-foreground">{unitProfile.label} · {unitLabel}</p>
             </div>
           </div>
@@ -442,7 +445,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 px-1 pb-3 sm:px-0">
+        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] gap-2 px-1 pb-3 sm:px-0">
           <div className="relative min-w-0 flex-1 sm:max-w-sm">
             <Button variant="outline" disabled={isLoading} onClick={() => { setShowUnitSelector(!showUnitSelector); setShowLanguageSelector(false); }} className="w-full justify-between bg-background">
               <span className="flex min-w-0 items-center gap-2"><Building2 className="size-4 shrink-0" /><span className="truncate">{unitLabel}</span></span>
@@ -482,18 +485,19 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
           </p>
         </div>}
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+          <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="assistant-scene pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true"><img src={assistantBackdrop} alt="" width={1536} height={864} className="assistant-scene-image h-full w-full object-cover"/><div className="assistant-scene-veil absolute inset-0"/></div>
             <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
               <Button type="button" variant="ghost" size="sm" onClick={()=>setShowQuestions(v=>!v)}><Sparkles className="size-4 text-ocean-secondary"/>Questions rapides</Button>
               <Button type="button" variant="ghost" size="icon" onClick={() => startNew(currentUnit ? { id: currentUnit.id, name: currentUnit.name } : undefined)} aria-label="Nouvelle conversation" title="Nouvelle conversation"><MessageSquarePlus className="size-4" /></Button>
             </div>
-            {showQuestions&&<div className="max-h-40 shrink-0 overflow-y-auto border-b px-3 py-2"><p className="mb-2 text-xs text-muted-foreground">{unitProfile.role}</p><div className="flex flex-wrap gap-2">{[...unitProfile.suggestions,{title:'Rapport hebdomadaire',question:'Génère mon rapport hebdomadaire pour cette unité : faits datés, chiffres enregistrés, limites et recommandations.'}].map(s=><Button key={s.title} variant="outline" size="sm" className="h-auto max-w-full whitespace-normal text-left" onClick={()=>ask(s.question)}>{s.title}</Button>)}</div></div>}
+            {showQuestions&&<div className="max-h-32 shrink-0 overflow-y-auto border-b px-3 py-2 sm:max-h-40"><div className="flex flex-wrap gap-2">{[...unitProfile.suggestions,{title:'Rapport hebdomadaire',question:'Génère mon rapport hebdomadaire pour cette unité : faits datés, chiffres enregistrés, limites et recommandations.'}].map(s=><Button key={s.title} variant="outline" size="sm" className="assistant-question h-auto max-w-full whitespace-normal bg-background/90 text-left" onClick={()=>ask(s.question)}><Sparkles className="size-3 shrink-0 text-ocean-primary"/>{s.title}</Button>)}</div></div>}
 
           <Conversation className="min-h-0 flex-1">
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
-                {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Bot className="size-4 text-primary" />AquaAssistant</div>}
-                <MessageContent className={message.role === 'user' ? 'bg-primary text-primary-foreground break-words [overflow-wrap:anywhere]' : 'border-l-2 border-primary/50 pl-3 break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-primary [&_strong]:tabular-nums'}>
+                {message.role === 'assistant' && <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground"><img src={assistantIcon} alt="" width={28} height={28} className="size-7 object-contain"/>AquaAssistant</div>}
+                <MessageContent className={message.role === 'user' ? 'bg-ocean-primary text-sidebar-foreground break-words [overflow-wrap:anywhere]' : 'assistant-response rounded-lg border bg-background/95 p-4 break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-ocean-primary [&_strong]:tabular-nums'}>
                   {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}

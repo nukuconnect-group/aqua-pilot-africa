@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/appClient';
+import { useCommercialData } from '@/hooks/useCommercialData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { commercialMetrics, commercialForecast, CommercialSale, CommercialPurchase, CommercialItem } from '@/lib/commercialAnalytics';
@@ -15,16 +14,6 @@ import { Download, FileText, RefreshCw, TrendingUp, Wallet, ShoppingCart, Activi
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line, CartesianGrid, Brush } from 'recharts';
 import { format, startOfDay, subDays } from 'date-fns';
 
-async function allRows(makeQuery: () => any): Promise<any[]> {
-  const rows: any[] = [];
-  for (let offset = 0; ; offset += 1000) {
-    const { data, error } = await makeQuery().range(offset, offset + 999);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < 1000) return rows;
-  }
-}
-
 export default function CommercialPerformance({ initialTab = 'performance', title = 'Analytique commerciale', presentation = 'report' }: { initialTab?: string; title?: string; presentation?: 'analytics' | 'intelligence' | 'report' }) {
   const { user } = useAuth();
   const { activeUnit, convertCurrency } = useProductionUnits();
@@ -37,21 +26,7 @@ export default function CommercialPerformance({ initialTab = 'performance', titl
   const start = format(subDays(startOfDay(now), Number(days) - 1), 'yyyy-MM-dd');
   const end = format(now, 'yyyy-MM-dd');
   const currency = getCurrency();
-  const { data, error, isPending, isFetching, refetch } = useQuery({
-    queryKey: ['commercial-performance', user?.id, unitId], enabled: Boolean(user?.id && unitId),
-    queryFn: async () => {
-      if (!unitId) throw new Error('Sélectionnez une unité.');
-      const [sales, purchases] = await Promise.all([
-        allRows(() => supabase.from('sales').select('id,unit_id,date,total_amount,status,paid_amount,is_credit').eq('unit_id', unitId).order('id')),
-        allRows(() => supabase.from('purchases').select('id,unit_id,date,amount,currency,status').eq('unit_id', unitId).order('id')),
-      ]);
-      const items: CommercialItem[] = [];
-      for (let offset = 0; offset < sales.length; offset += 100) {
-        items.push(...await allRows(() => supabase.from('sale_items').select('id,sale_id,name,quantity,total').in('sale_id', sales.slice(offset, offset + 100).map(s => s.id)).order('id')));
-      }
-      return { sales: sales as CommercialSale[], purchases: purchases as CommercialPurchase[], items };
-    },
-  });
+  const { data, error, isPending, isFetching, refetch } = useCommercialData(unitId);
   useEffect(() => {
     const refresh = () => { if (user?.id && unitId) { setNow(new Date()); void refetch(); } };
     window.addEventListener('aqua:data-refresh', refresh);
