@@ -1,6 +1,10 @@
+## Fond AquaAssistant encore plus sobre (25/10/2026)
+- [x] Retirer les deux voiles dégradés et l’ombre de la conversation ; entête en aplat marine très léger, réponses en carte à bordure fine
+- [x] Contrôle isolé : aucun dégradé ni image d’arrière-plan détecté dans la surface, rendu sobre et lisible ; compilation réussie
+
 ## Rapports et présentation AquaAssistant (25/10/2026)
 - [x] Rétablir la disposition habituelle de Rapports en Commercialisation avec contenus commerciaux par unité
-- [x] AquaAssistant : fond illustré flouté et présentation graphique professionnelle, discussion existante conservée
+- [x] AquaAssistant : fond illustré flouté d’abord posé, puis refusé par l’utilisateur et remplacé par un fond sobre sans image (voir section ci-dessus), discussion existante conservée
 - [x] 30 tests réussis ; six onglets/modèles, aperçu et PDF vérifiés isolément avec enregistrements réels ; fond chargé, saisie conservée et affichage mobile sans débordement
 - [ ] Vérifier Rapports et la réponse IA depuis le compte connecté : session historique indisponible, aperçu redirigé vers /auth ; aucune donnée réelle modifiée
 
