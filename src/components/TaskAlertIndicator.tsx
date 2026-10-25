@@ -169,9 +169,10 @@ const TaskAlertIndicator = () => {
         size="sm"
         className={cn(
           "relative h-8 w-8 p-0 text-primary-foreground hover:bg-primary-foreground/20",
-          isAnimating && "animate-bounce"
+          isAnimating && "motion-safe:animate-pulse"
         )}
         onClick={() => setShowPopup(!showPopup)}
+        aria-label="Tâches à suivre"
       >
         {isAnimating ? (
           <BellRing className="w-5 h-5 text-yellow-300 animate-pulse" />
@@ -179,14 +180,14 @@ const TaskAlertIndicator = () => {
           <Bell className="w-5 h-5" />
         )}
         <Badge 
-          className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-0"
+          className="absolute top-0 right-0 h-4 min-w-4 px-0.5 flex items-center justify-center text-[9px] bg-destructive text-destructive-foreground border-0"
         >
-          {dueTasks.length}
+          {dueTasks.length > 99 ? '99+' : dueTasks.length}
         </Badge>
       </Button>
 
       {showPopup && (
-        <Card className="absolute right-0 top-10 w-80 z-[9999] shadow-xl border-2 border-yellow-400 animate-in fade-in slide-in-from-top-2">
+        <Card className="fixed left-3 right-3 top-14 sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-80 z-[9999] shadow-xl border-2 border-dashboard-warning animate-in fade-in slide-in-from-top-2">
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-bold text-sm flex items-center gap-2">
