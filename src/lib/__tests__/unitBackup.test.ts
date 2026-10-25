@@ -26,4 +26,8 @@ describe('unit backup', () => {
     backup.data.sale_items = [{ id: 'item-b', sale_id: 'sale-b' }];
     expect(() => readUnitBackup(backup)).toThrow('Rattachement');
   });
+  it('rejects direct records without a unit attribution', async () => {
+    const backup = await createUnitBackup({ read: async () => [{ id: 'sale-a' }] }, { id: 'unit-a', name: 'A' }, ['sales']);
+    expect(() => readUnitBackup(backup)).toThrow('plusieurs unités');
+  });
 });

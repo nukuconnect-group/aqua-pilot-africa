@@ -53,7 +53,7 @@ export function readUnitBackup(value: unknown): UnitBackup {
     if (!UNIT_BACKUP_TABLES.includes(table as UnitBackupTable) || !Array.isArray(rows)) throw new Error('Catégorie invalide.');
     for (const row of rows) {
       if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error('Enregistrement invalide.');
-      if (table === 'production_units' ? row.id !== backup.unit.id : ('unit_id' in row && row.unit_id !== backup.unit.id)) throw new Error('Le fichier mélange plusieurs unités.');
+      if (table === 'production_units' ? row.id !== backup.unit.id : (table !== 'sale_items' && table !== 'cycle_infrastructures' && row.unit_id !== backup.unit.id)) throw new Error('Le fichier mélange plusieurs unités.');
     }
   }
   for (const [child, parent, column] of [['sale_items', 'sales', 'sale_id'], ['cycle_infrastructures', 'production_cycles', 'cycle_id']] as const) {
