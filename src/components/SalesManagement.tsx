@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ShoppingCart, Plus, TrendingUp, Users, FileText, Download, Calendar, DollarSign, Eye, CreditCard, Pencil, Trash2, AlertTriangle, ScanLine, Tag, Store, Zap } from 'lucide-react';
+import { ShoppingCart, Plus, TrendingUp, Users, FileText, Download, Calendar, DollarSign, Eye, CreditCard, Pencil, Trash2, AlertTriangle, ScanLine, Tag, Store, Zap, ArrowLeft } from 'lucide-react';
 import { useLogs } from '@/contexts/LogsContext';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -72,6 +72,7 @@ const SalesManagement = () => {
   const { sales, loading, addSale, updateSale, cancelSale } = useSales();
   
   const [salesTab, setSalesTab] = useState(() => window.matchMedia('(max-width: 639px)').matches ? 'registers' : 'pos');
+  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(true);
   const [showSaleDialog, setShowSaleDialog] = useState(false);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   const [previewReceiptData, setPreviewReceiptData] = useState<ReceiptData | null>(null);
@@ -882,7 +883,7 @@ const SalesManagement = () => {
       </div>
 
       {/* Raccourcis mobiles : grille de tuiles (les onglets défilants restent sur ordinateur) */}
-      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1.5 sm:hidden">
+      <div className={`${mobileOptionsOpen ? 'grid' : 'hidden'} grid-cols-3 gap-1 rounded-2xl bg-muted p-1.5 sm:hidden`}>
         {([
           ['registers', 'Caisses', Store],
           ['pos', 'Caisse', ShoppingCart],
@@ -897,7 +898,7 @@ const SalesManagement = () => {
           <Button
             key={v}
             type="button"
-            onClick={() => setSalesTab(v)}
+            onClick={() => { setSalesTab(v); setMobileOptionsOpen(false); }}
             aria-pressed={salesTab === v}
             variant="ghost"
             className={`flex h-auto min-h-[72px] min-w-0 flex-col items-center justify-center gap-1.5 whitespace-normal rounded-xl p-2 text-center text-[13px] transition ${
@@ -911,6 +912,9 @@ const SalesManagement = () => {
           </Button>
         ))}
       </div>
+      {!mobileOptionsOpen && <div className="sm:hidden">
+        <Button variant="ghost" size="sm" onClick={() => setMobileOptionsOpen(true)}><ArrowLeft className="h-4 w-4 mr-2" />Retour aux options</Button>
+      </div>}
 
       {/* KPIs */}
       {salesTab === 'overview' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -1003,7 +1007,7 @@ const SalesManagement = () => {
         </TabsContent>
 
         {POS_TABS.includes(salesTab) && (
-          <CashRegisterPOS view={salesTab === 'pos' ? 'checkout' : salesTab as PosView} onNavigate={(v) => setSalesTab(v === 'checkout' ? 'pos' : v)} />
+          <CashRegisterPOS view={salesTab === 'pos' ? 'checkout' : salesTab as PosView} onNavigate={(v) => { setSalesTab(v === 'checkout' ? 'pos' : v); setMobileOptionsOpen(false); }} />
         )}
 
         {false && POS_TABS.includes(salesTab) && filteredSales.length > 0 && (
