@@ -1,3 +1,10 @@
+## Installation AquaPilote (25/10/2026)
+- [x] Statut centralisé ; événements navigateur partagés, aucun statut installé déduit du stockage local ou de l’acceptation seule
+- [x] Une seule invitation globale, photo générée, logo actuel, fermeture respectée sept jours ; section visible dans Paramètres
+- [x] Icônes réelles 192/512 px et maskable, Apple adaptées ; identité de lancement conservée ; bouton flottant mobile 44 px
+- [x] 11 tests réussis ; fenêtre et fermeture à 320/393/430/768/1280 px ; superposition assistant corrigée ; instructions iPhone dans Paramètres contrôlées en Chromium, confirmation simulée supprime les invitations ; compilation OK
+- [ ] Installation/désinstallation réelle Android, Safari iOS et ordinateur : appareils physiques et installation native indisponibles dans cet aperçu ; parcours connecté non vérifié faute de session historique
+
 ## Photos du tableau de bord et actualisation mobile (25/10/2026)
 - [x] Remplacer le fond mobile par les deux images fournies hébergées, alternées toutes les 30 minutes
 - [x] Ajouter bouton et tirage vers le bas ; relire les sources montées du tableau de bord et les requêtes actives sans rechargement ni remontage

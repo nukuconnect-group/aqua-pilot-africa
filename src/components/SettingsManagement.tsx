@@ -18,6 +18,7 @@ import {
   Printer as PrinterIcon,
 } from 'lucide-react';
 import PeripheralsSettings from '@/components/settings/PeripheralsSettings';
+import PWAInstallCard from '@/components/PWAInstallCard';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -743,6 +744,7 @@ const SettingsManagement = () => {
       </div>
 
       {/* Tabs responsives */}
+      <PWAInstallCard />
       <Tabs defaultValue="profile" className="space-y-4 w-full">
         <div className="min-w-0 max-w-full overflow-x-auto">
           <TabsList className="inline-flex min-w-max h-auto flex-wrap gap-1 bg-muted p-1.5 rounded-lg md:grid md:grid-cols-5 lg:grid-cols-9 md:min-w-full">

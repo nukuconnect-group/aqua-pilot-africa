@@ -9,7 +9,6 @@ import AdminDashboard from './AdminDashboard';
 import { useTeamMemberAccess } from '@/hooks/useTeamMemberAccess';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShieldAlert } from 'lucide-react';
-import PWAInstallPrompt from './PWAInstallPrompt';
 import IoTControlCenter from './IoTControlCenter';
 import ProductionUnitsManagement from './ProductionUnitsManagement';
 import InfrastructureManagement from './InfrastructureManagement';
@@ -205,8 +204,6 @@ const MainLayout = () => {
           onTabChange={handleTabChange} 
         />
 
-        {/* PWA Install Prompt */}
-        <PWAInstallPrompt />
       </div>
     </SidebarProvider>
   );

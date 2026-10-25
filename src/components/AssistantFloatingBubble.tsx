@@ -70,12 +70,12 @@ const AssistantFloatingBubble: React.FC<Props> = ({ activeTab, onOpen }) => {
       <div className="relative">
         <Button size="icon" onClick={collapsed ? () => setCollapsed(false) : open} aria-label={collapsed ? 'Ouvrir AquaAssistant' : 'Discuter avec AquaAssistant'} title="AquaAssistant"
           aria-controls={panelId}
-          className="h-12 w-12 shrink-0 rounded-full bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground shadow-lg ring-2 ring-background motion-safe:hover:scale-105 transition-transform [&_svg]:size-6">
+          className="h-11 w-11 md:h-12 md:w-12 shrink-0 rounded-full bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground shadow-lg ring-2 ring-background motion-safe:hover:scale-105 transition-transform [&_svg]:size-5 md:[&_svg]:size-6">
           <Bot strokeWidth={2.2} />
         </Button>
         <Button type="button" size="icon" onClick={() => setCollapsed(!collapsed)} aria-expanded={!collapsed} aria-controls={panelId}
           aria-label={collapsed ? 'Dérouler AquaAssistant' : 'Réduire la bulle AquaAssistant'} title={collapsed ? 'Dérouler' : 'Réduire'}
-           className="absolute -top-1.5 -left-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-border shadow-md [&_svg]:size-3.5">
+           className="absolute -top-3 -left-10 flex h-11 w-11 items-center justify-center rounded-full border border-border shadow-md [&_svg]:size-4">
           {collapsed ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </Button>
       </div>
