@@ -1,3 +1,8 @@
+## Indicateurs et en-tête mobiles (25/10/2026)
+- [ ] Réduire la hauteur des quatre indicateurs et colorer distinctement leurs icônes
+- [ ] Garder AquaPilote sur une ligne ; contenir notification, recherche et langue sans débordement
+- [ ] Vérifier l’affichage mobile et l’ouverture de Recherche
+
 ## Infrastructures commerciales et chaîne du froid (25/10/2026)
 - [ ] Vérifier l’option d’amortissement et son calcul comptable par unité
 - [ ] Adapter types, équipements et matériel ; rattacher les lots de Stock de la même unité
