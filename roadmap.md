@@ -1,3 +1,8 @@
+## Tableau de bord et menu mobile (25/10/2026)
+- [ ] Adapter le bandeau et quatre indicateurs à la référence, avec données de l’unité active
+- [ ] Déplacer Accès rapides sous les dépenses ; menu mobile à gauche ; AquaAssistant après Paramètres, agrandi et animation légère
+- [ ] Vérifier les dimensions mobile/tablette/ordinateur et les écrans accessibles sans modifier les données réelles
+
 ## Discussions AquaAssistant invisibles (25/10/2026)
 - [x] Zone de discussion non nulle, questions dans le défilement, dernier message visible ; création d’historique avec échange complet sans réinitialisation
 - [x] Écrit visible et conservé sur 390, 694, 768 et 1280 px, écran et fenêtre flottante ; 5 tests navigateur et 7 tests vocaux réussis, compilation OK ; capture et courbe avec audio fourni et affichage du texte dicté contrôlés isolément
