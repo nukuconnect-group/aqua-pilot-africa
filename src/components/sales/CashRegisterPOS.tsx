@@ -23,13 +23,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { resolveCashierNames } from '@/lib/cashierNames';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
-import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury, treasuryNotice } from '@/lib/posTreasury';
+import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury, treasuryNotice, readSaleAccounts } from '@/lib/posTreasury';
+import { Checkbox } from '@/components/ui/checkbox';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
 import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
 import PosAiSuggestions from './PosAiSuggestions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { Sale } from '@/hooks/useSales';
+import { resolveSalesUnit } from '@/lib/salesUnitSelection';
 
 interface CartLine { name: string; quantity: number; unitPrice: number; pack?: { label: string; size: number } }
 
@@ -125,6 +127,9 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [moveAmount, setMoveAmount] = useState('');
   const [moveLabel, setMoveLabel] = useState('');
   const [registerName, setRegisterName] = useState('');
+  const [registerUnitIds, setRegisterUnitIds] = useState<string[]>([]);
+  const [registerAccountId, setRegisterAccountId] = useState('');
+  useEffect(() => { setRegisterUnitIds(activeUnit?.id ? [activeUnit.id] : []); setRegisterAccountId(''); }, [activeUnit?.id]);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferTarget, setTransferTarget] = useState('');
   const [transferPerson, setTransferPerson] = useState('');
@@ -137,7 +142,10 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [contact, setContact] = useState('');
   const [receipt, setReceipt] = useState<{ number: string; date: string; client: string; payment: string; register: string; lines: CartLine[]; total: number } | null>(null);
   const [listening, setListening] = useState(false);
-  const [unitConfirmed, setUnitConfirmed] = useState(false);
+  useEffect(() => {
+    const resolved = resolveSalesUnit(units, activeUnit);
+    if (!activeUnit && resolved) setActiveUnit(resolved);
+  }, [units, activeUnit, setActiveUnit]);
   const [checkoutError, setCheckoutError] = useState<{ title: string; description: string } | null>(null);
   const [draft, setDraft] = useState<CartLine[]>([]);
   const metaName = (user as any)?.user_metadata?.full_name || [(user as any)?.user_metadata?.first_name, (user as any)?.user_metadata?.last_name].filter(Boolean).join(' ');
@@ -180,8 +188,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     const request = ++noticeRequest.current;
     try {
       const list = await findUnpostedSales(activeUnit.id);
-      const { data: accs, error } = await (appSupabase as any).from('treasury_accounts').select('*').eq('unit_id', activeUnit.id);
-      if (error) throw error;
+      const accs = await readSaleAccounts(activeUnit.id);
       if (request !== noticeRequest.current) return;
       setUnposted(treasuryNotice(accs || [], list, activeUnit.id));
       setNoticeError(false);
@@ -410,7 +417,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     }
     if (!pendingPayment?.sale) {
       const regName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
-      if (!(await hasRegisterAccount(activeUnit.id, regName, payment))) {
+      if (!(await hasRegisterAccount(activeUnit.id, regName, payment, cash.sessions.find(s => s.id === sessionId)?.treasury_account_id))) {
         const bank = paymentDestination(payment) === 'bank';
         const f = bank
           ? { title: 'Aucun compte bancaire en trésorerie', description: `Pour un paiement « ${payment} », créez d’abord dans Comptabilité › Trésorerie un compte bancaire rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.` }
@@ -465,7 +472,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     }
     try {
       const sessionName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
-      const t = await postSaleToTreasury(activeUnit.id, sale, sessionName);
+      const t = await postSaleToTreasury(activeUnit.id, sale, sessionName, sessionId, cash.sessions.find(s => s.id === sessionId)?.treasury_account_id);
       if (t.status === 'no_account') toast({ title: 'Trésorerie non alimentée', description: paymentDestination(sale.paymentMethod || payment) === 'bank' ? 'Créez dans Trésorerie un compte bancaire pour cette unité.' : 'Créez dans Trésorerie un compte « Caisse de vente » portant le nom de cette caisse.', variant: 'destructive' });
       else treasury.reload?.();
     } catch (e: any) {
@@ -493,7 +500,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <Card className="rounded-2xl"><CardHeader><CardTitle className="text-base">Avec quelle unité voulez-vous vendre ?</CardTitle></CardHeader>
       <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {units.length === 0 ? <p className="text-sm text-muted-foreground">Aucune unité disponible.</p> : units.map((u) => (
-          <Button key={u.id} variant="outline" className="h-auto justify-start p-3 text-left whitespace-normal" onClick={() => { setActiveUnit(u); setUnitConfirmed(true); }}>{u.name}</Button>
+          <Button key={u.id} variant="outline" className="h-auto justify-start p-3 text-left whitespace-normal" onClick={() => setActiveUnit(u)}>{u.name}</Button>
         ))}
       </CardContent></Card>
   );
@@ -598,13 +605,20 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const openingForm = <div className="space-y-3">
     <label className="text-sm text-muted-foreground">Nom de la caisse</label>
     <Input aria-label="Nom de la nouvelle caisse" value={registerName} onChange={e => setRegisterName(e.target.value)} />
+    {units.length > 1 && <fieldset className="space-y-2"><legend className="mb-2 text-sm font-medium">Unités rattachées</legend>{units.filter(u => u.userId === user?.id || (!u.userId && isAdmin)).map(u => <label key={u.id} className="flex items-center gap-2 text-sm"><Checkbox checked={registerUnitIds.includes(u.id)} onCheckedChange={checked => setRegisterUnitIds(previous => checked ? [...previous, u.id] : previous.filter(id => id !== u.id))} />{u.name}</label>)}</fieldset>}
+    <label className="block space-y-1 text-sm">Compte de trésorerie destinataire
+      <select aria-label="Compte de trésorerie destinataire" className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm" value={registerAccountId} onChange={e => setRegisterAccountId(e.target.value)}>
+        <option value="">Choisir le compte de caisse</option>{[...(treasury.accounts || []), ...(treasury.otherAccounts || [])].filter(a => a.kind === 'cash' && a.user_id === user?.id).map(a => <option key={a.id} value={a.id}>{a.name} · {units.find(u => u.id === a.unit_id)?.name}</option>)}
+      </select>
+    </label>
+    {registerUnitIds.length > 1 && <p className="text-xs text-muted-foreground">Chaque unité conserve son stock et ses opérations. Les encaissements rejoignent le même compte sélectionné. Initialisez les fonds par unité après ouverture.</p>}
     <label className="text-sm text-muted-foreground">Fond de caisse (facultatif)</label>
     <Input type="number" min="0" aria-label="Fond de caisse" value={opening} onChange={e => setOpening(e.target.value)} placeholder={carried != null ? String(carried) : '0'} />
     {carried != null && opening === '' && <p className="text-xs text-muted-foreground">Solde repris de la dernière clôture : {formatCurrency(carried)}</p>}
-    <Button className="w-full" disabled={busy || !registerName.trim() || Number(opening) < 0} onClick={async () => {
+    <Button className="w-full" disabled={busy || !registerName.trim() || Number(opening) < 0 || registerUnitIds.length === 0 || (registerUnitIds.length > 1 && (!registerAccountId || Number(opening) > 0))} onClick={async () => {
       setBusy(true);
       try {
-        const r = await cash.openSession(opening === '' ? (carried ?? 0) : Number(opening) || 0, registerName);
+        const r = await cash.openSession(registerUnitIds.length > 1 ? 0 : opening === '' ? (carried ?? 0) : Number(opening) || 0, registerName, registerUnitIds, registerAccountId);
         if (r.error) toast({ title: 'Ouverture impossible', description: r.error, variant: 'destructive' });
         else { setOpening(''); setRegisterName(''); setOpenRegister(false); toast({ title: 'Caisse ouverte' }); }
       } finally { setBusy(false); }
@@ -699,11 +713,6 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             ) : <p className="text-sm font-semibold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
             <p className="mt-1 text-xs leading-snug text-muted-foreground break-words">Caissier / Caissière : <span className="font-medium text-foreground">{cashierName || '—'}</span></p>
           </div>
-          <div className="flex shrink-0 gap-0.5 text-primary">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpsOpen(true)} aria-label="Opérations" title="Opérations de caisse"><MoreHorizontal className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)} aria-label="Clôturer" title="Clôturer la caisse"><Lock className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
-          </div>
         </div>
         <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border pt-2 sm:grid-cols-4">
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Ventes du jour</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums">{formatCurrency(today.sales)}</dd></div>
@@ -711,6 +720,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Quantités du jour</dt><dd className="text-sm font-semibold leading-snug tabular-nums">{todayQuantities}</dd></div>
           <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Solde en caisse</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums text-assistant-positive">{formatCurrency(cash.expected)}</dd></div>
         </dl>
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-1 border-t border-border pt-2 sm:flex sm:gap-2">
+          <Button variant="outline" size="sm" className="h-auto min-h-10 min-w-0 gap-1 whitespace-normal px-1 text-[11px] leading-snug sm:px-3 sm:text-xs" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-3.5 w-3.5 shrink-0" /><span>Clôturer la caisse</span></Button>
+          <Button variant="outline" size="sm" className="h-auto min-h-10 min-w-0 gap-1 whitespace-normal px-1 text-[11px] leading-snug sm:px-3 sm:text-xs" onClick={() => setLockAsk(true)}><KeyRound className="h-3.5 w-3.5 shrink-0" /><span>Verrouiller la caisse</span></Button>
+          <Button variant="outline" size="sm" className="h-auto min-h-10 min-w-0 gap-1 whitespace-normal px-1 text-[11px] leading-snug sm:px-3 sm:text-xs" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-3.5 w-3.5 shrink-0" /><span>Opérations</span></Button>
+          <Button variant="secondary" size="icon" className="h-10 w-8 shrink-0 sm:ml-auto sm:w-10" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))} aria-label="Ajouter du stock" title="Ajouter du stock"><Boxes className="h-4 w-4" /></Button>
+        </div>
         {closedRegisters.length > 0 && (
           <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
             <span className="text-muted-foreground">Caisses fermées :</span>
@@ -865,7 +880,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       {catalog.length === 0 && (
         <div className="flex min-w-0 items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5">
           <Boxes className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-primary">Stock commercial vide</p><p className="leading-snug text-muted-foreground">Ajoutez vos produits et leurs prix de vente.</p><Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'stock' }))}>Ajouter au stock</Button></div>
+          <div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-primary">Stock commercial vide</p><p className="leading-snug text-muted-foreground">Ajoutez vos produits et leurs prix de vente.</p></div>
         </div>
       )}
       {(view === 'multi' || tickets.length > 1) && (

@@ -1,10 +1,23 @@
 import { describe, it, expect, vi } from 'vitest';
 vi.mock('@/integrations/supabase/appClient', () => ({ supabase: {} }));
-import { findRegisterAccount, treasuryNotice } from '@/lib/posTreasury';
+import { findRegisterAccount, treasuryNotice, findSaleAccount as selectAccount } from '@/lib/posTreasury';
+import { accountCoversUnit } from '@/lib/treasury';
 
 const acc = (id: string, name: string, kind: 'cash' | 'bank' = 'cash') => ({ id, name, kind, user_id: 'u', unit_id: 'x', account_code: '5711', currency: 'XOF' } as any);
 
 describe('caisse de trésorerie rattachée à la caisse de vente', () => {
+  it('privilégie le compte explicitement rattaché à la caisse', () => {
+    expect(selectAccount([acc('a', 'Caisse 1'), acc('b', 'Coffre')], 'Espèces', 'Caisse 1', 'b')?.id).toBe('b');
+  });
+  it('refuse une autre caisse si le rattachement explicite est absent', () => {
+    expect(selectAccount([acc('a', 'Caisse 1')], 'Espèces', 'Caisse 1', 'absent')).toBeNull();
+  });
+  it('un compte partagé couvre uniquement ses unités rattachées', () => {
+    const shared = { ...acc('a', 'Caisse'), unit_ids: ['deux', 'trois'] };
+    expect(accountCoversUnit(shared, 'deux')).toBe(true);
+    expect(accountCoversUnit(shared, 'quatre')).toBe(false);
+    expect(treasuryNotice([shared], [], 'deux').needs).toEqual([]);
+  });
   it('cesse de demander une caisse dès qu’un compte actif existe dans cette unité', () => {
     expect(treasuryNotice([acc('a', 'Caisse')], [], 'x').needs).toEqual([]);
     expect(treasuryNotice([acc('a', 'Caisse')], [], 'autre').needs).toEqual(['cash']);

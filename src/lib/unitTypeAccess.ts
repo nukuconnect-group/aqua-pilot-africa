@@ -15,7 +15,16 @@ export const isUnitTypeAllowed = (
     const access = subscriptionAccess(subscription, today);
     if (!access.isActive) return false;
     if (access.isTrial) return true;
+    if (['annual_enterprise', 'enterprise'].includes(subscription.plan ?? '')) return true;
   }
   if (!allowedTypes || allowedTypes.length === 0) return true;
   return allowedTypes.includes(type);
 };
+
+/** Counts actual owned units, not categories; never removes existing units. */
+export function unitCreationLimit(subscription: SubscriptionAccessRecord | null | undefined, isAdmin: boolean, today?: string): number | null {
+  if (isAdmin || !subscription || subscriptionAccess(subscription, today).isTrial) return null;
+  if (['annual_basic', 'standard'].includes(subscription.plan ?? '')) return 1;
+  if (['annual_pro', 'professional'].includes(subscription.plan ?? '')) return 3;
+  return null;
+}

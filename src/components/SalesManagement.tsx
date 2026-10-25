@@ -30,6 +30,7 @@ import { getCompanyDocumentFields, isSaleSettled } from '@/lib/salesDocumentUtil
 import { SalesDocumentType, generateNextDocumentNumber, getDefaultLegalMentions, validateSalesDocumentDraft } from '@/lib/salesDocumentHelpers';
 import { getUnitTerms } from '@/lib/unitContext';
 import { reverseSaleInTreasury } from '@/lib/posTreasury';
+import { resolveSalesUnit } from '@/lib/salesUnitSelection';
 
 
 interface SaleFormState {
@@ -88,6 +89,11 @@ const SalesManagement = () => {
 
   const [newSale, setNewSale] = useState<SaleFormState>(createEmptySale(activeUnit?.id || ''));
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    const resolved = resolveSalesUnit(units, activeUnit);
+    if (!activeUnit && resolved) setActiveUnit(resolved);
+  }, [units, activeUnit, setActiveUnit]);
 
   // Synchroniser la vente avec l'unité active
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
-import { accountBalance, movementLines, type MovementKind, type TreasuryAccount, type TreasuryMovement } from '@/lib/treasury';
+import { accountBalance, accountCoversUnit, movementLines, type MovementKind, type TreasuryAccount, type TreasuryMovement } from '@/lib/treasury';
 
 const db = supabase as any;
 export function useTreasury(unitId?: string) {
@@ -14,26 +14,28 @@ export function useTreasury(unitId?: string) {
     if (!unitId) { setState({ accounts: [], movements: [] }); return; }
     setLoading(true);
     const [a, m] = await Promise.all([
-      db.from('treasury_accounts').select('*').eq('unit_id', unitId).order('created_at'),
+      db.from('treasury_accounts').select('*').order('created_at'),
       db.from('treasury_movements').select('*').eq('unit_id', unitId).order('date', { ascending: false }).order('created_at', { ascending: false }),
     ]);
     const failure = a.error || m.error;
     setError(failure ? 'Impossible de charger la trésorerie pour le moment. Réessayez dans un instant.' : null);
-    setState({ unitId, accounts: (a.data || []).filter((x: any) => !x.archived_at), movements: (m.data || []).map((r: TreasuryMovement) => ({ ...r, amount: Number(r.amount) })) });
+    setState({ unitId, accounts: (a.data || []).filter((x: TreasuryAccount & { archived_at?: string }) => !x.archived_at && accountCoversUnit(x, unitId)), movements: (m.data || []).map((r: TreasuryMovement) => ({ ...r, amount: Number(r.amount) })) });
     setLoading(false);
     const o = await db.from('treasury_accounts').select('*').neq('unit_id', unitId).order('name');
-    setOtherAccounts((o.data || []).filter((x: any) => !x.archived_at));
+    setOtherAccounts((o.data || []).filter((x: any) => !x.archived_at && !accountCoversUnit(x, unitId)));
   }, [unitId]);
   useEffect(() => { load(); }, [load]);
-  const createAccount = async (input: { unitId?: string; name: string; kind: 'cash' | 'bank'; code: string; currency: string; opening: number; counterpart: string; date: string }) => {
+  const createAccount = async (input: { unitId?: string; unitIds?: string[]; name: string; kind: 'cash' | 'bank'; code: string; currency: string; opening: number; counterpart: string; date: string }) => {
     const target = input.unitId || unitId;
     if (!target) throw new Error('Sélectionnez une unité.');
     if (!input.name.trim() || !Number.isFinite(input.opening) || input.opening < 0) throw new Error('Nom ou fonds initiaux invalides.');
-    const { error } = await db.rpc('create_treasury_account', {
-      _unit_id: target, _name: input.name, _kind: input.kind, _code: input.code, _currency: input.currency,
+    const linked = (input.unitIds?.length ?? 0) > 1;
+    const { error } = await db.rpc(linked ? 'create_linked_treasury_account' : 'create_treasury_account', {
+      ...(linked ? { _unit_ids: input.unitIds } : { _unit_id: target }),
+      _name: input.name, _kind: input.kind, _code: input.code, _currency: input.currency,
       _opening: input.opening, _counterpart: input.counterpart, _date: input.date,
     });
-    if (error) throw error;
+    if (error) throw new Error(linked && ['PGRST202', '42883'].includes(error.code) ? 'Le rattachement multi-unités n’est pas encore activé sur le serveur. Aucun compte créé.' : error.message);
     await load();
   };
   const recordMovement = async (input: { requestId: string; kind: MovementKind; sourceId: string; destinationId: string; amount: number; date: string; label: string; counterpart: string }) => {
@@ -43,7 +45,7 @@ export function useTreasury(unitId?: string) {
     const lines = movementLines(input.kind, input.amount, source, destination, input.counterpart);
     if (source && input.amount > accountBalance(source.id, movements)) throw new Error('Solde insuffisant sur le compte source.');
     const owner = source || destination;
-    if (!owner || owner.unit_id !== unitId) throw new Error('Compte inaccessible.');
+    if (!owner || !accountCoversUnit(owner, unitId)) throw new Error('Compte inaccessible.');
     const { error } = await db.from('treasury_movements').insert({
       request_id: input.requestId, user_id: owner.user_id, unit_id: unitId, kind: input.kind,
       source_id: input.kind === 'payment' || input.kind === 'transfer' ? input.sourceId : null,

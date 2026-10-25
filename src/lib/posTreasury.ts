@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/appClient';
-import { movementLines, type TreasuryAccount } from '@/lib/treasury';
+import { accountCoversUnit, movementLines, type TreasuryAccount } from '@/lib/treasury';
 
 const db = supabase as any;
 const norm = (v?: string | null) => (v || '').trim().toLowerCase();
@@ -22,11 +22,20 @@ export const findBankAccount = (accounts: TreasuryAccount[]) => {
   return bank.find(a => norm(a.name).includes('vente')) || bank[0] || null;
 };
 
-export const findSaleAccount = (accounts: TreasuryAccount[], payment?: string | null, registerName?: string | null) =>
-  paymentDestination(payment) === 'bank' ? findBankAccount(accounts) : findRegisterAccount(accounts, registerName);
+export const findSaleAccount = (accounts: TreasuryAccount[], payment?: string | null, registerName?: string | null, linkedAccountId?: string | null) => {
+  if (paymentDestination(payment) === 'bank') return findBankAccount(accounts);
+  if (linkedAccountId) return accounts.find(a => a.id === linkedAccountId && a.kind === 'cash' && !(a as any).archived_at) ?? null;
+  return findRegisterAccount(accounts, registerName);
+};
+
+export async function readSaleAccounts(unitId: string): Promise<TreasuryAccount[]> {
+  const { data, error } = await db.from('treasury_accounts').select('*');
+  if (error) throw error;
+  return (data || []).filter((account: TreasuryAccount) => accountCoversUnit(account, unitId));
+}
 
 export function treasuryNotice(accounts: Pick<TreasuryAccount, 'kind' | 'unit_id'>[], pending: { total_amount: unknown; payment_method?: string | null }[], unitId: string) {
-  const kinds = new Set(accounts.filter(a => a.unit_id === unitId && !(a as { archived_at?: string }).archived_at).map(a => a.kind));
+  const kinds = new Set(accounts.filter(a => accountCoversUnit(a, unitId) && !(a as { archived_at?: string }).archived_at).map(a => a.kind));
   const required = new Set<'cash' | 'bank'>(['cash', ...pending.map(s => paymentDestination(s.payment_method))]);
   return { count: pending.length, amount: pending.reduce((n, s) => n + (Number(s.total_amount) || 0), 0), needs: [...required].filter(k => !kinds.has(k)) };
 }
@@ -35,9 +44,8 @@ export function treasuryNotice(accounts: Pick<TreasuryAccount, 'kind' | 'unit_id
 export const SALE_COUNTERPART = '411';
 
 /** Indique si l'unité possède le compte (caisse ou banque) qui recevra ce mode de paiement. */
-export async function hasRegisterAccount(unitId: string, registerName?: string | null, payment?: string | null) {
-  const { data } = await db.from('treasury_accounts').select('*').eq('unit_id', unitId);
-  return !!findSaleAccount(data || [], payment, registerName);
+export async function hasRegisterAccount(unitId: string, registerName?: string | null, payment?: string | null, linkedAccountId?: string | null) {
+  return !!findSaleAccount(await readSaleAccounts(unitId), payment, registerName, linkedAccountId);
 }
 
 /**
@@ -46,11 +54,15 @@ export async function hasRegisterAccount(unitId: string, registerName?: string |
  * ne fait que reclasser l'argent dans le compte précis de la caisse, sans doubler le chiffre d'affaires.
  * Idempotent : l'identifiant de la vente sert d'identifiant de mouvement.
  */
-export async function postSaleToTreasury(unitId: string, sale: { id: string; totalAmount: number; paymentMethod?: string; documentNumber?: string; clientName?: string; date?: string }, registerName?: string | null) {
+export async function postSaleToTreasury(unitId: string, sale: { id: string; totalAmount: number; paymentMethod?: string; documentNumber?: string; clientName?: string; date?: string }, registerName?: string | null, sessionId?: string | null, linkedAccountId?: string | null) {
   if (!(sale.totalAmount > 0)) return { status: 'skipped' as const };
-  const { data: accounts } = await db.from('treasury_accounts').select('*').eq('unit_id', unitId);
-  const account = findSaleAccount(accounts || [], sale.paymentMethod, registerName);
+  const { error: rpcError } = await db.rpc('post_sale_to_linked_treasury', { _sale_id: sale.id, _session_id: sessionId || null });
+  if (!rpcError) return { status: 'ok' as const };
+  if (!['PGRST202', '42883'].includes(rpcError.code)) throw rpcError;
+  const accounts = await readSaleAccounts(unitId);
+  const account = findSaleAccount(accounts, sale.paymentMethod, registerName, linkedAccountId);
   if (!account) return { status: 'no_account' as const };
+  if (account.unit_id !== unitId) throw new Error('Le report multi-unités attend l’activation du rattachement sur le serveur. Aucune écriture créée.');
   const { data: existing } = await db.from('treasury_movements').select('id').eq('request_id', sale.id).limit(1);
   if (existing?.length) return { status: 'ok' as const };
   const { error } = await db.from('treasury_movements').insert({
@@ -98,9 +110,16 @@ export async function findUnpostedSales(unitId: string) {
 /** Reporte une seule fois chaque vente passée dans la caisse ou la banque correspondant à son paiement. */
 export async function backfillSalesToTreasury(unitId: string) {
   const pending = await findUnpostedSales(unitId);
+  const { data: movements, error: movementError } = pending.length ? await db.from('cash_movements').select('sale_id, session_id').in('sale_id', pending.map((s: any) => s.id)).eq('type', 'sale') : { data: [], error: null };
+  if (movementError) throw movementError;
+  const sessionIds = [...new Set<string>((movements || []).map((m: any) => m.session_id))];
+  const { data: sessions, error: sessionError } = sessionIds.length ? await db.from('cash_sessions').select('*').in('id', sessionIds) : { data: [], error: null };
+  if (sessionError) throw sessionError;
   let posted = 0; const missing = new Set<'cash' | 'bank'>();
   for (const s of pending) {
-    const r = await postSaleToTreasury(unitId, { id: s.id, totalAmount: Number(s.total_amount), paymentMethod: s.payment_method, documentNumber: s.document_number, clientName: s.client_name, date: s.date });
+    const movement = (movements || []).find((m: any) => m.sale_id === s.id);
+    const session = (sessions || []).find((c: any) => c.id === movement?.session_id);
+    const r = await postSaleToTreasury(unitId, { id: s.id, totalAmount: Number(s.total_amount), paymentMethod: s.payment_method, documentNumber: s.document_number, clientName: s.client_name, date: s.date }, session?.name, session?.id, session?.treasury_account_id);
     if (r.status === 'ok') posted++;
     if (r.status === 'no_account') missing.add(paymentDestination(s.payment_method));
   }
