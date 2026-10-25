@@ -1,3 +1,8 @@
+## Navigation Ventes et panier mobile (25/10/2026)
+- [ ] Masquer les raccourcis après sélection et ajouter un retour sans perdre le panier
+- [ ] Garder recherche et panier visibles ensemble sur mobile après ajout ; préserver la caisse ordinateur
+- [ ] Tester les parcours existants et vérifier les limites du contrôle visuel
+
 ## Parcours Ventes mobile (25/10/2026)
 - [x] Ouvrir Ventes sur Gestion des caisses sur mobile, y compris pour les utilisateurs affectés ; droits serveur inchangés
 - [x] Afficher les cartes et la création sans bandeau de vente, ouvrir directement la caisse et intégrer Vente IA à Multi-caisses
