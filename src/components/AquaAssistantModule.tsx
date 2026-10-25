@@ -126,7 +126,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
       setMessages([{ role: 'assistant', content: greeting }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId, activeConversation?.messages, isLoading]);
+  }, [activeId, activeConversation?.messages]);
 
   // Crée automatiquement une conversation si l'utilisateur n'en a aucune
   useEffect(() => {
@@ -380,7 +380,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
+            <Button variant="outline" disabled={isLoading} size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
             {!isPage && <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>

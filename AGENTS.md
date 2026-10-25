@@ -1,6 +1,6 @@
 
 - Only `AquaAssistantModule` mounts assistant UI; legacy `AquaAssistant` stays unused. Keep one surface and conversation store.
-- Dashboard mounts one assistant outside keyed modules; page/floating switches preserve conversation and input.
+- Keep assistant state across views; scroll questions with messages; create history with the exchange to avoid resets.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
 - App owns one QueryClientProvider with focus refetch disabled; account/unit keyed queries share cache without remounting forms.
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
