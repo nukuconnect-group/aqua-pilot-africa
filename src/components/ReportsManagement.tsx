@@ -28,7 +28,8 @@ import {
 } from '@/lib/reportExportUtils';
 import { toast } from 'sonner';
 import CycleFinancialReport from './reports/CycleFinancialReport';
-import CommercialPerformance from './analytics/CommercialPerformance';
+import { useCommercialData } from '@/hooks/useCommercialData';
+import { buildCommercialReport, commercialReportRange, commercialReportTemplates } from '@/lib/commercialReports';
 
 interface ReportPreviewData {
   id: string;
@@ -50,7 +51,9 @@ const ProductionReportsManagement = () => {
   const [editMode, setEditMode] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   
-  const { units, transactions, purchases, getGlobalFinancialData } = useProductionUnits();
+  const { units, activeUnit, transactions, purchases, getGlobalFinancialData, convertCurrency } = useProductionUnits();
+  const isCommercial = activeUnit?.type === 'commercialisation';
+  const commercial = useCommercialData(activeUnit?.id, isCommercial);
   const { formatCurrency } = useSettings();
   const { user } = useAuth();
 
@@ -65,7 +68,7 @@ const ProductionReportsManagement = () => {
   // Charger les données
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.id) return;
+      if (!user?.id || isCommercial) return;
 
       try {
         const [cyclesRes, healthRes, feedingRes, livestockRes, employeesRes] = await Promise.all([
@@ -87,9 +90,14 @@ const ProductionReportsManagement = () => {
     };
 
     fetchData();
-  }, [user?.id]);
+  }, [user?.id, isCommercial]);
 
-  const reportTypes = [
+  const reportTypes = isCommercial ? commercialReportTemplates.map((template) => ({
+    ...template, icon: template.id === 'financial' ? TrendingUp : FileText,
+    frequency: 'Selon la période sélectionnée', status: commercial.error ? 'error' : commercial.isPending ? 'processing' : 'ready',
+    dataCount: template.id === 'purchases' ? commercial.data?.purchases.length || 0 : template.id === 'products' ? commercial.data?.items.length || 0 : commercial.data?.sales.length || 0,
+    color: 'from-primary to-ocean-primary',
+  })) : [
     {
       id: 'comprehensive',
       title: 'Rapport Complet',
@@ -171,6 +179,11 @@ const ProductionReportsManagement = () => {
   };
 
   const buildReportData = (reportId: string): ReportData => {
+    if (isCommercial) {
+      if (!activeUnit || !commercial.data || commercial.error) throw new Error('Les données commerciales ne sont pas disponibles.');
+      const range = commercialReportRange(selectedPeriod);
+      return buildCommercialReport({ id: reportId, unitId: activeUnit.id, unitName: activeUnit.name, ...range, ...commercial.data, money: formatCurrency, convert: (amount, currency) => convertCurrency(amount, currency, 'XOF') });
+    }
     const financialData = getGlobalFinancialData();
     const period = getPeriodLabel();
     const generatedAt = new Date().toLocaleString('fr-FR');
@@ -609,6 +622,10 @@ const ProductionReportsManagement = () => {
   };
 
   const openPreview = (reportId: string) => {
+    if (isCommercial && (!commercial.data || commercial.error)) {
+      toast.error('Les données commerciales ne sont pas disponibles. Réessayez.');
+      return;
+    }
     const data = buildReportData(reportId);
     setPreviewData({
       id: reportId,
@@ -737,9 +754,9 @@ const ProductionReportsManagement = () => {
           <div>
             <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
               <FileText className="w-7 h-7" />
-              Journal de ferme
+              {isCommercial ? 'Journal commercial' : 'Journal de ferme'}
             </h2>
-            <p className="text-indigo-100">Journal quotidien par unité et rapports détaillés (jour, semaine, mois, trimestre)</p>
+            <p className="text-indigo-100">{isCommercial ? `${activeUnit?.name} · Journal des ventes, achats et rapports détaillés` : 'Journal quotidien par unité et rapports détaillés (jour, semaine, mois, trimestre)'}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -799,8 +816,8 @@ const ProductionReportsManagement = () => {
               <BarChart3 className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-lg md:text-2xl font-bold text-purple-900">{productionCycles.filter(c => c.status === 'active').length}</p>
-              <p className="text-xs text-purple-600">Cycles actifs</p>
+              <p className="text-lg md:text-2xl font-bold text-purple-900">{isCommercial ? (commercial.data ? commercial.data.sales.filter(s => s.status !== 'cancelled').length : '—') : productionCycles.filter(c => c.status === 'active').length}</p>
+              <p className="text-xs text-purple-600">{isCommercial ? 'Ventes enregistrées' : 'Cycles actifs'}</p>
             </div>
           </CardContent>
         </Card>
@@ -818,6 +835,7 @@ const ProductionReportsManagement = () => {
       </div>
 
       {/* Contenu principal */}
+      {isCommercial && commercial.error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-destructive">Les données commerciales sont indisponibles.<Button variant="outline" size="sm" onClick={() => void commercial.refetch()}>Réessayer</Button></div>}
       <Tabs defaultValue="journal" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
           <TabsTrigger value="journal" className="text-sm">📔 Journal</TabsTrigger>
@@ -829,11 +847,11 @@ const ProductionReportsManagement = () => {
         </TabsList>
 
         <TabsContent value="journal" className="space-y-4">
-          <FarmJournal />
+          {isCommercial ? <Card><CardHeader><CardTitle className="text-lg">Journal commercial</CardTitle><CardDescription>{activeUnit?.name} · {getPeriodLabel()}</CardDescription></CardHeader><CardContent className="space-y-4">{commercial.isPending ? <p className="text-muted-foreground">Chargement des opérations…</p> : commercial.data && !commercial.error ? <><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b"><th className="py-2 text-left">Date</th><th className="text-left">Opération</th><th className="text-right">Montant</th></tr></thead><tbody>{[...commercial.data.sales.filter(s => s.status !== 'cancelled').map(s => ({ date: s.date, type: 'Vente', amount: Number(s.total_amount) })), ...commercial.data.purchases.filter(p => p.status !== 'cancelled').map(p => ({ date: p.date, type: 'Achat', amount: convertCurrency(Number(p.amount), p.currency || 'XOF', 'XOF') }))].filter(r => { const range = commercialReportRange(selectedPeriod); return r.date >= range.start && r.date <= range.end; }).sort((a,b) => b.date.localeCompare(a.date)).map((r,i) => <tr key={i} className="border-b"><td className="py-3">{r.date}</td><td>{r.type}</td><td className="text-right tabular-nums">{formatCurrency(r.amount)}</td></tr>)}</tbody></table></div><Button variant="outline" onClick={() => openPreview('comprehensive')}><Eye className="size-4"/>Aperçu du journal</Button><Button onClick={() => handleGenerateReport('comprehensive', selectedFormat)}><Download className="size-4"/>{selectedFormat.toUpperCase()}</Button></> : null}</CardContent></Card> : <FarmJournal />}
         </TabsContent>
 
         <TabsContent value="finance" className="space-y-4">
-          <CycleFinancialReport />
+          {isCommercial ? <Card><CardHeader><CardTitle>Rapport Financier</CardTitle><CardDescription>{activeUnit?.name} · {getPeriodLabel()}</CardDescription></CardHeader><CardContent className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => openPreview('financial')}><Eye className="size-4"/>Aperçu</Button><Button disabled={!commercial.data || Boolean(commercial.error)} onClick={() => handleGenerateReport('financial', selectedFormat)}><Download className="size-4"/>{selectedFormat.toUpperCase()}</Button></CardContent></Card> : <CycleFinancialReport />}
         </TabsContent>
 
         <TabsContent value="generate" className="space-y-4">
@@ -880,7 +898,7 @@ const ProductionReportsManagement = () => {
                         <Button 
                           size="sm" 
                           onClick={() => handleGenerateReport(report.id, selectedFormat)}
-                          disabled={isGenerating === report.id}
+                          disabled={isGenerating === report.id || (isCommercial && (!commercial.data || Boolean(commercial.error)))}
                           className={`flex-1 bg-gradient-to-r ${report.color} hover:opacity-90`}
                         >
                           <Download className="w-4 h-4 mr-1" />
@@ -928,7 +946,7 @@ const ProductionReportsManagement = () => {
         </TabsContent>
 
         <TabsContent value="units" className="space-y-4">
-          <UnitReportGenerator />
+          {isCommercial ? <Card><CardHeader><CardTitle>{activeUnit?.name}</CardTitle><CardDescription>Rapports de l’unité commerciale active · {getPeriodLabel()}</CardDescription></CardHeader><CardContent className="flex flex-wrap gap-2">{reportTypes.map(r => <Button key={r.id} variant="outline" onClick={() => openPreview(r.id)}><FileText className="size-4"/>{r.title}</Button>)}</CardContent></Card> : <UnitReportGenerator />}
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
@@ -1175,6 +1193,6 @@ const ProductionReportsManagement = () => {
 
 const ReportsManagement = () => {
   const { activeUnit } = useProductionUnits();
-  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance title="Rapports commerciaux" initialTab="report" /> : <ProductionReportsManagement />;
+  return <ProductionReportsManagement key={activeUnit?.id} />;
 };
 export default ReportsManagement;
