@@ -1,3 +1,8 @@
+## Barre latérale AquaAssistant et profil (25/10/2026)
+- [ ] Icône identifiable inspirée de la référence ; ouvrir la discussion existante sur ordinateur et mobile
+- [ ] Photo de profil existante et avatar élégant en absence de photo ; aucun autre élément modifié
+- [ ] Vérifier la barre latérale et les accès existants
+
 ## Disposition commune des analyses (25/10/2026)
 - [ ] Rétablir Analytique : disposition commune, indicateurs et graphiques commerciaux adaptés
 - [ ] Améliorer Intelligence & Analyse avec courbes interactives et prévisions distinctes
