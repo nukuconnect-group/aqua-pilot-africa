@@ -1,3 +1,8 @@
+## Disposition commune des analyses (25/10/2026)
+- [ ] Rétablir Analytique : disposition commune, indicateurs et graphiques commerciaux adaptés
+- [ ] Améliorer Intelligence & Analyse avec courbes interactives et prévisions distinctes
+- [ ] Vérifier les dispositions, filtres et tests existants
+
 ## Erreurs Analytique et Intelligence & Analyse (25/10/2026)
 - [x] Reproduire Invalid time value lors d’une date vide et corriger ; gérer les lectures échouées sans chargement permanent ; actualisation sans rechargement de page
 - [x] 9 tests réussis, écrans isolés sans erreur, date vide ne ferme plus l’analyse ; compilation réussie
