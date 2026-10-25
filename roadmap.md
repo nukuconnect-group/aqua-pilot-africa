@@ -1,4 +1,5 @@
 ## Erreurs restantes Analytique (25/10/2026)
+- [ ] Vérifier AquaAssistant et avatar sur mobile ; corriger uniquement les défauts visibles
 - [ ] Corriger les données manquantes et l’actualisation sans modifier la disposition
 - [ ] Tester les régressions et vérifier l’affichage disponible
 
