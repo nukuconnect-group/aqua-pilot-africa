@@ -34,7 +34,7 @@ import {
 import { useProductionUnits, ProductionUnitType } from '@/contexts/ProductionUnitsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/appClient';
-import { isUnitTypeAllowed } from '@/lib/unitTypeAccess';
+import { isUnitTypeAllowed, unitCreationLimit } from '@/lib/unitTypeAccess';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { useLogs } from '@/contexts/LogsContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -189,6 +189,11 @@ const ProductionUnitsManagement = () => {
     }
     if (!isAdmin && subscription && !subscription.isActive) {
       toast.error("Votre essai ou abonnement est terminé. Souscrivez à un abonnement payant pour réactiver vos unités. Vos données sont conservées.");
+      return;
+    }
+    const unitLimit = unitCreationLimit(subscription, isAdmin);
+    if (!editingUnit && unitLimit !== null && units.length >= unitLimit) {
+      toast.error(`Votre abonnement couvre ${unitLimit} unité${unitLimit > 1 ? 's' : ''}. Choisissez une offre supérieure pour en ajouter. Vos unités existantes sont conservées.`);
       return;
     }
     // Refus côté client : type non couvert par l'abonnement (le serveur bloque aussi).
