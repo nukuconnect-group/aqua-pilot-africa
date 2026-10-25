@@ -22,6 +22,17 @@ import AssistantOverview from '@/components/assistant/AssistantOverview';
 import { useAssistantVoice } from '@/hooks/useAssistantVoice';
 import AssistantVoicePanel from '@/components/assistant/AssistantVoicePanel';
 import assistantIcon from '@/assets/aqua-assistant-icon.png';
+import { useStickToBottomContext } from 'use-stick-to-bottom';
+
+function ScrollToLatestMessage({ messages, visible }: { messages: Message[]; visible: boolean }) {
+  const { scrollToBottom } = useStickToBottomContext();
+  useEffect(() => {
+    if (!visible) return;
+    const frame = requestAnimationFrame(() => { void scrollToBottom({ animation: 'instant' }); });
+    return () => cancelAnimationFrame(frame);
+  }, [messages, visible, scrollToBottom]);
+  return null;
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -425,6 +436,7 @@ const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = tru
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="relative isolate flex min-h-0 flex-1 flex-col overflow-hidden">
           <Conversation className="min-h-24 flex-1" aria-label="Messages AquaAssistant">
+            <ScrollToLatestMessage messages={messages} visible={visible} />
             <ConversationContent className="gap-4 p-3 sm:p-4">
         {messages.length <= 1 && currentUnit?.type !== 'commercialisation' && <div className="border-b pb-2">
           <p className="text-sm text-muted-foreground">
