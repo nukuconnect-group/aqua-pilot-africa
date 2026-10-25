@@ -1,3 +1,7 @@
+## Erreurs restantes Analytique (25/10/2026)
+- [ ] Corriger les données manquantes et l’actualisation sans modifier la disposition
+- [ ] Tester les régressions et vérifier l’affichage disponible
+
 ## Barre latérale AquaAssistant et profil (25/10/2026)
 - [x] Icône robot inspirée de la référence dans les menus ordinateur/mobile ; discussion existante conservée
 - [x] Photo existante conservée ; avatar silhouette élégant dans le profil et menu de déconnexion
