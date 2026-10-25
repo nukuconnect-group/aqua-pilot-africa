@@ -21,6 +21,8 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { getUnitTerms, getInfrastructureTypeLabel as getInfraLabel } from '@/lib/unitContext';
 import { computeFishCounts } from '@/lib/feedingSheetUtils';
 import InfrastructureQRCode from './InfrastructureQRCode';
+import { useFeedStocks } from '@/hooks/useFeedStocks';
+import { isCommercialStock } from '@/lib/stockPurpose';
 
 interface InfrastructureCardProps {
   infrastructure: Infrastructure;
@@ -98,6 +100,10 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
     status: 'healthy' as const
   });
 
+  const commercial = activeUnit?.type === 'commercialisation';
+  const { stocks } = useFeedStocks(infrastructure.unitId);
+  const attachedStock = stocks.find(s => s.id === infrastructure.specifications?.attachedStockId && s.unit_id === infrastructure.unitId && isCommercialStock(s));
+  const stockContent = <div className="space-y-2 text-sm"><p className="font-medium">Lot de Stock rattaché</p>{attachedStock ? <><p>{attachedStock.custom_name || attachedStock.feed_type}</p><p className="text-muted-foreground">{Number(attachedStock.quantity).toLocaleString('fr-FR')} {attachedStock.unit} · {attachedStock.id.slice(0,8)}</p></> : <p className="text-muted-foreground">Aucun lot de marchandises rattaché</p>}<Button size="sm" variant="outline" onClick={() => { setIsDetailsOpen(false); setIsEditOpen(true); }}>Rattacher un lot de Stock</Button></div>;
   const unitTerms = getUnitTerms(activeUnit?.type);
   const species = [...unitTerms.speciesOptions, 'Autre'];
 
@@ -289,7 +295,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
             </div>}
             <div className="flex items-center gap-2 text-muted-foreground">
               <Ruler className="w-3 h-3 flex-shrink-0" />
-              <span>Capacité: {infrastructure.capacity.toLocaleString()}</span>
+              <span>Capacité: {infrastructure.capacity.toLocaleString()}{commercial ? " kg" : ""}</span>
             </div>
             
             {infrastructure.specifications?.location && (
@@ -300,10 +306,10 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
             )}
             
             {/* Spécifications compactes */}
-            {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(k)).length > 0 && (
+            {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId', 'attachedStockId', 'attachedBatchId', ...(commercial ? ['ph','oxygenLevel','ammonia','profondeur'] : [])].includes(k)).length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
                 {Object.entries(infrastructure.specifications)
-                  .filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key))
+                  .filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId', 'attachedStockId', 'attachedBatchId', ...(commercial ? ['ph','oxygenLevel','ammonia','profondeur'] : [])].includes(key))
                   .slice(0, 2)
                   .map(([key, value]) => (
                     <span 
@@ -313,17 +319,18 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                       {key}: {String(value)}
                     </span>
                   ))}
-                {Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key)).length > 2 && (
+                {Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId', 'attachedStockId', 'attachedBatchId', ...(commercial ? ['ph','oxygenLevel','ammonia','profondeur'] : [])].includes(key)).length > 2 && (
                   <span className="text-xs text-muted-foreground">
-                    +{Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key)).length - 2}
+                    +{Object.entries(infrastructure.specifications).filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId', 'attachedStockId', 'attachedBatchId', ...(commercial ? ['ph','oxygenLevel','ammonia','profondeur'] : [])].includes(key)).length - 2}
                   </span>
                 )}
               </div>
             )}
           </div>
           
+          {infrastructure.specifications?.depreciationAssetId && <Badge variant="outline" className="mt-3 text-primary w-fit">Amortissement · Comptabilité</Badge>}
           {/* Cycle de production associé */}
-          {associatedCycle && (
+          {!commercial && associatedCycle && (
             <div className="mt-3 pt-3 border-t">
               <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-lg">
                 <RefreshCw className="w-4 h-4 text-primary flex-shrink-0" />
@@ -340,7 +347,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
           
           {/* Lot rattaché */}
           <div className={associatedCycle ? "mt-2" : "mt-3 pt-3 border-t"}>
-            {attachedBatch ? (
+            {commercial ? stockContent : attachedBatch ? (
               <InfrastructureLivestockCard 
                 batch={attachedBatch} 
                 infrastructureId={infrastructure.id}
@@ -463,7 +470,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
               </div>
               
               {/* Cycle de production associé */}
-              {associatedCycle && (
+              {!commercial && associatedCycle && (
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                   <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                     <RefreshCw className="w-4 h-4 text-primary" />
@@ -528,12 +535,12 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
               )}
               
               {/* Spécifications techniques */}
-              {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(k)).length > 0 && (
+              {infrastructure.specifications && Object.keys(infrastructure.specifications).filter(k => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId', 'attachedStockId', 'attachedBatchId', ...(commercial ? ['ph','oxygenLevel','ammonia','profondeur'] : [])].includes(k)).length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium mb-3">Spécifications techniques</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Object.entries(infrastructure.specifications)
-                      .filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId'].includes(key))
+                      .filter(([key]) => !['location', 'usage', 'description', 'depreciation', 'depreciationAssetId', 'attachedStockId', 'attachedBatchId', ...(commercial ? ['ph','oxygenLevel','ammonia','profondeur'] : [])].includes(key))
                       .map(([key, value]) => (
                         <div key={key} className="flex justify-between items-center p-2 bg-muted/50 rounded-lg">
                           <span className="text-sm text-muted-foreground capitalize">{key}</span>
@@ -550,7 +557,7 @@ const InfrastructureCard = ({ infrastructure }: InfrastructureCardProps) => {
                   <Fish className="w-4 h-4" />
                   {unitTerms.attachedBatchLabel}
                 </h4>
-                {attachedBatch ? (
+                {commercial ? stockContent : attachedBatch ? (
                   <InfrastructureLivestockCard 
                     batch={attachedBatch} 
                     infrastructureId={infrastructure.id}
