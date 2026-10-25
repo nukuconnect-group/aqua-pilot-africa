@@ -1,3 +1,8 @@
+## Parcours Ventes mobile (25/10/2026)
+- [ ] Ouvrir Ventes sur Gestion des caisses sur mobile, y compris pour les utilisateurs affectés
+- [ ] Afficher les cartes et la création sans bandeau de vente, ouvrir directement la caisse et intégrer Vente IA à Multi-caisses
+- [ ] Tester les parcours et vérifier l’affichage mobile ; vérifier le compte réel si une session est disponible
+
 ## Module Ventes mobile et logo menu (25/10/2026)
 - [x] Ventes mobile : grille de raccourcis 3 colonnes, cartes de caisses complètes (unité, ouverture, caissiers affectés et connecté), noms longs non tronqués, tuile quantités du jour ; 9 tests réussis, compilation OK ; affichage compte réel non vérifié (session indisponible)
 - [x] Logo du menu mobile : fond blanc étendu à toute la section du logo, s'arrêtant à la ligne de séparation du bas sans toucher les modules ; badge membre et croix de fermeture passés en bleu marine sur blanc ; contrôle isolé à 393 px et classes de couleur vérifiées, menu connecté non ouvert (session indisponible)
