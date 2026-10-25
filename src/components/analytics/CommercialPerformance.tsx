@@ -52,10 +52,10 @@ export default function CommercialPerformance({ initialTab = 'performance', titl
     },
   });
   useEffect(() => {
-    const refresh = () => { void refetch(); };
+    const refresh = () => { if (user?.id && unitId) void refetch(); };
     window.addEventListener('aqua:data-refresh', refresh);
     return () => window.removeEventListener('aqua:data-refresh', refresh);
-  }, [refetch]);
+  }, [refetch, user?.id, unitId]);
   const convert = (amount: number, from: string) => convertCurrency(amount, from, currency);
   const metrics = data && unitId ? commercialMetrics(data.sales, data.purchases, data.items, unitId, start, end, convert) : null;
   const projection = data && unitId ? commercialForecast(data.sales, data.purchases, unitId, now, convert) : null;
