@@ -29,6 +29,8 @@ import { useFeedStocks } from '@/hooks/useFeedStocks';
 import AlertsPanel from './AlertsPanel';
 import FarmsMap from './dashboard/FarmsMap';
 import { analyzeParameter } from '@/lib/waterQualityThresholds';
+import { getAssistantUnitProfile } from '@/lib/assistantUnitProfiles';
+import { stocksForUnitType } from '@/lib/stockPurpose';
 
 interface ModernDashboardProps {
   onNavigate?: (tab: string) => void;
@@ -45,30 +47,22 @@ const KpiCard: React.FC<{
 }> = ({ label, value, hint, icon: Icon, tone = 'primary', trend }) => {
   const tones: Record<string, string> = {
     primary: 'bg-primary/10 text-primary',
-    success: 'bg-emerald-500/10 text-emerald-600',
-    warning: 'bg-amber-500/10 text-amber-600',
-    danger: 'bg-red-500/10 text-red-600',
-    info: 'bg-sky-500/10 text-sky-600',
+    success: 'bg-assistant-positive/10 text-assistant-positive',
+    warning: 'bg-dashboard-warning/10 text-dashboard-warning',
+    danger: 'bg-destructive/10 text-destructive',
+    info: 'bg-ocean-secondary/10 text-ocean-secondary',
   };
   return (
-    <Card className="relative overflow-hidden border-border/60 hover:shadow-md transition-shadow">
-      <CardContent className="p-4 sm:p-5">
+    <Card className="dashboard-kpi relative min-w-0 overflow-hidden border-border bg-card">
+      <CardContent className="flex h-full min-h-[138px] flex-col justify-between p-3 sm:p-5">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground font-medium truncate">{label}</p>
-            <p className="text-xl sm:text-2xl font-bold mt-1 tracking-tight">{value}</p>
-            {hint && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{hint}</p>}
-          </div>
-          <div className={`p-2 rounded-lg ${tones[tone]} shrink-0`}>
-            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
+          <p className="min-w-0 break-words text-xs font-semibold uppercase text-muted-foreground">{label}</p>
+          <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}><Icon className="size-5" /></div>
         </div>
-        {trend && (
-          <div className={`mt-2 inline-flex items-center gap-1 text-[11px] font-medium ${trend.positive ? 'text-emerald-600' : 'text-red-600'}`}>
-            <TrendingUp className={`w-3 h-3 ${trend.positive ? '' : 'rotate-180'}`} />
-            {trend.positive ? '+' : ''}{trend.value}% vs période préc.
-          </div>
-        )}
+        <div className="min-w-0 pt-3">
+          <p className="break-words text-[22px] font-bold leading-tight tabular-nums [overflow-wrap:anywhere] sm:text-2xl">{value}</p>
+          {hint && <p className="mt-2 break-words text-xs text-muted-foreground">{hint}</p>}
+        </div>
       </CardContent>
     </Card>
   );
@@ -80,15 +74,16 @@ const QuickAction: React.FC<{
   onClick: () => void;
   tone?: string;
 }> = ({ icon: Icon, label, onClick, tone = 'bg-primary/10 text-primary' }) => (
-  <button
+  <Button
+    variant="outline"
     onClick={onClick}
-    className="group flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 min-h-[72px] rounded-xl border border-border/60 bg-card hover:bg-accent hover:border-primary/40 transition-all text-center"
+    className="group flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 h-auto min-h-[72px] rounded-lg border border-border/60 bg-card hover:bg-accent hover:border-primary/40 transition-all text-center"
   >
     <div className={`p-1.5 rounded-lg ${tone}`}>
       <Icon className="w-4 h-4" />
     </div>
     <span className="text-[10px] sm:text-[11px] font-medium leading-tight line-clamp-2">{label}</span>
-  </button>
+  </Button>
 );
 
 const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
@@ -311,169 +306,41 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
   const unitLabel = activeUnit?.name?.toUpperCase() || 'GLOBAL';
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Bandeau de pilotage */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-brand text-white px-3 py-2.5 sm:px-5 sm:py-3 shadow-lg">
-        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/20 blur-3xl" aria-hidden />
-
-        <div className="relative flex flex-row items-center justify-between gap-3">
+    <div className="dashboard-content min-w-0 space-y-4 sm:space-y-6">
+      <section aria-label="Tableau de bord AquaPilote" className="min-w-0 rounded-lg bg-sidebar px-5 py-6 text-sidebar-foreground sm:px-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white ring-1 ring-white/30">
-              <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
-              {isConnected ? 'En direct' : 'Hors ligne'}
-            </span>
-            <h1 className="mt-1 text-base sm:text-2xl font-bold tracking-tight text-white leading-tight">Centre de pilotage</h1>
-            <p className="text-[10px] sm:text-xs text-white/80 truncate">
-              {unitLabel} · Dernier relevé : {freshnessLabel}
-            </p>
+            <Badge variant="outline" className="mb-3 border-sidebar-border bg-sidebar-accent text-sidebar-foreground">{getAssistantUnitProfile(activeUnit?.type).label}</Badge>
+            <h1 className="text-[22px] font-bold leading-tight">Tableau de bord AquaPilote</h1>
+            <p className="mt-2 break-words text-sm text-sidebar-foreground/80">{activeUnit?.name || 'Toutes les unités'}</p>
           </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Sélecteur de période façon segment Jour / Mois / Année */}
-            <div className="flex items-center rounded-full bg-white/15 p-0.5">
-              {([['7', 'Jour'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setSelectedPeriodFilter(value as any)}
-                  className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold transition-colors ${
-                    selectedPeriodFilter === value ? 'bg-white text-slate-900' : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="grid min-w-0 flex-1 grid-cols-3 gap-1 rounded-md border border-sidebar-border bg-sidebar-accent p-1 lg:min-w-64" role="group" aria-label="Période des contrôles">
+              {([['7', '7 jours'], ['30', 'Mois'], ['365', 'Année']] as const).map(([value, label]) => <Button key={value} variant="ghost" onClick={() => setSelectedPeriodFilter(value)} className={selectedPeriodFilter === value ? 'bg-background text-foreground hover:bg-background' : 'text-sidebar-foreground hover:bg-sidebar hover:text-sidebar-foreground'}>{label}</Button>)}
             </div>
-
-            {/* Petite icône pour choisir l'unité de production */}
-            <Select
-              value={activeUnit?.id || 'all'}
-              onValueChange={(v) => {
-                if (v === 'all') { setActiveUnit(null); setSelectedFarmFilter('all'); return; }
-                const u = units.find((x) => x.id === v);
-                if (u) { setActiveUnit(u); setSelectedFarmFilter(v); }
-              }}
-            >
-              <SelectTrigger
-                aria-label="Choisir l'unité de production"
-                className="h-8 w-8 p-0 justify-center rounded-full bg-white/15 border-white/25 text-white [&>svg:last-child]:hidden"
-              >
-                <Building2 className="w-4 h-4" />
-              </SelectTrigger>
-              <SelectContent align="end">
-                <SelectItem value="all">Toutes les unités</SelectItem>
-                {units.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-              </SelectContent>
+            <Select value={activeUnit?.id || 'all'} onValueChange={(v) => {
+              if (v === 'all') { setActiveUnit(null); setSelectedFarmFilter('all'); return; }
+              const u = units.find((x) => x.id === v);
+              if (u) { setActiveUnit(u); setSelectedFarmFilter(v); }
+            }}>
+              <SelectTrigger aria-label="Choisir l'unité de production" className="size-11 shrink-0 justify-center border-sidebar-border bg-sidebar-accent p-0 text-sidebar-foreground [&>svg:last-child]:hidden"><Building2 className="size-5" /></SelectTrigger>
+              <SelectContent align="end"><SelectItem value="all">Toutes les unités</SelectItem>{units.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </div>
+      </section>
+
+      <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Indicateurs de l’unité">
+        {(canViewUnits || canViewInfrastructure) && <KpiCard label={activeUnit ? 'Infrastructures' : 'Unités'} value={activeUnit ? unitInfra.length : units.length} hint={activeUnit?.name || 'Toutes les unités'} icon={Building2} tone="info" />}
+        {canViewProduction && !['commercialisation', 'conservation', 'transformation', 'fabrication_aliment'].includes(activeUnit?.type || '') ? <>
+          <KpiCard label={activeUnit?.type === 'algoculture' ? 'Cultures actives' : 'Cycles actifs'} value={activeCycles} hint={`${cycles.length} cycles enregistrés`} icon={Factory} tone="primary" />
+          <KpiCard label={activeUnit?.type === 'ecloserie' ? 'Effectifs' : 'Biomasse estimée'} value={activeUnit?.type === 'ecloserie' ? totalStock.toLocaleString('fr-FR') : `${totalBiomassKg.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg`} hint="Unité active" icon={Fish} tone="success" />
+        </> : canViewFinance && <>
+          <KpiCard label="Ventes" value={financial.confirmedSales} hint="Confirmées ou payées" icon={ShoppingCart} tone="primary" />
+          <KpiCard label="Revenus des ventes" value={formatCurrency(financial.totalSalesRevenue)} hint="Ventes enregistrées" icon={Wallet} tone="success" />
+        </>}
+        {(activeUnit?.type === 'commercialisation' ? canAccessModule('stock') : canViewAlerts || canViewFeeding) && <KpiCard label={activeUnit?.type === 'commercialisation' ? 'Articles en stock' : 'Alertes enregistrées'} value={activeUnit?.type === 'commercialisation' ? stocksForUnitType(feedStocks, activeUnit.type).filter(s => s.quantity > 0).length : criticalAlerts} hint={activeUnit?.type === 'commercialisation' ? 'Stock commercial disponible' : 'Analyses de l’unité'} icon={activeUnit?.type === 'commercialisation' ? Layers : AlertTriangle} tone="warning" />}
       </div>
-
-
-      {/* KPIs — 4 cartes principales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-        {/* Fermes */}
-        {canViewUnits && <Card className="relative overflow-hidden border-l-4 border-l-indigo-500 border-y-border/60 border-r-border/60 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-950/20 hover:shadow-md transition-shadow">
-          <CardContent className="p-2.5 sm:p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] sm:text-xs text-indigo-700 dark:text-indigo-300 font-semibold uppercase tracking-wide truncate">Fermes</p>
-                <p className="text-lg sm:text-2xl font-bold mt-0.5 tracking-tight leading-tight text-slate-900 dark:text-white">{units.length}</p>
-              </div>
-              <div className="p-1.5 sm:p-2 rounded-md bg-indigo-500 text-white shadow-sm shrink-0">
-                <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 truncate font-medium">{units.filter((u) => u.isActive).length} actives</p>
-            <div className="mt-2 grid grid-cols-1 gap-1 text-[10px]">
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-slate-500 dark:text-slate-400">Active</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-100 truncate">{activeUnit?.name || 'Globale'}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>}
-        {/* Cycles actifs */}
-        {canViewProduction && <Card className="relative overflow-hidden border-l-4 border-l-sky-500 border-y-border/60 border-r-border/60 bg-gradient-to-br from-sky-50 via-white to-sky-50/40 dark:from-sky-950/40 dark:via-slate-900 dark:to-sky-950/20 hover:shadow-md transition-shadow">
-          <CardContent className="p-2.5 sm:p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] sm:text-xs text-sky-700 dark:text-sky-300 font-semibold uppercase tracking-wide truncate">Cycles actifs</p>
-                <p className="text-lg sm:text-2xl font-bold mt-0.5 tracking-tight leading-tight text-slate-900 dark:text-white">{activeCycles}</p>
-              </div>
-              <div className="p-1.5 sm:p-2 rounded-md bg-sky-500 text-white shadow-sm shrink-0">
-                <Factory className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 truncate font-medium">{cycles.length} cycles total</p>
-            <div className="mt-2 rounded-md border border-sky-200/70 dark:border-sky-800/60 bg-white/70 dark:bg-slate-900/40 p-1.5 text-[10px]">
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-slate-500 dark:text-slate-400">Effectifs</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{totalStock.toLocaleString()}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>}
-        {/* Biomasse */}
-        {canViewProduction && <Card className="relative overflow-hidden border-l-4 border-l-emerald-500 border-y-border/60 border-r-border/60 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-950/20 hover:shadow-md transition-shadow">
-          <CardContent className="p-2.5 sm:p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] sm:text-xs text-emerald-700 dark:text-emerald-300 font-semibold uppercase tracking-wide truncate">Biomasse</p>
-                <p className="text-lg sm:text-2xl font-bold mt-0.5 tracking-tight leading-tight text-slate-900 dark:text-white">{totalBiomassKg.toFixed(1)}<span className="text-[10px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 ml-1">kg</span></p>
-              </div>
-              <div className="p-1.5 sm:p-2 rounded-md bg-emerald-500 text-white shadow-sm shrink-0">
-                <Fish className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 truncate font-medium">Estimée en cours</p>
-            <div className="mt-2 rounded-md border border-emerald-200/70 dark:border-emerald-800/60 bg-white/70 dark:bg-slate-900/40 p-1.5 text-[10px]">
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-slate-500 dark:text-slate-400">Survie</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{survivalRate}%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>}
-        {/* Alertes */}
-        {(canViewAlerts || canViewFeeding) && <Card className={`relative overflow-hidden border-l-4 border-y-border/60 border-r-border/60 hover:shadow-md transition-shadow ${criticalAlerts > 0 ? 'border-l-red-500 bg-gradient-to-br from-red-50 via-white to-red-50/40 dark:from-red-950/40 dark:via-slate-900 dark:to-red-950/20' : 'border-l-emerald-500 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-950/20'}`}>
-          <CardContent className="p-2.5 sm:p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wide truncate ${criticalAlerts > 0 ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'}`}>Alertes</p>
-                <p className="text-lg sm:text-2xl font-bold mt-0.5 tracking-tight leading-tight text-slate-900 dark:text-white">{criticalAlerts}</p>
-              </div>
-              <div className={`p-1.5 sm:p-2 rounded-md shadow-sm shrink-0 text-white ${criticalAlerts > 0 ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 truncate font-medium">24 dernières heures</p>
-            <div className={`mt-2 rounded-md border p-1.5 text-[10px] bg-white/70 dark:bg-slate-900/40 ${criticalAlerts > 0 ? 'border-red-200/70 dark:border-red-800/60' : 'border-emerald-200/70 dark:border-emerald-800/60'}`}>
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-slate-500 dark:text-slate-400">Stocks bas</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{lowFeedAlerts}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>}
-      </div>
-
-
-      {/* Quick access */}
-      {quickActions.length > 0 && <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" /> Accès rapides
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {quickActions.map((action) => (
-              <QuickAction key={action.id} icon={action.icon} label={action.label} onClick={() => go(action.id)} tone={action.tone} />
-            ))}
-          </div>
-        </CardContent>
-      </Card>}
 
       {/* Finance evolution + Donut (placés au-dessus) */}
       {canViewFinance && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -519,10 +386,10 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
           </CardHeader>
           <CardContent>
             <div className="h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
+              {financial.expenseBreakdown.length === 0 ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Aucune dépense disponible.</div> : <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={financial.expenseBreakdown.length ? financial.expenseBreakdown : [{ name: 'Aucune', value: 1, color: '#e5e7eb' }]}
+                    data={financial.expenseBreakdown}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -531,18 +398,34 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
                     outerRadius={90}
                     paddingAngle={2}
                   >
-                    {(financial.expenseBreakdown.length ? financial.expenseBreakdown : [{ name: 'Aucune', value: 1, color: '#e5e7eb' }]).map((e, i) => (
+                    {financial.expenseBreakdown.map((e, i) => (
                       <Cell key={i} fill={e.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </div>
           </CardContent>
         </Card>
       </div>}
+
+      {/* Quick access */}
+      {quickActions.length > 0 && <section className="border-y py-4">
+        <div className="mb-3">
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" /> Accès rapides
+          </h2>
+        </div>
+        <div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {quickActions.map((action) => (
+              <QuickAction key={action.id} icon={action.icon} label={action.label} onClick={() => go(action.id)} tone={action.tone} />
+            ))}
+          </div>
+        </div>
+      </section>}
 
       {/* Résumé Financier — déplacé sous l'évolution financière et la répartition des dépenses */}
       {canViewFinance && <Card className="border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-900/40">

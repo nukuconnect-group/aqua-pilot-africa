@@ -351,7 +351,7 @@ const IoTBasinOverview: React.FC = () => {
       {(infrastructures.length > 0 || isDemoMode) && basinsData.length > 0 && (
         <>
           <Tabs value={selectedBasin} onValueChange={setSelectedBasin}>
-            <div className="overflow-x-auto -mx-2 px-2">
+            <div className="min-w-0 max-w-full overflow-x-auto">
               <TabsList className="inline-flex w-auto min-w-full gap-1 mb-4">
                 <TabsTrigger value="all" className="text-xs sm:text-sm whitespace-nowrap">
                   Tous les bassins

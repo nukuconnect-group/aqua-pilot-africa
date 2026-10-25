@@ -195,7 +195,6 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
     {
       label: t('category_tools'),
       items: [
-        { id: 'aqua-assistant', label: t('aqua_assistant'), icon: MessageCircle },
         { id: 'support', label: t('customer_support'), icon: Headphones },
       ]
     },
@@ -204,6 +203,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
       items: [
         { id: 'offline', label: t('offline_mode_menu'), icon: Database },
         { id: 'settings', label: t('settings'), icon: Settings },
+        { id: 'aqua-assistant', label: 'AquaAssistant', icon: MessageCircle },
       ]
     }
   ];
@@ -263,9 +263,9 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
                         onClick={() => onTabChange(item.id)}
                         isActive={isActive}
                         tooltip={open ? undefined : item.label}
-                        className="text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/20 data-[active=true]:text-white"
+                        className={`text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-foreground ${item.id === 'aqua-assistant' ? 'mt-2 border border-sidebar-border bg-sidebar-accent' : ''}`}
                       >
-                        {item.id === 'aqua-assistant' ? <AssistantNavIcon className="h-8 w-8 group-data-[collapsible=icon]:h-5 group-data-[collapsible=icon]:w-5" /> : <Icon className="w-4 h-4 flex-shrink-0" />}
+                        {item.id === 'aqua-assistant' ? <AssistantNavIcon className="assistant-nav-motion h-9 w-9 group-data-[collapsible=icon]:h-5 group-data-[collapsible=icon]:w-5" /> : <Icon className="w-4 h-4 flex-shrink-0" />}
                         <span className="truncate">{item.id === 'aqua-assistant' ? 'AquaAssistant' : item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

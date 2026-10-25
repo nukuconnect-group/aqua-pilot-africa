@@ -118,7 +118,6 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
     {
       category: t('category_tools'),
       items: [
-        { id: 'aqua-assistant', label: t('aqua_assistant'), icon: MessageCircle },
         { id: 'support', label: t('customer_support'), icon: Headphones }
       ]
     },
@@ -127,7 +126,8 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
       category: t('category_config'),
       items: [
         { id: 'offline', label: t('offline_mode_menu'), icon: Database },
-        { id: 'settings', label: t('settings'), icon: Settings }
+        { id: 'settings', label: t('settings'), icon: Settings },
+        { id: 'aqua-assistant', label: 'AquaAssistant', icon: MessageCircle }
       ]
     }
   ];
@@ -157,7 +157,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
     <Sheet modal={false} open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="left"
-        className="p-0 m-0 left-0 top-0 h-dvh w-[62vw] max-w-[220px] flex flex-col bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-foreground [&>button]:hover:bg-white/10 [&>button]:hover:text-sidebar-foreground"
+        className="z-[10010] p-0 m-0 left-0 top-0 h-dvh w-[min(300px,85vw)] max-w-none sm:max-w-none flex flex-col text-left bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-foreground [&>button]:hover:bg-sidebar-accent"
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement | null;
           if (target?.closest('[data-mobile-menu-trigger]')) {
@@ -171,8 +171,8 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
           }
         }}
       >
-        <SheetHeader className="p-4 pb-2 border-b border-sidebar-border">
-          <SheetTitle className="text-base font-bold tracking-wider text-white">
+        <SheetHeader className="p-4 pb-2 border-b border-sidebar-border text-left">
+          <SheetTitle className="text-base font-bold text-sidebar-foreground">
             AQUAPILOTE
           </SheetTitle>
           
@@ -187,11 +187,11 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
           )}
         </SheetHeader>
         
-        <ScrollArea className="flex-1 px-3 pt-3 pb-6">
+        <ScrollArea className="min-h-0 flex-1 px-3 pt-3 pb-6">
           <div className="space-y-3">
             {filteredMenuItems.map((category) => (
               <div key={category.category}>
-                <h3 className="text-[11px] font-semibold text-white/70 mb-1.5 uppercase tracking-wide px-1">
+                <h3 className="text-[11px] font-semibold text-sidebar-foreground/70 mb-1.5 uppercase px-1">
                   {category.category}
                 </h3>
                 <div className="flex flex-col gap-0.5">
@@ -201,14 +201,14 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
                       type="button"
                       variant="ghost"
                       onClick={() => handleItemClick(item.id)}
-                      className={`w-full h-8 px-2 flex flex-row items-center gap-2 text-left rounded-md transition-colors touch-manipulation ${
+                      className={`w-full min-h-11 h-auto py-2 px-2 flex flex-row justify-start items-center gap-3 text-left rounded-md transition-colors touch-manipulation ${item.id === 'aqua-assistant' ? 'mt-2 min-h-16 border border-sidebar-border bg-sidebar-accent font-semibold' : ''} ${
                         activeTab === item.id
-                          ? 'bg-white/20 text-white'
-                          : 'text-white/90 hover:bg-white/10 hover:text-white'
+                          ? 'bg-sidebar-accent text-sidebar-foreground'
+                          : 'text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-foreground'
                       }`}
                     >
-                      {item.id === 'aqua-assistant' ? <AssistantNavIcon className="h-6 w-6" /> : <item.icon className="w-4 h-4 flex-shrink-0" />}
-                      <span className="text-sm leading-none truncate">
+                      {item.id === 'aqua-assistant' ? <AssistantNavIcon className="assistant-nav-motion h-10 w-10" /> : <item.icon className="w-4 h-4 flex-shrink-0" />}
+                      <span className="min-w-0 text-sm leading-snug whitespace-normal break-words">
                         {item.id === 'aqua-assistant' ? 'AquaAssistant' : item.label}
                       </span>
                     </Button>

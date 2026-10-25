@@ -936,7 +936,7 @@ const SalesManagement = () => {
 
       {/* Tabs pour les différentes fonctionnalités */}
       <Tabs value={salesTab} onValueChange={setSalesTab} className="space-y-3 sm:space-y-4">
-        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="min-w-0 max-w-full overflow-x-auto">
           <TabsList className="inline-flex w-max min-w-full h-auto gap-1 bg-muted rounded-lg p-1 text-foreground">
             {(([...(isTeamMember ? [] : [['registers', 'Gestion des caisses', Store]]), ['pos', 'Caisse', CreditCard], ['multi', 'Multi-caisses', Users], ['ai', 'Vente IA', Zap]]) as [string, string, typeof Store][]).map(([v, label, Icon]) => (
               <TabsTrigger key={v} value={v} className="text-sm shrink-0 gap-2 px-3 py-2 whitespace-nowrap text-foreground data-[state=active]:bg-sidebar data-[state=active]:text-sidebar-foreground">
