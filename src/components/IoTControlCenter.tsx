@@ -43,7 +43,7 @@ const IoTControlCenter = () => {
       <div className="bg-primary p-responsive rounded-lg text-primary-foreground">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-responsive">
           <div className="flex-1">
-            <h2 className="text-responsive-title font-bold mb-2">{t('iot_title')}</h2>
+            <h2 className="text-responsive-title font-bold mb-2">{commercial ? 'Centre IoT · Gestion du froid' : t('iot_title')}</h2>
             <p className="text-primary-foreground/80 text-responsive">{commercial ? activeUnit.name : t('iot_subtitle')}</p>
           </div>
           {!commercial && <div className="flex items-center gap-2 sm:gap-4 justify-end sm:justify-center">
@@ -60,11 +60,11 @@ const IoTControlCenter = () => {
           <TabsList className="inline-flex w-auto min-w-full sm:w-full gap-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               {commercial ? <Thermometer className="w-4 h-4" /> : <Waves className="w-4 h-4" />}
-              {commercial ? 'Températures des infrastructures' : t('basins_parameters')}
+              {commercial ? 'Chambres froides' : t('basins_parameters')}
             </TabsTrigger>
             <TabsTrigger value="ai-analysis" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               <Brain className="w-4 h-4" />
-              {commercial ? 'Analyse thermique' : t('ai_analysis')}
+              {commercial ? 'Analyse thermique IA' : t('ai_analysis')}
             </TabsTrigger>
             {!commercial && <TabsTrigger value="environmental" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               <Thermometer className="w-4 h-4" />
