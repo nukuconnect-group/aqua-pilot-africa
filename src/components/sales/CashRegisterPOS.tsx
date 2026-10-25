@@ -534,12 +534,13 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const todayMoves = cash.movements.filter((m) => new Date(m.created_at).toDateString() === todayKey);
   const today = summarizeSession(0, todayMoves);
   // Quantités réellement vendues aujourd'hui dans l'unité active (ventes non annulées).
-  const todayQuantities = useMemo(() => {
-    const qty = (sales as any[])
+  // Calcul direct (pas de hook) : ce code s'exécute après des retours anticipés.
+  const todayQuantities = (() => {
+    const qty = ((sales || []) as any[])
       .filter((s) => s.unitId === activeUnit?.id && s.status !== 'cancelled' && s.date && new Date(s.date).toDateString() === todayKey)
       .reduce((n, s) => n + (s.products || []).reduce((q: number, p: any) => q + (Number(p.quantity) || 0), 0), 0);
     return Math.round(qty * 100) / 100;
-  }, [sales, activeUnit?.id, todayKey]);
+  })();
   const checkDayCount = async () => {
     const diff = cashDifference(Number(dayCount) || 0, cash.expected);
     if (diff !== 0 && unitOwner !== undefined) {
