@@ -685,15 +685,16 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   return (
     <div className="space-y-3">
       <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
-      <div aria-label="Barre de caisse" className="border-y border-border bg-card px-2 py-1.5 text-foreground">
-        <div className="flex items-center gap-2">
+      <div aria-label="Barre de caisse" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground">
+        <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
+            <p className="mb-0.5 text-[11px] text-muted-foreground">Caisse · Ouverte</p>
             {cash.sessions.length > 1 ? (
               <select className="h-7 w-full rounded border border-border bg-background px-1 text-xs font-medium" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
                 {cash.sessions.map((s) => <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>)}
               </select>
-            ) : <p className="text-xs font-semibold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
-            <p className="text-[11px] leading-tight text-muted-foreground break-words">Ouverte · {cashierName || '—'}</p>
+            ) : <p className="text-sm font-semibold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
+            <p className="mt-1 text-xs leading-snug text-muted-foreground break-words">Caissier / Caissière : <span className="font-medium text-foreground">{cashierName || '—'}</span></p>
           </div>
           <div className="flex shrink-0 gap-0.5">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpsOpen(true)} aria-label="Opérations" title="Opérations de caisse"><MoreHorizontal className="h-4 w-4" /></Button>
@@ -701,12 +702,12 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
           </div>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-tight text-muted-foreground">
-          <span>Ventes <b className="font-medium text-foreground">{formatCurrency(today.sales)}</b></span>
-          <span>Tickets <b className="font-medium text-foreground">{todayMoves.filter(m => m.type === 'sale').length}</b></span>
-          <span>Qté <b className="font-medium text-foreground">{todayQuantities}</b></span>
-          <span>Solde <b className="font-medium text-foreground">{formatCurrency(cash.expected)}</b></span>
-        </div>
+        <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border pt-2 sm:grid-cols-4">
+          <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Ventes du jour</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums">{formatCurrency(today.sales)}</dd></div>
+          <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Tickets du jour</dt><dd className="text-sm font-semibold leading-snug tabular-nums">{todayMoves.filter(m => m.type === 'sale').length}</dd></div>
+          <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Quantités du jour</dt><dd className="text-sm font-semibold leading-snug tabular-nums">{todayQuantities}</dd></div>
+          <div className="min-w-0"><dt className="text-[11px] leading-snug text-muted-foreground">Solde en caisse</dt><dd className="text-sm font-semibold leading-snug break-words tabular-nums">{formatCurrency(cash.expected)}</dd></div>
+        </dl>
         {closedRegisters.length > 0 && (
           <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
             <span className="text-muted-foreground">Caisses fermées :</span>
