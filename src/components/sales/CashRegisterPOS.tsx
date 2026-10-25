@@ -574,7 +574,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     <p className="text-xs font-semibold text-muted-foreground">Caisses fermées — rouvrir avec leur solde</p>
     {closedRegisters.map((h) => (
       <div key={h.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2 text-sm">
-        <span className="min-w-0 truncate">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
+        <span className="min-w-0 break-words">{h.name} · {formatCurrency(Number(h.counted_amount) || 0)}</span>
         <div className="flex gap-1"><Button size="sm" variant="outline" disabled={busy} onClick={() => reopen(h)}><RotateCcw className="w-4 h-4 mr-1" />Rouvrir</Button>
         {isAdmin && <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
           const { error } = await (appSupabase as any).from('cash_sessions').update({ notes: 'caisse désactivée' }).eq('id', h.id);
@@ -867,7 +867,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       )}
       <fieldset disabled={busy || !!pendingPayment} className="min-w-0 space-y-3">
       <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
-        {view !== 'ai' ? (
+        {view !== 'ai' && view !== 'multi' ? (
         <Card className="rounded-2xl">
           <CardContent className="p-3 space-y-3">
             <div className="flex gap-2">
@@ -919,7 +919,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         </CardContent></Card>
         <Card className="rounded-2xl"><CardContent className="p-3 space-y-2">
           <p className="text-sm font-semibold">Vente par la voix ou par texte</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Input placeholder="Dites ou tapez : 5 kg tilapia, 2 silure à Kossi" value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuick()} />
               <Button variant="outline" onClick={startVoice} disabled={listening} aria-label="Dicter la vente"><Mic className={`w-4 h-4 ${listening ? 'text-destructive animate-pulse' : ''}`} /></Button>
               <Button variant="secondary" onClick={() => handleQuick()}><Sparkles className="w-4 h-4 mr-1" />Ajouter</Button>
