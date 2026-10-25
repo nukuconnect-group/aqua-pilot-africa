@@ -1,5 +1,6 @@
 // React core imports
 import React, { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProductionUnitsProvider } from '@/contexts/ProductionUnitsContext';
@@ -95,7 +96,9 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  const [queryClient] = React.useState(() => new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}}));
   return (
+    <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="light" storageKey="aqua-pilot-theme">
       <ErrorBoundary>
         <BrowserRouter>
@@ -116,6 +119,7 @@ const App: React.FC = () => {
         </BrowserRouter>
       </ErrorBoundary>
     </ThemeProvider>
+    </QueryClientProvider>
   );
 };
 
