@@ -1,3 +1,4 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -128,6 +129,7 @@ export const useLivestockBatches = (unitId?: string) => {
           variant: 'destructive'
         });
       }
+      return false;
     } finally {
       setLoading(false);
     }
@@ -248,7 +250,7 @@ export const useLivestockBatches = (unitId?: string) => {
 
   useManualRefresh(async () => {
     backgroundRead.current = true;
-    try { await fetchBatches(); } finally { backgroundRead.current = false; }
+    try { requireFreshRead(await fetchBatches()); } finally { backgroundRead.current = false; }
   });
 
   // Charger les données quand l'auth est prête

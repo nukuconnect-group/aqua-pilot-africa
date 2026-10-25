@@ -1,3 +1,4 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -95,6 +96,7 @@ export const useEmployees = () => {
       })));
     } catch (err) {
       console.error('Error fetching employees:', err);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ export const useEmployees = () => {
 
   useManualRefresh(async () => {
     backgroundRead.current = true;
-    try { await fetchEmployees(); } finally { backgroundRead.current = false; }
+    try { requireFreshRead(await fetchEmployees()); } finally { backgroundRead.current = false; }
   });
 
   useEffect(() => {

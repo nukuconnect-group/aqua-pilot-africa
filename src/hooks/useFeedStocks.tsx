@@ -1,3 +1,4 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/appClient';
@@ -79,13 +80,14 @@ export const useFeedStocks = (unitId?: string) => {
         description: 'Impossible de charger les stocks d\'aliments',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setLoading(false);
     }
   }, [isReady, isAuthenticated, unitId, toast]);
 
   useManualRefresh(async () => {
-    try { await fetchStocks(); } finally { }
+    requireFreshRead(await fetchStocks());
   });
 
   // Charger les données quand l'auth est prête

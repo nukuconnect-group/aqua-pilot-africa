@@ -1,5 +1,6 @@
+import { requireFreshRead } from '@/lib/manualRefresh';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/appClient';
 import { emitDataMutation, recordHookState } from '@/lib/appRecovery';
@@ -370,6 +371,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
     setCurrencyState(c);
   }, []);
   const [isLoadingUnits, setIsLoadingUnits] = useState(false);
+  const unitsLoadedFor = useRef<string | null>(null);
   
   // Initialiser avec des tableaux vides - les données démo seront ajoutées via useEffect
   const [units, setUnits] = useState<ProductionUnit[]>([]);
@@ -393,7 +395,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
     if (!user?.id) return;
     
     try {
-      setIsLoadingUnits(true);
+      if (unitsLoadedFor.current !== user.id) setIsLoadingUnits(true);
       
       // Vérifier si l'utilisateur est un membre d'équipe
       let ownerId = user.id;
@@ -428,7 +430,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         console.error('Error fetching production units:', error);
-        return;
+        return false;
       }
 
       if (data) {
@@ -453,6 +455,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
           userId: unit.user_id,
         }));
         
+        unitsLoadedFor.current = user.id;
         setUnits(convertedUnits);
         setActiveUnitState((current) => {
           if (!convertedUnits.length) return null;
@@ -463,6 +466,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       }
     } catch (err) {
       console.error('Error loading units:', err);
+      return false;
     } finally {
       setIsLoadingUnits(false);
     }
@@ -480,7 +484,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         console.error('Error fetching infrastructures:', error);
-        return;
+        return false;
       }
 
       if (data) {
@@ -498,6 +502,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       }
     } catch (err) {
       console.error('Error loading infrastructures:', err);
+      return false;
     }
   }, [user?.id]);
 
@@ -513,7 +518,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         console.error('Error fetching equipment:', error);
-        return;
+        return false;
       }
 
       if (data) {
@@ -533,6 +538,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       }
     } catch (err) {
       console.error('Error loading equipment:', err);
+      return false;
     }
   }, [user?.id]);
 
@@ -548,7 +554,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         console.error('Error fetching purchases:', error);
-        return;
+        return false;
       }
 
       if (data) {
@@ -575,6 +581,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       }
     } catch (err) {
       console.error('Error loading purchases:', err);
+      return false;
     }
   }, [user?.id]);
 
@@ -590,7 +597,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         console.error('Error fetching transactions:', error);
-        return;
+        return false;
       }
 
       if (data) {
@@ -615,6 +622,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       }
     } catch (err) {
       console.error('Error loading transactions:', err);
+      return false;
     }
   }, [user?.id]);
 
@@ -630,7 +638,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
       if (error) {
         console.error('Error fetching depreciable assets:', error);
-        return;
+        return false;
       }
 
       if (data) {
@@ -652,6 +660,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       }
     } catch (err) {
       console.error('Error loading depreciable assets:', err);
+      return false;
     }
   }, [user?.id]);
 
@@ -775,7 +784,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
 
   const refreshCoreData = useCallback(async (reason = 'manual') => {
     if (isDemoMode || !isAuthenticated || !user?.id) return;
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       fetchUnitsFromDB(),
       fetchInfrastructuresFromDB(),
       fetchEquipmentFromDB(),
@@ -783,6 +792,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
       fetchTransactionsFromDB(),
       fetchDepreciableAssetsFromDB(),
     ]);
+    if (results.some(result => result.status === 'rejected' || result.value === false)) throw new Error('Core refresh failed');
   }, [
     isDemoMode,
     isAuthenticated,
@@ -800,7 +810,7 @@ export const ProductionUnitsProvider = ({ children }: { children: ReactNode }) =
   useEffect(() => {
     const handleRefresh = (event: Event) => {
       const detail = (event as CustomEvent).detail;
-      void refreshCoreData(detail?.reason || detail?.table || 'event');
+      void refreshCoreData(detail?.reason || detail?.table || 'event').catch(error => console.error('Core refresh failed:', error));
     };
     window.addEventListener('aqua:data-refresh', handleRefresh);
     return () => window.removeEventListener('aqua:data-refresh', handleRefresh);
