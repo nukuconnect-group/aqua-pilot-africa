@@ -23,7 +23,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { resolveCashierNames } from '@/lib/cashierNames';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
-import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury, treasuryNotice } from '@/lib/posTreasury';
+import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury, treasuryNotice, readSaleAccounts } from '@/lib/posTreasury';
+import { Checkbox } from '@/components/ui/checkbox';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
 import { useProductImages } from '@/hooks/useProductImages';
 import CashSalesHistory from './CashSalesHistory';
@@ -126,6 +127,9 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const [moveAmount, setMoveAmount] = useState('');
   const [moveLabel, setMoveLabel] = useState('');
   const [registerName, setRegisterName] = useState('');
+  const [registerUnitIds, setRegisterUnitIds] = useState<string[]>([]);
+  const [registerAccountId, setRegisterAccountId] = useState('');
+  useEffect(() => { setRegisterUnitIds(activeUnit?.id ? [activeUnit.id] : []); setRegisterAccountId(''); }, [activeUnit?.id]);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferTarget, setTransferTarget] = useState('');
   const [transferPerson, setTransferPerson] = useState('');
@@ -184,8 +188,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     const request = ++noticeRequest.current;
     try {
       const list = await findUnpostedSales(activeUnit.id);
-      const { data: accs, error } = await (appSupabase as any).from('treasury_accounts').select('*').eq('unit_id', activeUnit.id);
-      if (error) throw error;
+      const accs = await readSaleAccounts(activeUnit.id);
       if (request !== noticeRequest.current) return;
       setUnposted(treasuryNotice(accs || [], list, activeUnit.id));
       setNoticeError(false);
@@ -414,7 +417,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     }
     if (!pendingPayment?.sale) {
       const regName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
-      if (!(await hasRegisterAccount(activeUnit.id, regName, payment))) {
+      if (!(await hasRegisterAccount(activeUnit.id, regName, payment, cash.sessions.find(s => s.id === sessionId)?.treasury_account_id))) {
         const bank = paymentDestination(payment) === 'bank';
         const f = bank
           ? { title: 'Aucun compte bancaire en trésorerie', description: `Pour un paiement « ${payment} », créez d’abord dans Comptabilité › Trésorerie un compte bancaire rattaché à l’unité ${activeUnit.name}. La vente n’a pas été enregistrée.` }
@@ -469,7 +472,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
     }
     try {
       const sessionName = cash.sessions.find(s => s.id === sessionId)?.name || cash.session?.name;
-      const t = await postSaleToTreasury(activeUnit.id, sale, sessionName);
+      const t = await postSaleToTreasury(activeUnit.id, sale, sessionName, sessionId, cash.sessions.find(s => s.id === sessionId)?.treasury_account_id);
       if (t.status === 'no_account') toast({ title: 'Trésorerie non alimentée', description: paymentDestination(sale.paymentMethod || payment) === 'bank' ? 'Créez dans Trésorerie un compte bancaire pour cette unité.' : 'Créez dans Trésorerie un compte « Caisse de vente » portant le nom de cette caisse.', variant: 'destructive' });
       else treasury.reload?.();
     } catch (e: any) {
@@ -602,13 +605,20 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const openingForm = <div className="space-y-3">
     <label className="text-sm text-muted-foreground">Nom de la caisse</label>
     <Input aria-label="Nom de la nouvelle caisse" value={registerName} onChange={e => setRegisterName(e.target.value)} />
+    {units.length > 1 && <fieldset className="space-y-2"><legend className="mb-2 text-sm font-medium">Unités rattachées</legend>{units.filter(u => u.userId === user?.id || (!u.userId && isAdmin)).map(u => <label key={u.id} className="flex items-center gap-2 text-sm"><Checkbox checked={registerUnitIds.includes(u.id)} onCheckedChange={checked => setRegisterUnitIds(previous => checked ? [...previous, u.id] : previous.filter(id => id !== u.id))} />{u.name}</label>)}</fieldset>}
+    <label className="block space-y-1 text-sm">Compte de trésorerie destinataire
+      <select aria-label="Compte de trésorerie destinataire" className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm" value={registerAccountId} onChange={e => setRegisterAccountId(e.target.value)}>
+        <option value="">Choisir le compte de caisse</option>{[...(treasury.accounts || []), ...(treasury.otherAccounts || [])].filter(a => a.kind === 'cash' && a.user_id === user?.id).map(a => <option key={a.id} value={a.id}>{a.name} · {units.find(u => u.id === a.unit_id)?.name}</option>)}
+      </select>
+    </label>
+    {registerUnitIds.length > 1 && <p className="text-xs text-muted-foreground">Chaque unité conserve son stock et ses opérations. Les encaissements rejoignent le même compte sélectionné. Initialisez les fonds par unité après ouverture.</p>}
     <label className="text-sm text-muted-foreground">Fond de caisse (facultatif)</label>
     <Input type="number" min="0" aria-label="Fond de caisse" value={opening} onChange={e => setOpening(e.target.value)} placeholder={carried != null ? String(carried) : '0'} />
     {carried != null && opening === '' && <p className="text-xs text-muted-foreground">Solde repris de la dernière clôture : {formatCurrency(carried)}</p>}
-    <Button className="w-full" disabled={busy || !registerName.trim() || Number(opening) < 0} onClick={async () => {
+    <Button className="w-full" disabled={busy || !registerName.trim() || Number(opening) < 0 || registerUnitIds.length === 0 || (registerUnitIds.length > 1 && (!registerAccountId || Number(opening) > 0))} onClick={async () => {
       setBusy(true);
       try {
-        const r = await cash.openSession(opening === '' ? (carried ?? 0) : Number(opening) || 0, registerName);
+        const r = await cash.openSession(registerUnitIds.length > 1 ? 0 : opening === '' ? (carried ?? 0) : Number(opening) || 0, registerName, registerUnitIds, registerAccountId);
         if (r.error) toast({ title: 'Ouverture impossible', description: r.error, variant: 'destructive' });
         else { setOpening(''); setRegisterName(''); setOpenRegister(false); toast({ title: 'Caisse ouverte' }); }
       } finally { setBusy(false); }

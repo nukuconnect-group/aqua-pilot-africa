@@ -15,6 +15,7 @@ import { useTreasury } from '@/hooks/useTreasury';
 import { accountBalance, type MovementKind } from '@/lib/treasury';
 import { CHART } from '@/lib/syscohada';
 import { formatMoney, type CurrencyCode } from '@/lib/currency';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const names: Record<MovementKind, string> = { opening: 'Fonds initiaux', receipt: 'Encaissement', payment: 'Décaissement', transfer: 'Transfert' };
 const ACCOUNT_TYPES = [
@@ -43,6 +44,8 @@ const CashFlowManager = () => {
   const { currency } = useSettings();
   const treasury = useTreasury(activeUnit?.id);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [accountUnitIds, setAccountUnitIds] = useState<string[]>([]);
+  useEffect(() => { if (accountOpen) setAccountUnitIds(activeUnit?.id ? [activeUnit.id] : []); }, [accountOpen, activeUnit?.id]);
   const [movementOpen, setMovementOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [account, setAccount] = useState({ unitId: '', name: '', type: 'caisse', kind: 'cash' as 'cash' | 'bank', code: '', opening: '', counterpart: '101', date: today() });
@@ -60,7 +63,7 @@ const CashFlowManager = () => {
     setBusy(true);
     try {
       const { type, ...rest } = account;
-      await treasury.createAccount({ ...rest, name: rest.name.trim() || ACCOUNT_TYPES.find(t => t.id === type)!.label, currency, opening: Number(account.opening || 0) });
+      await treasury.createAccount({ ...rest, unitIds: [...new Set([rest.unitId, ...accountUnitIds])], name: rest.name.trim() || ACCOUNT_TYPES.find(t => t.id === type)?.label || 'Caisse', currency, opening: Number(account.opening || 0) });
       setAccountOpen(false); toast.success(`Compte enregistré pour ${units.find(u => u.id === account.unitId)?.name || 'l’unité'}`);
       window.dispatchEvent(new CustomEvent('aquapilote:treasury-updated'));
     } catch (e: any) { toast.error(e.message); }
