@@ -20,6 +20,7 @@ export default {
 		},
 		extend: {
 			colors: {
+				'dashboard-warning': 'hsl(var(--dashboard-warning))',
 				'register-action': {
 					DEFAULT: 'hsl(var(--register-action))',
 					foreground: 'hsl(var(--register-action-foreground))',
