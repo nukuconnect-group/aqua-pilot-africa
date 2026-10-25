@@ -54,7 +54,7 @@ const ProductionReportsManagement = () => {
   const { units, activeUnit, transactions, purchases, getGlobalFinancialData, convertCurrency } = useProductionUnits();
   const isCommercial = activeUnit?.type === 'commercialisation';
   const commercial = useCommercialData(activeUnit?.id, isCommercial);
-  const { formatCurrency } = useSettings();
+  const { formatCurrency, currency } = useSettings();
   const { user } = useAuth();
 
   // Données réelles
@@ -182,7 +182,7 @@ const ProductionReportsManagement = () => {
     if (isCommercial) {
       if (!activeUnit || !commercial.data || commercial.error) throw new Error('Les données commerciales ne sont pas disponibles.');
       const range = commercialReportRange(selectedPeriod);
-      return buildCommercialReport({ id: reportId, unitId: activeUnit.id, unitName: activeUnit.name, ...range, ...commercial.data, money: formatCurrency, convert: (amount, currency) => convertCurrency(amount, currency, 'XOF') });
+      return buildCommercialReport({ id: reportId, unitId: activeUnit.id, unitName: activeUnit.name, ...range, ...commercial.data, money: formatCurrency, convert: (amount, from) => convertCurrency(amount, from, currency) });
     }
     const financialData = getGlobalFinancialData();
     const period = getPeriodLabel();
@@ -642,7 +642,7 @@ const ProductionReportsManagement = () => {
     setEditMode(false);
   };
 
-  const handleExportFromPreview = (format: string) => {
+  const handleExportFromPreview = async (format: string) => {
     if (!previewData) return;
 
     const data: ReportData = {
@@ -660,7 +660,7 @@ const ProductionReportsManagement = () => {
 
     switch (format) {
       case 'pdf':
-        exportToPDF(data, filename);
+        await exportToPDF(data, filename);
         break;
       case 'excel':
         exportToExcel(data, filename);
@@ -687,7 +687,7 @@ const ProductionReportsManagement = () => {
     toast.success(`${previewData.title} exporté en ${format.toUpperCase()}`);
   };
 
-  const handleGenerateReport = (reportId: string, format: string) => {
+  const handleGenerateReport = async (reportId: string, format: string) => {
     setIsGenerating(reportId);
 
     try {
@@ -696,7 +696,7 @@ const ProductionReportsManagement = () => {
 
       switch (format) {
         case 'pdf':
-          exportToPDF(data, filename);
+          await exportToPDF(data, filename);
           break;
         case 'excel':
           exportToExcel(data, filename);
