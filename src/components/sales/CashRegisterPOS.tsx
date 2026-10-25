@@ -685,41 +685,35 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   return (
     <div className="space-y-3">
       <Dialog open={openRegister} onOpenChange={setOpenRegister}><DialogContent><DialogHeader><DialogTitle>Ouvrir une nouvelle caisse</DialogTitle></DialogHeader>{openingForm}</DialogContent></Dialog>
-      <div className="rounded-xl bg-blue-700 text-white p-3 space-y-3 shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-semibold text-white">● Ouverte</span>
-          <div className="ml-auto flex flex-wrap gap-1">
-            {isAdmin && <CashierAssignDialog sessionId={cash.session.id} current={(cash.session as any).cashier_ids || []} onSaved={() => cash.reload()} />}
-            <Button variant="registerAction" size="sm" onClick={() => setOpsOpen(true)}><MoreHorizontal className="h-4 w-4" />Opérations</Button>
-            <Button variant="registerAction" size="sm" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)}><Lock className="h-4 w-4" />Clôturer</Button>
-            <Button variant="registerAction" size="sm" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller : protège la caisse par votre mot de passe pendant une absence"><KeyRound className="h-4 w-4" />Verrouiller</Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-          <div className="rounded-lg bg-white/15 p-2 min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-blue-100">Caisse</p>
+      <div aria-label="Barre de caisse" className="border-y border-border bg-card px-2 py-1.5 text-foreground">
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
             {cash.sessions.length > 1 ? (
-              <select className="mt-0.5 w-full h-7 rounded bg-white text-blue-900 px-1 text-sm font-semibold" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
+              <select className="h-7 w-full rounded border border-border bg-background px-1 text-xs font-medium" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
                 {cash.sessions.map((s) => <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>)}
               </select>
-            ) : <p className="font-bold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
+            ) : <p className="text-xs font-semibold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
+            <p className="text-[11px] leading-tight text-muted-foreground break-words">Ouverte · {cashierName || '—'}</p>
           </div>
-          <div className="rounded-lg bg-white/15 p-2 min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-blue-100">Caissier / Caissière</p>
-            <p className="font-bold break-words leading-tight">{cashierName || '—'}</p>
+          <div className="flex shrink-0 gap-0.5">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpsOpen(true)} aria-label="Opérations" title="Opérations de caisse"><MoreHorizontal className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busy || !!pendingPayment} onClick={() => setCloseOpen(true)} aria-label="Clôturer" title="Clôturer la caisse"><Lock className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller la caisse"><KeyRound className="h-4 w-4" /></Button>
           </div>
-          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Ventes du jour</p><p className="font-bold break-words leading-tight">{formatCurrency(today.sales)}</p></div>
-          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Tickets du jour</p><p className="font-bold break-words leading-tight">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
-          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Quantités du jour</p><p className="font-bold break-words leading-tight">{todayQuantities}</p></div>
-          <div className="rounded-lg bg-white/15 p-2 min-w-0 col-span-2 sm:col-span-1"><p className="text-[11px] uppercase tracking-wide text-blue-100">Solde en caisse</p><p className="font-bold break-words leading-tight">{formatCurrency(cash.expected)}</p></div>
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-tight text-muted-foreground">
+          <span>Ventes <b className="font-medium text-foreground">{formatCurrency(today.sales)}</b></span>
+          <span>Tickets <b className="font-medium text-foreground">{todayMoves.filter(m => m.type === 'sale').length}</b></span>
+          <span>Qté <b className="font-medium text-foreground">{todayQuantities}</b></span>
+          <span>Solde <b className="font-medium text-foreground">{formatCurrency(cash.expected)}</b></span>
         </div>
         {closedRegisters.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1 text-xs">
-            <span className="text-blue-100">Caisses fermées :</span>
+          <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
+            <span className="text-muted-foreground">Caisses fermées :</span>
             {closedRegisters.map((h) => (
-              <button key={h.id} disabled={busy} onClick={() => reopen(h)} className="rounded-full bg-white/90 px-2 py-0.5 font-medium text-blue-900 hover:bg-white" title="Rouvrir avec le solde de la dernière clôture">
+              <Button variant="link" size="sm" key={h.id} disabled={busy} onClick={() => reopen(h)} className="h-auto min-w-0 whitespace-normal p-0 text-[11px]" title="Rouvrir avec le solde de la dernière clôture">
                 {h.name} · {formatCurrency(Number(h.counted_amount) || 0)} ↺
-              </button>
+              </Button>
             ))}
           </div>
         )}
