@@ -78,6 +78,14 @@ html.large-text .text-2xl { font-size: 1.75rem; }
     overscroll-behavior: contain;
   }
   .mobile-dialog :where(.grid, .flex) > div { min-width: 0; }
+  .module-mobile-layout .mobile-action-grid > button {
+    min-width: 0;
+    height: auto;
+    min-height: 2.75rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .module-mobile-layout .mobile-action-grid > button svg { flex-shrink: 0; }
 }
 @keyframes assistant-nav-zoom { 0%, 80%, 100% { transform: scale(1); } 90% { transform: scale(1.08); } }
 .assistant-nav-motion { animation: assistant-nav-zoom 5s ease-in-out infinite; }

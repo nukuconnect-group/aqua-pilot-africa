@@ -348,7 +348,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ data, unitId, onDismiss }) =>
     <>
       {/* Badge résumé des alertes */}
       {activeAlerts.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           <Badge variant="destructive" className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
             {criticalCount} critique{criticalCount > 1 ? 's' : ''}
@@ -378,9 +378,9 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ data, unitId, onDismiss }) =>
           return (
             <Alert key={alert.id} className={getAlertColor(alert.type)}>
               <div className="flex items-start gap-3">
-                <Icon className="w-5 h-5 mt-0.5" />
-                <div className="flex-1">
-                  <AlertTitle className="flex items-center gap-2 mb-1">
+                <Icon className="w-5 h-5 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <AlertTitle className="flex flex-wrap items-center gap-2 mb-1">
                     {alert.title}
                     {alert.unitName && (
                       <Badge variant="outline" className="text-xs">
