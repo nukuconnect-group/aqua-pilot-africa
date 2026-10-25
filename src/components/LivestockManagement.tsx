@@ -294,7 +294,7 @@ const LivestockManagement = () => {
   const selectedUnit = activeUnit?.id || 'all';
   
   // Filtrer par unité active
-  const { batches: dbBatches, loading: batchesLoading, createBatch, deleteBatch, updateBatch } = useLivestockBatches(activeUnit?.id);
+  const { batches: dbBatches, loading: batchesLoading, createBatch, deleteBatch, updateBatch, refetch: refetchBatches } = useLivestockBatches(activeUnit?.id);
   
   // Charger les pêches de contrôle (health records) depuis la DB - sans filtre de cycle pour voir toutes les pêches
   const { records: healthRecords, refetch: refetchHealthRecords } = useHealthRecords(undefined, activeUnit?.id);
@@ -1493,7 +1493,7 @@ const LivestockManagement = () => {
                           </div>
                         )}
 
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mobile-action-grid mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                           <Button variant="outline" size="sm" onClick={() => setSelectedBatchPreview(batch)}>
                             <Eye className="w-3 h-3 mr-1" /> Visualiser
                           </Button>
@@ -1505,7 +1505,7 @@ const LivestockManagement = () => {
                         {/* QR Code et Code-barres pour traçabilité avancée */}
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="mt-2">
+                            <Button variant="outline" size="sm" className="mt-2 h-auto min-h-10 w-full whitespace-normal sm:w-auto">
                               <QrCode className="w-3 h-3 mr-1" />
                               Traçabilité
                             </Button>
@@ -1696,7 +1696,7 @@ const LivestockManagement = () => {
                       </div>
 
                       {/* Health Actions */}
-                      <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-dashed">
+                      <div className="mobile-action-grid grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mt-3 pt-3 border-t border-dashed">
                         {batch.status === 'healthy' && (
                           <>
                             <Button
@@ -1846,7 +1846,7 @@ const LivestockManagement = () => {
                 </div>
                 
                 {filteredHealthRecords.length > 0 && (
-                    <div className="flex gap-2">
+                    <div className="mobile-action-grid grid grid-cols-2 gap-2 sm:flex">
                       <ExportDropdown
                         options={{
                           title: 'Historique Pêche de Contrôle',
@@ -1895,14 +1895,14 @@ const LivestockManagement = () => {
                     </div>
                   )}
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="mobile-action-grid grid grid-cols-2 sm:flex gap-2">
                 <ControlFishingForm 
                   unitId={selectedUnit === 'all' ? (units[0]?.id || '') : selectedUnit}
                   onRecordCreated={refetchHealthRecords}
                 />
                 <InfrastructureMortalityForm
                   unitId={selectedUnit === 'all' ? (units[0]?.id || '') : selectedUnit}
-                  onRecorded={refetchHealthRecords}
+                  onRecorded={() => { void refetchHealthRecords(); void refetchBatches(); }}
                 />
               </div>
             </CardHeader>

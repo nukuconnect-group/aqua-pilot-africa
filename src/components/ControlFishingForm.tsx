@@ -392,7 +392,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full sm:w-auto">
+        <Button className="h-auto min-h-10 w-full whitespace-normal sm:w-auto">
           <Fish className="w-4 h-4 mr-2" />
           Pêche de contrôle
         </Button>
@@ -446,7 +446,7 @@ ${formData.notes ? `=== OBSERVATIONS ===\n${formData.notes}` : ''}
                   <span className="text-[11px] font-semibold text-muted-foreground uppercase">Détail par espèce</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {speciesCalculations.map((s) => (
-                      <div key={s.species} className="flex items-center justify-between gap-2 text-xs bg-background rounded p-2">
+                      <div key={s.species} className="flex flex-wrap items-center justify-between gap-2 text-xs bg-background rounded p-2">
                         <span className="font-medium truncate">{s.species}</span>
                         <span className="text-muted-foreground whitespace-nowrap">
                           {s.subjects} sujets · {(s.weight / 1000).toFixed(2)} kg
