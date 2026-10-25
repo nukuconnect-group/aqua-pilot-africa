@@ -158,7 +158,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
     <Sheet modal={false} open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="left"
-        className="z-[10010] p-0 m-0 left-0 top-0 h-dvh w-[min(240px,85vw)] sm:w-[min(300px,85vw)] max-w-none sm:max-w-none flex flex-col text-left bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-header-foreground [&>button]:hover:bg-sidebar-header-foreground/10"
+        className="z-[10010] p-0 m-0 left-0 top-0 h-dvh w-[min(210px,78vw)] sm:w-[min(300px,85vw)] max-w-none sm:max-w-none flex flex-col text-left bg-sidebar text-sidebar-foreground border-sidebar-border rounded-none [&>button]:text-sidebar-header-foreground [&>button]:hover:bg-sidebar-header-foreground/10"
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement | null;
           if (target?.closest('[data-mobile-menu-trigger]')) {
@@ -177,7 +177,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
             <img
               src={menuLogoAsset.url}
               alt="AquaPilote"
-              className="h-10 w-auto max-w-[190px] object-contain"
+              className="h-10 w-auto max-w-[170px] object-contain"
             />
           </SheetTitle>
 
