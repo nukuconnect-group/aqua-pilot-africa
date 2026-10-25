@@ -1,5 +1,5 @@
 
-- Only `AquaAssistantModule` mounts assistant UI; legacy stays unused. Keep one surface/store.
+- Only `AquaAssistantModule` mounts assistant UI; legacy unused; one surface/store.
 - Preserve assistant state across views; questions scroll with messages; initialize history with the exchange.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
 - One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Manual refresh awaits registered mounted readers and active queries; never reload/remount. State-hook manual reads suppress loading guards.
