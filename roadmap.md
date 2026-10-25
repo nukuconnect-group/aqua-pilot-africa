@@ -1,3 +1,9 @@
+## Analyses commerciales, assistant et amortissements (24/10/2026)
+- [x] AquaAssistant : menu latéral en écran normal, icône en fenêtre compacte ; question non envoyée conservée et affichage mobile vérifié
+- [x] Commercialisation : ventes, encaissements, créances, achats et solde réels ; prévisions et rapport générés automatiquement ; 6 tests réussis
+- [x] Infrastructures : option d’amortissement installée sur la base réelle ; essai réel annulé sans données conservées
+- [ ] Vérifier l’écran Commercialisation avec le compte connecté : session indisponible, affichage du rapport réel non confirmé
+
 ## Commercialisation et contrôle des QR (24/10/2026, 23:43 UTC)
 - [x] Compléter le QR avec nom, type et numéro enregistré s’il existe ; aucun numéro distinct dans les données contrôlées, référence persistée affichée sans invention
 - [x] Masquer Cheptel, Prophylaxie et AquaHealth IA en Commercialisation, y compris accès direct ; configuration obsolète testée

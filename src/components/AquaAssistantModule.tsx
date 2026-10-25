@@ -1,5 +1,6 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/env';
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Mic, MicOff, Volume2, Building2, ChevronDown, Globe, History, MessageSquarePlus, Trash2, X, Maximize2, Minimize2, AlertTriangle, RefreshCw, Bot } from 'lucide-react';
 import { CHAT_ERROR_LABEL } from '@/lib/chatErrors';
 import { useChatGuard } from '@/hooks/useChatGuard';
@@ -42,7 +43,7 @@ const languages: Language[] = [
   { id: 'swahili', label: 'Kiswahili', code: 'sw-KE', flag: '🇰🇪' },
 ];
 
-const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
+const AquaAssistantModule = ({ onClose, presentation = 'floating', visible = true }: { onClose?: () => void; presentation?: 'page' | 'floating'; visible?: boolean } = {}) => {
   const { units, activeUnit } = useProductionUnits();
   const { isDemoMode } = useAuth();
   const { t } = useSettings();
@@ -82,7 +83,9 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // Ordinateur : fenêtre miniature agrandissable ; téléphone : plein écran.
-  const [isFullscreen, setIsFullscreen] = useState(() => typeof window === 'undefined' || window.innerWidth < 768);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const isPage = presentation === 'page';
+  useEffect(() => { setIsFullscreen(false); }, [presentation]);
 
   // Changer d'unité ouvre une nouvelle conversation propre à cette unité (historique séparé).
   const switchUnit = async (unitId: string | null) => {
@@ -383,25 +386,25 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
 
   const chatStatus = chatError ? 'error' : isLoading ? 'streaming' : 'ready';
 
-  return (
+  const surface = (
     <section
       aria-label="AquaAssistant, assistant de gestion aquacole"
-      className={isFullscreen
+      className={isPage ? 'relative flex h-[max(460px,calc(100dvh-12rem))] w-full min-w-0 flex-col overflow-hidden bg-background' : isFullscreen
         ? 'fixed inset-0 z-[10000] flex min-h-0 flex-col overflow-hidden bg-background'
-        : 'fixed bottom-4 right-4 z-[10000] flex w-[min(440px,calc(100vw-2rem))] min-h-0 flex-col overflow-hidden rounded-xl border bg-background shadow-2xl'}
-      style={isFullscreen ? {
+        : 'fixed bottom-4 right-4 z-[10000] flex h-[min(680px,calc(100dvh-2rem))] w-[min(440px,calc(100vw-2rem))] min-h-0 flex-col overflow-hidden rounded-lg border bg-background shadow-2xl'}
+      style={!isPage && isFullscreen ? {
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       } : undefined}
     >
       <header className={isFullscreen ? "relative shrink-0 overflow-visible border-b bg-gradient-to-b from-primary/10 to-background px-3 pt-3 sm:px-5" : "relative z-10 shrink-0 overflow-visible border-b bg-gradient-to-b from-primary/10 to-background px-3 pt-2"}>
-        <div className="flex items-center justify-between gap-3 px-1 pb-3 sm:px-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-3 sm:px-0">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-primary/30">
               <Bot className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h1 className="flex items-center gap-2 text-base font-bold tracking-tight text-foreground sm:text-xl">AquaAssistant<span className="hidden min-[420px]:inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary"><span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />Données réelles</span></h1>
+              <h1 className="flex flex-wrap items-center gap-2 text-base font-bold text-foreground">AquaAssistant{isPage && <span className="text-xs font-medium text-primary">Données réelles</span>}</h1>
               <p className="truncate text-xs text-muted-foreground">{unitProfile.label} · {unitLabel}</p>
             </div>
           </div>
@@ -409,9 +412,9 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
             <Button variant="outline" size="icon" onClick={() => setShowHistory(true)} aria-label="Ouvrir l’historique" title="Historique">
               <History className="size-4" />
             </Button>
-            <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>
+            {!isPage && <Button variant="outline" size="icon" className="shrink-0" onClick={() => setIsFullscreen((value) => !value)} aria-label={isFullscreen ? 'Réduire AquaAssistant' : 'Agrandir AquaAssistant'} title={isFullscreen ? 'Réduire' : 'Agrandir'}>
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-            </Button>
+            </Button>}
             <Button variant="outline" size="icon" className="shrink-0" onClick={() => { setIsFullscreen(false); if (onClose) onClose(); else window.dispatchEvent(new CustomEvent('aquapilote:navigate', { detail: 'dashboard' })); }} aria-label="Fermer AquaAssistant" title="Fermer">
               <X className="size-4" />
             </Button>
@@ -444,9 +447,9 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
         </div>
       </header>
 
-      <div className={isFullscreen ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'flex h-[min(560px,calc(100dvh-10rem))] min-h-[320px] flex-col'}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <AssistantKpis unitId={selectedUnitId} />
-        {messages.length <= 1 && <div className="shrink-0 border-b px-4 py-3 sm:px-6">
+        {messages.length <= 1 && currentUnit?.type !== 'commercialisation' && <div className="shrink-0 border-b px-4 py-3 sm:px-6">
           <p className="text-sm text-muted-foreground">
             {latestControl
               ? `Dernier contrôle du ${new Date(`${latestControl.date}T00:00:00`).toLocaleDateString('fr-FR')} : ${measuredParameters}.`
@@ -465,7 +468,7 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
             <ConversationContent className="gap-5 p-3 sm:p-5">
               {messages.map((message, index) => <AIMessage key={`${message.role}-${index}`} from={message.role}>
                 {message.role === 'assistant' && <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Bot className="size-4 text-primary" />AquaAssistant</div>}
-                <MessageContent className={message.role === 'user' ? 'bg-primary text-primary-foreground break-words' : 'border-l-2 border-primary/50 pl-3 break-words [&_strong]:text-primary [&_strong]:tabular-nums'}>
+                <MessageContent className={message.role === 'user' ? 'bg-primary text-primary-foreground break-words [overflow-wrap:anywhere]' : 'border-l-2 border-primary/50 pl-3 break-words [overflow-wrap:anywhere] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_strong]:text-primary [&_strong]:tabular-nums'}>
                   {message.role === 'assistant' ? <MessageResponse>{message.content || ''}</MessageResponse> : <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>}
                 </MessageContent>
                 {message.role === 'assistant' && message.content && <MessageActions><MessageAction tooltip="Écouter la réponse" label="Écouter" onClick={() => speakText(message.content)}><Volume2 className="size-4" /></MessageAction></MessageActions>}
@@ -500,6 +503,8 @@ const AquaAssistantModule = ({ onClose }: { onClose?: () => void } = {}) => {
       </div></div>}
     </section>
   );
+  if (!visible) return null;
+  return isPage ? surface : createPortal(surface, document.body);
 };
 
 export default AquaAssistantModule;

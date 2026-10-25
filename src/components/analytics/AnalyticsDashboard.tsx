@@ -51,6 +51,7 @@ import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { useSales } from '@/hooks/useSales';
 import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { getUnitTerms } from '@/lib/unitContext';
+import CommercialPerformance from './CommercialPerformance';
 
 import { useSettings } from '@/contexts/SettingsContext';
 import { format, subDays, subMonths, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
@@ -132,7 +133,7 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, change, changeLabel, ic
   );
 };
 
-const AnalyticsDashboard: React.FC = () => {
+const ProductionAnalyticsDashboard: React.FC = () => {
   const { t, language } = useSettings();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '12m'>('30d');
   const [selectedUnit, setSelectedUnit] = useState<string>('all');
@@ -864,4 +865,8 @@ const AnalyticsDashboard: React.FC = () => {
   );
 };
 
+const AnalyticsDashboard = () => {
+  const { activeUnit } = useProductionUnits();
+  return activeUnit?.type === 'commercialisation' ? <CommercialPerformance /> : <ProductionAnalyticsDashboard />;
+};
 export default AnalyticsDashboard;

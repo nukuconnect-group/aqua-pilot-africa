@@ -11,6 +11,8 @@ import { useProductionUnits, Infrastructure } from '@/contexts/ProductionUnitsCo
 import { useLogs } from '@/contexts/LogsContext';
 import { useLivestockBatches } from '@/hooks/useLivestockBatches';
 import { getUnitTerms } from '@/lib/unitContext';
+import { Switch } from '@/components/ui/switch';
+import { validateInfrastructureDepreciation, InfrastructureDepreciationInput } from '@/lib/infrastructureDepreciation';
 
 interface InfrastructureFormProps {
   onSave?: (infrastructure: any) => void;
@@ -20,7 +22,7 @@ interface InfrastructureFormProps {
 }
 
 const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: InfrastructureFormProps) => {
-  const { units, addInfrastructure, updateInfrastructure, infrastructures: allInfrastructures } = useProductionUnits();
+  const { units, activeUnit, currency, addInfrastructure, updateInfrastructure, infrastructures: allInfrastructures } = useProductionUnits();
   const { addLog } = useLogs();
   const { batches } = useLivestockBatches();
   
@@ -28,6 +30,12 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
   const [customTypes, setCustomTypes] = useState<string[]>([]);
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
   const [customTypeName, setCustomTypeName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [includeDepreciation, setIncludeDepreciation] = useState(Boolean(infrastructure?.specifications?.depreciation));
+  const [depreciation, setDepreciation] = useState<InfrastructureDepreciationInput>(() => infrastructure?.specifications?.depreciation || {
+    purchasePrice: 0, purchaseDate: '', usefulLife: 5, currency, method: 'linear',
+  });
   
   const [showUnitCreation, setShowUnitCreation] = useState(false);
   const [newUnit, setNewUnit] = useState({
@@ -36,7 +44,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
     description: ''
   });
 
-  const createEmptyInfrastructure = (unitId = units[0]?.id || '') => ({
+  const createEmptyInfrastructure = (unitId = activeUnit?.id || units[0]?.id || '') => ({
     name: '',
     unitId,
     type: '',
@@ -102,7 +110,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
   const allTypes = [
     ...predefinedTypes.filter(t => t.value !== 'custom'),
     ...customTypes.map(type => ({ value: type, label: type })),
-    predefinedTypes.find(t => t.value === 'custom')!
+    { value: 'custom', label: 'Type personnalisé...' }
   ];
 
   const handleSaveCustomType = () => {
@@ -132,10 +140,20 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
   };
 
   const handleSave = async () => {
+    if (saving) return;
+    setSaveError('');
+    if (!newInfrastructure.name.trim() || !newInfrastructure.unitId || !newInfrastructure.type) {
+      setSaveError('Indiquez le nom, l’unité et le type de l’infrastructure.'); return;
+    }
+    if (includeDepreciation) {
+      const error = validateInfrastructureDepreciation(depreciation);
+      if (error) { setSaveError(error); return; }
+    }
     // Build specifications with attachedBatchId if a batch is selected
-    const specs = Object.fromEntries(
+    const specs = { ...infrastructure?.specifications, ...Object.fromEntries(
       Object.entries(newInfrastructure.specifications).filter(([_, value]) => value !== '')
-    );
+    ) };
+    if (includeDepreciation) specs.depreciation = depreciation;
     if (newInfrastructure.suggestedBatchId) {
       (specs as any).attachedBatchId = newInfrastructure.suggestedBatchId;
     }
@@ -150,6 +168,7 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
       specifications: specs,
     };
 
+    setSaving(true);
     try {
       if (infrastructure) {
         await updateInfrastructure(infrastructure.id, infrastructurePayload);
@@ -163,6 +182,8 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
 
       if (!infrastructure) {
         setNewInfrastructure(createEmptyInfrastructure());
+        setIncludeDepreciation(false);
+        setDepreciation({ purchasePrice: 0, purchaseDate: '', usefulLife: 5, currency, method: 'linear' });
       }
 
       setShowDialog(false);
@@ -170,14 +191,18 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
     } catch (e) {
       console.error('Erreur sauvegarde infrastructure:', e);
       addLog('Erreur', 'Infrastructures', 'Impossible de sauvegarder l\'infrastructure', 'error');
+      setSaveError('L’infrastructure et son amortissement n’ont pas pu être enregistrés. Vos saisies sont conservées.');
+    } finally {
+      setSaving(false);
     }
   };
 
   const formFields = (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm">Nom de l'infrastructure</Label>
+          <Label htmlFor="infrastructure-name" className="text-sm">Nom de l'infrastructure</Label>
           <Input 
+            id="infrastructure-name"
             value={newInfrastructure.name}
             onChange={(e) => setNewInfrastructure(prev => ({ ...prev, name: e.target.value }))}
             placeholder="Ex: Bassin principal A1"
@@ -231,8 +256,9 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
         )}
 
         <div>
-          <Label className="text-sm">Capacité</Label>
+          <Label htmlFor="infrastructure-capacity" className="text-sm">Capacité</Label>
           <Input 
+            id="infrastructure-capacity"
             type="number"
             value={newInfrastructure.capacity}
             onChange={(e) => setNewInfrastructure(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
@@ -377,9 +403,20 @@ const InfrastructureForm = ({ onSave, infrastructure, onClose, trigger }: Infras
           </div>
         </div>
 
-        <div className="sm:col-span-2 flex gap-2">
-          <Button onClick={handleSave} className="flex-1">
-            {infrastructure ? 'Mettre à jour' : 'Créer l\'infrastructure'}
+        <div className="sm:col-span-2 space-y-3 border-t pt-4">
+          <div className="flex items-center justify-between gap-3"><Label htmlFor="infrastructure-amortissement">Ajouter aux amortissements</Label><Switch id="infrastructure-amortissement" checked={includeDepreciation} disabled={Boolean(infrastructure?.specifications?.depreciationAssetId)} onCheckedChange={setIncludeDepreciation} /></div>
+          {includeDepreciation && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div><Label htmlFor="infra-cost">Coût d’acquisition</Label><Input id="infra-cost" type="number" min="0" step="0.01" value={depreciation.purchasePrice || ''} onChange={e=>setDepreciation(d=>({...d,purchasePrice:Number(e.target.value)}))}/></div>
+            <div><Label>Devise</Label><Select value={depreciation.currency} onValueChange={v=>setDepreciation(d=>({...d,currency:v}))}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{['XOF','EUR','USD','MAD'].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label htmlFor="infra-service-date">Date de mise en service</Label><Input id="infra-service-date" type="date" value={depreciation.purchaseDate} onChange={e=>setDepreciation(d=>({...d,purchaseDate:e.target.value}))}/></div>
+            <div><Label htmlFor="infra-life">Durée d’amortissement (années)</Label><Input id="infra-life" type="number" min="1" max="50" value={depreciation.usefulLife} onChange={e=>setDepreciation(d=>({...d,usefulLife:Number(e.target.value)}))}/></div>
+            <p className="text-sm text-muted-foreground sm:col-span-2">Méthode linéaire · {depreciation.usefulLife > 0 ? `${(100/depreciation.usefulLife).toLocaleString('fr-FR', {maximumFractionDigits:2})} % par an` : '—'}</p>
+          </div>}
+        </div>
+        {saveError && <p role="alert" className="text-sm text-destructive sm:col-span-2">{saveError}</p>}
+        <div className="sm:col-span-2 flex flex-wrap gap-2">
+          <Button onClick={handleSave} disabled={saving} className="flex-1">
+            {saving ? 'Enregistrement…' : infrastructure ? 'Mettre à jour' : 'Créer l\'infrastructure'}
           </Button>
           <Button variant="outline" onClick={() => {
             setShowDialog(false);
