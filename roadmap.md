@@ -1,3 +1,7 @@
+## Erreurs Analytique et Intelligence & Analyse (25/10/2026)
+- [ ] Reproduire et corriger les erreurs d’affichage des deux écrans existants
+- [ ] Vérifier les écrans et les tests sans modifier les données réelles
+
 ## Amélioration AquaAssistant (25/10/2026)
 - [x] Moderniser le module existant, synthèse réelle et conversation lisible, miniature conservée
 - [x] Questions et raccourcis contextuels ; alertes datées avec source/priorité/recommandation
