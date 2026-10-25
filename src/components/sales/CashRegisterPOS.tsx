@@ -802,19 +802,41 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <div className="space-y-3">
           <div className="flex items-center justify-between"><h3 className="font-semibold">Caisses de l’unité</h3>{isAdmin && <Button size="sm" onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}</div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {cash.sessions.map((s) => (
+            {cash.sessions.map((s) => {
+              const assigned = cashierNamesOf(((s as any).cashier_ids || []) as string[]);
+              return (
               <Card key={s.id} className={`rounded-xl ${s.id === cash.session?.id ? 'border-primary' : ''}`}>
                 <CardContent className="p-4 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2"><span className="font-semibold truncate">{s.name || 'Caisse'}</span><Badge>Ouverte</Badge></div>
-                  <div className="flex justify-between text-muted-foreground"><span>Ouverte le</span><span>{new Date(s.opened_at).toLocaleString('fr-FR')}</span></div>
-                  <div className="flex justify-between text-muted-foreground"><span>Caissier(s) affecté(s)</span><span>{((s as any).cashier_ids || []).length}</span></div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 font-semibold break-words leading-tight">{s.name || 'Caisse'}</span>
+                    <Badge className="shrink-0">Ouverte</Badge>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Unité</span>
+                    <span className="min-w-0 break-words sm:text-right">{activeUnit.name}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Ouverte le</span>
+                    <span className="min-w-0 break-words sm:text-right">{new Date(s.opened_at).toLocaleString('fr-FR')}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Caissier(s) affecté(s)</span>
+                    <span className="min-w-0 break-words sm:text-right">{assigned.length ? assigned.join(' · ') : '—'}</span>
+                  </div>
+                  {s.id === cash.session?.id && (
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                      <span className="shrink-0">Caissier en session</span>
+                      <span className="min-w-0 break-words font-medium text-foreground sm:text-right">{cashierName || '—'}</span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button size="sm" onClick={() => { cash.setActiveSession(s.id); onNavigate?.('checkout'); }}>Accéder à la caisse</Button>
                     {isAdmin && <CashierAssignDialog sessionId={s.id} current={(s as any).cashier_ids || []} onSaved={() => cash.reload()} />}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
           {reopenList}
           {isAdmin && <CashDiscrepancies history={cash.history} formatCurrency={formatCurrency} unitId={activeUnit.id} />}
