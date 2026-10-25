@@ -1,3 +1,8 @@
+## Transcription vocale réelle (25/10/2026)
+- [ ] Capturer une parole réelle en WAV, animer la courbe du microphone et transcrire via une fonction protégée
+- [ ] Envoyer uniquement le texte entièrement transcrit après validation, sans perdre le brouillon ni créer une autre conversation
+- [ ] Déployer et tester la transcription avec une phrase parlée ; vérifier l’écran et les erreurs
+
 ## AquaAssistant : synthèse mobile et vocal (25/10/2026)
 - [x] Compacter les indicateurs en deux colonnes sur téléphone et aligner mesures, alertes et commandes
 - [x] Adapter aussi la synthèse et le chatbot aux ordinateurs et tablettes : deux colonnes en espace réduit, quatre en espace large
