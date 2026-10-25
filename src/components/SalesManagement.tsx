@@ -883,6 +883,35 @@ const SalesManagement = () => {
             </Dialog>
       </div>
 
+      {/* Raccourcis mobiles : grille de tuiles (les onglets défilants restent sur ordinateur) */}
+      <div className="grid grid-cols-3 gap-2 sm:hidden">
+        {([
+          ...(isTeamMember ? [] : [['registers', 'Caisses', Store] as [string, string, typeof Store]]),
+          ['pos', 'Caisse', CreditCard],
+          ['multi', 'Multi-caisses', Users],
+          ['history', 'Historique', Calendar],
+          ['overview', 'Analyses', TrendingUp],
+          ['credits', 'Échéances', CreditCard],
+          ['closures', 'Clôtures', FileText],
+          ['returns', 'Annulations', Trash2],
+        ] as [string, string, typeof Store][]).map(([v, label, Icon]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setSalesTab(v)}
+            aria-pressed={salesTab === v}
+            className={`flex min-h-[64px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl border p-2 text-center text-xs font-medium transition ${
+              salesTab === v
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-card text-foreground'
+            }`}
+          >
+            <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+            <span className="leading-tight break-words">{label}</span>
+          </button>
+        ))}
+      </div>
+
       {/* KPIs */}
       {salesTab === 'overview' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
@@ -936,7 +965,7 @@ const SalesManagement = () => {
 
       {/* Tabs pour les différentes fonctionnalités */}
       <Tabs value={salesTab} onValueChange={setSalesTab} className="space-y-3 sm:space-y-4">
-        <div className="min-w-0 max-w-full overflow-x-auto">
+        <div className="hidden sm:block min-w-0 max-w-full overflow-x-auto">
           <TabsList className="inline-flex w-max min-w-full h-auto gap-1 bg-muted rounded-lg p-1 text-foreground">
             {(([...(isTeamMember ? [] : [['registers', 'Gestion des caisses', Store]]), ['pos', 'Caisse', CreditCard], ['multi', 'Multi-caisses', Users], ['ai', 'Vente IA', Zap]]) as [string, string, typeof Store][]).map(([v, label, Icon]) => (
               <TabsTrigger key={v} value={v} className="text-sm shrink-0 gap-2 px-3 py-2 whitespace-nowrap text-foreground data-[state=active]:bg-sidebar data-[state=active]:text-sidebar-foreground">
@@ -1027,7 +1056,7 @@ const SalesManagement = () => {
                     <div key={sale.id} className="border rounded-lg p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm sm:text-base truncate">{sale.clientName}</h4>
+                          <h4 className="font-semibold text-sm sm:text-base break-words">{sale.clientName}</h4>
                           <p className="text-xs sm:text-sm text-muted-foreground">
                             {new Date(sale.date).toLocaleDateString('fr-FR')} - {sale.clientContact}
                           </p>
