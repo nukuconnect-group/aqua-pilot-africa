@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Sparkles, Star, Crown, ArrowLeft, Rocket } from 'lucide-react';
 import { useCurrentSubscription, getPlanLabel } from '@/hooks/useCurrentSubscription';
 import { useToast } from '@/hooks/use-toast';
+import { SUBSCRIPTION_OFFERS, offerPrice } from '@/lib/subscriptionOffers';
 
 interface Plan {
   id: string;
@@ -17,6 +18,7 @@ interface Plan {
   icon: React.ElementType;
   highlight?: boolean;
   gradient: string;
+  regularPrice?: number;
 }
 
 const PLANS: Plan[] = [
@@ -38,53 +40,37 @@ const PLANS: Plan[] = [
   },
   {
     id: 'annual_basic',
-    name: 'Standard',
-    price: '60 000 F CFA',
+    name: SUBSCRIPTION_OFFERS[0].name,
+    price: offerPrice(SUBSCRIPTION_OFFERS[0]),
+    regularPrice: SUBSCRIPTION_OFFERS[0].regularPrice,
     duration: 'par an',
     description: 'Pour les petites & moyennes exploitations',
     icon: Star,
     gradient: 'from-emerald-500/10 to-green-500/5',
-    features: [
-      'Bassins illimités',
-      'Tous les modules principaux',
-      'Alertes IoT en temps réel',
-      'Rapports PDF & Excel',
-      'Support prioritaire',
-    ],
+    features: SUBSCRIPTION_OFFERS[0].features,
   },
   {
     id: 'annual_pro',
-    name: 'Pro',
-    price: '120 000 F CFA',
+    name: SUBSCRIPTION_OFFERS[1].name,
+    price: offerPrice(SUBSCRIPTION_OFFERS[1]),
     duration: 'par an',
     description: 'Pour les exploitations semi-industrielles',
     icon: Rocket,
     highlight: true,
     gradient: 'from-primary/15 to-blue-500/10',
-    features: [
-      'Tout le plan Standard',
-      'Assistant AquaAI illimité',
-      'Analyse IA maladies (caméra)',
-      'Multi-unités & équipe',
-      'Support téléphonique',
-    ],
+    features: SUBSCRIPTION_OFFERS[1].features,
   },
   {
     id: 'annual_enterprise',
-    name: 'Enterprise',
-    price: 'Sur devis',
-    duration: 'personnalisé',
+    name: SUBSCRIPTION_OFFERS[2].name,
+    price: offerPrice(SUBSCRIPTION_OFFERS[2]),
+    duration: 'par an',
     description: 'Pour les groupes industriels',
     icon: Crown,
     gradient: 'from-purple-500/10 to-pink-500/5',
-    features: [
-      'Tout le plan Pro',
-      'Intégrations sur mesure',
-      'Formation sur site',
-      'SLA garanti',
-      'Account manager dédié',
-    ],
+    features: SUBSCRIPTION_OFFERS[2].features,
   },
+  { id: 'custom', name: SUBSCRIPTION_OFFERS[3].name, price: offerPrice(SUBSCRIPTION_OFFERS[3]), duration: '', description: SUBSCRIPTION_OFFERS[3].description, icon: Crown, gradient: '', features: SUBSCRIPTION_OFFERS[3].features },
 ];
 
 const SubscriptionPage: React.FC = () => {
@@ -95,8 +81,8 @@ const SubscriptionPage: React.FC = () => {
   const handleChoose = (planId: string) => {
     if (planId === 'trial_discovery') return;
     toast({
-      title: 'Souscription bientôt disponible',
-      description: `Pour souscrire au plan ${planId}, contactez-nous à contact@aquapilote.com ou via le module Support.`,
+      title: planId === 'custom' ? 'Demande de devis' : 'Demande de souscription',
+      description: `Pour ${planId === 'custom' ? 'obtenir un devis' : `souscrire à ${getPlanLabel(planId)}`}, contactez-nous via le module Support.`,
     });
   };
 
@@ -131,7 +117,7 @@ const SubscriptionPage: React.FC = () => {
             return (
               <Card
                 key={p.id}
-                className={`relative overflow-hidden bg-gradient-to-br ${p.gradient} transition-all hover:shadow-lg hover:-translate-y-1 ${
+                className={`relative overflow-hidden bg-card transition-all ${
                   p.highlight ? 'border-2 border-primary shadow-md' : ''
                 } ${isCurrent ? 'ring-2 ring-emerald-500' : ''}`}
               >
@@ -154,6 +140,7 @@ const SubscriptionPage: React.FC = () => {
                   <div className="pt-2">
                     <div className="text-2xl font-bold">{p.price}</div>
                     <div className="text-xs text-muted-foreground">{p.duration}</div>
+                    {p.regularPrice && <p className="mt-1 text-xs text-muted-foreground">Promotion au lieu de <span className="line-through">{p.regularPrice.toLocaleString('fr-FR')} F CFA</span></p>}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -171,7 +158,7 @@ const SubscriptionPage: React.FC = () => {
                     disabled={isCurrent || p.id === 'trial_discovery'}
                     onClick={() => handleChoose(p.id)}
                   >
-                    {isCurrent ? 'Plan actuel' : p.id === 'trial_discovery' ? 'Gratuit' : 'Choisir ce plan'}
+                    {isCurrent ? 'Plan actuel' : p.id === 'trial_discovery' ? 'Gratuit' : p.id === 'custom' ? 'Demander un devis' : 'Choisir ce plan'}
                   </Button>
                 </CardContent>
               </Card>
