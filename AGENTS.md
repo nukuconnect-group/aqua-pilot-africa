@@ -1,9 +1,9 @@
 
 - Only `AquaAssistantModule` mounts assistant UI; legacy unused; one surface/store.
-- Preserve assistant state across views; questions scroll with messages; initialize history with the exchange.
+- Preserve assistant state across views; scroll questions with messages; initialize history with exchanges.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
 - One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Manual refresh awaits registered mounted readers and active queries; never reload/remount. State-hook manual reads suppress loading guards.
-- Dashboard KPIs are unit-scoped; local mobile menu alignment; CDN backgrounds rotate independently.
+- Dashboard KPIs are unit-scoped; align mobile menus locally; rotate CDN backgrounds independently.
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
 - Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
 - Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
