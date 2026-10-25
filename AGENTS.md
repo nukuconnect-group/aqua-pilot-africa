@@ -2,7 +2,7 @@
 - Only `AquaAssistantModule` mounts assistant UI; no legacy; one surface/store.
 - Preserve assistant state across views; scroll questions with messages; initialize history with exchanges.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
-- One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Manual refresh awaits registered mounted readers and active queries; never reload/remount. State-hook manual reads suppress loading guards.
+- One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Shared manual refresh awaits mounted readers/active queries, propagates failures; no reload/remount/loading guards.
 - Dashboard KPIs are unit-scoped; align mobile menus locally; rotate CDN backgrounds independently.
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
 - Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
@@ -48,4 +48,4 @@
 - Voice: in-memory WAV via aqua-transcribe, app-session verified; existing sender; cancel frees mic.
 - Commercial infrastructure uses same-unit commercial stocks via specifications.attachedStockId; reuse CustomEquipmentManager. ColdStorageOverview reads dated health_records by infrastructure ID, never simulated IoT; isolated readings cannot prove connectivity or excursion duration.
 
-- PWA installation uses one external store and one App prompt; browser evidence only, standalone suppresses invites without proving installation.
+- PWA installation: one early-initialized store/App prompt; browser evidence only; standalone suppresses invites without proving installation.
