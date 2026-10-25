@@ -116,7 +116,7 @@ const Header = ({ onNavigate, onOpenMobileMenu }: { onNavigate?: (tab: string) =
           )}
           <div className="min-w-0">
             <h1 className="text-primary-foreground text-sm sm:text-base lg:text-lg font-semibold whitespace-nowrap">
-              AquaPilote
+              {''}
             </h1>
             <p className="text-primary-foreground/80 text-[10px] sm:text-xs leading-tight hidden sm:block truncate">
               {t('app_subtitle')}
