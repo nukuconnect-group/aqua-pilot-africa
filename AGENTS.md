@@ -1,5 +1,5 @@
 
-- AquaAssistant UI must remain in `AquaAssistantModule`; the legacy `AquaAssistant` widget is not a second implementation. This keeps one mounted assistant surface and one persisted conversation system.
+- Only `AquaAssistantModule` mounts assistant UI; legacy `AquaAssistant` stays unused. Keep one surface and conversation store.
 - Dashboard keeps one assistant instance outside the keyed module subtree, with explicit page/floating presentation; switching entry paths preserves its conversation and input.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
 - App owns one QueryClientProvider with focus refetch disabled; account/unit keyed queries share cache without remounting forms.
@@ -44,4 +44,4 @@
 - Unit eligibility uses date-aware subscriptionAccess and unitTypeAccess: an active trial bypasses type restrictions, paid subscriptions use profiles.production_units, and expiry suspends unit screens without deleting data; preserve admin exceptions and legacy empty-list behavior. Server enforcement must target the historical application backend, not the unrelated managed database.
 - Periodic/focus refreshes (subscription, plan rules, stock lists) must not toggle loading states after the first load, because guards render a loader in place of the module and would unmount open forms; the stock add form also keeps its draft with useSessionDraft.
 
-- AquaAssistant native dictation uses useAssistantVoice and the existing message sender; live microphone analysis stops on cancellation/closure and never stores audio or creates another conversation.
+- Native dictation uses useAssistantVoice and the existing sender; cancel/close stops microphone analysis. Never store audio or create another conversation.
