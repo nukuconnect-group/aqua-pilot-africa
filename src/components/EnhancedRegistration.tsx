@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, Fish, Loader2, User as UserIcon, Mail, Phone, MapPin, Building2, KeyRound, Factory, Radio, ChevronsUpDown, Check, MailCheck, ShieldAlert, Egg, Store, Scissors, Snowflake, Leaf, Wheat, ChevronLeft, ChevronRight, Sparkles, Star, Rocket, Crown, Handshake, Layers } from 'lucide-react';
 import { SIGNUP_UNIT_OPTIONS } from '@/lib/signupUnits';
+import { SUBSCRIPTION_OFFERS, offerPrice } from '@/lib/subscriptionOffers';
 
 const UNIT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   grossissement: Fish, ecloserie: Egg, fabrication_aliment: Wheat, commercialisation: Store,
@@ -37,10 +38,7 @@ const STEPS = [
 
 const SIGNUP_PLANS = [
   { id: 'trial_discovery', name: 'Essai gratuit — 1 mois', desc: 'Accès complet pendant 30 jours, sans paiement.', price: '0 F CFA', period: '30 jours', icon: Sparkles, badge: 'Pour commencer', features: ['Tous les modules de vos unités', 'Aucune carte bancaire', 'Changement d’offre à tout moment'] },
-  { id: 'annual_basic', name: 'Semi-exploitation', desc: 'Petites et moyennes exploitations.', price: '60 000 F CFA', period: '/ an', icon: Star, features: ['Modules principaux', 'Rapports PDF et Excel', 'Support prioritaire'] },
-  { id: 'annual_pro', name: 'Semi-industriel', desc: 'Production organisée à échelle moyenne.', price: '120 000 F CFA', period: '/ an', icon: Rocket, features: ['Tout Semi-exploitation', 'Multi-unités et équipe', 'Analyse IA des maladies'] },
-  { id: 'annual_enterprise', name: 'Industriel', desc: 'Grandes productions intensives.', price: 'Sur devis', period: '', icon: Crown, features: ['Tous les modules', 'Formation sur site', 'Interlocuteur dédié'] },
-  { id: 'custom', name: 'Sur mesure', desc: 'Besoins spécifiques : contactez-nous.', price: 'Nous contacter', period: '', icon: Handshake, features: ['Modules et intégrations adaptés', 'Accompagnement personnalisé'] },
+  ...SUBSCRIPTION_OFFERS.map(p => ({ ...p, desc: p.description, price: offerPrice(p), period: p.annualPrice === null ? '' : '/ an', icon: p.id === 'annual_basic' ? Star : p.id === 'annual_pro' ? Rocket : p.id === 'annual_enterprise' ? Crown : Handshake, badge: p.regularPrice ? 'Promotion' : undefined })),
 ];
 
 interface EnhancedRegistrationProps {
@@ -619,8 +617,8 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                     {SIGNUP_PLANS.map((p) => {
                       const active = chosenPlan === p.id; const Icon = p.icon;
                       return (
-                        <button key={p.id} type="button" aria-pressed={active} onClick={() => setChosenPlan(p.id)}
-                          className={`relative flex flex-col rounded-xl border-2 p-4 text-left transition-all ${active ? 'border-primary bg-primary/5 shadow-md' : 'border-border bg-card hover:border-primary/50'} ${p.id === 'trial_discovery' ? 'sm:col-span-2' : ''}`}>
+                        <Button key={p.id} type="button" variant="outline" aria-pressed={active} onClick={() => setChosenPlan(p.id)}
+                          className={`relative h-auto items-stretch whitespace-normal flex flex-col rounded-lg border-2 p-4 text-left transition-all ${active ? 'border-primary bg-primary/5 shadow-md' : 'border-border bg-card hover:border-primary/50'} ${p.id === 'trial_discovery' ? 'sm:col-span-2' : ''}`}>
                           {p.badge && <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">{p.badge}</span>}
                           <div className="flex items-start justify-between gap-2">
                             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
@@ -629,13 +627,14 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
                           <p className="mt-3 font-semibold text-foreground">{p.name}</p>
                           <p className="text-xs text-muted-foreground">{p.desc}</p>
                           <p className="mt-2 text-lg font-bold text-foreground">{p.price}<span className="ml-1 text-xs font-normal text-muted-foreground">{p.period}</span></p>
+                          {'regularPrice' in p && p.regularPrice && <p className="text-xs text-muted-foreground">Au lieu de <span className="line-through">{p.regularPrice.toLocaleString('fr-FR')} F CFA / an</span></p>}
                           <ul className="mt-2 space-y-1">
                             {p.features.map((f) => <li key={f} className="flex items-start gap-1.5 text-xs text-muted-foreground"><Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />{f}</li>)}
                           </ul>
-                        </button>
+                        </Button>
                       );
                     })}
-                    <p className="sm:col-span-2 text-xs text-muted-foreground">Chaque compte démarre par 1 mois d’essai gratuit, sans paiement. L’offre choisie est enregistrée et pourra être activée à la fin de l’essai. Pour « Sur mesure », notre équipe vous recontacte.</p>
+                    <p className="sm:col-span-2 text-xs text-muted-foreground">Chaque compte démarre par 1 mois d’essai gratuit, sans paiement. Les offres payantes sont annuelles et leur activation nécessite le paiement. Pour « Sur devis », demandez votre prix via le Support.</p>
                   </div>
                 )}
 
