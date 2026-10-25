@@ -15,6 +15,7 @@ export interface CashSession {
   difference: number | null;
   status: 'open' | 'closed';
   cashier_ids?: string[];
+  treasury_account_id?: string | null;
 }
 
 export interface CashMovement {
@@ -99,9 +100,15 @@ export const useCashSession = (unitId?: string, ownerId?: string) => {
 
   const owner = ownerId || user?.id;
 
-  const openSession = async (openingAmount: number, name?: string) => {
+  const openSession = async (openingAmount: number, name?: string, unitIds?: string[], accountId?: string) => {
     if (!owner || !unitId) return { error: 'Aucune unité active' };
     if (!Number.isFinite(openingAmount) || openingAmount < 0) return { error: 'Fond de caisse invalide' };
+    if (unitIds && (unitIds.length > 1 || accountId)) {
+      const { error: linkedError } = await db.rpc('create_linked_cash_register', { _unit_ids: unitIds, _name: name?.trim(), _opening: openingAmount, _account_id: accountId || null });
+      if (linkedError) return { error: ['PGRST202', '42883'].includes(linkedError.code) ? 'Le rattachement multi-unités n’est pas encore activé sur le serveur. Aucune caisse créée.' : linkedError.message };
+      await load();
+      return {};
+    }
     const { data, error } = await db.from('cash_sessions')
       .insert({ user_id: owner, unit_id: unitId, opening_amount: openingAmount, name: name?.trim() || null })
       .select().single();
