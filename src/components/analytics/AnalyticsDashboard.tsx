@@ -397,7 +397,7 @@ const ProductionAnalyticsDashboard: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" onClick={() => window.location.reload()}>
+          <Button variant="outline" size="icon" aria-label="Actualiser les analyses" onClick={() => window.dispatchEvent(new Event('aqua:data-refresh'))}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
