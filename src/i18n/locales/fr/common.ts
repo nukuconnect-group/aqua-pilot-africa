@@ -2,7 +2,7 @@
 export const common = {
   // Header
   app_title: 'AQUA PILOTE',
-  app_subtitle: 'Gestion Piscicole Intelligente',
+  app_subtitle: 'Gestion aquac Intelligente',
   system_settings: 'Paramètres système',
   notifications: 'Notifications',
   profile: 'Profil',
