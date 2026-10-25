@@ -53,9 +53,9 @@ const PWAInstallPrompt = () => {
   };
   const open = isReady && delayElapsed && canInvite(status, isStandalone, dismissed, Date.now());
   return <Dialog open={open} onOpenChange={value => { if (!value) dismiss(); }}>
-    <DialogContent hideClose className="top-auto bottom-[max(1rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-md translate-y-0 gap-0 overflow-hidden rounded-lg p-0 max-h-[calc(100dvh-2rem)] overflow-y-auto sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
+    <DialogContent hideClose className="z-[10050] top-auto bottom-[max(1rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-md translate-y-0 gap-0 overflow-hidden rounded-lg p-0 max-h-[calc(100dvh-2rem)] overflow-y-auto sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
       <div className="relative">
-        <img src={engineer} alt="Ingénieure aquacole auprès de bassins piscicoles" width={1200} height={800} loading="lazy" className="h-32 w-full object-cover object-[center_40%] sm:h-48" />
+        <img src={engineer} alt="Ingénieure aquacole auprès de bassins piscicoles" width={1200} height={800} loading="lazy" className="h-32 w-full object-cover object-top sm:h-48" />
         <Button variant="secondary" size="icon" onClick={dismiss} aria-label="Fermer l’invitation" className="absolute right-2 top-2 h-11 w-11 shadow-sm"><X className="h-5 w-5" /></Button>
       </div>
       <div className="space-y-3 p-4 sm:p-6">
