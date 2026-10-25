@@ -1,3 +1,8 @@
+## AquaAssistant : synthèse mobile et vocal (25/10/2026)
+- [ ] Compacter les indicateurs en deux colonnes sur téléphone et aligner mesures, alertes et commandes
+- [ ] Ajouter une courbe du microphone, une durée, annulation et envoi explicite du texte dicté dans la conversation existante
+- [ ] Tester les commandes vocales et vérifier les dispositions mobile et ordinateur ; compte réel si session disponible
+
 ## Fond AquaAssistant encore plus sobre (25/10/2026)
 - [x] Retirer les deux voiles dégradés et l’ombre de la conversation ; entête en aplat marine très léger, réponses en carte à bordure fine
 - [x] Contrôle isolé : aucun dégradé ni image d’arrière-plan détecté dans la surface, rendu sobre et lisible ; compilation réussie
