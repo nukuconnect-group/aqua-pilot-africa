@@ -3,6 +3,31 @@ import { registerAppServiceWorker } from '../pwaRegister';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers(); });
 
+it.each([
+  'b2c5432d-e362-4fa8-8b60-f39686099c32.lovableproject.com',
+  'id-preview--b2c5432d-e362-4fa8-8b60-f39686099c32.lovable.app',
+  'preview-v2--b2c5432d-e362-4fa8-8b60-f39686099c32.lovable.app',
+  'project--b2c5432d-e362-4fa8-8b60-f39686099c32-dev.lovable.app',
+])('ne charge aucun worker PWA sur %s et préserve le worker de notifications', async (hostname) => {
+  const unregister = vi.fn();
+  const messagingUnregister = vi.fn();
+  const register = vi.fn();
+  const listeners = vi.fn();
+  const sameWindow = {};
+  vi.stubEnv('PROD', true);
+  vi.stubGlobal('window', { self: sameWindow, top: sameWindow, location: { hostname, search: '' }, addEventListener: listeners });
+  vi.stubGlobal('navigator', { serviceWorker: { register, getRegistrations: async () => [
+    { active: { scriptURL: `https://${hostname}/sw.js` }, unregister },
+    { active: { scriptURL: `https://${hostname}/firebase-messaging-sw.js` }, unregister: messagingUnregister },
+  ] } });
+  registerAppServiceWorker();
+  await Promise.resolve();
+  expect(register).not.toHaveBeenCalled();
+  expect(unregister).toHaveBeenCalledTimes(1);
+  expect(messagingUnregister).not.toHaveBeenCalled();
+  expect(listeners).not.toHaveBeenCalled();
+});
+
 it('refuse les aperçus et retire leur ancien worker sans recharger', async () => {
   const unregister = vi.fn();
   const register = vi.fn();
