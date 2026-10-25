@@ -834,7 +834,7 @@ const FeedStockManager = ({ unitId, onStockUpdate }: FeedStockManagerProps) => {
         </TabsList>
         
         <TabsContent value="stocks" className="space-y-4">
-          {!commercialOnly && <div className="inline-flex rounded-lg border border-border p-1 gap-1" role="group" aria-label="Type de stock">
+          {!commercialOnly && <div className="flex max-w-full flex-wrap rounded-lg border border-border p-1 gap-1" role="group" aria-label="Type de stock">
             {([['all', 'Tous'], ['production', 'Stock de production'], ['commercial', 'Stock commercial']] as const).map(([v, l]) => (
               <Button key={v} size="sm" variant={purposeFilter === v ? 'default' : 'ghost'} onClick={() => setPurposeFilter(v)}>
                 {l} ({v === 'all' ? stocks.length : stocks.filter(s => getStockPurpose(s) === v).length})

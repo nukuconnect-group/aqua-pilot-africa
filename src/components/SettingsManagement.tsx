@@ -744,7 +744,7 @@ const SettingsManagement = () => {
 
       {/* Tabs responsives */}
       <Tabs defaultValue="profile" className="space-y-4 w-full">
-        <div className="overflow-x-auto -mx-2 px-2">
+        <div className="min-w-0 max-w-full overflow-x-auto">
           <TabsList className="inline-flex min-w-max h-auto flex-wrap gap-1 bg-muted p-1.5 rounded-lg md:grid md:grid-cols-5 lg:grid-cols-9 md:min-w-full">
             <TabsTrigger value="profile" className="text-xs px-2.5 py-2 data-[state=active]:bg-background whitespace-nowrap">
               <User className="w-4 h-4 mr-1" />

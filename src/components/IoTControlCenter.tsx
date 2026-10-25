@@ -54,7 +54,7 @@ const IoTControlCenter = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="min-w-0 max-w-full overflow-x-auto">
           <TabsList className="inline-flex w-auto min-w-full sm:w-full gap-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 gap-1">
               <Waves className="w-4 h-4" />
