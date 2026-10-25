@@ -7,12 +7,12 @@
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
 - Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
 - Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
-- Feeding print/PDF uses printWhenReady for assets and SVG layout, never fixed delays.
+- Feeding print/PDF waits for assets/SVG via printWhenReady.
 - Render the assistant launcher through a body portal independently of module eligibility, hiding it only while the assistant overlay is actually rendered; keep the conversation permission check so layout clipping or stale open state cannot hide the launcher or bypass access rules.
 - Centralize universal AquaAssistant eligibility in core/always-open module rules and exempt only its screen from subscription expiry; keep authenticated server calls and unit data permissions unchanged.
 - URL resolution preserves explicit tab IDs; permission-group IDs never redirect siblings. Stock keeps feeding permissions.
 
-- Treasury: append-only unit movements, server account locking, balanced journals and atomic account opening.
+- Treasury: append-only unit movements, account locks, balanced journals, atomic opening.
 - Sale cancellation preserves prior status and journal entries, adds dated reversals, and atomically refunds linked POS cash.
 - Accounting, treasury and sales share the application client; deploy only to its actual backend.
 - CRM uses ContactActions to open messaging apps, never send automatically.
@@ -47,3 +47,5 @@
 
 - Voice: memory-only WAV via aqua-transcribe with app-session validation; confirm uses existing sender, cancel frees microphone.
 - Commercial infrastructure uses same-unit commercial stocks via specifications.attachedStockId; reuse CustomEquipmentManager. ColdStorageOverview reads dated health_records by infrastructure ID, never simulated IoT; isolated readings cannot prove connectivity or excursion duration.
+
+- PWA installation uses one external store and one App prompt; browser evidence only, standalone suppresses invites without proving installation.
