@@ -20,6 +20,8 @@ import BarcodeScanner from './BarcodeScanner';
 import { useFeedStocks } from '@/hooks/useFeedStocks';
 import CashierAssignDialog from './CashierAssignDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { resolveCashierNames } from '@/lib/cashierNames';
 import { deductSoldStock, findStockShortage, postSaleAtomically } from '@/lib/posStock';
 import { postSaleToTreasury, hasRegisterAccount, paymentDestination, findUnpostedSales, backfillSalesToTreasury } from '@/lib/posTreasury';
 import { buildPosCatalog, calculatePosTotal, isValidPosCart, normalizeProductSearch, type PosProduct } from '@/lib/posCatalog';
@@ -139,6 +141,28 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   }, [user?.id, metaName]);
   const [clientOpen, setClientOpen] = useState(false);
   const [clientQuery, setClientQuery] = useState('');
+  // Annuaire des caissiers : membres d'équipe + profils, pour afficher les noms complets.
+  const { teamMembers } = useTeamMembers() as any;
+  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const cashierDirectory = useMemo(() => {
+    const entries = ((teamMembers || []) as any[])
+      .filter((m) => m.user_id)
+      .map((m) => ({ id: m.user_id as string, name: (m.member_name || m.name || m.member_email || m.email || '') as string }));
+    if (user?.id && cashierName) entries.push({ id: user.id, name: cashierName });
+    for (const [id, name] of Object.entries(profileNames)) entries.push({ id, name });
+    return entries;
+  }, [teamMembers, user?.id, cashierName, profileNames]);
+  useEffect(() => {
+    const ids = [...new Set(cash.sessions.flatMap((s) => ((s as any).cashier_ids || []) as string[]))];
+    const missing = ids.filter((id) => !cashierDirectory.some((e) => e.id === id));
+    if (!missing.length) return;
+    (appSupabase as any).from('profiles').select('id, full_name').in('id', missing)
+      .then(({ data }: any) => {
+        if (data?.length) setProfileNames((prev) => ({ ...prev, ...Object.fromEntries(data.map((p: any) => [p.id, p.full_name])) }));
+      })
+      .catch(() => { /* annuaire indicatif : les identifiants restent affichés tels quels */ });
+  }, [cash.sessions, cashierDirectory]);
+  const cashierNamesOf = (ids: string[]) => resolveCashierNames(ids, cashierDirectory);
   const [unposted, setUnposted] = useState<{ count: number; amount: number; needs: ('cash' | 'bank')[] }>({ count: 0, amount: 0, needs: [] });
   const [backfilling, setBackfilling] = useState(false);
   const checkUnposted = async () => {
@@ -509,6 +533,13 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   const todayKey = new Date().toDateString();
   const todayMoves = cash.movements.filter((m) => new Date(m.created_at).toDateString() === todayKey);
   const today = summarizeSession(0, todayMoves);
+  // Quantités réellement vendues aujourd'hui dans l'unité active (ventes non annulées).
+  const todayQuantities = useMemo(() => {
+    const qty = (sales as any[])
+      .filter((s) => s.unitId === activeUnit?.id && s.status !== 'cancelled' && s.date && new Date(s.date).toDateString() === todayKey)
+      .reduce((n, s) => n + (s.products || []).reduce((q: number, p: any) => q + (Number(p.quantity) || 0), 0), 0);
+    return Math.round(qty * 100) / 100;
+  }, [sales, activeUnit?.id, todayKey]);
   const checkDayCount = async () => {
     const diff = cashDifference(Number(dayCount) || 0, cash.expected);
     if (diff !== 0 && unitOwner !== undefined) {
@@ -604,22 +635,23 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
             <Button variant="registerAction" size="sm" onClick={() => setLockAsk(true)} aria-label="Verrouiller la caisse" title="Verrouiller : protège la caisse par votre mot de passe pendant une absence"><KeyRound className="h-4 w-4" />Verrouiller</Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           <div className="rounded-lg bg-white/15 p-2 min-w-0">
             <p className="text-[11px] uppercase tracking-wide text-blue-100">Caisse</p>
             {cash.sessions.length > 1 ? (
               <select className="mt-0.5 w-full h-7 rounded bg-white text-blue-900 px-1 text-sm font-semibold" value={cash.session.id} disabled={busy || !!pendingPayment} onChange={(e) => cash.setActiveSession(e.target.value)} aria-label="Choisir la caisse">
                 {cash.sessions.map((s) => <option key={s.id} value={s.id}>{s.name || 'Caisse'}</option>)}
               </select>
-            ) : <p className="font-bold truncate">{cash.session.name || 'Caisse principale'}</p>}
+            ) : <p className="font-bold break-words leading-tight">{cash.session.name || 'Caisse principale'}</p>}
           </div>
           <div className="rounded-lg bg-white/15 p-2 min-w-0">
             <p className="text-[11px] uppercase tracking-wide text-blue-100">Caissier / Caissière</p>
-            <p className="font-bold truncate">{cashierName || '—'}</p>
+            <p className="font-bold break-words leading-tight">{cashierName || '—'}</p>
           </div>
-          <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Ventes du jour</p><p className="font-bold">{formatCurrency(today.sales)}</p></div>
-          <div className="rounded-lg bg-white/15 p-2"><p className="text-[11px] uppercase tracking-wide text-blue-100">Tickets du jour</p><p className="font-bold">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
-          <div className="rounded-lg bg-white/15 p-2 col-span-2 sm:col-span-1"><p className="text-[11px] uppercase tracking-wide text-blue-100">Solde en caisse</p><p className="font-bold">{formatCurrency(cash.expected)}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Ventes du jour</p><p className="font-bold break-words leading-tight">{formatCurrency(today.sales)}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Tickets du jour</p><p className="font-bold break-words leading-tight">{todayMoves.filter(m => m.type === 'sale').length}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0"><p className="text-[11px] uppercase tracking-wide text-blue-100">Quantités du jour</p><p className="font-bold break-words leading-tight">{todayQuantities}</p></div>
+          <div className="rounded-lg bg-white/15 p-2 min-w-0 col-span-2 sm:col-span-1"><p className="text-[11px] uppercase tracking-wide text-blue-100">Solde en caisse</p><p className="font-bold break-words leading-tight">{formatCurrency(cash.expected)}</p></div>
         </div>
         {closedRegisters.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 text-xs">
@@ -771,19 +803,41 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
         <div className="space-y-3">
           <div className="flex items-center justify-between"><h3 className="font-semibold">Caisses de l’unité</h3>{isAdmin && <Button size="sm" onClick={() => setOpenRegister(true)}><Plus className="h-4 w-4 mr-1" />Nouvelle caisse</Button>}</div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {cash.sessions.map((s) => (
+            {cash.sessions.map((s) => {
+              const assigned = cashierNamesOf(((s as any).cashier_ids || []) as string[]);
+              return (
               <Card key={s.id} className={`rounded-xl ${s.id === cash.session?.id ? 'border-primary' : ''}`}>
                 <CardContent className="p-4 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2"><span className="font-semibold truncate">{s.name || 'Caisse'}</span><Badge>Ouverte</Badge></div>
-                  <div className="flex justify-between text-muted-foreground"><span>Ouverte le</span><span>{new Date(s.opened_at).toLocaleString('fr-FR')}</span></div>
-                  <div className="flex justify-between text-muted-foreground"><span>Caissier(s) affecté(s)</span><span>{((s as any).cashier_ids || []).length}</span></div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 font-semibold break-words leading-tight">{s.name || 'Caisse'}</span>
+                    <Badge className="shrink-0">Ouverte</Badge>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Unité</span>
+                    <span className="min-w-0 break-words sm:text-right">{activeUnit.name}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Ouverte le</span>
+                    <span className="min-w-0 break-words sm:text-right">{new Date(s.opened_at).toLocaleString('fr-FR')}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                    <span className="shrink-0">Caissier(s) affecté(s)</span>
+                    <span className="min-w-0 break-words sm:text-right">{assigned.length ? assigned.join(' · ') : '—'}</span>
+                  </div>
+                  {s.id === cash.session?.id && (
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 text-muted-foreground">
+                      <span className="shrink-0">Caissier en session</span>
+                      <span className="min-w-0 break-words font-medium text-foreground sm:text-right">{cashierName || '—'}</span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button size="sm" onClick={() => { cash.setActiveSession(s.id); onNavigate?.('checkout'); }}>Accéder à la caisse</Button>
                     {isAdmin && <CashierAssignDialog sessionId={s.id} current={(s as any).cashier_ids || []} onSaved={() => cash.reload()} />}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
           {reopenList}
           {isAdmin && <CashDiscrepancies history={cash.history} formatCurrency={formatCurrency} unitId={activeUnit.id} />}

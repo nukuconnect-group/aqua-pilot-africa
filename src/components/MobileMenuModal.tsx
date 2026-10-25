@@ -1,5 +1,5 @@
 import React from 'react';
-import menuLogo from '@/assets/aquapilote-menu-logo-dark.png';
+import menuLogoAsset from '@/assets/aquapilote-menu-logo.png.asset.json';
 import AssistantNavIcon from '@/components/AssistantNavIcon';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -174,11 +174,13 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
       >
         <SheetHeader className="px-5 pt-4 pb-3 border-b border-sidebar-border text-left">
           <SheetTitle className="flex justify-start">
-            <img
-              src={menuLogo}
-              alt="AquaPilote"
-              className="h-10 w-auto"
-            />
+            <span className="inline-flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm">
+              <img
+                src={menuLogoAsset.url}
+                alt="AquaPilote"
+                className="h-9 w-auto max-w-[180px] object-contain"
+              />
+            </span>
           </SheetTitle>
           
           {/* Indicateur membre d'equipe */}
