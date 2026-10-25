@@ -180,7 +180,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" className="w-full sm:w-auto">
+        <Button variant="destructive" className="h-auto min-h-10 w-full whitespace-normal sm:w-auto">
            {isAlgae ? <TrendingDown className="w-4 h-4 mr-2" /> : <Skull className="w-4 h-4 mr-2" />}
            {isAlgae ? 'Déclarer une perte de biomasse' : 'Déclarer une mortalité'} 
         </Button>
@@ -339,7 +339,7 @@ const InfrastructureMortalityForm = ({ unitId, onRecorded }: InfrastructureMorta
             </CardContent>
           </Card>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button type="submit" variant="destructive" className="flex-1" disabled={saving}>
               {saving ? 'Enregistrement…' : 'Enregistrer la mortalité'}
             </Button>

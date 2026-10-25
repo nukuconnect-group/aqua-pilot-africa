@@ -1,9 +1,9 @@
 
 - Only `AquaAssistantModule` mounts assistant UI; no legacy; one surface/store.
-- Preserve assistant state across views; scroll questions with messages; initialize history with exchanges.
+- Preserve assistant state across views; scroll questions with messages; seed exchanges.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
 - One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Shared manual refresh awaits mounted readers/active queries, propagates failures; no reload/remount/loading guards.
-- Dashboard KPIs are unit-scoped; dashboardPeriod bounds optional financial periods with dated payroll. Align mobile menus locally; rotate CDN backgrounds independently.
+- Dashboard KPIs are unit-scoped; dashboardPeriod bounds financial periods with dated payroll. Rotate CDN backgrounds independently. Mobile wrapper/dialog hooks scope two-column tabs and local table scroll; EmptyChart shows axes without simulated data.
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
 - Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
 - Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
@@ -49,5 +49,5 @@
 - Commercial infrastructure reuses CustomEquipmentManager and same-unit stocks via specifications.attachedStockId. Shared IoTControlCenter tabs use ColdStorageOverview for dated infrastructure temperatures only; isolated readings prove neither connectivity nor excursion duration.
 
 - PWA installation: one early-initialized store/App prompt; browser evidence only; standalone suppresses invites without proving installation.
-- subscriptionOffers centralizes annual offer display; purchased subscriptions are never activated or repriced by client selection.
-- salesUnitSelection preserves accessible active choices and auto-selects only a single available unit.
+- subscriptionOffers centralizes offers; client selection never activates or reprices purchases.
+- salesUnitSelection preserves accessible choices; auto-select only a sole unit.

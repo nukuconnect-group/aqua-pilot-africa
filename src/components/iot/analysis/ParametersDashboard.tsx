@@ -28,7 +28,7 @@ export const ParametersDashboard: React.FC<ParametersDashboardProps> = ({ data, 
   return (
     <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-muted/30">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <div className="p-2 rounded-lg bg-primary/10">
               <Activity className="w-5 h-5 text-primary" />
@@ -50,8 +50,8 @@ export const ParametersDashboard: React.FC<ParametersDashboardProps> = ({ data, 
               key={key}
               className="relative p-3 rounded-xl bg-background border shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="flex items-center gap-2 mb-1">
-                <Icon className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-start gap-2 mb-1">
+                <Icon className="w-4 h-4 shrink-0 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-medium">{label}</span>
               </div>
               <div className="text-2xl font-bold text-foreground">

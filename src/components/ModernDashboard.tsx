@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyChart } from '@/components/ui/empty-chart';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -397,7 +398,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
           </CardHeader>
           <CardContent>
             <div className="h-[260px]">
-              {financial.expenseBreakdown.length === 0 ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Aucune dépense disponible.</div> : <ResponsiveContainer width="100%" height="100%">
+              {financial.expenseBreakdown.length === 0 ? <EmptyChart height={260} /> : <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={financial.expenseBreakdown}
@@ -524,7 +525,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
                 {isConnected ? 'Connecté' : 'Déconnecté'}
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
               <div className="rounded-lg border border-border/60 bg-muted/20 p-2 text-center min-h-[78px] flex flex-col justify-center">
                 <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><Thermometer className="w-3 h-3" /> Temp.</p>
                 <p className={`text-sm font-bold ${latestWater.temp > 30 || latestWater.temp < 22 ? 'text-red-600' : 'text-foreground'}`}>{latestWater.temp}°C</p>
@@ -554,13 +555,13 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ onNavigate, canAccess
               </div>
             </div>
             <div className="h-[90px] sm:h-[96px]">
-              <ResponsiveContainer width="100%" height="100%">
+              {waterChart.length === 0 ? <EmptyChart height={90} /> : <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={waterChart.slice(-7)}>
                   <Line type="monotone" dataKey="temperature" stroke="#f59e0b" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="oxygene" stroke="#06b6d4" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="ph" stroke="#8b5cf6" strokeWidth={2} dot={false} />
                 </LineChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </div>
             <p className="text-[10px] text-muted-foreground mt-1 text-center">Tendances sur 7 derniers jours</p>
           </CardContent>

@@ -102,7 +102,7 @@ export const VisionResultView: React.FC<{ result: VisionResult }> = ({ result })
           <p className="text-sm text-muted-foreground">Aucun signe de maladie identifié sur cette photo ; cela ne confirme pas l’absence de maladie.</p>
         ) : result.diseases.map((d, idx) => (
           <div key={idx} className={`p-3 border rounded-lg ${severityColor(d.severity)}`}>
-            <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="flex flex-col gap-2 mb-1 sm:flex-row sm:items-start sm:justify-between">
               <h4 className="font-semibold text-sm">{d.name}</h4>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge variant="outline">{severityLabel(d.severity)}</Badge>
@@ -281,6 +281,7 @@ const CameraAnalysis = ({ onSaved }: { onSaved?: () => void }) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">Prenez une photo nette du poisson concerné, avec ses lésions visibles, pour analyser les signes de maladie.</p>
           <div>
             <Label htmlFor="ah-species">Espèce (facultatif mais recommandé)</Label>
             <Input

@@ -128,7 +128,7 @@ const PerformanceAlertsConfig: React.FC = () => {
             {t('alerts_config_desc')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="mobile-action-grid grid grid-cols-2 gap-2 sm:flex sm:items-center">
           {criticalAlerts.length > 0 && (
             <Badge variant="destructive" className="animate-pulse">
               {criticalAlerts.length} {t('critical_alerts_badge')}
@@ -160,27 +160,27 @@ const PerformanceAlertsConfig: React.FC = () => {
         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:w-auto lg:inline-flex">
           <TabsTrigger value="fcr" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
-            <span className="hidden sm:inline">FCR</span>
+            <span>FCR</span>
           </TabsTrigger>
           <TabsTrigger value="water" className="flex items-center gap-1">
             <Droplets className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('water')}</span>
+            <span>{t('water')}</span>
           </TabsTrigger>
           <TabsTrigger value="mortality" className="flex items-center gap-1">
             <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('mortality_type')}</span>
+            <span>{t('mortality_type')}</span>
           </TabsTrigger>
           <TabsTrigger value="production" className="flex items-center gap-1">
             <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('production')}</span>
+            <span>{t('production')}</span>
           </TabsTrigger>
           <TabsTrigger value="stock" className="flex items-center gap-1">
             <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('stock')}</span>
+            <span>{t('stock')}</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-1">
             <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('notifications')}</span>
+            <span>{t('notifications')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -188,7 +188,7 @@ const PerformanceAlertsConfig: React.FC = () => {
         <TabsContent value="fcr">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Target className="h-5 w-5 text-primary" />
@@ -233,7 +233,7 @@ const PerformanceAlertsConfig: React.FC = () => {
             {/* Temperature */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Thermometer className="h-5 w-5 text-orange-500" />
@@ -306,7 +306,7 @@ const PerformanceAlertsConfig: React.FC = () => {
             {/* Oxygen */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Droplets className="h-5 w-5 text-blue-500" />
@@ -342,7 +342,7 @@ const PerformanceAlertsConfig: React.FC = () => {
             {/* pH */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Activity className="h-5 w-5 text-purple-500" />
@@ -418,7 +418,7 @@ const PerformanceAlertsConfig: React.FC = () => {
         <TabsContent value="mortality">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-red-500" />
@@ -462,7 +462,7 @@ const PerformanceAlertsConfig: React.FC = () => {
         <TabsContent value="production">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5 text-primary" />
@@ -502,7 +502,7 @@ const PerformanceAlertsConfig: React.FC = () => {
         <TabsContent value="stock">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5 text-amber-500" />
@@ -568,7 +568,7 @@ const PerformanceAlertsConfig: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <Label>Notifications par email</Label>
                   <p className="text-sm text-muted-foreground">
@@ -581,7 +581,7 @@ const PerformanceAlertsConfig: React.FC = () => {
                 />
               </div>
               <Separator />
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <Label>Notifications push</Label>
                   <p className="text-sm text-muted-foreground">

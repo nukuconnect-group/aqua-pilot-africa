@@ -84,8 +84,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, onDelete, t
           : 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900'
       } ${alert.is_acknowledged ? 'opacity-60' : ''}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3 flex-1">
           <div className={`p-2 rounded-full ${
             isCritical 
               ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400' 
@@ -108,7 +108,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, onDelete, t
             </div>
             <p className="text-sm text-muted-foreground mt-1">{alert.message}</p>
             
-            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {formatDistanceToNow(parseISO(alert.created_at), { addSuffix: true, locale: language === 'fr' ? frLocale : undefined })}
@@ -223,7 +223,7 @@ const PerformanceAlertsPanel: React.FC = () => {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Button 
             variant="outline" 
             onClick={() => refetch()}

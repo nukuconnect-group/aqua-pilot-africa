@@ -280,7 +280,7 @@ const CustomEquipmentManager = () => {
               <CardContent className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <h4 className="font-medium">{equipment.name}</h4>
                       <Badge 
                         variant={equipment.status === 'active' ? 'default' : 'secondary'}
@@ -298,7 +298,7 @@ const CustomEquipmentManager = () => {
                         {Object.entries(equipment.specifications).map(([key, value]) => (
                           <span 
                             key={key} 
-                            className="inline-block bg-gray-100 rounded px-2 py-1 text-xs"
+                            className="inline-block max-w-full break-words bg-muted rounded px-2 py-1 text-xs"
                           >
                             {key}: {value}
                           </span>

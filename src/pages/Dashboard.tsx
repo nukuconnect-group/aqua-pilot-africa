@@ -382,7 +382,7 @@ const Dashboard: React.FC = () => {
               if (touch && start && shouldPullRefresh(touch.clientY - start.y, touch.clientX - start.x, start.atTop)) void refresh();
             }}
             onTouchCancel={() => { pullStart.current = null; }}
-            className="flex-1 overflow-y-auto px-2 sm:p-4 lg:p-6 pt-[3.75rem] sm:pt-[5rem] md:pt-2"
+            className="min-w-0 flex-1 overflow-y-auto px-2 sm:p-4 lg:p-6 pt-[3.75rem] sm:pt-[5rem] md:pt-2"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)' }}
           >
             <div className="w-full max-w-none pb-6 md:pb-0">
@@ -407,7 +407,7 @@ const Dashboard: React.FC = () => {
                       setModuleResetKey((key) => key + 1);
                     }}
                   >
-                    <div key={`realtime-recovery-v2-${activeTab}-${moduleResetKey}`} className="w-full" data-module-content={activeTab}>
+                    <div key={`realtime-recovery-v2-${activeTab}-${moduleResetKey}`} className="module-mobile-layout min-w-0 w-full max-w-full" data-module-content={activeTab}>
                       {renderContent()}
                     </div>
                   </ModuleErrorBoundary>

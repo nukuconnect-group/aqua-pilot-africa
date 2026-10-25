@@ -69,7 +69,7 @@ const MqttConfiguration = () => {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base sm:text-2xl">
           <div className="flex items-center space-x-2">
             <Wifi className="w-5 h-5 text-blue-600" />
             <span>Connexion IoT</span>
@@ -80,13 +80,13 @@ const MqttConfiguration = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-medium">Broker MQTT</p>
-            <p className="text-sm text-gray-600">{config.brokerUrl}:{config.port}</p>
+            <p className="break-all text-sm text-muted-foreground">{config.brokerUrl}:{config.port}</p>
           </div>
           
-          <div className="flex space-x-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             <Dialog open={showConfig} onOpenChange={setShowConfig}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -99,7 +99,7 @@ const MqttConfiguration = () => {
                   <DialogTitle>Configuration MQTT</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="broker">Broker URL</Label>
                       <Input
@@ -120,7 +120,7 @@ const MqttConfiguration = () => {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="username">Utilisateur</Label>
                       <Input
@@ -145,7 +145,7 @@ const MqttConfiguration = () => {
                     <div className="space-y-2 mt-2">
                       {config.topics.map((topic, index) => (
                         <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-sm font-mono">{topic}</span>
+                          <span className="min-w-0 break-all text-sm font-mono">{topic}</span>
                           <Button
                             size="sm"
                             variant="ghost"

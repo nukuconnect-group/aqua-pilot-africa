@@ -63,12 +63,14 @@ const BatchHealthActions: React.FC<BatchHealthActionsProps> = ({ batch, onStatus
       });
       setShowDiseaseDialog(false);
       setNotes('');
+      return true;
     } catch (error) {
       toast({
         title: t('error'),
         description: t('disease_declaration_error'),
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +116,7 @@ const BatchHealthActions: React.FC<BatchHealthActionsProps> = ({ batch, onStatus
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="mobile-action-grid grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
       {/* Current Status */}
       {getStatusBadge()}
       
@@ -240,7 +242,7 @@ const BatchHealthActions: React.FC<BatchHealthActionsProps> = ({ batch, onStatus
             </div>
           </div>
 
-          <DialogFooter className="flex gap-2">
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
             <Button variant="outline" onClick={() => setShowQuarantineDialog(false)}>
               {t('cancel')}
             </Button>
@@ -315,8 +317,8 @@ const BatchHealthActions: React.FC<BatchHealthActionsProps> = ({ batch, onStatus
             </Button>
             <Button
               variant="default"
-              onClick={() => {
-                handleDeclareSick().then(() => goToProphylaxis());
+              onClick={async () => {
+                if (await handleDeclareSick()) goToProphylaxis();
               }}
               disabled={isSubmitting}
             >

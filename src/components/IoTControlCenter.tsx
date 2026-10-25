@@ -105,7 +105,7 @@ const IoTControlCenter = () => {
             <CardContent>
               <div className="space-y-4">
                 {automationRules.map(rule => (
-                  <div key={rule.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div key={rule.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg">
                     <div>
                       <h4 className="font-medium">{rule.name}</h4>
                       <p className="text-sm text-gray-600">{rule.conditions}</p>

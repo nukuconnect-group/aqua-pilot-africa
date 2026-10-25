@@ -137,7 +137,7 @@ const EnvironmentalDashboard = () => {
     <div className="space-y-6">
       {/* En-tête */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 p-6 rounded-xl text-white">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-bold mb-2">Surveillance Environnementale</h2>
             <p className="text-emerald-100">Unité: {activeUnit.name}</p>
@@ -198,7 +198,7 @@ const EnvironmentalDashboard = () => {
                   <Alert key={alert.id} className={`border-red-200 ${alert.status === 'critical' ? 'bg-red-100' : 'bg-yellow-100'}`}>
                     {getSensorIcon(alert.sensorType)}
                     <AlertDescription className="ml-2">
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex-1">
                           <div className="font-medium text-red-800">
                             {basin?.name} - {getSensorLabel(alert.sensorType)}
@@ -232,7 +232,7 @@ const EnvironmentalDashboard = () => {
 
       {/* Monitoring par bassin */}
       <Tabs defaultValue={unitBasins[0]?.id || ''} className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <TabsList className="grid w-full grid-cols-auto gap-1" style={{ gridTemplateColumns: `repeat(${unitBasins.length}, 1fr)` }}>
             {unitBasins.map(basin => (
               <TabsTrigger key={basin.id} value={basin.id} className="text-xs">
@@ -286,7 +286,7 @@ const EnvironmentalDashboard = () => {
                 return (
                   <Card key={sensorType} className={latestReading ? getStatusColor(latestReading.status) : 'border-gray-200'}>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-start gap-2 mb-2">
                         {getSensorIcon(sensorType)}
                         <span className="text-xs font-medium">
                           {getSensorLabel(sensorType)}
