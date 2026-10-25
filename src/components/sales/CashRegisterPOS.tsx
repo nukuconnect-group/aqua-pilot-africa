@@ -187,7 +187,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
       setNoticeError(false);
     } catch { if (request === noticeRequest.current) { setNoticeError(true); setUnposted({ count: 0, amount: 0, needs: [] }); } }
   };
-  useEffect(() => { setUnposted({ count: 0, amount: 0, needs: [] }); checkUnposted(); return () => { noticeRequest.current++; }; }, [activeUnit?.id, sales, treasury.accounts]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setUnposted({ count: 0, amount: 0, needs: [] }); checkUnposted(); return () => { noticeRequest.current++; }; }, [activeUnit?.id, sales.length, cash.movements.length, treasury.loading]); // eslint-disable-line react-hooks/exhaustive-deps
   // Réactualise le bandeau dès qu'un compte est créé/rattaché en Trésorerie ou au retour sur l'onglet.
   useEffect(() => {
     const refresh = () => { checkUnposted(); };
