@@ -1,4 +1,6 @@
 # Ajustements Ventes et abonnements
+## Sauvegarde dans Paramètres
+- [ ] Réutiliser Sauvegarde pour télécharger les données d’une unité accessible, avec pagination et refus des exports incomplets ; consulter un fichier sans réinsérer aveuglément les historiques.
 ## Erreur du tableau de bord
 - [x] Écran blanc revérifié à 393 × 604 : le chargement actuel React rend correctement un composant avec `useState` dans le navigateur ; aucun worker PWA enregistré ni contrôleur actif. Tests supplémentaires couvrant le domaine exact de l’erreur et les aperçus, sans retirer les workers de notifications. Aucun changement du code métier ni redémarrage : le chargement frais ne reproduit pas l’erreur des anciennes versions.
 - [x] Identifier l’erreur `useState` du 25 octobre : les traces de l’aperçu mélangent deux versions des modules React (`2225e7be` et `7516dd16`) ; aucune modification des calculs ou de l’authentification. Huit tests tableau de bord/installation/hors ligne réussis. À l’ouverture fraîche, aucun worker ni erreur JavaScript, mais redirection vers Connexion.
