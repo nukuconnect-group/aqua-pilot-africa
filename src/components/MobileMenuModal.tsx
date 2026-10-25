@@ -172,7 +172,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
           }
         }}
       >
-        <SheetHeader className="p-4 pb-2 border-b border-sidebar-border text-left">
+        <SheetHeader className="px-5 pt-4 pb-3 border-b border-sidebar-border text-left">
           <SheetTitle className="flex justify-start">
             <img
               src={menuLogo}
