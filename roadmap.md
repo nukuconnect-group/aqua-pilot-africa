@@ -1,3 +1,9 @@
+## Tableau de bord et IoT commercial (25/10/2026)
+- [ ] Réduire les icônes ordinateur et placer les accès rapides avant les graphiques sur ordinateur
+- [ ] Compacter le sélecteur mobile et appliquer réellement les périodes aux données financières
+- [ ] Conserver la présentation habituelle IoT pour Commercialisation, uniquement températures réelles
+- [ ] Vérifier périodes, affichage mobile/ordinateur et signaler les limites du parcours connecté
+
 ## Actualisation, installation et emails (25/10/2026)
 - [x] Actualisation partagée bouton/tirage, requêtes actives avec erreurs remontées ; lectures des hooks refusées signalées ; chargement initial des unités uniquement ; fournisseur ajouté ; geste ignore les listes déjà défilées
 - [x] 23 tests réussis dont nouvelle lecture du stock par unité, quantité actualisée, saisie et écran conservés, refus serveur remonté ; contrôles bouton/tirage à 360/393/768/1280 px en mode isolé
