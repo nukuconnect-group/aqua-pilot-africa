@@ -60,7 +60,7 @@ export function useAssistantVoice(language: string) {
         const samples = new Float32Array(event.inputBuffer.getChannelData(0));
         for (const sample of samples) energy.current = Math.max(energy.current, Math.abs(sample));
         chunks.current.push(samples); chunkSamples.current += samples.length;
-        // Five-minute segments stay comfortably below the verified 25 MB limit even at 96 kHz.
+        // One-minute segments stay below the verified 25 MB upload limit.
         if (chunkSamples.current >= audio.sampleRate * 60) {
           segments.current.push(chunks.current); chunks.current = []; chunkSamples.current = 0;
         }
