@@ -3,7 +3,7 @@
 - Preserve assistant state across views; questions scroll with messages; initialize history with the exchange.
 - AssistantOverview reads existing unit-scoped sources without creating alerts/default thresholds; aqua-assistant verifies the historical app session and builds read-only context from accessible unit IDs, distinguishing absent data and recorded measurements from estimates.
 - One QueryClientProvider, no focus refetch; account/unit cache preserves forms. Manual refresh awaits registered mounted readers and active queries; never reload/remount. State-hook manual reads suppress loading guards.
-- Dashboard KPIs are unit-scoped; mobile menu alignment is local. Backgrounds use uploaded CDN pointers and isolated rotation state.
+- Dashboard KPIs are unit-scoped; local mobile menu alignment; CDN backgrounds rotate independently.
 - CommercialPerformance and ReportsManagement share account/unit data via useCommercialData; commercialReports adapts the shared reports layout and exports. CommercialCharts renders plots; analyticsDateRange/analyticsValues validate dates/numbers; forecasts use complete months.
 - Infrastructure depreciation uses the existing specifications configuration and depreciationAssetId, synchronized atomically by the invoker trigger in docs/sql/infrastructure_depreciation.sql on the historical app backend; unchanged configuration must not overwrite accounting edits.
 - Infrastructure QR generation is centralized in infrastructureQr: persisted unit/infrastructure IDs remain stable, current name/type and saved specifications.number enrich the payload; never invent a number or expose other specifications. Cycle IDs resolve uniquely within the same unit so cards and exports share one identity without schema changes.
@@ -45,7 +45,7 @@
 - Unit eligibility uses date-aware subscriptionAccess and unitTypeAccess: an active trial bypasses type restrictions, paid subscriptions use profiles.production_units, and expiry suspends unit screens without deleting data; preserve admin exceptions and legacy empty-list behavior. Server enforcement must target the historical application backend, not the unrelated managed database.
 - Periodic/focus refreshes (subscription, plan rules, stock lists) must not toggle loading states after the first load, because guards render a loader in place of the module and would unmount open forms; the stock add form also keeps its draft with useSessionDraft.
 
-- Voice: memory-only WAV via aqua-transcribe with app-session validation; confirm uses existing sender, cancel frees microphone.
+- Voice: in-memory WAV via aqua-transcribe, app-session verified; existing sender; cancel frees mic.
 - Commercial infrastructure uses same-unit commercial stocks via specifications.attachedStockId; reuse CustomEquipmentManager. ColdStorageOverview reads dated health_records by infrastructure ID, never simulated IoT; isolated readings cannot prove connectivity or excursion duration.
 
 - PWA installation uses one external store and one App prompt; browser evidence only, standalone suppresses invites without proving installation.
