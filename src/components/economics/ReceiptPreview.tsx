@@ -207,7 +207,7 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                     onError={(e) => {
                       const img = e.currentTarget;
                       if (img.crossOrigin) {
-                        img.crossOrigin = '';
+                        img.removeAttribute('crossorigin');
                         img.src = displayCompanyLogo + (displayCompanyLogo.includes('?') ? '&' : '?') + 't=' + Date.now();
                         return;
                       }
