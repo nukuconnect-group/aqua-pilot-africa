@@ -122,9 +122,20 @@ const SubscriptionsPanel: React.FC<SubscriptionsPanelProps> = ({ users }) => {
       notes: form.notes || null,
       created_by: currentUser?.id ?? null,
     });
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+    // Unlock the account and its profile together with the new subscription.
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ is_suspended: false, suspension_reason: null, suspended_at: null, is_activated: true })
+      .eq('id', form.userId);
+    setSaving(false);
+    if (profileError) {
+      toast({ title: 'Abonnement attribué, compte non débloqué', description: profileError.message, variant: 'destructive' });
+      load();
       return;
     }
     toast({ title: 'Abonnement attribué', description: 'Le client a été abonné avec succès.' });
