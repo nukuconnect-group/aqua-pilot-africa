@@ -1,4 +1,8 @@
 # Ajustements Ventes et abonnements
+## Transfert GitHub vers le dépôt principal
+- [x] Source confirmée par l’utilisateur : nukuconnect-group/aqua-pilot-africa ; destination : nukuconnect-group/app.aquapilote. Inventaires GitHub comparés sans changement de code ni de données.
+- [ ] Sauvegarder la version principale, préparer le remplacement sur une branche séparée et préserver les réglages de connexion et Cloudflare ; validation du plan en attente.
+- [ ] Vérifier les fichiers transférés, les tests et le déploiement avant intégration ; liaison Git Lovable et configuration Cloudflare hébergée non vérifiables depuis les inventaires GitHub.
 ## Sauvegarde dans Paramètres
 - [x] Sauvegarde existante adaptée au téléchargement par unité accessible (21 catégories), pagination et refus des exports incomplets ; consultation JSON sans réinsérer les historiques. Export rapide de Paramètres également limité à l’unité active. Tests d’isolation et de pagination réussis.
 - [ ] Valider le téléchargement réel depuis Paramètres avec une session de la base historique : navigateur de contrôle toujours redirigé vers Connexion ; aucune donnée réelle exportée ou modifiée.
