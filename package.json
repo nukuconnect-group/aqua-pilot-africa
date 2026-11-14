@@ -108,6 +108,7 @@
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
     "postgres": "^3.4.9",
+    "supabase": "^3.1.0",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
