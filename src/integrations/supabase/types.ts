@@ -10,10 +10,37 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
+      accounting_account_settings: {
+        Row: {
+          custom_code: string
+          custom_label: string | null
+          default_code: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          custom_code: string
+          custom_label?: string | null
+          default_code: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          custom_code?: string
+          custom_label?: string | null
+          default_code?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       accounting_closures: {
         Row: {
           closed_at: string
@@ -482,6 +509,57 @@ export type Database = {
         }
         Relationships: []
       }
+      aqua_experts: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          organization: string | null
+          phone: string | null
+          provides_products: boolean
+          services: string | null
+          specialty: string
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          organization?: string | null
+          phone?: string | null
+          provides_products?: boolean
+          services?: string | null
+          specialty?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          organization?: string | null
+          phone?: string | null
+          provides_products?: boolean
+          services?: string | null
+          specialty?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       attendance_records: {
         Row: {
           client_id: string | null
@@ -582,6 +660,7 @@ export type Database = {
       }
       cash_sessions: {
         Row: {
+          cashier_ids: string[]
           closed_at: string | null
           counted_amount: number | null
           created_at: string
@@ -598,6 +677,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cashier_ids?: string[]
           closed_at?: string | null
           counted_amount?: number | null
           created_at?: string
@@ -614,6 +694,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cashier_ids?: string[]
           closed_at?: string | null
           counted_amount?: number | null
           created_at?: string
@@ -1548,6 +1629,7 @@ export type Database = {
       feed_stocks: {
         Row: {
           bag_count: number | null
+          barcode: string | null
           cost: number | null
           created_at: string | null
           custom_name: string | null
@@ -1570,6 +1652,7 @@ export type Database = {
         }
         Insert: {
           bag_count?: number | null
+          barcode?: string | null
           cost?: number | null
           created_at?: string | null
           custom_name?: string | null
@@ -1592,6 +1675,7 @@ export type Database = {
         }
         Update: {
           bag_count?: number | null
+          barcode?: string | null
           cost?: number | null
           created_at?: string | null
           custom_name?: string | null
@@ -1830,11 +1914,9 @@ export type Database = {
           frequency: string
           id: string
           infrastructure_id: string | null
-          infrastructure_ids: string[] | null
           is_active: boolean
           observations: string | null
           period: string
-          period_times: Json | null
           quantity: number
           responsible_name: string | null
           start_date: string
@@ -1854,11 +1936,9 @@ export type Database = {
           frequency?: string
           id?: string
           infrastructure_id?: string | null
-          infrastructure_ids?: string[] | null
           is_active?: boolean
           observations?: string | null
           period?: string
-          period_times?: Json | null
           quantity?: number
           responsible_name?: string | null
           start_date?: string
@@ -1878,11 +1958,9 @@ export type Database = {
           frequency?: string
           id?: string
           infrastructure_id?: string | null
-          infrastructure_ids?: string[] | null
           is_active?: boolean
           observations?: string | null
           period?: string
-          period_times?: Json | null
           quantity?: number
           responsible_name?: string | null
           start_date?: string
@@ -4398,6 +4476,7 @@ export type Database = {
         }
         Returns: string
       }
+      ean13_with_check: { Args: { _base12: string }; Returns: string }
       expire_outdated_subscriptions: {
         Args: never
         Returns: {
@@ -4432,11 +4511,45 @@ export type Database = {
         Returns: boolean
       }
       is_active_team_member: { Args: { user_uuid: string }; Returns: boolean }
+      is_cashier_of: { Args: { _session_id: string }; Returns: boolean }
       is_team_member_of: { Args: { owner_user_id: string }; Returns: boolean }
       owns_unit: { Args: { _unit: string }; Returns: boolean }
+      pos_post_sale: {
+        Args: { _sale_id: string; _session_id: string; _stock: Json }
+        Returns: undefined
+      }
+      reattach_treasury_account: {
+        Args: { _account_id: string; _unit_id: string }
+        Returns: undefined
+      }
+      record_sheet_feeding: {
+        Args: {
+          _behavior: string
+          _date: string
+          _lines: Json
+          _notes: string
+          _period: string
+          _request_id: string
+          _sheet_id: string
+          _time: string
+        }
+        Returns: Json
+      }
+      reopen_cash_register: { Args: { _session_id: string }; Returns: string }
       team_member_has_unit_access: {
         Args: { _owner_id: string; _unit_id: string }
         Returns: boolean
+      }
+      transfer_between_units: {
+        Args: {
+          _amount: number
+          _date: string
+          _destination_id: string
+          _label: string
+          _request_id: string
+          _source_id: string
+        }
+        Returns: undefined
       }
       user_meets_plan: {
         Args: { _plan_min: string; _user_id: string }
