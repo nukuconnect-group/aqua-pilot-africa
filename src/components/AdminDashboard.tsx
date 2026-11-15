@@ -82,7 +82,7 @@ const AdminDashboard = () => {
   const { t } = useSettings();
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
-  const { logs } = useLogs();
+  const { logs, clearLogs } = useLogs();
   const { units: productionUnits } = useProductionUnits();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
@@ -100,7 +100,6 @@ const AdminDashboard = () => {
     setSearchParams(next, { replace: true });
   };
   const [selectedUserForHistory, setSelectedUserForHistory] = useState<{ id: string; name: string } | null>(null);
-  const [isPurgingErrors, setIsPurgingErrors] = useState(false);
   const [purgedAt, setPurgedAt] = useState<string | null>(() => {
     try { return localStorage.getItem('aquapilote-error-log-purged-at'); } catch { return null; }
   });
@@ -144,29 +143,19 @@ const AdminDashboard = () => {
     [logs, purgedAt],
   );
 
-  const purgeErrorLogs = async () => {
-    setIsPurgingErrors(true);
+  const hideErrorLogs = async () => {
     try {
-      const { error } = await supabase
-        .from('activity_logs')
-        .delete()
-        .in('severity', ['error', 'warning']);
-      if (error) throw error;
-      const ts = new Date().toISOString();
-      try { localStorage.setItem('aquapilote-error-log-purged-at', ts); } catch { /* ignore */ }
+      await clearLogs();
+      const ts = localStorage.getItem('aquapilote-error-log-purged-at');
+      if (!ts) throw new Error('Le marqueur local du journal est indisponible.');
       setPurgedAt(ts);
-      toast({ title: 'Journal vidé', description: 'Les erreurs et avertissements ont été supprimés.' });
+      toast({ title: 'Journal masqué', description: 'Les anciennes erreurs sont masquées sur cet appareil. Les données restent conservées.' });
     } catch (e: any) {
-      // Même si la suppression serveur échoue (RLS), on masque localement.
-      const ts = new Date().toISOString();
-      try { localStorage.setItem('aquapilote-error-log-purged-at', ts); } catch { /* ignore */ }
-      setPurgedAt(ts);
       toast({
-        title: 'Journal masqué',
-        description: e?.message || 'Suppression serveur indisponible, affichage réinitialisé.',
+        title: 'Impossible de masquer le journal',
+        description: e?.message || 'Le stockage local est indisponible.',
+        variant: 'destructive',
       });
-    } finally {
-      setIsPurgingErrors(false);
     }
   };
 
@@ -1494,11 +1483,10 @@ const AdminDashboard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={isPurgingErrors}
-                  onClick={purgeErrorLogs}
+                  onClick={hideErrorLogs}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {isPurgingErrors ? 'Purge…' : 'Vider le journal'}
+                  <Eye className="w-4 h-4 mr-2" />
+                  Masquer les anciennes erreurs
                 </Button>
               </div>
             </CardHeader>
