@@ -7,3 +7,5 @@ project_id = "hhsvraqchtqqgaezhnzn"
     verify_jwt = false
   [functions.aqua-assistant]
     verify_jwt = false
+  [functions.aqua-transcribe]
+    verify_jwt = false

@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Users, ChevronDown, ChevronRight, Search, Key, Ban, PlayCircle, Send, Copy, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Users, ChevronDown, ChevronRight, Search, Ban, PlayCircle, Send, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,9 +37,7 @@ const TeamMembersOverviewPanel: React.FC<Props> = ({ owners }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [openOwner, setOpenOwner] = useState<string | null>(null);
-  const [resetDialog, setResetDialog] = useState<Member | null>(null);
-  const [newPassword, setNewPassword] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
+  const [sendingResetFor, setSendingResetFor] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -90,13 +87,6 @@ const TeamMembersOverviewPanel: React.FC<Props> = ({ owners }) => {
   const activeMembers = members.filter((m) => m.status === 'active').length;
   const pendingMembers = members.filter((m) => m.status === 'pending' || !m.user_id).length;
 
-  const generatePassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
-    let pw = '';
-    for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
-    return pw;
-  };
-
   const handleToggleStatus = async (m: Member) => {
     const newStatus = m.status === 'active' ? 'inactive' : 'active';
     const { error } = await supabase
@@ -111,41 +101,23 @@ const TeamMembersOverviewPanel: React.FC<Props> = ({ owners }) => {
     load();
   };
 
-  const handleResetPassword = async () => {
-    if (!resetDialog) return;
-    setProcessing(true);
-    const pw = generatePassword();
-    const { data, error } = await supabase.functions.invoke('reset-team-member-password', {
-      body: { team_member_id: resetDialog.id, new_password: pw },
-    });
-    setProcessing(false);
-    if (error || (data as any)?.error) {
+  const handleSendResetLink = async (m: Member) => {
+    setSendingResetFor(m.id);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(m.member_email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: 'Lien envoyé', description: `Un lien de réinitialisation a été envoyé à ${m.member_email}` });
+    } catch (error) {
       toast({
         title: 'Erreur',
-        description: error?.message || (data as any)?.error || 'Impossible de réinitialiser le mot de passe',
+        description: error instanceof Error ? error.message : "Impossible d'envoyer le lien de réinitialisation.",
         variant: 'destructive',
       });
-      return;
+    } finally {
+      setSendingResetFor(null);
     }
-    setNewPassword(pw);
-    toast({ title: 'Mot de passe généré', description: 'Communiquez-le en toute sécurité au membre.' });
-  };
-
-  const handleSendResetLink = async (m: Member) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(m.member_email, {
-      redirectTo: `${window.location.origin}/auth`,
-    });
-    if (error) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
-      return;
-    }
-    toast({ title: 'Lien envoyé', description: `Un lien de réinitialisation a été envoyé à ${m.member_email}` });
-  };
-
-  const copyPassword = () => {
-    if (!newPassword) return;
-    navigator.clipboard.writeText(newPassword);
-    toast({ title: 'Copié' });
   };
 
   return (
@@ -270,20 +242,11 @@ const TeamMembersOverviewPanel: React.FC<Props> = ({ owners }) => {
                                     variant="ghost"
                                     title="Envoyer un lien de réinitialisation par email"
                                     onClick={() => handleSendResetLink(m)}
+                                    disabled={!m.user_id || sendingResetFor === m.id}
                                   >
-                                    <Send className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    title="Générer un nouveau mot de passe"
-                                    disabled={!m.user_id}
-                                    onClick={() => {
-                                      setResetDialog(m);
-                                      setNewPassword(null);
-                                    }}
-                                  >
-                                    <Key className="w-4 h-4" />
+                                    {sendingResetFor === m.id
+                                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                                      : <Send className="w-4 h-4" />}
                                   </Button>
                                   {m.status === 'active' ? (
                                     <Button
@@ -321,46 +284,6 @@ const TeamMembersOverviewPanel: React.FC<Props> = ({ owners }) => {
         </CardContent>
       </Card>
 
-      <Dialog open={!!resetDialog} onOpenChange={(o) => { if (!o) { setResetDialog(null); setNewPassword(null); } }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Générer un nouveau mot de passe</DialogTitle>
-            <DialogDescription>
-              {resetDialog && `Pour ${resetDialog.member_name} (${resetDialog.member_email})`}
-            </DialogDescription>
-          </DialogHeader>
-          {newPassword ? (
-            <div className="space-y-3">
-              <div className="p-3 bg-muted rounded-lg font-mono text-sm break-all">{newPassword}</div>
-              <p className="text-xs text-muted-foreground">
-                Copiez ce mot de passe et transmettez-le au membre en toute sécurité. Il ne sera plus visible après.
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Un nouveau mot de passe fort sera généré et appliqué immédiatement au compte.
-            </p>
-          )}
-          <DialogFooter>
-            {newPassword ? (
-              <>
-                <Button variant="outline" onClick={copyPassword}>
-                  <Copy className="w-4 h-4 mr-2" /> Copier
-                </Button>
-                <Button onClick={() => { setResetDialog(null); setNewPassword(null); }}>Fermer</Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" onClick={() => setResetDialog(null)}>Annuler</Button>
-                <Button onClick={handleResetPassword} disabled={processing}>
-                  {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Key className="w-4 h-4 mr-2" />}
-                  Générer
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

@@ -1,13 +1,25 @@
 import { createParser } from 'eventsource-parser';
-import { supabase } from '@/integrations/supabase/appClient';
+import { APP_SUPABASE_ANON_KEY, APP_SUPABASE_URL, supabase } from '@/integrations/supabase/appClient';
 
 export async function transcribeAssistantAudio(file: File, signal: AbortSignal, onText: (text: string) => void): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Connectez-vous pour utiliser le vocal.');
   const form = new FormData(); form.append('file', file);
-  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aqua-transcribe`, {
-    method: 'POST', signal, headers: { Authorization: `Bearer ${session.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, body: form,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${APP_SUPABASE_URL}/functions/v1/aqua-transcribe`, {
+      method: 'POST',
+      signal,
+      headers: { Authorization: `Bearer ${session.access_token}`, apikey: APP_SUPABASE_ANON_KEY },
+      body: form,
+    });
+  } catch (error) {
+    if (signal.aborted || (error instanceof Error && error.name === 'AbortError')) throw error;
+    if (error instanceof TypeError) {
+      throw new Error('Le service vocal est injoignable. Vérifiez votre connexion et réessayez.');
+    }
+    throw error;
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     const message = payload?.message || payload?.error?.message || (typeof payload?.error === 'string' ? payload.error : null);

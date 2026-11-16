@@ -52,7 +52,7 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft className="w-4 h-4 mr-1.5" />AquaFeed AI</Button>
@@ -75,16 +75,16 @@ const FeedMillWorkspace: React.FC<Props> = ({ onBack }) => {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-9 w-full">
-          <TabsTrigger value="dashboard"><LayoutDashboard className="w-4 h-4 mr-1.5" />{text('Tableau de bord')}</TabsTrigger>
-          <TabsTrigger value="lab"><FlaskConical className="w-4 h-4 mr-1.5" />{text('Laboratoire')}</TabsTrigger>
-          <TabsTrigger value="studio"><FlaskConical className="w-4 h-4 mr-1.5" />{text('Formuler')}</TabsTrigger>
-          <TabsTrigger value="formulations"><FolderOpen className="w-4 h-4 mr-1.5" />{text('Mes formulations')}</TabsTrigger>
-          <TabsTrigger value="ingredients"><Boxes className="w-4 h-4 mr-1.5" />{text('Ingrédients')}</TabsTrigger>
-          <TabsTrigger value="batches"><Factory className="w-4 h-4 mr-1.5" />{text('Fabrications')}</TabsTrigger>
-          <TabsTrigger value="cycles"><Workflow className="w-4 h-4 mr-1.5" />{text('Cycles')}</TabsTrigger>
-          <TabsTrigger value="quality"><ShieldCheck className="w-4 h-4 mr-1.5" />{text('Prophylaxie')}</TabsTrigger>
-          <TabsTrigger value="trace"><ScanLine className="w-4 h-4 mr-1.5" />{text('Traçabilité')}</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-3 xl:grid-cols-9 [&>button]:min-w-0 [&>button]:whitespace-normal [&>button]:px-2 [&>button]:py-2 [&>button]:text-xs [&>button]:leading-tight">
+            <TabsTrigger value="dashboard"><LayoutDashboard className="mr-1.5 size-4 shrink-0" />{text('Tableau de bord')}</TabsTrigger>
+            <TabsTrigger value="lab"><FlaskConical className="mr-1.5 size-4 shrink-0" />{text('Laboratoire')}</TabsTrigger>
+            <TabsTrigger value="studio"><FlaskConical className="mr-1.5 size-4 shrink-0" />{text('Formuler')}</TabsTrigger>
+            <TabsTrigger value="formulations"><FolderOpen className="mr-1.5 size-4 shrink-0" />{text('Mes formulations')}</TabsTrigger>
+            <TabsTrigger value="ingredients"><Boxes className="mr-1.5 size-4 shrink-0" />{text('Ingrédients')}</TabsTrigger>
+            <TabsTrigger value="batches"><Factory className="mr-1.5 size-4 shrink-0" />{text('Fabrications')}</TabsTrigger>
+            <TabsTrigger value="cycles"><Workflow className="mr-1.5 size-4 shrink-0" />{text('Cycles')}</TabsTrigger>
+            <TabsTrigger value="quality"><ShieldCheck className="mr-1.5 size-4 shrink-0" />{text('Prophylaxie')}</TabsTrigger>
+            <TabsTrigger value="trace"><ScanLine className="mr-1.5 size-4 shrink-0" />{text('Traçabilité')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">

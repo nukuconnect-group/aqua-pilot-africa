@@ -273,9 +273,9 @@ const AdvancedAquaFeedCalculator: React.FC = () => {
       </Card>
 
       <Tabs defaultValue="objective" className="space-y-4">
-        <TabsList className="grid grid-cols-2 w-full sm:w-auto">
-          <TabsTrigger value="objective"><Target className="w-4 h-4 mr-2" />Objectif de production</TabsTrigger>
-          <TabsTrigger value="daily"><Utensils className="w-4 h-4 mr-2" />Biomasse & ration/jour</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-1 sm:w-auto sm:grid-cols-2">
+          <TabsTrigger className="min-w-0 whitespace-normal py-2 text-center" value="objective"><Target className="mr-2 size-4 shrink-0" />Objectif de production</TabsTrigger>
+          <TabsTrigger className="min-w-0 whitespace-normal py-2 text-center" value="daily"><Utensils className="mr-2 size-4 shrink-0" />Biomasse & ration/jour</TabsTrigger>
         </TabsList>
 
         {/* MODE 1 : OBJECTIF DE PRODUCTION */}
@@ -366,7 +366,7 @@ const AdvancedAquaFeedCalculator: React.FC = () => {
                         setCustomBag('');
                       }
                     }}
-                    className="grid grid-cols-4 gap-2"
+                    className="grid grid-cols-2 gap-2 sm:grid-cols-4"
                   >
                     {BAG_PRESETS.map(b => (
                       <div key={b} className="flex items-center gap-1">

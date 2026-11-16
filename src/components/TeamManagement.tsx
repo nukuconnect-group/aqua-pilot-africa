@@ -60,7 +60,6 @@ const TeamManagement = () => {
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [resetPasswordMember, setResetPasswordMember] = useState<TeamMember | null>(null);
-  const [resetPasswordResult, setResetPasswordResult] = useState<{ password: string; loginUrl: string; emailSent: boolean } | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [showMemberCredentials, setShowMemberCredentials] = useState(false);
@@ -411,29 +410,25 @@ const TeamManagement = () => {
     }
   };
 
-  const handleResetPassword = async (member: TeamMember, sendEmail: boolean) => {
+  const handleResetPassword = async (member: TeamMember) => {
     setIsResettingPassword(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Session expirée.');
-      const response = await supabase.functions.invoke('reset-team-member-password', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { email: member.member_email, member_name: member.member_name, sendEmail }
+      const { error } = await supabase.auth.resetPasswordForEmail(member.member_email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-      if (response.error) throw new Error(response.error.message);
-      if (response.data?.success) {
-        setResetPasswordResult({ password: response.data.newPassword, loginUrl: response.data.loginUrl, emailSent: response.data.emailSent });
-        addLog('Mot de passe réinitialisé', 'Équipe', `Mot de passe de ${member.member_name} réinitialisé`, 'info');
-        toast({ title: response.data.emailSent ? "Mot de passe réinitialisé et email envoyé" : "Mot de passe réinitialisé" });
-      } else {
-        throw new Error(response.data?.error || 'Erreur inconnue');
-      }
-    } catch (error: any) {
-      console.error('Error resetting password:', error);
-      toast({ title: "Erreur", description: error.message || "Impossible de réinitialiser", variant: "destructive" });
+      if (error) throw error;
+      await addLog('Lien de réinitialisation envoyé', 'Équipe', `Lien envoyé à ${member.member_email}`, 'info');
+      toast({ title: 'Lien envoyé', description: `Un lien de réinitialisation a été envoyé à ${member.member_email}.` });
       setShowResetPasswordDialog(false);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: error instanceof Error ? error.message : 'Impossible d’envoyer le lien de réinitialisation.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResettingPassword(false);
     }
-    setIsResettingPassword(false);
   };
 
 
@@ -445,7 +440,6 @@ const TeamManagement = () => {
 
   const openResetPasswordDialog = (member: TeamMember) => {
     setResetPasswordMember(member);
-    setResetPasswordResult(null);
     setShowResetPasswordDialog(true);
   };
 
@@ -579,10 +573,8 @@ const TeamManagement = () => {
         open={showResetPasswordDialog}
         onOpenChange={setShowResetPasswordDialog}
         member={resetPasswordMember}
-        result={resetPasswordResult}
         isResetting={isResettingPassword}
         onReset={handleResetPassword}
-        onClearResult={() => setResetPasswordResult(null)}
       />
 
       <ViewCredentialsDialog

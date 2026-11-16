@@ -228,7 +228,7 @@ const FeedCalculatorSuite: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   }, [result, advancedResult, currentSpecies, selectedInfra, activeUnit, fishCount, avgWeight, formatCurrency]);
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-4 sm:space-y-6">
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -247,10 +247,10 @@ const FeedCalculatorSuite: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       </Card>
 
       <Tabs defaultValue="calculator" className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-          <TabsTrigger value="calculator"><Calculator className="w-4 h-4 mr-2" />Calculateur</TabsTrigger>
-          <TabsTrigger value="advanced"><Sliders className="w-4 h-4 mr-2" />Avancé (IC)</TabsTrigger>
-          <TabsTrigger value="history"><History className="w-4 h-4 mr-2" />Historique</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-1 sm:w-auto sm:grid-cols-3">
+          <TabsTrigger className="min-w-0 whitespace-normal py-2 text-center" value="calculator"><Calculator className="mr-2 size-4 shrink-0" />Calculateur</TabsTrigger>
+          <TabsTrigger className="min-w-0 whitespace-normal py-2 text-center" value="advanced"><Sliders className="mr-2 size-4 shrink-0" />Avancé (IC)</TabsTrigger>
+          <TabsTrigger className="min-w-0 whitespace-normal py-2 text-center" value="history"><History className="mr-2 size-4 shrink-0" />Historique</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calculator" className="space-y-4">
@@ -408,26 +408,26 @@ const AquaFeedAI: React.FC = () => {
   if (view === 'feedmill') return <FeedMillWorkspace onBack={() => setView('home')} />;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-4 sm:space-y-6">
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg"><Sparkles className="w-6 h-6 text-primary" /></div>
-            <div>
+          <div className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-3">
+            <div className="shrink-0 rounded-lg bg-primary/10 p-2"><Sparkles className="w-6 h-6 text-primary" /></div>
+            <div className="min-w-0">
               <CardTitle className="text-xl sm:text-2xl">🐟 AquaFeed AI</CardTitle>
-              <CardDescription>Calcul des besoins alimentaires et fabrication de vos propres aliments aquacoles.</CardDescription>
+              <CardDescription className="break-words">Calcul des besoins alimentaires et fabrication de vos propres aliments aquacoles.</CardDescription>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <button type="button" onClick={() => setView('calculator')} className="text-left">
-          <Card className="h-full hover:border-primary hover:shadow-md transition-all">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
+        <button type="button" onClick={() => setView('calculator')} className="min-w-0 text-left">
+          <Card className="h-full min-w-0 transition-all hover:border-primary hover:shadow-md">
             <CardHeader>
               <div className="p-2.5 bg-primary/10 rounded-lg w-fit mb-2"><Calculator className="w-6 h-6 text-primary" /></div>
-              <CardTitle className="text-lg">🧮 Calculateur AquaFeed</CardTitle>
-              <CardDescription>
+              <CardTitle className="break-words text-lg">🧮 Calculateur AquaFeed</CardTitle>
+              <CardDescription className="break-words">
                 Calculez les besoins alimentaires et planifiez l'alimentation de vos poissons (rations, IC, densité, coûts, prévisions).
               </CardDescription>
             </CardHeader>
@@ -437,12 +437,12 @@ const AquaFeedAI: React.FC = () => {
           </Card>
         </button>
 
-        <button type="button" onClick={() => setView('feedmill')} className="text-left">
-          <Card className="h-full hover:border-primary hover:shadow-md transition-all">
+        <button type="button" onClick={() => setView('feedmill')} className="min-w-0 text-left">
+          <Card className="h-full min-w-0 transition-all hover:border-primary hover:shadow-md">
             <CardHeader>
               <div className="p-2.5 bg-primary/10 rounded-lg w-fit mb-2"><FlaskConical className="w-6 h-6 text-primary" /></div>
-              <CardTitle className="text-lg">🧪 Fabrication & Formulation d'aliments</CardTitle>
-              <CardDescription>
+              <CardTitle className="break-words text-lg">🧪 Fabrication & Formulation d'aliments</CardTitle>
+              <CardDescription className="break-words">
                 Créez, optimisez et gérez vos propres formulations : ingrédients, nutrition, coûts, lots de fabrication et transfert au stock.
               </CardDescription>
             </CardHeader>

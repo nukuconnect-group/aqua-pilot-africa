@@ -18,6 +18,7 @@ import PublicShop from '@/pages/PublicShop';
 import Welcome from '@/pages/Welcome';
 import OnboardingFlow from '@/pages/OnboardingFlow';
 import Auth from '@/pages/Auth';
+import ResetPassword from '@/pages/ResetPassword';
 import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
 import SubscriptionPage from '@/pages/SubscriptionPage';
@@ -50,6 +51,7 @@ const AppContent: React.FC = () => {
         
         {/* Page d'authentification */}
         <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/boutique/:unitId" element={<PublicShop />} />
         <Route path="/login" element={<Navigate to="/auth" replace />} />
         <Route path="/connexion" element={<Navigate to="/auth" replace />} />
