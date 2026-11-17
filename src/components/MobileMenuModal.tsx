@@ -174,11 +174,20 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
       >
         <SheetHeader className="shrink-0 px-5 pt-4 pb-2 bg-sidebar-header border-b border-sidebar-border text-left">
           <SheetTitle className="flex justify-start">
-            <img
-              src={menuLogo}
-              alt="AquaPilote"
-              className="h-10 w-auto max-w-[170px] object-contain"
-            />
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => handleItemClick('dashboard')}
+              aria-label="AquaPilote — tableau de bord"
+              title="Retour au tableau de bord"
+              className="h-auto justify-start p-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-sidebar-header-foreground"
+            >
+              <img
+                src={menuLogo}
+                alt="AquaPilote"
+                className="h-10 w-auto max-w-[170px] object-contain"
+              />
+            </Button>
           </SheetTitle>
 
           {/* Indicateur membre d'equipe */}
