@@ -90,7 +90,7 @@ export function buildFormulationExport(input: FormulationExportInput): ExportOpt
   return {
     title: `${tr('Formulation')} — ${input.name}`,
     subtitle: `${input.speciesLabel}${input.stageLabel ? ` · ${input.stageLabel}` : ''} · ${n(input.quantityKg, 2)} kg · ${tr('coût de revient')} ${n(input.costPerKg, 2)}/kg · ${tr('prix conseillé')} ${selling}/kg`,
-    filename: `formulation_${input.name.replace(/\s+/g, '_').replace(/[^\w\-]/g, '')}_${date.toISOString().slice(0, 10)}`,
+    filename: `formulation_${input.name.replace(/\s+/g, '_').replace(/[^\w-]/g, '')}_${date.toISOString().slice(0, 10)}`,
     unitName: input.unitName,
     columns: [
       { key: 'ingredient', label: text('Ingrédient / Information') },

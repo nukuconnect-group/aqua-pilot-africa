@@ -274,7 +274,7 @@ const EnhancedRegistration: React.FC<EnhancedRegistrationProps> = ({
     if (!/[A-Z]/.test(formData.password)) step1.push('Le mot de passe doit contenir une majuscule.');
     if (!/[a-z]/.test(formData.password)) step1.push('Le mot de passe doit contenir une minuscule.');
     if (!/[0-9]/.test(formData.password)) step1.push('Le mot de passe doit contenir un chiffre.');
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) step1.push('Le mot de passe doit contenir un caractère spécial.');
+    if (!/[!@#$%^&*()_+\-=\x5b\]{};':"\\|,.<>\x2f?]/.test(formData.password)) step1.push('Le mot de passe doit contenir un caractère spécial.');
     if (formData.password !== formData.confirmPassword) step1.push('Les deux mots de passe ne correspondent pas.');
     if (formData.productionUnits.length === 0) step3.push('Choisissez au moins une unité à gérer.');
     if (!formData.exploitationType) step2.push("Sélectionnez un type d'exploitation.");

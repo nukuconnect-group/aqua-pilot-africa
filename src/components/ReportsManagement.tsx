@@ -164,13 +164,17 @@ const ProductionReportsManagement = () => {
     const now = new Date();
     switch (selectedPeriod) {
       case 'week':
+      {
         const weekStart = new Date(now.setDate(now.getDate() - 7));
         return `Semaine du ${weekStart.toLocaleDateString('fr-FR')} au ${new Date().toLocaleDateString('fr-FR')}`;
+      }
       case 'month':
         return now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
       case 'quarter':
+      {
         const quarter = Math.floor(new Date().getMonth() / 3) + 1;
         return `T${quarter} ${new Date().getFullYear()}`;
+      }
       case 'year':
         return new Date().getFullYear().toString();
       default:
@@ -199,6 +203,7 @@ const ProductionReportsManagement = () => {
 
     switch (reportId) {
       case 'comprehensive':
+      {
         // Section 1: Résumé exécutif
         sections.push({
           title: '📊 Résumé Exécutif',
@@ -286,7 +291,9 @@ const ProductionReportsManagement = () => {
         }
         break;
 
+      }
       case 'production':
+      {
         sections.push({
           title: '📊 Résumé de Production',
           type: 'summary',
@@ -343,6 +350,7 @@ const ProductionReportsManagement = () => {
         }
         break;
 
+      }
       case 'financial':
         sections.push({
           title: '💰 Résumé Financier',

@@ -7,6 +7,8 @@ import { useProductionUnits } from '@/contexts/ProductionUnitsContext';
 import { getDemoData } from '@/lib/demoData';
 import { emitDataMutation } from '@/lib/appRecovery';
 import { getCurrency } from '@/lib/currency';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
+import type { PostgrestError } from '@supabase/supabase-js';
 
 const RETRYABLE_SALE_ERROR_CODES = new Set(['23505', '40001', '40P01', '57014']);
 
@@ -43,7 +45,19 @@ export interface Sale {
   taxRate?: number;
 }
 
-const mapSaleRow = (s: any, fallbackProducts: SaleItem[] = []): Sale => ({
+type SaleRow = Pick<Tables<'sales'>, 'id' | 'date' | 'client_name' | 'unit_id' | 'status' | 'total_amount'> & Partial<Tables<'sales'>> & { sale_items?: unknown };
+
+const mapSaleItem = (item: unknown): SaleItem | null => {
+  if (!item || typeof item !== 'object') return null;
+  const row = item as Record<string, unknown>;
+  if (typeof row.name !== 'string') return null;
+  const quantity = Number(row.quantity);
+  const unitPrice = Number(row.unit_price);
+  const total = Number(row.total);
+  return { name: row.name, quantity: Number.isFinite(quantity) ? quantity : 0, unitPrice: Number.isFinite(unitPrice) ? unitPrice : 0, total: Number.isFinite(total) ? total : 0 };
+};
+
+const mapSaleRow = (s: SaleRow, fallbackProducts: SaleItem[] = []): Sale => ({
   id: s.id,
   clientRequestId: s.client_request_id || undefined,
   date: s.date,
@@ -51,12 +65,7 @@ const mapSaleRow = (s: any, fallbackProducts: SaleItem[] = []): Sale => ({
   clientContact: s.client_contact || '',
   unitId: s.unit_id,
   products: Array.isArray(s.sale_items)
-    ? s.sale_items.map((item: any) => ({
-        name: item.name,
-        quantity: Number(item.quantity) || 0,
-        unitPrice: Number(item.unit_price) || 0,
-        total: Number(item.total) || 0,
-      }))
+    ? s.sale_items.map(mapSaleItem).filter((item): item is SaleItem => item !== null)
     : fallbackProducts,
   totalAmount: Number(s.total_amount) || 0,
   status: s.status as Sale['status'],
@@ -66,7 +75,7 @@ const mapSaleRow = (s: any, fallbackProducts: SaleItem[] = []): Sale => ({
   isCredit: s.is_credit || false,
   paidAmount: Number(s.paid_amount) || 0,
   paymentTerms: s.payment_terms || undefined,
-  documentType: (s.document_type as 'receipt' | 'invoice' | 'proforma') || 'receipt',
+  documentType: (s.document_type as Sale['documentType']) || 'receipt',
   documentNumber: s.document_number || undefined,
   taxRate: Number(s.tax_rate) || 0,
   cancelledAt: s.cancelled_at || undefined,
@@ -85,22 +94,7 @@ export const useSales = () => {
   const fetchSales = useCallback(async () => {
     if (isDemoMode) {
       const demoData = getDemoData();
-      const demoSales = (demoData.sales || []).map((s: any) => ({
-        id: s.id,
-        date: s.date,
-        clientName: s.client_name,
-        clientContact: s.client_contact || '',
-        unitId: s.unit_id,
-        products: [],
-        totalAmount: s.total_amount,
-        status: s.status as Sale['status'],
-        paymentMethod: s.payment_method || '',
-        notes: s.notes || '',
-        dueDate: s.due_date || undefined,
-        isCredit: s.is_credit || false,
-        paidAmount: s.paid_amount || 0,
-        paymentTerms: s.payment_terms || undefined
-      }));
+      const demoSales = ((demoData.sales || []) as unknown as SaleRow[]).map((row) => mapSaleRow(row));
       setSales(demoSales);
       return;
     }
@@ -116,7 +110,7 @@ export const useSales = () => {
 
       if (error) throw error;
 
-      setSales((data || []).map((s: any) => mapSaleRow(s)));
+      setSales((data || []).map((row) => mapSaleRow(row)));
     } catch (err) {
       setFetchError('Impossible de charger les ventes.');
       console.error('Error fetching sales:', err);
@@ -151,11 +145,11 @@ export const useSales = () => {
     const clientRequestId = sale.clientRequestId || `sale-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
     try {
-      let saleData: any = null;
-      let lastError: any = null;
+      let saleData: SaleRow | null = null;
+      let lastError: PostgrestError | null = null;
 
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        const { data, error } = await (supabase as any).rpc('create_sale_idempotent', {
+        const { data, error } = await supabase.rpc('create_sale_idempotent', {
           _client_request_id: clientRequestId,
           _unit_id: sale.unitId,
           _date: sale.date,
@@ -172,11 +166,11 @@ export const useSales = () => {
           _document_type: sale.documentType || 'receipt',
           _document_number: sale.documentNumber || null,
           _tax_rate: sale.taxRate ?? 0,
-          _items: sale.products,
+          _items: sale.products.map((item) => ({ name: item.name, quantity: item.quantity, unit_price: item.unitPrice, total: item.total })),
         });
 
         if (!error) {
-          saleData = Array.isArray(data) ? data[0] : data;
+          saleData = data?.[0] ?? null;
           break;
         }
 
@@ -280,7 +274,7 @@ export const useSales = () => {
     if (!user?.id) return null;
 
     try {
-      const dbUpdates: Record<string, any> = {};
+      const dbUpdates: TablesUpdate<'sales'> = {};
       if (updates.date !== undefined) dbUpdates.date = updates.date;
       if (updates.clientName !== undefined) dbUpdates.client_name = updates.clientName;
       if (updates.clientContact !== undefined) dbUpdates.client_contact = updates.clientContact;
@@ -295,7 +289,7 @@ export const useSales = () => {
 
       const { error } = await supabase
         .from('sales')
-        .update(dbUpdates as never)
+        .update(dbUpdates)
         .eq('id', id);
 
       if (error) throw error;
@@ -335,7 +329,7 @@ export const useSales = () => {
     const sale = sales.find(s => s.id === id && s.unitId === activeUnit.id);
     if (!sale) throw new Error('Vente inaccessible pour cette unité.');
     if (!reason.trim()) throw new Error('Indiquez le motif de l’annulation.');
-    const { error } = await (supabase as any).rpc('cancel_sale', { _sale_id: id, _reason: reason.trim() });
+    const { error } = await supabase.rpc('cancel_sale', { _sale_id: id, _reason: reason.trim() });
     if (error) throw error;
     await fetchSales();
     emitDataMutation({ table: 'sales', action: 'update', id, module: 'sales' });

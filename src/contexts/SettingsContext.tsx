@@ -183,7 +183,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     const v = remote[k];
                     if (v !== '' && v !== null && v !== undefined) (merged as any)[k] = v;
                   });
-                  try { localStorage.setItem(scopedKey, JSON.stringify(merged)); } catch {}
+                  try { localStorage.setItem(scopedKey, JSON.stringify(merged)); } catch { /* Keep in-memory settings when storage is unavailable. */ }
                   return merged;
                 });
               }

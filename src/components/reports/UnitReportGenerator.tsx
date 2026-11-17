@@ -109,8 +109,10 @@ const UnitReportGenerator = () => {
       case 'month':
         return now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
       case 'quarter':
+      {
         const quarter = Math.floor(now.getMonth() / 3) + 1;
         return `T${quarter} ${now.getFullYear()}`;
+      }
       case 'year':
         return now.getFullYear().toString();
       default:

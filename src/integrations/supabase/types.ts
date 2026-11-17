@@ -673,6 +673,7 @@ export type Database = {
           opened_by: string
           opening_amount: number
           status: string
+          treasury_account_id: string | null
           unit_id: string
           user_id: string
         }
@@ -690,6 +691,7 @@ export type Database = {
           opened_by?: string
           opening_amount?: number
           status?: string
+          treasury_account_id?: string | null
           unit_id: string
           user_id: string
         }
@@ -707,6 +709,7 @@ export type Database = {
           opened_by?: string
           opening_amount?: number
           status?: string
+          treasury_account_id?: string | null
           unit_id?: string
           user_id?: string
         }
@@ -4060,32 +4063,38 @@ export type Database = {
       treasury_accounts: {
         Row: {
           account_code: string
+          archived_at: string | null
           created_at: string
           currency: string
           id: string
           kind: string
           name: string
           unit_id: string
+          unit_ids: string[]
           user_id: string
         }
         Insert: {
           account_code: string
+          archived_at?: string | null
           created_at?: string
           currency?: string
           id?: string
           kind: string
           name: string
           unit_id: string
+          unit_ids?: string[]
           user_id?: string
         }
         Update: {
           account_code?: string
+          archived_at?: string | null
           created_at?: string
           currency?: string
           id?: string
           kind?: string
           name?: string
           unit_id?: string
+          unit_ids?: string[]
           user_id?: string
         }
         Relationships: []
@@ -4514,6 +4523,7 @@ export type Database = {
       is_cashier_of: { Args: { _session_id: string }; Returns: boolean }
       is_team_member_of: { Args: { owner_user_id: string }; Returns: boolean }
       owns_unit: { Args: { _unit: string }; Returns: boolean }
+      post_sale_to_linked_treasury: { Args: { _sale_id: string; _session_id?: string | null }; Returns: string }
       pos_post_sale: {
         Args: { _sale_id: string; _session_id: string; _stock: Json }
         Returns: undefined

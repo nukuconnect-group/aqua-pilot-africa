@@ -1,11 +1,13 @@
 import React from 'react';
 import AssistantNavIcon from '@/components/AssistantNavIcon';
+import sidebarLogo from '@/assets/aquapilote-menu-logo-dark.png';
 import { useSearchParams } from 'react-router-dom';
 import { Home, Building2, Wrench, Utensils, Heart, Package, Calendar, Users, FileText, Settings, Beef, Calculator, UserCheck, ShoppingCart, Wifi, ShoppingBag, Truck, UserCog, Database, Shield, MessageCircle, Headphones, BarChart3, Bell, ArrowLeft, UserPlus, ClipboardList, CreditCard, Activity, Eye, AlertTriangle, Mail } from 'lucide-react';
 import { Boxes, Sparkles, BookOpen, Stethoscope, Layers, Brain } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
+  SidebarHeader,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -54,6 +56,30 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
     onTabChange('dashboard');
   };
 
+  const handleLogoClick = () => {
+    if (isAdminView) {
+      exitAdmin();
+      return;
+    }
+    onTabChange('dashboard');
+  };
+
+  const renderSidebarLogo = () => (
+    <button
+      type="button"
+      onClick={handleLogoClick}
+      aria-label="AquaPilote — tableau de bord"
+      title="Retour au tableau de bord"
+      className="flex h-full w-full items-center rounded-md px-1 text-left outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
+    >
+      <img
+        src={sidebarLogo}
+        alt="AquaPilote"
+        className={open ? 'h-10 w-full object-contain object-left' : 'h-8 w-8 object-cover object-left'}
+      />
+    </button>
+  );
+
   const adminGroups = [
     {
       label: t('admin') || 'Administration',
@@ -78,6 +104,9 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   if (isAdminView) {
     return (
       <Sidebar collapsible="icon" variant="sidebar" className="[&>div>div]:rounded-r-2xl [&_button]:rounded-xl">
+        <SidebarHeader className="h-16 border-b border-sidebar-border px-2 py-2">
+          {renderSidebarLogo()}
+        </SidebarHeader>
         <SidebarContent className="overflow-y-auto">
           <SidebarGroup>
             <SidebarGroupContent>
@@ -226,6 +255,9 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" className="[&>div>div]:rounded-r-2xl [&_button]:rounded-xl">
+      <SidebarHeader className="h-16 border-b border-sidebar-border px-2 py-2">
+        {renderSidebarLogo()}
+      </SidebarHeader>
       <SidebarContent className="overflow-y-auto">
         {/* Indicateur membre d'equipe */}
         {isTeamMember && teamMemberInfo && open && (

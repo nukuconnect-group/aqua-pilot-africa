@@ -100,7 +100,7 @@ export const exportToWord = (options: ExportOptions) => {
   const subtitle = options.subtitle ? tr(options.subtitle) : undefined;
   const unitName = options.unitName;
   
-  let htmlContent = `
+  const htmlContent = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
     <head>
       <meta charset="utf-8">

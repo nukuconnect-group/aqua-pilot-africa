@@ -191,7 +191,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ data, unitId, onDismiss }) =>
           type: 'critical',
           category: 'water_quality',
           title: 'Oxygène bas',
-          description: `Niveau d\'oxygène de ${analysisData.oxygen}mg/L inférieur au minimum de ${thresholds.oxygenMin}mg/L`,
+          description: `Niveau d'oxygène de ${analysisData.oxygen}mg/L inférieur au minimum de ${thresholds.oxygenMin}mg/L`,
           timestamp: new Date().toISOString(),
           unitName: analysisData.unitName,
           suggestion: 'Augmentez l\'aération immédiatement.'

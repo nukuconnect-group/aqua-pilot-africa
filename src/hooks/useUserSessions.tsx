@@ -203,7 +203,7 @@ export const useUserSessions = () => {
     const handleBeforeUnload = () => {
       // Note: endSession async ne sera pas complètement exécuté ici
       // mais on peut au moins essayer
-      navigator.sendBeacon && endSession();
+      if (navigator.sendBeacon) void endSession();
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);

@@ -81,7 +81,6 @@ export function useOfflineData<T>({
 
     // En ligne: charger depuis Supabase
     try {
-      // @ts-ignore - table name is dynamic
       let query = supabase.from(tableName as any).select('*');
       
       if (fetchQuery) {

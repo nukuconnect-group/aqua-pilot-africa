@@ -120,7 +120,7 @@ export const analyzeWaterQuality = (
       priority: isCritical ? 'high' : 'medium',
       action: pH < 6.5
         ? `${priorityAdjustment}${contextMessage}🚨 Corriger: Ajouter 100-200g bicarbonate de sodium par m³ OU 50-100g chaux agricole par m³.`
-        : `${priorityAdjustment}${contextMessage}🚨 Corriger: Augmenter l\'aération à maximum. Ajouter 50ml acide citrique (10%) par m³ OU renouveler 30-50% volume.`,
+        : `${priorityAdjustment}${contextMessage}🚨 Corriger: Augmenter l'aération à maximum. Ajouter 50ml acide citrique (10%) par m³ OU renouveler 30-50% volume.`,
       reason: pH < 6.5
         ? 'En milieu acide, l\'hémoglobine perd son efficacité de transport d\'oxygène. Le pouvoir tampon de l\'eau est compromis.'
         : 'En milieu alcalin (pH>8.5), l\'ammoniac (NH3) devient majoritairement sous forme toxique libre. Au-delà de pH 9, les branchies sont chimiquement brûlées.',
@@ -249,7 +249,7 @@ export const analyzeWaterQuality = (
       status: isCritical ? 'critical' : 'warning',
       priority: isCritical ? 'high' : 'medium',
       action: isCritical
-        ? `🚨 SURPOPULATION CRITIQUE (+${excessPercentage}%): Transférer immédiatement ${fishToRemove} poissons. Doubler l\'aération ET la filtration.`
+        ? `🚨 SURPOPULATION CRITIQUE (+${excessPercentage}%): Transférer immédiatement ${fishToRemove} poissons. Doubler l'aération ET la filtration.`
         : `🚨 SURPOPULATION (+${excessPercentage}%): Planifier transfert de ${fishToRemove} poissons dans les 7-14 jours. Augmenter aération de 50%.`,
       reason: `Surpopulation génère: 1) COMPÉTITION pour O2. 2) ACCUMULATION de toxiques (NH3). 3) STRESS social: combats. 4) ESPACE vital insuffisant.`,
       healthImpact: isCritical

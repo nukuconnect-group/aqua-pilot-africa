@@ -25,6 +25,7 @@ export interface FeedStock {
   kg_per_bag?: number | null;
   stock_purpose?: StockPurpose | null;
   sale_price?: number | null;
+  barcode?: string | null;
   created_at?: string;
   updated_at?: string;
 }

@@ -30,7 +30,7 @@ const PWAInstallPrompt = () => {
           country = data.country || 'Inconnu';
           countryCode = data.countryCode || 'XX';
         }
-      } catch {}
+      } catch { /* Prompt state is best-effort when storage is unavailable. */ }
       await supabase.from('pwa_installs' as any).insert({
         session_id: `pwa-${Date.now()}`,
         device_type: device.deviceType,

@@ -333,7 +333,7 @@ export const exportToPDF = async (data: ReportData, filename: string) => {
     doc.setFontSize(13);
     doc.text(`${String(idx + 1).padStart(2, '0')}. ${section.title}`, margin + 4, 48);
 
-    let cursorY = 60;
+    const cursorY = 60;
 
     if (section.type === 'summary' && section.summary) {
       // Grille de KPI 2 colonnes

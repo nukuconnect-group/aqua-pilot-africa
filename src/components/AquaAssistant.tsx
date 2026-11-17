@@ -153,7 +153,7 @@ const AquaAssistant = () => {
   const clearChatHistory = () => {
     if (confirm('Effacer tout l\'historique de conversation ?')) {
       setMessages([DEFAULT_GREETING]);
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* Storage may be unavailable. */ }
     }
   };
   const [input, setInput] = useState('');

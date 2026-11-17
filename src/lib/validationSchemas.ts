@@ -56,7 +56,7 @@ export const clientSchema = z.object({
     .trim()
     .min(1, { message: "Le téléphone ne peut pas être vide" })
     .max(20, { message: "Le téléphone ne peut pas dépasser 20 caractères" })
-    .regex(/^[0-9\s\+\-\(\)\.]+$/, { message: "Le téléphone contient des caractères invalides" }),
+    .regex(/^[0-9\s+().-]+$/, { message: "Le t�l�phone contient des caract�res invalides" }),
   address: z.string()
     .trim()
     .min(1, { message: "L'adresse ne peut pas être vide" })
@@ -88,7 +88,7 @@ export const invoiceSchema = z.object({
     .trim()
     .min(1, { message: "Le numéro de facture ne peut pas être vide" })
     .max(50, { message: "Le numéro de facture ne peut pas dépasser 50 caractères" })
-    .regex(/^[A-Z0-9\-]+$/, { message: "Le numéro de facture ne peut contenir que des lettres majuscules, chiffres et tirets" }),
+    .regex(/^[A-Z0-9-]+$/, { message: "Le numéro de facture ne peut contenir que des lettres majuscules, chiffres et tirets" }),
   clientName: z.string()
     .trim()
     .min(1, { message: "Le nom du client ne peut pas être vide" })

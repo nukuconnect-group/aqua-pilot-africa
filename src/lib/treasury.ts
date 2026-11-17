@@ -2,7 +2,7 @@ import type { EntryLine } from './syscohada';
 
 export type MovementKind = 'opening' | 'receipt' | 'payment' | 'transfer';
 export interface TreasuryAccount {
-  id: string; user_id: string; unit_id: string; unit_ids?: string[]; name: string; kind: 'cash' | 'bank'; account_code: string; currency: string;
+  id: string; user_id: string; unit_id: string; unit_ids?: string[]; archived_at?: string | null; name: string; kind: 'cash' | 'bank'; account_code: string; currency: string;
 }
 export const accountCoversUnit = (account: Pick<TreasuryAccount, 'unit_id' | 'unit_ids'>, unitId: string) =>
   account.unit_id === unitId || (account.unit_ids ?? []).includes(unitId);

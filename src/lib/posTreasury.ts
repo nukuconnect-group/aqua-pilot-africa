@@ -1,12 +1,12 @@
 import { supabase } from '@/integrations/supabase/appClient';
 import { accountCoversUnit, movementLines, type TreasuryAccount } from '@/lib/treasury';
+import type { Tables } from '@/integrations/supabase/types';
 
-const db = supabase as any;
 const norm = (v?: string | null) => (v || '').trim().toLowerCase();
 
 /** Compte de trésorerie rattaché à une caisse de vente : même nom, sinon nom contenant « vente », sinon le seul compte caisse de l'unité. */
 export const findRegisterAccount = (accounts: TreasuryAccount[], registerName?: string | null) => {
-  const cash = accounts.filter(a => a.kind === 'cash' && !(a as any).archived_at);
+  const cash = accounts.filter(a => a.kind === 'cash' && !a.archived_at);
   return cash.find(a => norm(a.name) === norm(registerName)) ||
     cash.find(a => norm(a.name).includes('vente')) ||
     (cash.length === 1 ? cash[0] : null);
@@ -18,24 +18,26 @@ export const paymentDestination = (payment?: string | null): 'cash' | 'bank' =>
 
 /** Compte bancaire actif de l'unité : nom contenant « vente », sinon le premier. */
 export const findBankAccount = (accounts: TreasuryAccount[]) => {
-  const bank = accounts.filter(a => a.kind === 'bank' && !(a as any).archived_at);
+  const bank = accounts.filter(a => a.kind === 'bank' && !a.archived_at);
   return bank.find(a => norm(a.name).includes('vente')) || bank[0] || null;
 };
 
 export const findSaleAccount = (accounts: TreasuryAccount[], payment?: string | null, registerName?: string | null, linkedAccountId?: string | null) => {
   if (paymentDestination(payment) === 'bank') return findBankAccount(accounts);
-  if (linkedAccountId) return accounts.find(a => a.id === linkedAccountId && a.kind === 'cash' && !(a as any).archived_at) ?? null;
+  if (linkedAccountId) return accounts.find(a => a.id === linkedAccountId && a.kind === 'cash' && !a.archived_at) ?? null;
   return findRegisterAccount(accounts, registerName);
 };
 
+const isSaleTreasuryAccount = (account: Tables<'treasury_accounts'>): account is Tables<'treasury_accounts'> & { kind: TreasuryAccount['kind'] } => account.kind === 'cash' || account.kind === 'bank';
+
 export async function readSaleAccounts(unitId: string): Promise<TreasuryAccount[]> {
-  const { data, error } = await db.from('treasury_accounts').select('*');
+  const { data, error } = await supabase.from('treasury_accounts').select('*');
   if (error) throw error;
-  return (data || []).filter((account: TreasuryAccount) => accountCoversUnit(account, unitId));
+  return (data || []).filter(isSaleTreasuryAccount).filter((account) => accountCoversUnit(account, unitId));
 }
 
-export function treasuryNotice(accounts: Pick<TreasuryAccount, 'kind' | 'unit_id'>[], pending: { total_amount: unknown; payment_method?: string | null }[], unitId: string) {
-  const kinds = new Set(accounts.filter(a => accountCoversUnit(a, unitId) && !(a as { archived_at?: string }).archived_at).map(a => a.kind));
+export function treasuryNotice(accounts: Pick<TreasuryAccount, 'kind' | 'unit_id' | 'unit_ids' | 'archived_at'>[], pending: { total_amount: unknown; payment_method?: string | null }[], unitId: string) {
+  const kinds = new Set(accounts.filter(a => accountCoversUnit(a, unitId) && !a.archived_at).map(a => a.kind));
   const required = new Set<'cash' | 'bank'>(['cash', ...pending.map(s => paymentDestination(s.payment_method))]);
   return { count: pending.length, amount: pending.reduce((n, s) => n + (Number(s.total_amount) || 0), 0), needs: [...required].filter(k => !kinds.has(k)) };
 }
@@ -56,20 +58,20 @@ export async function hasRegisterAccount(unitId: string, registerName?: string |
  */
 export async function postSaleToTreasury(unitId: string, sale: { id: string; totalAmount: number; paymentMethod?: string; documentNumber?: string; clientName?: string; date?: string }, registerName?: string | null, sessionId?: string | null, linkedAccountId?: string | null) {
   if (!(sale.totalAmount > 0)) return { status: 'skipped' as const };
-  const { error: rpcError } = await db.rpc('post_sale_to_linked_treasury', { _sale_id: sale.id, _session_id: sessionId || null });
+  const { error: rpcError } = await supabase.rpc('post_sale_to_linked_treasury', { _sale_id: sale.id, _session_id: sessionId || null });
   if (!rpcError) return { status: 'ok' as const };
   if (!['PGRST202', '42883'].includes(rpcError.code)) throw rpcError;
   const accounts = await readSaleAccounts(unitId);
   const account = findSaleAccount(accounts, sale.paymentMethod, registerName, linkedAccountId);
   if (!account) return { status: 'no_account' as const };
   if (account.unit_id !== unitId) throw new Error('Le report multi-unités attend l’activation du rattachement sur le serveur. Aucune écriture créée.');
-  const { data: existing } = await db.from('treasury_movements').select('id').eq('request_id', sale.id).limit(1);
+  const { data: existing } = await supabase.from('treasury_movements').select('id').eq('request_id', sale.id).limit(1);
   if (existing?.length) return { status: 'ok' as const };
-  const { error } = await db.from('treasury_movements').insert({
+  const { error } = await supabase.from('treasury_movements').insert({
     request_id: sale.id, user_id: account.user_id, unit_id: unitId, kind: 'receipt', source_id: null, destination_id: account.id,
     amount: sale.totalAmount, date: sale.date || new Date().toISOString().slice(0, 10),
     label: `Vente ${sale.documentNumber || sale.clientName || ''} · ${sale.id}`.trim(), journal: account.kind === 'bank' ? 'BQ' : 'CA',
-    lines: movementLines('receipt', sale.totalAmount, undefined, account, SALE_COUNTERPART),
+    lines: movementLines('receipt', sale.totalAmount, undefined, account, SALE_COUNTERPART).map(line => ({ account: line.account, debit: line.debit, credit: line.credit })),
   });
   if (error) throw error;
   return { status: 'ok' as const, account };
@@ -77,18 +79,19 @@ export async function postSaleToTreasury(unitId: string, sale: { id: string; tot
 
 /** À l'annulation : sortie inverse sur la même caisse de trésorerie (une seule fois). */
 export async function reverseSaleInTreasury(unitId: string, saleId: string, reason: string) {
-  const { data: rows } = await db.from('treasury_movements').select('*').eq('unit_id', unitId).eq('request_id', saleId).limit(1);
+  const { data: rows } = await supabase.from('treasury_movements').select('*').eq('unit_id', unitId).eq('request_id', saleId).limit(1);
   const original = rows?.[0];
   if (!original) return { status: 'skipped' as const };
-  const { data: done } = await db.from('treasury_movements').select('id').eq('unit_id', unitId).ilike('label', `Annulation vente%${saleId}%`).limit(1);
+  const { data: done } = await supabase.from('treasury_movements').select('id').eq('unit_id', unitId).ilike('label', `Annulation vente%${saleId}%`).limit(1);
   if (done?.length) return { status: 'ok' as const };
-  const { data: acc } = await db.from('treasury_accounts').select('*').eq('id', original.destination_id).single();
-  if (!acc) return { status: 'skipped' as const };
-  const { error } = await db.from('treasury_movements').insert({
-    request_id: crypto.randomUUID(), user_id: acc.user_id, unit_id: unitId, kind: 'payment', source_id: acc.id, destination_id: null,
+  const { data: acc } = await supabase.from('treasury_accounts').select('*').eq('id', original.destination_id).single();
+  if (!acc || (acc.kind !== 'cash' && acc.kind !== 'bank')) return { status: 'skipped' as const };
+  const treasuryAccount: TreasuryAccount = { ...acc, kind: acc.kind as TreasuryAccount['kind'] };
+  const { error } = await supabase.from('treasury_movements').insert({
+    request_id: crypto.randomUUID(), user_id: treasuryAccount.user_id, unit_id: unitId, kind: 'payment', source_id: treasuryAccount.id, destination_id: null,
     amount: Number(original.amount), date: new Date().toISOString().slice(0, 10),
-    label: `Annulation vente · ${reason} · ${saleId}`, journal: acc.kind === 'bank' ? 'BQ' : 'CA',
-    lines: movementLines('payment', Number(original.amount), acc, undefined, SALE_COUNTERPART),
+    label: `Annulation vente · ${reason} · ${saleId}`, journal: treasuryAccount.kind === 'bank' ? 'BQ' : 'CA',
+    lines: movementLines('payment', Number(original.amount), treasuryAccount, undefined, SALE_COUNTERPART).map(line => ({ account: line.account, debit: line.debit, credit: line.credit })),
   });
   if (error) throw error;
   return { status: 'ok' as const };
@@ -96,29 +99,29 @@ export async function reverseSaleInTreasury(unitId: string, saleId: string, reas
 
 /** Ventes payées de l'unité qui n'ont pas encore de mouvement de trésorerie. */
 export async function findUnpostedSales(unitId: string) {
-  const { data: sales, error: salesError } = await db.from('sales').select('id, total_amount, payment_method, document_number, client_name, date, status')
+  const { data: sales, error: salesError } = await supabase.from('sales').select('id, total_amount, payment_method, document_number, client_name, date, status')
     .eq('unit_id', unitId).neq('status', 'cancelled').gt('total_amount', 0).limit(1000);
   if (salesError) throw salesError;
-  const list = (sales || []).filter((s: any) => ['paid', 'confirmed', 'delivered'].includes(s.status));
+  const list = (sales || []).filter((s) => ['paid', 'confirmed', 'delivered'].includes(s.status));
   if (!list.length) return [];
-  const { data: moves, error: movesError } = await db.from('treasury_movements').select('request_id').eq('unit_id', unitId).in('request_id', list.map((s: any) => s.id));
+  const { data: moves, error: movesError } = await supabase.from('treasury_movements').select('request_id').eq('unit_id', unitId).in('request_id', list.map((s) => s.id));
   if (movesError) throw movesError;
-  const done = new Set((moves || []).map((m: any) => m.request_id));
-  return list.filter((s: any) => !done.has(s.id));
+  const done = new Set((moves || []).map((m) => m.request_id));
+  return list.filter((s) => !done.has(s.id));
 }
 
 /** Reporte une seule fois chaque vente passée dans la caisse ou la banque correspondant à son paiement. */
 export async function backfillSalesToTreasury(unitId: string) {
   const pending = await findUnpostedSales(unitId);
-  const { data: movements, error: movementError } = pending.length ? await db.from('cash_movements').select('sale_id, session_id').in('sale_id', pending.map((s: any) => s.id)).eq('type', 'sale') : { data: [], error: null };
+  const { data: movements, error: movementError } = pending.length ? await supabase.from('cash_movements').select('sale_id, session_id').in('sale_id', pending.map((s) => s.id)).eq('type', 'sale') : { data: [], error: null };
   if (movementError) throw movementError;
-  const sessionIds = [...new Set<string>((movements || []).map((m: any) => m.session_id))];
-  const { data: sessions, error: sessionError } = sessionIds.length ? await db.from('cash_sessions').select('*').in('id', sessionIds) : { data: [], error: null };
+  const sessionIds = [...new Set<string>((movements || []).map((m) => m.session_id))];
+  const { data: sessions, error: sessionError } = sessionIds.length ? await supabase.from('cash_sessions').select('*').in('id', sessionIds) : { data: [], error: null };
   if (sessionError) throw sessionError;
   let posted = 0; const missing = new Set<'cash' | 'bank'>();
   for (const s of pending) {
-    const movement = (movements || []).find((m: any) => m.sale_id === s.id);
-    const session = (sessions || []).find((c: any) => c.id === movement?.session_id);
+    const movement = (movements || []).find((m) => m.sale_id === s.id);
+    const session = (sessions || []).find((c) => c.id === movement?.session_id);
     const r = await postSaleToTreasury(unitId, { id: s.id, totalAmount: Number(s.total_amount), paymentMethod: s.payment_method, documentNumber: s.document_number, clientName: s.client_name, date: s.date }, session?.name, session?.id, session?.treasury_account_id);
     if (r.status === 'ok') posted++;
     if (r.status === 'no_account') missing.add(paymentDestination(s.payment_method));

@@ -122,13 +122,24 @@ const AdminDashboard = () => {
 
 
   const formatErrorDetails = (details: string) => {
-    if (!details) return 'Erreur interne sans détail disponible.';
+    if (!details) return 'Erreur interne sans detail disponible.';
     try {
-      const payload = JSON.parse(details);
-      const message = payload?.data?.message || payload?.message;
-      return typeof message === 'string' ? message : 'Erreur interne détectée.';
+      const payload: unknown = JSON.parse(details);
+      if (!payload || typeof payload !== 'object') return details.slice(0, 500);
+
+      const root = payload as Record<string, unknown>;
+      const data = root.data && typeof root.data === 'object'
+        ? root.data as Record<string, unknown>
+        : root;
+      const message = typeof data.message === 'string' ? data.message : 'Erreur interne detectee.';
+      const errorName = typeof data.name === 'string' ? data.name : '';
+      const stack = typeof data.componentStack === 'string'
+        ? data.componentStack
+        : typeof data.stack === 'string' ? data.stack : '';
+      const summary = errorName && !message.startsWith(errorName) ? errorName + ': ' + message : message;
+      return stack ? summary + '\n\nPile des composants :\n' + stack.slice(0, 1200) : summary;
     } catch {
-      return details.length > 500 ? `${details.slice(0, 500)}…` : details;
+      return details.length > 500 ? details.slice(0, 500) + '...' : details;
     }
   };
 
@@ -1518,7 +1529,7 @@ const AdminDashboard = () => {
                             </span>
                           </div>
                           <p className="font-medium mb-1">{log.action}</p>
-                          <p className="text-sm text-muted-foreground break-words">{formatErrorDetails(log.details)}</p>
+                          <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">{formatErrorDetails(log.details)}</p>
                           <p className="text-xs text-muted-foreground mt-2">
                             Utilisateur: {log.userName}
                           </p>

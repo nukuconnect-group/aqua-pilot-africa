@@ -1,5 +1,5 @@
 import React from 'react';
-import menuLogoAsset from '@/assets/aquapilote-menu-logo.png.asset.json';
+import menuLogo from '@/assets/aquapilote-menu-logo-dark.png';
 import AssistantNavIcon from '@/components/AssistantNavIcon';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -175,7 +175,7 @@ const MobileMenuModal = ({ isOpen, onClose, activeTab, onTabChange }: MobileMenu
         <SheetHeader className="shrink-0 px-5 pt-4 pb-2 bg-sidebar-header border-b border-sidebar-border text-left">
           <SheetTitle className="flex justify-start">
             <img
-              src={menuLogoAsset.url}
+              src={menuLogo}
               alt="AquaPilote"
               className="h-10 w-auto max-w-[170px] object-contain"
             />

@@ -46,7 +46,7 @@ const BarcodeLabelGenerator: React.FC = () => {
 
   const allSelected = items.length > 0 && items.every((i) => selected.has(i.id));
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(items.map((i) => i.id)));
-  const toggle = (id: string) => setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggle = (id: string) => setSelected((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
 
   const print = () => {
     const html = containerRef.current?.innerHTML;

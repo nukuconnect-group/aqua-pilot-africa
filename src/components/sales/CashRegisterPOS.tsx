@@ -356,7 +356,7 @@ const CashRegisterPOS: React.FC<{ view?: PosView; onNavigate?: (view: PosView) =
   // Impression automatique du reçu si l'appareil est réglé ainsi.
   useEffect(() => {
     if (receipt && readDevicePrefs().autoPrint) { const t = setTimeout(printReceipt, 400); return () => clearTimeout(t); }
-  }, [receipt]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [receipt]);
 
   // Lecteur USB/Bluetooth (saisie clavier rapide + Entrée) et scans envoyés depuis un téléphone.
   const scanRef = useRef(handleScan); scanRef.current = handleScan;

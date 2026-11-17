@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Verrou personnalisé : LockManager pose problème sur iOS / WebView.
-const customLock = async (_name: string, _timeout: number, fn: () => Promise<any>) => fn();
+const customLock = async <T>(_name: string, _timeout: number, fn: () => Promise<T>): Promise<T> => fn();
 
 export const supabase = createClient<Database>(APP_SUPABASE_URL, APP_SUPABASE_ANON_KEY, {
   auth: {
@@ -44,7 +44,7 @@ export const supabase = createClient<Database>(APP_SUPABASE_URL, APP_SUPABASE_AN
     detectSessionInUrl: true,
     flowType: 'pkce',
     storageKey: 'aqua-pilot-auth',
-    lock: customLock as any,
+    lock: customLock,
   },
   db: { schema: 'public' },
   global: { headers: { 'x-client-info': 'aqua-pilot-web' } },

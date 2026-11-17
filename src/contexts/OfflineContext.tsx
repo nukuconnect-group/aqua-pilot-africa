@@ -48,6 +48,7 @@ const areHooksAvailable = () => {
 
 export const useOfflineContext = () => {
   if (!areHooksAvailable()) return FALLBACK_CONTEXT;
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- Preserve the fallback when React hooks are unavailable.
   const context = useContext(OfflineContext);
   if (!context) {
     console.warn('useOfflineContext utilisé hors OfflineProvider : valeurs par défaut appliquées');

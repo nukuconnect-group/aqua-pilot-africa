@@ -117,7 +117,7 @@ const SelectItem = React.forwardRef<
   // rendering an Item with value="" crashes the app, so we skip it.
   if (value === "") {
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+
       console.warn("[SelectItem] Skipped item with empty value", { children });
     }
     return null;

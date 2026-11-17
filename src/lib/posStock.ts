@@ -29,12 +29,12 @@ export const planDeduction = (qty: number, rows: { id: string; quantity: number 
 
 /** Calcule les articles de stock commercial à retirer pour un panier. */
 export const planSaleStock = async (unitId: string, cart: PosLine[]) => {
-  const { data: stocks, error } = await (supabase as any).from('feed_stocks').select('*').eq('unit_id', unitId);
+  const { data: stocks, error } = await supabase.from('feed_stocks').select('*').eq('unit_id', unitId);
   if (error) throw error;
   const out: { stock_id: string; quantity: number }[] = [];
   for (const line of cart) {
     const key = normalizeProductSearch(line.name);
-    const rows = (stocks || []).filter((s: any) => isCommercialStock(s) && normalizeProductSearch(s.custom_name || s.feed_type) === key);
+    const rows = (stocks || []).filter(s => isCommercialStock(s) && normalizeProductSearch(s.custom_name || s.feed_type) === key);
     for (const p of planDeduction(line.quantity, rows).plan) out.push({ stock_id: p.id, quantity: p.take });
   }
   return out;
@@ -46,7 +46,7 @@ export const planSaleStock = async (unitId: string, cart: PosLine[]) => {
  */
 export const postSaleAtomically = async (unitId: string, saleId: string, sessionId: string, cart: PosLine[]) => {
   const stock = await planSaleStock(unitId, cart);
-  const { error } = await (supabase as any).rpc('pos_post_sale', { _sale_id: saleId, _session_id: sessionId, _stock: stock });
+  const { error } = await supabase.rpc('pos_post_sale', { _sale_id: saleId, _session_id: sessionId, _stock: stock });
   if (error) {
     if (error.code === 'PGRST202' || error.code === '42883') return false;
     throw new Error(error.message);
@@ -56,7 +56,7 @@ export const postSaleAtomically = async (unitId: string, saleId: string, session
 
 /** Retire du stock commercial les quantités d'une vente en caisse (une seule fois par vente). */
 export const deductSoldStock = async (unitId: string, saleId: string, cart: PosLine[]) => {
-  const db = supabase as any;
+  const db = supabase;
   const reason = `Vente en caisse ${saleId}`;
   const { data: already } = await db.from('stock_movements').select('id').eq('unit_id', unitId).eq('reason', reason).limit(1);
   if (already?.length) return;
@@ -64,11 +64,12 @@ export const deductSoldStock = async (unitId: string, saleId: string, cart: PosL
   if (error) throw error;
   for (const line of cart) {
     const key = normalizeProductSearch(line.name);
-    const rows = (stocks || []).filter((s: any) => isCommercialStock(s) && normalizeProductSearch(s.custom_name || s.feed_type) === key);
+    const rows = (stocks || []).filter(s => isCommercialStock(s) && normalizeProductSearch(s.custom_name || s.feed_type) === key);
     if (!rows.length) continue; // article libre, hors stock
     const { plan } = planDeduction(line.quantity, rows);
     for (const p of plan) {
-      const row = rows.find((r: any) => r.id === p.id);
+      const row = rows.find(r => r.id === p.id);
+      if (!row) continue;
       const { error: upErr } = await db.from('feed_stocks').update({ quantity: p.after }).eq('id', p.id).eq('unit_id', unitId);
       if (upErr) throw upErr;
       await db.from('stock_movements').insert({ user_id: row.user_id, unit_id: unitId, stock_id: p.id, type: 'out', quantity: p.take, quantity_after: p.after, reason });
